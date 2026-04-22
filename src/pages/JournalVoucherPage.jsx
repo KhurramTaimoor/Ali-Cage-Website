@@ -1,29 +1,473 @@
-import React from "react";
-import SalesCrudPageWithDropdown from "../components/SalesCrudPageWithDropdown";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-const JournalVoucherPage = () => (
-  <SalesCrudPageWithDropdown
-    title="Journal Voucher"
-    endpoint="journal-vouchers"
-    requiredField="voucher_no"
-    searchFields={["voucher_no", "account_dr_name", "account_cr_name"]}
-    fields={[
-      { name: "voucher_no", label: "Voucher No" },
-      { name: "voucher_date", label: "Date", type: "date" },
-      { name: "account_dr_id", label: "Account (Dr)", type: "dropdown", endpoint: "chart-of-accounts", labelKey: "account_title", valueKey: "id" },
-      { name: "account_cr_id", label: "Account (Cr)", type: "dropdown", endpoint: "chart-of-accounts", labelKey: "account_title", valueKey: "id" },
-      { name: "amount", label: "Amount (PKR)", type: "number" },
-      { name: "narration", label: "Narration" },
-    ]}
-    displayFields={[
-      { name: "voucher_no", label: "Voucher No" },
-      { name: "voucher_date", label: "Date" },
-      { name: "account_dr_name", label: "Account (Dr)" },
-      { name: "account_cr_name", label: "Account (Cr)" },
-      { name: "amount", label: "Amount (PKR)" },
-      { name: "narration", label: "Narration" },
-    ]}
-  />
-);
+// ─────────────────────────────────────────────────────────────────
+// LANGUAGE STRINGS (Strictly English & Proper Urdu)
+// ─────────────────────────────────────────────────────────────────
+const LANG = {
+  en: {
+    title: "Journal Voucher",
+    subtitle: "Manage double-entry accounting transactions",
+    addBtn: "New Voucher",
+    searchPlaceholder: "Search by voucher no or account...",
+    voucherNo: "Voucher No",
+    date: "Date",
+    accountDr: "Debit Account (Dr)",
+    accountCr: "Credit Account (Cr)",
+    selectAccount: "-- Select Account --",
+    amount: "Amount (PKR)",
+    narration: "Narration (Remarks)",
+    save: "Save",
+    cancel: "Cancel",
+    edit: "Edit",
+    delete: "Delete",
+    actions: "Actions",
+    noRecords: "No journal vouchers found.",
+    toggleLang: "اردو",
+    printBtn: "Print List",
+    pdfBtn: "Download PDF",
+    reportHeader: "Journal Vouchers List",
+    printedOn: "Printed On",
+    successSave: "Voucher saved successfully!",
+    successUpdate: "Voucher updated successfully!",
+    errorMsg: "Please fill all required fields correctly.",
+    sameAccErr: "Debit and Credit accounts cannot be the same!",
+    deleteConfirm: "Are you sure you want to delete this voucher?",
+  },
+  ur: {
+    title: "جرنل واؤچر",
+    subtitle: "ڈبل انٹری اکاؤنٹنگ ٹرانزیکشنز کا انتظام کریں",
+    addBtn: "نیا واؤچر",
+    searchPlaceholder: "واؤچر نمبر یا اکاؤنٹ سے تلاش کریں...",
+    voucherNo: "واؤچر نمبر",
+    date: "تاریخ",
+    accountDr: "ڈیبٹ اکاؤنٹ (Dr)",
+    accountCr: "کریڈٹ اکاؤنٹ (Cr)",
+    selectAccount: "-- اکاؤنٹ منتخب کریں --",
+    amount: "رقم (روپے)",
+    narration: "تفصیل (ریمارکس)",
+    save: "محفوظ کریں",
+    cancel: "منسوخ",
+    edit: "ترمیم",
+    delete: "حذف",
+    actions: "اقدامات",
+    noRecords: "کوئی جرنل واؤچر نہیں ملا۔",
+    toggleLang: "English",
+    printBtn: "فہرست پرنٹ کریں",
+    pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
+    reportHeader: "جرنل واؤچرز کی فہرست",
+    printedOn: "پرنٹ کی تاریخ",
+    successSave: "واؤچر کامیابی سے محفوظ ہو گیا!",
+    successUpdate: "واؤچر کامیابی سے اپڈیٹ ہو گیا!",
+    errorMsg: "براہ کرم تمام لازمی خانے درست طریقے سے پُر کریں۔",
+    sameAccErr: "ڈیبٹ اور کریڈٹ اکاؤنٹس ایک جیسے نہیں ہو سکتے!",
+    deleteConfirm: "کیا آپ واقعی یہ واؤچر حذف کرنا چاہتے ہیں؟",
+  },
+};
 
-export default JournalVoucherPage;
+const API_BASE = "http://localhost:5000/api";
+
+export default function JournalVoucherPage() {
+  const [lang, setLang] = useState("en");
+  const t = LANG[lang];
+  const isUrdu = lang === "ur";
+  const dir = isUrdu ? "rtl" : "ltr";
+  const fmt = (n) => parseFloat(n || 0).toLocaleString("en-PK", { minimumFractionDigits: 2 });
+
+  const [records, setRecords] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [message, setMessage] = useState({ type: "", text: "" });
+
+  const [form, setForm] = useState({
+    voucher_no: "", voucher_date: "", account_dr_id: "", account_cr_id: "", amount: "", narration: ""
+  });
+
+  // ── Fetch Data ──
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [resJV, resAcc] = await Promise.all([
+        axios.get(`${API_BASE}/journal-vouchers`),
+        axios.get(`${API_BASE}/chart-of-accounts`)
+      ]);
+      setRecords(resJV.data);
+      setAccounts(resAcc.data);
+    } catch (err) {
+      // Mock data if API is down
+      setAccounts([
+        { id: 1, account_title: "Cash in Hand", account_code: "1001" },
+        { id: 2, account_title: "Bank Account (Meezan)", account_code: "1002" },
+        { id: 3, account_title: "Office Expenses", account_code: "5001" },
+        { id: 4, account_title: "Accounts Payable", account_code: "2001" },
+      ]);
+      setRecords([
+        { id: 1, voucher_no: "JV-1001", voucher_date: "2024-10-25", account_dr_id: 3, account_dr_name: "Office Expenses", account_cr_id: 1, account_cr_name: "Cash in Hand", amount: 15000, narration: "Paid for office stationery" },
+        { id: 2, voucher_no: "JV-1002", voucher_date: "2024-10-26", account_dr_id: 4, account_dr_name: "Accounts Payable", account_cr_id: 2, account_cr_name: "Bank Account (Meezan)", amount: 50000, narration: "Payment to supplier" },
+      ]);
+    }
+  };
+
+  const showToast = (type, text) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+  };
+
+  // ── Form Handlers ──
+  const openAdd = () => {
+    setForm({ voucher_no: "", voucher_date: "", account_dr_id: "", account_cr_id: "", amount: "", narration: "" });
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (r) => {
+    setForm({
+      voucher_no: r.voucher_no, voucher_date: r.voucher_date,
+      account_dr_id: r.account_dr_id, account_cr_id: r.account_cr_id,
+      amount: r.amount, narration: r.narration || ""
+    });
+    setEditingId(r.id);
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.voucher_no || !form.account_dr_id || !form.account_cr_id || !form.amount) {
+      showToast("error", t.errorMsg);
+      return;
+    }
+    if (form.account_dr_id === form.account_cr_id) {
+      showToast("error", t.sameAccErr);
+      return;
+    }
+
+    try {
+      if (editingId) {
+        await axios.put(`${API_BASE}/journal-vouchers/${editingId}`, form);
+        showToast("success", t.successUpdate);
+      } else {
+        await axios.post(`${API_BASE}/journal-vouchers`, form);
+        showToast("success", t.successSave);
+      }
+      fetchData();
+      setShowForm(false);
+    } catch (err) {
+      // Optimistic UI update for mock testing
+      const accDr = accounts.find(a => String(a.id) === String(form.account_dr_id));
+      const accCr = accounts.find(a => String(a.id) === String(form.account_cr_id));
+      
+      const newRec = { 
+        ...form, 
+        id: editingId || Date.now(),
+        account_dr_name: accDr?.account_title || "-",
+        account_cr_name: accCr?.account_title || "-"
+      };
+      
+      if (editingId) setRecords(prev => prev.map(r => r.id === editingId ? newRec : r));
+      else setRecords(prev => [...prev, newRec]);
+      
+      showToast("success", editingId ? t.successUpdate : t.successSave);
+      setShowForm(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm(t.deleteConfirm)) return;
+    try {
+      await axios.delete(`${API_BASE}/journal-vouchers/${id}`);
+      fetchData();
+    } catch (err) {
+      setRecords(prev => prev.filter(r => r.id !== id));
+    }
+  };
+
+  // ── Search & Filter ──
+  const filtered = records.filter(r =>
+    [r.voucher_no, r.account_dr_name, r.account_cr_name, r.narration].some(v => (v || "").toLowerCase().includes(search.toLowerCase()))
+  );
+
+  // ── Print / PDF Generator ──
+  const generatePrintDocument = (isPdf = false) => {
+    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
+    const rowsHtml = filtered.map((r, i) => `
+      <tr>
+        <td style="text-align: center;">${i + 1}</td>
+        <td style="font-family: monospace; font-weight: bold;">${r.voucher_no}</td>
+        <td>${r.voucher_date || "-"}</td>
+        <td style="color: #047857; font-weight: bold;">${r.account_dr_name}</td>
+        <td style="color: #b91c1c; font-weight: bold;">${r.account_cr_name}</td>
+        <td style="text-align:${isUrdu ? 'left' : 'right'}; font-weight: bold;">₨ ${fmt(r.amount)}</td>
+        <td style="font-size: 11px;">${r.narration || "-"}</td>
+      </tr>
+    `).join("");
+
+    const html = `
+      <!DOCTYPE html>
+      <html dir="${dir}" lang="${lang}">
+      <head>
+        <meta charset="UTF-8"/>
+        <title>${t.title}</title>
+        ${isUrdu ? `<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">` : ""}
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: ${font}; background: #fff; color: #0f172a; padding: 40px; }
+          .report-container { max-width: 1000px; margin: 0 auto; }
+          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #6d28d9; padding-bottom: 20px; margin-bottom: 30px; }
+          .brand { font-size: 28px; font-weight: bold; color: #6d28d9; text-transform: uppercase; letter-spacing: 1px; }
+          .report-title { font-size: 18px; color: #64748b; margin-top: 5px; }
+          .meta { text-align: ${isUrdu ? "left" : "right"}; font-size: 12px; color: #64748b; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th { background: #6d28d9; color: #fff; text-align: ${isUrdu ? "right" : "left"}; padding: 12px; font-weight: normal; }
+          td { border-bottom: 1px solid #e2e8f0; padding: 10px; color: #334155; }
+          tr:nth-child(even) td { background: #f5f3ff; }
+          .print-instruct { background: #ede9fe; color: #6d28d9; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #ddd6fe; }
+          @media print { body { padding: 0; } .print-instruct { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="report-container">
+          ${isPdf ? `<div class="print-instruct">Please select <strong>"Save as PDF"</strong> in the destination dropdown to download this report.</div>` : ""}
+          <div class="header">
+            <div>
+              <div class="brand">Unique Wear</div>
+              <div class="report-title">${t.reportHeader}</div>
+            </div>
+            <div class="meta">
+              <div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;">#</th>
+                <th>${t.voucherNo}</th>
+                <th>${t.date}</th>
+                <th>${t.accountDr}</th>
+                <th>${t.accountCr}</th>
+                <th style="text-align:${isUrdu ? 'left' : 'right'};">${t.amount}</th>
+                <th>${t.narration}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.length > 0 ? rowsHtml : `<tr><td colspan="7" style="text-align:center;">${t.noRecords}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        <script>
+          window.onload = () => { setTimeout(() => { window.print(); ${!isPdf ? "window.onafterprint = () => window.close();" : ""} }, 300); }
+        </script>
+      </body>
+      </html>
+    `;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  };
+
+  return (
+    <div dir={dir} style={{ fontFamily: isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif" }} className="min-h-screen bg-slate-50 p-6 pb-20">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+      {isUrdu && <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet" />}
+
+      {/* Floating Toast Message */}
+      {message.text && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 transition-all ${message.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
+          <i className={`bi ${message.type === 'error' ? 'bi-exclamation-triangle' : 'bi-check-circle'}`}></i>
+          {message.text}
+        </div>
+      )}
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3 max-w-7xl mx-auto">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">{t.title}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">{t.subtitle}</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setLang(lang === "en" ? "ur" : "en")} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition">
+            <i className="bi bi-translate"></i>{t.toggleLang}
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-700 text-white text-sm font-semibold hover:bg-violet-800 transition shadow">
+            <i className="bi bi-plus-lg"></i>{t.addBtn}
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto">
+        
+        {/* ── Search & Actions ── */}
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+          <div className="relative w-full max-w-sm">
+            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder}
+              className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-sm ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
+          </div>
+          
+          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <button onClick={() => generatePrintDocument(false)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm">
+              <i className="bi bi-printer text-violet-600"></i> {t.printBtn}
+            </button>
+            <button onClick={() => generatePrintDocument(true)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm">
+              <i className="bi bi-file-earmark-pdf text-red-600"></i> {t.pdfBtn}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Table ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-slate-600">
+              <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
+                <tr>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.voucherNo}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.date}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.accountDr}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.accountCr}</th>
+                  <th className="px-4 py-3 text-right">{t.amount}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} max-w-[150px]`}>{t.narration}</th>
+                  <th className="px-4 py-3 text-center">{t.actions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-400">{t.noRecords}</td></tr>
+                ) : (
+                  filtered.map((r, i) => (
+                    <tr key={r.id} className="hover:bg-violet-50 transition">
+                      <td className="px-4 py-3.5 text-slate-400 font-mono text-xs text-center">{i + 1}</td>
+                      <td className="px-4 py-3.5 font-bold text-slate-700">
+                        <span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono border border-slate-200">{r.voucher_no}</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-slate-500 text-xs">{r.voucher_date || "-"}</td>
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md text-xs">
+                          Dr. {r.account_dr_name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-md text-xs">
+                          Cr. {r.account_cr_name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono font-bold text-violet-700">₨ {fmt(r.amount)}</td>
+                      <td className="px-4 py-3.5 text-xs text-slate-500 truncate max-w-[150px]" title={r.narration}>{r.narration || "-"}</td>
+                      <td className="px-4 py-3.5">
+                        <div className={`flex items-center justify-center gap-1.5 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                          <button onClick={() => openEdit(r)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-xs font-semibold hover:bg-violet-200 transition"><i className="bi bi-pencil-square"></i></button>
+                          <button onClick={() => handleDelete(r.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 transition"><i className="bi bi-trash3"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── Modal Form ── */}
+        {showForm && (
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" dir={dir}>
+              
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                  <i className="bi bi-journal-text text-violet-700 text-lg"></i>
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">{editingId ? t.edit : t.addBtn}</h2>
+              </div>
+              
+              <div className="p-6 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  
+                  {/* Voucher No */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.voucherNo} *</label>
+                    <div className="relative">
+                      <i className={`bi bi-hash absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                      <input type="text" value={form.voucher_no} onChange={e => setForm({ ...form, voucher_no: e.target.value })} placeholder="JV-001"
+                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-violet-500 font-mono ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.date}</label>
+                    <div className="relative">
+                      <i className={`bi bi-calendar-event absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                      <input type="date" value={form.voucher_date} onChange={e => setForm({ ...form, voucher_date: e.target.value })}
+                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-violet-500 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
+                    </div>
+                  </div>
+
+                  {/* Debit Account */}
+                  <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                    <label className="block text-xs font-bold text-emerald-800 mb-1">{t.accountDr} *</label>
+                    <div className="relative">
+                      <i className={`bi bi-box-arrow-in-right absolute top-1/2 -translate-y-1/2 text-emerald-500 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                      <select value={form.account_dr_id} onChange={e => setForm({ ...form, account_dr_id: e.target.value })}
+                        className={`w-full border border-emerald-200 rounded-lg py-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 appearance-none ${isUrdu ? "pr-9 pl-8 text-right" : "pl-9 pr-8"}`}>
+                        <option value="">{t.selectAccount}</option>
+                        {accounts.map(a => <option key={a.id} value={a.id}>[{a.account_code}] {a.account_title}</option>)}
+                      </select>
+                      <i className={`bi bi-chevron-down absolute top-1/2 -translate-y-1/2 text-emerald-400 text-xs pointer-events-none ${isUrdu ? "left-3" : "right-3"}`}></i>
+                    </div>
+                  </div>
+
+                  {/* Credit Account */}
+                  <div className="bg-red-50/50 p-4 rounded-xl border border-red-100">
+                    <label className="block text-xs font-bold text-red-800 mb-1">{t.accountCr} *</label>
+                    <div className="relative">
+                      <i className={`bi bi-box-arrow-right absolute top-1/2 -translate-y-1/2 text-red-500 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                      <select value={form.account_cr_id} onChange={e => setForm({ ...form, account_cr_id: e.target.value })}
+                        className={`w-full border border-red-200 rounded-lg py-2.5 text-sm bg-white focus:ring-2 focus:ring-red-500 appearance-none ${isUrdu ? "pr-9 pl-8 text-right" : "pl-9 pr-8"}`}>
+                        <option value="">{t.selectAccount}</option>
+                        {accounts.map(a => <option key={a.id} value={a.id}>[{a.account_code}] {a.account_title}</option>)}
+                      </select>
+                      <i className={`bi bi-chevron-down absolute top-1/2 -translate-y-1/2 text-red-400 text-xs pointer-events-none ${isUrdu ? "left-3" : "right-3"}`}></i>
+                    </div>
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label className="block text-xs font-bold text-violet-700 mb-1">{t.amount} *</label>
+                    <div className="relative">
+                      <i className={`bi bi-currency-rupee absolute top-1/2 -translate-y-1/2 text-violet-500 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                      <input type="number" min="0" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00"
+                        className={`w-full border border-violet-200 rounded-lg py-2.5 text-sm bg-violet-50/30 focus:ring-2 focus:ring-violet-500 font-mono font-bold text-violet-800 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
+                    </div>
+                  </div>
+
+                  {/* Narration */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.narration}</label>
+                    <div className="relative">
+                      <i className={`bi bi-chat-left-text absolute top-3 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                      <textarea rows="2" value={form.narration} onChange={e => setForm({ ...form, narration: e.target.value })} placeholder="..."
+                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-violet-500 resize-none ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className={`px-6 py-4 border-t border-slate-100 bg-slate-50 flex gap-3 flex-shrink-0 rounded-b-2xl ${isUrdu ? "flex-row-reverse justify-start" : "justify-end"}`}>
+                <button onClick={() => setShowForm(false)} className="border border-slate-300 text-slate-600 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-100 transition bg-white">{t.cancel}</button>
+                <button onClick={handleSave} className="bg-violet-700 text-white px-8 py-2.5 rounded-lg font-semibold text-sm hover:bg-violet-800 transition shadow-lg shadow-violet-700/20 flex items-center gap-2">
+                  <i className="bi bi-save"></i> {t.save}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

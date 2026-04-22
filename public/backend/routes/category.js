@@ -1,64 +1,78 @@
-const express = require('express');
+const express = require("express");
 const router  = express.Router();
-const db      = require('../db');
+const db      = require("../db");
 
-// GET - sab categories lao (product_type ke sath)
-router.get('/', (req, res) => {
-  const sql = `
-    SELECT c.*, pt.type_name, pt.short_code
-    FROM categories c
-    LEFT JOIN product_types pt ON c.product_type_id = pt.id
-    ORDER BY c.id ASC
-  `;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+function runQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+}
+
+// GET ALL
+router.get("/", async (req, res) => {
+  try {
+    const results = await runQuery(
+      `SELECT id, category_name, created_at FROM categories ORDER BY id DESC`
+    );
     res.json(results);
-  });
-});
-
-// GET - specific product type ki categories
-router.get('/by-type/:typeId', (req, res) => {
-  db.query('SELECT * FROM categories WHERE product_type_id = ?', [req.params.typeId], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
-});
-
-// POST - naya category save karo
-router.post('/', (req, res) => {
-  const { category_name, product_type_id, description } = req.body;
-
-  if (!category_name || !product_type_id) {
-    return res.status(400).json({ error: 'Category name aur Product Type required hain' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  const sql = 'INSERT INTO categories (category_name, product_type_id, description) VALUES (?, ?, ?)';
-  db.query(sql, [category_name, product_type_id, description || ''], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Category save ho gayi!', id: result.insertId });
-  });
 });
 
-router.put('/:id', (req, res) => {
-  const { category_name, product_type_id, description } = req.body;
+// CREATE
+router.post("/", async (req, res) => {
+  try {
+    const { category_name = "" } = req.body;
+    if (!category_name.trim())
+      return res.status(400).json({ message: "Category name is required." });
 
-  if (!category_name || !product_type_id) {
-    return res.status(400).json({ error: 'Category name aur Product Type required hain' });
+    const result = await runQuery(
+      `INSERT INTO categories (category_name) VALUES (?)`,
+      [category_name.trim()]
+    );
+    const [record] = await runQuery(
+      `SELECT id, category_name, created_at FROM categories WHERE id = ?`,
+      [result.insertId]
+    );
+    res.json({ message: "Saved!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
+});
 
-  const sql = 'UPDATE categories SET category_name = ?, product_type_id = ?, description = ? WHERE id = ?';
-  db.query(sql, [category_name, product_type_id, description || '', req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Category update ho gayi!' });
-  });
+// UPDATE
+router.put("/:id", async (req, res) => {
+  try {
+    const { category_name = "" } = req.body;
+    if (!category_name.trim())
+      return res.status(400).json({ message: "Category name is required." });
+
+    await runQuery(
+      `UPDATE categories SET category_name = ? WHERE id = ?`,
+      [category_name.trim(), req.params.id]
+    );
+    const [record] = await runQuery(
+      `SELECT id, category_name, created_at FROM categories WHERE id = ?`,
+      [req.params.id]
+    );
+    res.json({ message: "Updated!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // DELETE
-router.delete('/:id', (req, res) => {
-  db.query('DELETE FROM categories WHERE id = ?', [req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Delete ho gaya!' });
-  });
+router.delete("/:id", async (req, res) => {
+  try {
+    await runQuery(`DELETE FROM categories WHERE id = ?`, [req.params.id]);
+    res.json({ message: "Deleted!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

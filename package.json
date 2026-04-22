@@ -12,7 +12,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "aos": "^2.3.4",
-    "axios": "^1.13.5",
+    "axios": "^1.14.0",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",

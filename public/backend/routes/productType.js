@@ -1,50 +1,78 @@
-const express = require('express');
+const express = require("express");
 const router  = express.Router();
-const db      = require('../db');
+const db      = require("../db");
 
-// GET - sab product types lao (type_code ke hisaab se ascending order)
-router.get('/', (req, res) => {
-  db.query('SELECT * FROM product_types ORDER BY type_code ASC', (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+function runQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+}
+
+// GET ALL
+router.get("/", async (req, res) => {
+  try {
+    const results = await runQuery(
+      `SELECT id, product_type_en, created_at FROM product_types ORDER BY id DESC`
+    );
     res.json(results);
-  });
-});
-
-// POST - naya product type save karo
-router.post('/', (req, res) => {
-  const { type_code, type_name, short_code } = req.body;
-
-  if (!type_code || !type_name || !short_code) {
-    return res.status(400).json({ error: 'Sab fields required hain' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  const sql = 'INSERT INTO product_types (type_code, type_name, short_code) VALUES (?, ?, ?)';
-  db.query(sql, [type_code, type_name, short_code], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Product Type save ho gaya!', id: result.insertId });
-  });
 });
 
-router.put('/:id', (req, res) => {
-  const { type_code, type_name, short_code } = req.body;
+// CREATE
+router.post("/", async (req, res) => {
+  try {
+    const { product_type_en = "" } = req.body;
+    if (!product_type_en.trim())
+      return res.status(400).json({ message: "Product type name is required." });
 
-  if (!type_code || !type_name || !short_code) {
-    return res.status(400).json({ error: 'Sab fields required hain' });
+    const result = await runQuery(
+      `INSERT INTO product_types (product_type_en) VALUES (?)`,
+      [product_type_en.trim()]
+    );
+    const [record] = await runQuery(
+      `SELECT id, product_type_en, created_at FROM product_types WHERE id = ?`,
+      [result.insertId]
+    );
+    res.json({ message: "Saved!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  const sql = 'UPDATE product_types SET type_code = ?, type_name = ?, short_code = ? WHERE id = ?';
-  db.query(sql, [type_code, type_name, short_code, req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Product Type update ho gaya!' });
-  });
 });
 
-// DELETE - product type delete karo
-router.delete('/:id', (req, res) => {
-  db.query('DELETE FROM product_types WHERE id = ?', [req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Delete ho gaya!' });
-  });
+// UPDATE
+router.put("/:id", async (req, res) => {
+  try {
+    const { product_type_en = "" } = req.body;
+    if (!product_type_en.trim())
+      return res.status(400).json({ message: "Product type name is required." });
+
+    await runQuery(
+      `UPDATE product_types SET product_type_en = ? WHERE id = ?`,
+      [product_type_en.trim(), req.params.id]
+    );
+    const [record] = await runQuery(
+      `SELECT id, product_type_en, created_at FROM product_types WHERE id = ?`,
+      [req.params.id]
+    );
+    res.json({ message: "Updated!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE
+router.delete("/:id", async (req, res) => {
+  try {
+    await runQuery(`DELETE FROM product_types WHERE id = ?`, [req.params.id]);
+    res.json({ message: "Deleted!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

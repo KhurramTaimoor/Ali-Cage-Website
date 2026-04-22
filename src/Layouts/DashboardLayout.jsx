@@ -32,7 +32,7 @@ const DashboardLayout = () => {
         {/* Brand */}
         <div className="h-14 flex items-center justify-center border-b border-slate-800 shrink-0">
           <div className="w-7 h-7 bg-blue-600 text-white rounded flex items-center justify-center font-bold mx-2 shadow-sm">C</div>
-          {sidebarOpen && <span className="font-bold text-base tracking-wide text-white">Cage Master</span>}
+          {sidebarOpen && <span className="font-bold text-base tracking-wide text-white">Ali Cage </span>}
         </div>
 
         {/* Navigation */}
@@ -45,9 +45,6 @@ const DashboardLayout = () => {
           {/* Sales */}
           <SidebarGroup icon={<ShoppingCart size={18}/>} label={t.sales} isOpen={sidebarOpen} isRTL={isRTL}>
             <SidebarSubItem to="/app/sales/customer" label={t.customer} />
-            <SidebarSubItem to="/app/sales/salesman" label={t.salesman} />
-            <SidebarSubItem to="/app/sales/retailer" label={t.retailer} />
-            <SidebarSubItem to="/app/sales/area" label={t.area} />
             <SidebarSubItem to="/app/sales/rate-list" label={t.rateList} />
             <SidebarSubItem to="/app/sales/sale-order" label={t.saleOrder} />
             <SidebarSubItem to="/app/sales/invoice" label={t.salesInvoice} />
@@ -83,11 +80,8 @@ const DashboardLayout = () => {
 
           {/* Accounts */}
           <SidebarGroup icon={<Calculator size={18}/>} label={t.accounts} isOpen={sidebarOpen} isRTL={isRTL}>
-            <SidebarSubItem to="/app/accounts/groups" label={t.chartGroups} />
-            <SidebarSubItem to="/app/accounts/chart" label={t.chartAccount} />
             <SidebarSubItem to="/app/accounts/opening" label={t.openingBalance} />
             <SidebarSubItem to="/app/accounts/journal" label={t.journalVoucher} />
-            <SidebarSubItem to="/app/accounts/cashbook" label={t.cashBook} />
             <div className="my-1 border-t border-slate-700 mx-4 opacity-50"></div>
             <SidebarSubItem to="/app/accounts/gl-report" label={t.glReport} />
             <SidebarSubItem to="/app/accounts/cash-report" label={t.cashBookReport} />
@@ -95,12 +89,10 @@ const DashboardLayout = () => {
 
           {/* HR */}
           <SidebarGroup icon={<Users size={18}/>} label={t.hr} isOpen={sidebarOpen} isRTL={isRTL}>
-            <SidebarSubItem to="/app/hr/departments" label={t.departments} />
             <SidebarSubItem to="/app/hr/employee" label={t.employee} />
-            <SidebarSubItem to="/app/hr/rate" label={t.employeeRate} />
             <div className="my-1 border-t border-slate-700 mx-4 opacity-50"></div>
-            <SidebarSubItem to="/app/hr/reports" label={t.hrReports} />
-            <SidebarSubItem to="/app/hr/ledger" label={t.employeeLedger} />
+            <SidebarSubItem to="/app/hr/reports" label={t.employeeloan } />
+          
           </SidebarGroup>
 
           {/* Production */}

@@ -2,43 +2,141 @@
 const router = express.Router();
 const db = require("../db");
 
-router.get("/", (req, res) => {
-  db.query("SELECT * FROM suppliers ORDER BY id DESC", (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+function runQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+}
+
+async function getSupplierById(id) {
+  const rows = await runQuery(
+    `SELECT id, supplier_name, phone, created_at
+     FROM suppliers
+     WHERE id = ?`,
+    [id]
+  );
+
+  return rows[0] || null;
+}
+
+// ── GET ALL ───────────────────────────────────────────────────────────────────
+router.get("/", async (req, res) => {
+  try {
+    const results = await runQuery(
+      `SELECT id, supplier_name, phone, created_at
+       FROM suppliers
+       ORDER BY id DESC`
+    );
+
     res.json(results);
-  });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-router.post("/", (req, res) => {
-  const { name, company_name, contact, email, city, opening_balance } = req.body;
-  if (!name) return res.status(400).json({ error: "Supplier name zaroori hai!" });
-  db.query(
-    "INSERT INTO suppliers (name, company_name, contact, email, city, opening_balance) VALUES (?, ?, ?, ?, ?, ?)",
-    [name, company_name || "", contact || "", email || "", city || "", parseFloat(opening_balance) || 0],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "Supplier save ho gaya!", id: result.insertId });
+// ── GET ONE ───────────────────────────────────────────────────────────────────
+router.get("/:id", async (req, res) => {
+  try {
+    const supplier = await getSupplierById(req.params.id);
+
+    if (!supplier) {
+      return res.status(404).json({ message: "Supplier not found." });
     }
-  );
+
+    res.json({ data: supplier });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-router.put("/:id", (req, res) => {
-  const { name, company_name, contact, email, city, opening_balance } = req.body;
-  db.query(
-    "UPDATE suppliers SET name=?, company_name=?, contact=?, email=?, city=?, opening_balance=? WHERE id=?",
-    [name, company_name || "", contact || "", email || "", city || "", parseFloat(opening_balance) || 0, req.params.id],
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "Supplier update ho gaya!" });
+// ── CREATE ────────────────────────────────────────────────────────────────────
+router.post("/", async (req, res) => {
+  try {
+    const {
+      supplier_name = "",
+      phone = "",
+    } = req.body;
+
+    if (!supplier_name.trim()) {
+      return res.status(400).json({ message: "Supplier name is required." });
     }
-  );
+
+    const result = await runQuery(
+      `INSERT INTO suppliers (supplier_name, phone)
+       VALUES (?, ?)`,
+      [
+        supplier_name.trim(),
+        phone.trim(),
+      ]
+    );
+
+    const supplier = await getSupplierById(result.insertId);
+
+    res.json({
+      message: "Supplier saved!",
+      data: supplier,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-router.delete("/:id", (req, res) => {
-  db.query("DELETE FROM suppliers WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Supplier delete ho gaya!" });
-  });
+// ── UPDATE ────────────────────────────────────────────────────────────────────
+router.put("/:id", async (req, res) => {
+  try {
+    const {
+      supplier_name = "",
+      phone = "",
+    } = req.body;
+
+    if (!supplier_name.trim()) {
+      return res.status(400).json({ message: "Supplier name is required." });
+    }
+
+    const existing = await getSupplierById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: "Supplier not found." });
+    }
+
+    await runQuery(
+      `UPDATE suppliers
+       SET supplier_name = ?, phone = ?
+       WHERE id = ?`,
+      [
+        supplier_name.trim(),
+        phone.trim(),
+        req.params.id,
+      ]
+    );
+
+    const updated = await getSupplierById(req.params.id);
+
+    res.json({
+      message: "Supplier updated!",
+      data: updated,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+router.delete("/:id", async (req, res) => {
+  try {
+    const existing = await getSupplierById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: "Supplier not found." });
+    }
+
+    await runQuery(`DELETE FROM suppliers WHERE id = ?`, [req.params.id]);
+
+    res.json({ message: "Deleted!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

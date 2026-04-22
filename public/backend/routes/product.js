@@ -1,70 +1,181 @@
-const express = require('express');
-const router  = express.Router();
-const db      = require('../db');
+const express = require("express");
+const router = express.Router();
+const db = require("../db");
 
-// GET - sab products lao
-router.get('/', (req, res) => {
-  const sql = `
-    SELECT 
-      p.*,
-      pt.type_name, pt.short_code,
-      c.category_name
-    FROM products p
-    LEFT JOIN product_types pt ON p.product_type_id = pt.id
-    LEFT JOIN categories     c  ON p.category_id     = c.id
-    ORDER BY p.id ASC
-  `;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+function runQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+}
+
+// GET ALL
+router.get("/", async (req, res) => {
+  try {
+    const results = await runQuery(
+      `
+      SELECT
+        id,
+        product_name,
+        sale_unit,
+        pieces_per_carton,
+        piece_rate,
+        created_at
+      FROM products
+      ORDER BY id DESC
+      `
+    );
     res.json(results);
-  });
-});
-
-// POST - naya product save karo
-router.post('/', (req, res) => {
-  const { product_name, product_type_id, category_id, unit, purchase_rate, sale_rate, reorder_level } = req.body;
-
-  if (!product_name || !product_type_id || !category_id || !unit) {
-    return res.status(400).json({ error: 'Zaroori fields missing hain' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  const sql = `
-    INSERT INTO products 
-      (product_name, product_type_id, category_id, unit, purchase_rate, sale_rate, reorder_level)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-  db.query(sql, [product_name, product_type_id, category_id, unit, purchase_rate || 0, sale_rate || 0, reorder_level || 0], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Product save ho gaya!', id: result.insertId });
-  });
 });
 
-// PUT - product update karo
-router.put('/:id', (req, res) => {
-  const { product_name, product_type_id, category_id, unit, purchase_rate, sale_rate, reorder_level } = req.body;
-  const sql = `
-    UPDATE products SET
-      product_name    = ?,
-      product_type_id = ?,
-      category_id     = ?,
-      unit            = ?,
-      purchase_rate   = ?,
-      sale_rate       = ?,
-      reorder_level   = ?
-    WHERE id = ?
-  `;
-  db.query(sql, [product_name, product_type_id, category_id, unit, purchase_rate, sale_rate, reorder_level, req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Product update ho gaya!' });
-  });
+// CREATE
+router.post("/", async (req, res) => {
+  try {
+    const {
+      product_name = "",
+      sale_unit = "single",
+      pieces_per_carton = 0,
+      piece_rate = 0,
+    } = req.body;
+
+    if (!product_name.trim()) {
+      return res.status(400).json({ message: "Product name is required." });
+    }
+
+    const cleanSaleUnit = String(sale_unit).toLowerCase() === "carton" ? "carton" : "single";
+    const cleanPiecesPerCarton = cleanSaleUnit === "carton" ? Number(pieces_per_carton || 0) : 0;
+    const cleanPieceRate = Number(piece_rate || 0);
+
+    if (cleanSaleUnit === "carton" && cleanPiecesPerCarton <= 0) {
+      return res.status(400).json({
+        message: "Pieces per carton must be greater than 0 for carton products.",
+      });
+    }
+
+    if (cleanPieceRate < 0) {
+      return res.status(400).json({
+        message: "Piece rate cannot be negative.",
+      });
+    }
+
+    const result = await runQuery(
+      `
+      INSERT INTO products
+        (product_name, sale_unit, pieces_per_carton, piece_rate)
+      VALUES (?, ?, ?, ?)
+      `,
+      [
+        product_name.trim(),
+        cleanSaleUnit,
+        cleanPiecesPerCarton,
+        cleanPieceRate,
+      ]
+    );
+
+    const [record] = await runQuery(
+      `
+      SELECT
+        id,
+        product_name,
+        sale_unit,
+        pieces_per_carton,
+        piece_rate,
+        created_at
+      FROM products
+      WHERE id = ?
+      `,
+      [result.insertId]
+    );
+
+    res.json({ message: "Saved!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// UPDATE
+router.put("/:id", async (req, res) => {
+  try {
+    const {
+      product_name = "",
+      sale_unit = "single",
+      pieces_per_carton = 0,
+      piece_rate = 0,
+    } = req.body;
+
+    if (!product_name.trim()) {
+      return res.status(400).json({ message: "Product name is required." });
+    }
+
+    const cleanSaleUnit = String(sale_unit).toLowerCase() === "carton" ? "carton" : "single";
+    const cleanPiecesPerCarton = cleanSaleUnit === "carton" ? Number(pieces_per_carton || 0) : 0;
+    const cleanPieceRate = Number(piece_rate || 0);
+
+    if (cleanSaleUnit === "carton" && cleanPiecesPerCarton <= 0) {
+      return res.status(400).json({
+        message: "Pieces per carton must be greater than 0 for carton products.",
+      });
+    }
+
+    if (cleanPieceRate < 0) {
+      return res.status(400).json({
+        message: "Piece rate cannot be negative.",
+      });
+    }
+
+    await runQuery(
+      `
+      UPDATE products
+      SET
+        product_name = ?,
+        sale_unit = ?,
+        pieces_per_carton = ?,
+        piece_rate = ?
+      WHERE id = ?
+      `,
+      [
+        product_name.trim(),
+        cleanSaleUnit,
+        cleanPiecesPerCarton,
+        cleanPieceRate,
+        req.params.id,
+      ]
+    );
+
+    const [record] = await runQuery(
+      `
+      SELECT
+        id,
+        product_name,
+        sale_unit,
+        pieces_per_carton,
+        piece_rate,
+        created_at
+      FROM products
+      WHERE id = ?
+      `,
+      [req.params.id]
+    );
+
+    res.json({ message: "Updated!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // DELETE
-router.delete('/:id', (req, res) => {
-  db.query('DELETE FROM products WHERE id = ?', [req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: '✅ Delete ho gaya!' });
-  });
+router.delete("/:id", async (req, res) => {
+  try {
+    await runQuery(`DELETE FROM products WHERE id = ?`, [req.params.id]);
+    res.json({ message: "Deleted!" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;
