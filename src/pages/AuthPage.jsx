@@ -41,7 +41,7 @@ const AuthPage = () => {
     try {
       setIsLoading(true);
 
-      const response = await axios.post(`${API_BASE}/auth/login`, {
+      const response = await axios.post(`${API_BASE}api/auth/login`, {
         email: adminData.email,
         password: adminData.password,
       });
