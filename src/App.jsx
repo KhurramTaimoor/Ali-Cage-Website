@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
-import DashboardLayout from "./layouts/DashboardLayout";
+import DashboardLayout from "./Layouts/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProductTypePage from "./pages/ProductTypePage";
