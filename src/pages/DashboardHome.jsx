@@ -1,98 +1,152 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL ;
+
+async function apiFetch(path) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || "Request failed");
+  }
+
+  return res.json();
+}
+
+async function translateText(text) {
+  if (!text || !String(text).trim()) return text;
+
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+      String(text).trim()
+    )}&langpair=en|ur`;
+
+    const res = await fetch(url);
+    if (!res.ok) return text;
+
+    const data = await res.json();
+    const translated = data?.responseData?.translatedText;
+
+    if (!translated || translated.toLowerCase() === String(text).trim().toLowerCase()) {
+      return text;
+    }
+
+    return translated;
+  } catch {
+    return text;
+  }
+}
 
 const LANG = {
   en: {
-    title: 'Dashboard Overview',
-    subtitle: 'Business summary and today transactions',
-    toggleLang: 'اردو',
-    summaryBtn: 'View Summary',
-    summaryTitle: 'Dashboard Summary',
-    summarySubtitle: 'Overview of sales, purchases, pending orders and stock',
-    totalSales: 'Total Sales',
-    totalPurchase: 'Total Purchase',
-    pendingOrders: 'Pending Orders',
-    lowStock: 'Low Stock',
-    customers: 'Customers',
-    suppliers: 'Suppliers',
-    employees: 'Employees',
-    open: 'Open',
-    todayTransactions: 'Today Transactions',
-    refresh: 'Refresh',
-    id: 'ID',
-    type: 'Type',
-    party: 'Customer / Supplier',
-    date: 'Date',
-    amount: 'Amount',
-    status: 'Status',
-    noTransactions: 'No transactions found today',
-    loading: 'Loading dashboard data...',
-    items: 'items',
-    today: 'Today',
-    week: 'This Week',
-    month: 'This Month',
-    year: 'This Year',
-    all: 'All',
-    sale: 'Sale',
-    saleReturn: 'Sale Return',
-    purchase: 'Purchase',
-    purchaseReturn: 'Purchase Return',
-    completed: 'Completed',
-    returned: 'Returned',
-    pending: 'Pending',
+    title: "Dashboard Overview",
+    subtitle: "Business summary and today transactions",
+    summaryBtn: "View Summary",
+    summaryTitle: "Dashboard Summary",
+    summarySubtitle: "Overview of sales, purchases, pending orders and stock",
+    toggleLang: "اردو",
+    translating: "Translating to Urdu…",
+
+    totalSales: "Total Sales",
+    totalPurchase: "Total Purchase",
+    pendingOrders: "Pending Orders",
+    lowStock: "Low Stock",
+
+    customers: "Customers",
+    suppliers: "Suppliers",
+    employees: "Employees",
+    open: "Open",
+
+    todayTransactions: "Today Transactions",
+    refresh: "Refresh",
+    id: "ID",
+    type: "Type",
+    party: "Customer / Supplier",
+    date: "Date",
+    amount: "Amount",
+    status: "Status",
+
+    noTransactions: "No transactions found today",
+    loading: "Loading dashboard data...",
+    items: "items",
+
+    today: "Today",
+    week: "This Week",
+    month: "This Month",
+    year: "This Year",
+    all: "All",
+
+    sale: "Sale",
+    saleReturn: "Sale Return",
+    purchase: "Purchase",
+    purchaseReturn: "Purchase Return",
+
+    completed: "Completed",
+    returned: "Returned",
+    pending: "Pending",
   },
+
   ur: {
-    title: 'ڈیش بورڈ کا جائزہ',
-    subtitle: 'کاروباری خلاصہ اور آج کا لین دین',
-    toggleLang: 'English',
-    summaryBtn: 'سمری دیکھیں',
-    summaryTitle: 'ڈیش بورڈ سمری',
-    summarySubtitle: 'فروخت، خریداری، زیر التواء آرڈرز اور اسٹاک کا خلاصہ',
-    totalSales: 'کل فروخت',
-    totalPurchase: 'کل خریداری',
-    pendingOrders: 'زیر التواء آرڈرز',
-    lowStock: 'کم اسٹاک',
-    customers: 'گاہک',
-    suppliers: 'سپلائرز',
-    employees: 'ملازمین',
-    open: 'کھولیں',
-    todayTransactions: 'آج کا لین دین',
-    refresh: 'ریفریش',
-    id: 'نمبر',
-    type: 'قسم',
-    party: 'گاہک / سپلائر',
-    date: 'تاریخ',
-    amount: 'رقم',
-    status: 'حالت',
-    noTransactions: 'آج کوئی لین دین موجود نہیں',
-    loading: 'ڈیش بورڈ کا ڈیٹا لوڈ ہو رہا ہے...',
-    items: 'اشیاء',
-    today: 'آج',
-    week: 'اس ہفتے',
-    month: 'اس مہینے',
-    year: 'اس سال',
-    all: 'تمام',
-    sale: 'فروخت',
-    saleReturn: 'فروخت واپسی',
-    purchase: 'خریداری',
-    purchaseReturn: 'خریداری واپسی',
-    completed: 'مکمل',
-    returned: 'واپس',
-    pending: 'زیر التواء',
+    title: "ڈیش بورڈ کا جائزہ",
+    subtitle: "کاروباری خلاصہ اور آج کا لین دین",
+    summaryBtn: "سمری دیکھیں",
+    summaryTitle: "ڈیش بورڈ سمری",
+    summarySubtitle: "فروخت، خریداری، زیر التواء آرڈرز اور اسٹاک کا خلاصہ",
+    toggleLang: "English",
+    translating: "اردو میں ترجمہ ہو رہا ہے…",
+
+    totalSales: "کل فروخت",
+    totalPurchase: "کل خریداری",
+    pendingOrders: "زیر التواء آرڈرز",
+    lowStock: "کم اسٹاک",
+
+    customers: "گاہک",
+    suppliers: "سپلائرز",
+    employees: "ملازمین",
+    open: "کھولیں",
+
+    todayTransactions: "آج کا لین دین",
+    refresh: "ریفریش",
+    id: "نمبر",
+    type: "قسم",
+    party: "گاہک / سپلائر",
+    date: "تاریخ",
+    amount: "رقم",
+    status: "حالت",
+
+    noTransactions: "آج کوئی لین دین موجود نہیں",
+    loading: "ڈیش بورڈ کا ڈیٹا لوڈ ہو رہا ہے...",
+    items: "اشیاء",
+
+    today: "آج",
+    week: "اس ہفتے",
+    month: "اس مہینے",
+    year: "اس سال",
+    all: "تمام",
+
+    sale: "فروخت",
+    saleReturn: "فروخت واپسی",
+    purchase: "خریداری",
+    purchaseReturn: "خریداری واپسی",
+
+    completed: "مکمل",
+    returned: "واپس",
+    pending: "زیر التواء",
   },
 };
 
 const DashboardHome = () => {
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState("en");
   const t = LANG[lang];
-  const isUrdu = lang === 'ur';
-  const dir = isUrdu ? 'rtl' : 'ltr';
+  const isUrdu = lang === "ur";
+  const dir = isUrdu ? "rtl" : "ltr";
 
   const [showSummary, setShowSummary] = useState(false);
-  const [salesFilter, setSalesFilter] = useState('today');
-  const [purchaseFilter, setPurchaseFilter] = useState('today');
+  const [salesFilter, setSalesFilter] = useState("today");
+  const [purchaseFilter, setPurchaseFilter] = useState("today");
 
   const [salesInvoices, setSalesInvoices] = useState([]);
   const [salesReturns, setSalesReturns] = useState([]);
@@ -102,10 +156,8 @@ const DashboardHome = () => {
   const [products, setProducts] = useState([]);
 
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  const [translating, setTranslating] = useState(false);
+  const [urduCache, setUrduCache] = useState({});
 
   const loadDashboardData = async () => {
     try {
@@ -119,12 +171,12 @@ const DashboardHome = () => {
         saleOrdersData,
         productsData,
       ] = await Promise.all([
-        fetchJson('/api/sales-invoices'),
-        fetchJson('/api/sales-returns'),
-        fetchJson('/api/purchase-invoices'),
-        fetchJson('/api/purchase-returns'),
-        fetchJson('/api/sale-orders'),
-        fetchJson('/api/products'),
+        apiFetch("/api/sales-invoices"),
+        apiFetch("/api/sales-returns"),
+        apiFetch("/api/purchase-invoices"),
+        apiFetch("/api/purchase-returns"),
+        apiFetch("/api/sale-orders"),
+        apiFetch("/api/products"),
       ]);
 
       setSalesInvoices(normalizeArray(salesInvoicesData));
@@ -133,8 +185,8 @@ const DashboardHome = () => {
       setPurchaseReturns(normalizeArray(purchaseReturnsData));
       setSaleOrders(normalizeArray(saleOrdersData));
       setProducts(normalizeArray(productsData));
-    } catch (error) {
-      console.error('Dashboard data error:', error);
+    } catch (err) {
+      console.error("Dashboard data error:", err);
       setSalesInvoices([]);
       setSalesReturns([]);
       setPurchaseInvoices([]);
@@ -146,37 +198,102 @@ const DashboardHome = () => {
     }
   };
 
-  const dashboardSummary = useMemo(() => {
-    const totalSalesInvoices = sumByDateRange(
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const handleLangToggle = async () => {
+    const newLang = lang === "en" ? "ur" : "en";
+    setLang(newLang);
+
+    if (newLang !== "ur") return;
+
+    const itemsToTranslate = [];
+
+    salesInvoices.forEach((item) => {
+      const text = getSalesParty(item);
+      const key = getCacheKey("sale", item.id || item.invoice_no, text);
+      if (text && !urduCache[key]) itemsToTranslate.push({ key, text });
+    });
+
+    salesReturns.forEach((item) => {
+      const text = getSalesReturnParty(item);
+      const key = getCacheKey("sale-return", item.id || item.return_no, text);
+      if (text && !urduCache[key]) itemsToTranslate.push({ key, text });
+    });
+
+    purchaseInvoices.forEach((item) => {
+      const text = getPurchaseParty(item);
+      const key = getCacheKey("purchase", item.id || item.invoice_no, text);
+      if (text && !urduCache[key]) itemsToTranslate.push({ key, text });
+    });
+
+    purchaseReturns.forEach((item) => {
+      const text = getPurchaseReturnParty(item);
+      const key = getCacheKey("purchase-return", item.id || item.invoice_no, text);
+      if (text && !urduCache[key]) itemsToTranslate.push({ key, text });
+    });
+
+    if (itemsToTranslate.length === 0) return;
+
+    setTranslating(true);
+
+    try {
+      const results = await Promise.all(
+        itemsToTranslate.map(async ({ key, text }) => {
+          const translated = await translateText(text);
+          return { key, translated };
+        })
+      );
+
+      setUrduCache((prev) => {
+        const next = { ...prev };
+        results.forEach(({ key, translated }) => {
+          next[key] = translated;
+        });
+        return next;
+      });
+    } catch (err) {
+      console.error("Dashboard translation error:", err);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const getTranslatedText = (kind, id, text) => {
+    if (!isUrdu) return text || "-";
+    const key = getCacheKey(kind, id, text);
+    return urduCache[key] || text || "-";
+  };
+
+  const summary = useMemo(() => {
+    const salesTotal = sumByDateRange(
       salesInvoices,
       salesFilter,
-      'invoice_date',
-      ['grand_total', 'invoice_total', 'total_amount', 'amount']
+      "invoice_date",
+      ["grand_total", "invoice_total", "total_amount", "amount"]
     );
 
-    const totalSalesReturns = sumByDateRange(
+    const salesReturnTotal = sumByDateRange(
       salesReturns,
       salesFilter,
-      'return_date',
-      ['return_amount', 'total_amount', 'amount']
+      "return_date",
+      ["return_amount", "total_amount", "amount"]
     );
 
-    const totalPurchaseInvoices = sumByDateRange(
+    const purchaseTotal = sumByDateRange(
       purchaseInvoices,
       purchaseFilter,
-      'invoice_date',
-      ['total_amount', 'grand_total', 'invoice_total', 'amount']
+      "invoice_date",
+      ["total_amount", "grand_total", "invoice_total", "amount"]
     );
 
-    const totalPurchaseReturns = sumByDateRange(
+    const purchaseReturnTotal = sumByDateRange(
       purchaseReturns,
       purchaseFilter,
-      'return_date',
-      ['total_amount', 'return_amount', 'amount']
+      "return_date",
+      ["total_amount", "return_amount", "amount"]
     );
-
-    const totalSales = totalSalesInvoices - totalSalesReturns;
-    const totalPurchase = totalPurchaseInvoices - totalPurchaseReturns;
 
     const pendingOrders = saleOrders.filter((order) => {
       const status = String(
@@ -184,14 +301,14 @@ const DashboardHome = () => {
           order.order_status ||
           order.sale_order_status ||
           order.payment_status ||
-          ''
+          ""
       ).toLowerCase();
 
       return (
-        status.includes('pending') ||
-        status.includes('process') ||
-        status.includes('unpaid') ||
-        status.includes('زیر')
+        status.includes("pending") ||
+        status.includes("process") ||
+        status.includes("unpaid") ||
+        status.includes("زیر")
       );
     });
 
@@ -219,8 +336,8 @@ const DashboardHome = () => {
     });
 
     return {
-      totalSales,
-      totalPurchase,
+      totalSales: salesTotal - salesReturnTotal,
+      totalPurchase: purchaseTotal - purchaseReturnTotal,
       pendingOrders: pendingOrders.length,
       lowStock: lowStockItems.length,
     };
@@ -238,77 +355,105 @@ const DashboardHome = () => {
   const todayTransactions = useMemo(() => {
     const sales = salesInvoices
       .filter((item) => isToday(item.invoice_date))
-      .map((item) => ({
-        id: item.invoice_no || item.id || '-',
-        type: t.sale,
-        typeKey: 'Sale',
-        party: item.customer_name || item.customer || item.customer_name_en || '-',
-        date: item.invoice_date,
-        amount: getFirstAmount(item, [
-          'grand_total',
-          'invoice_total',
-          'total_amount',
-          'amount',
-        ]),
-        status: item.status || t.completed,
-      }));
+      .map((item) => {
+        const party = getSalesParty(item);
 
-    const saleReturns = salesReturns
+        return {
+          id: item.invoice_no || item.id || "-",
+          typeKey: "Sale",
+          type: t.sale,
+          party: getTranslatedText("sale", item.id || item.invoice_no, party),
+          date: item.invoice_date,
+          amount: getFirstAmount(item, [
+            "grand_total",
+            "invoice_total",
+            "total_amount",
+            "amount",
+          ]),
+          status: item.status || t.completed,
+        };
+      });
+
+    const saleReturnList = salesReturns
       .filter((item) => isToday(item.return_date))
-      .map((item) => ({
-        id: item.return_no || item.id || '-',
-        type: t.saleReturn,
-        typeKey: 'Sale Return',
-        party: item.product_name || item.invoice_ref || '-',
-        date: item.return_date,
-        amount: getFirstAmount(item, [
-          'return_amount',
-          'total_amount',
-          'amount',
-        ]),
-        status: t.returned,
-      }));
+      .map((item) => {
+        const party = getSalesReturnParty(item);
+
+        return {
+          id: item.return_no || item.id || "-",
+          typeKey: "Sale Return",
+          type: t.saleReturn,
+          party: getTranslatedText("sale-return", item.id || item.return_no, party),
+          date: item.return_date,
+          amount: getFirstAmount(item, [
+            "return_amount",
+            "total_amount",
+            "amount",
+          ]),
+          status: t.returned,
+        };
+      });
 
     const purchases = purchaseInvoices
       .filter((item) => isToday(item.invoice_date))
-      .map((item) => ({
-        id: item.invoice_no || item.id || '-',
-        type: t.purchase,
-        typeKey: 'Purchase',
-        party: item.supplier_name || item.supplier || '-',
-        date: item.invoice_date,
-        amount: getFirstAmount(item, [
-          'total_amount',
-          'grand_total',
-          'invoice_total',
-          'amount',
-        ]),
-        status: item.status || t.pending,
-      }));
+      .map((item) => {
+        const party = getPurchaseParty(item);
+
+        return {
+          id: item.invoice_no || item.id || "-",
+          typeKey: "Purchase",
+          type: t.purchase,
+          party: getTranslatedText("purchase", item.id || item.invoice_no, party),
+          date: item.invoice_date,
+          amount: getFirstAmount(item, [
+            "total_amount",
+            "grand_total",
+            "invoice_total",
+            "amount",
+          ]),
+          status: item.status || t.pending,
+        };
+      });
 
     const purchaseReturnList = purchaseReturns
       .filter((item) => isToday(item.return_date))
-      .map((item) => ({
-        id: item.invoice_no || item.id || '-',
-        type: t.purchaseReturn,
-        typeKey: 'Purchase Return',
-        party: item.supplier_name || '-',
-        date: item.return_date,
-        amount: getFirstAmount(item, [
-          'total_amount',
-          'return_amount',
-          'amount',
-        ]),
-        status: t.returned,
-      }));
+      .map((item) => {
+        const party = getPurchaseReturnParty(item);
+
+        return {
+          id: item.invoice_no || item.id || "-",
+          typeKey: "Purchase Return",
+          type: t.purchaseReturn,
+          party: getTranslatedText(
+            "purchase-return",
+            item.id || item.invoice_no,
+            party
+          ),
+          date: item.return_date,
+          amount: getFirstAmount(item, [
+            "total_amount",
+            "return_amount",
+            "amount",
+          ]),
+          status: t.returned,
+        };
+      });
 
     return [
       ...sales,
-      ...saleReturns,
+      ...saleReturnList,
       ...purchases,
       ...purchaseReturnList,
     ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-  }, [salesInvoices, salesReturns, purchaseInvoices, purchaseReturns, t]);
+  }, [
+    salesInvoices,
+    salesReturns,
+    purchaseInvoices,
+    purchaseReturns,
+    t,
+    isUrdu,
+    urduCache,
+  ]);
 
   return (
     <div
@@ -329,26 +474,30 @@ const DashboardHome = () => {
         rel="stylesheet"
       />
 
+      {translating && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+          <i className="bi bi-arrow-repeat animate-spin"></i>
+          {t.translating}
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
-        {/* Header Card */}
         <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">
                 {t.title}
               </h1>
-
-              <p className="text-sm text-slate-500 mt-1">
-                {t.subtitle}
-              </p>
+              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
             </div>
 
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? 'flex-row-reverse' : ''}`}>
+            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
               <button
-                onClick={() => setLang((prev) => (prev === 'en' ? 'ur' : 'en'))}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm"
+                onClick={handleLangToggle}
+                disabled={translating}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <i className="bi bi-translate"></i>
+                <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
                 {t.toggleLang}
               </button>
 
@@ -356,40 +505,30 @@ const DashboardHome = () => {
                 onClick={() => setShowSummary((v) => !v)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm ${
                   showSummary
-                    ? 'bg-sky-600 text-white hover:bg-sky-700'
-                    : 'bg-sky-100 text-sky-700 hover:bg-sky-200'
+                    ? "bg-sky-600 text-white hover:bg-sky-700"
+                    : "bg-sky-100 text-sky-700 hover:bg-sky-200"
                 }`}
               >
                 <i className="bi bi-bar-chart-line-fill"></i>
                 {t.summaryBtn}
-                <i
-                  className={`bi bi-chevron-${showSummary ? 'up' : 'down'} text-xs`}
-                ></i>
+                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
               </button>
             </div>
           </div>
 
-          {/* Summary Section */}
           {showSummary && (
             <div className="mt-5 pt-5 border-t border-sky-100">
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-slate-800">
                   {t.summaryTitle}
                 </h3>
-
-                <p className="text-sm text-slate-500">
-                  {t.summarySubtitle}
-                </p>
+                <p className="text-sm text-slate-500">{t.summarySubtitle}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <DropdownSummaryCard
                   title={t.totalSales}
-                  value={
-                    loading
-                      ? t.loading
-                      : formatCurrency(dashboardSummary.totalSales)
-                  }
+                  value={loading ? t.loading : formatCurrency(summary.totalSales)}
                   icon="bi-currency-rupee"
                   selected={salesFilter}
                   onChange={setSalesFilter}
@@ -398,11 +537,7 @@ const DashboardHome = () => {
 
                 <DropdownSummaryCard
                   title={t.totalPurchase}
-                  value={
-                    loading
-                      ? t.loading
-                      : formatCurrency(dashboardSummary.totalPurchase)
-                  }
+                  value={loading ? t.loading : formatCurrency(summary.totalPurchase)}
                   icon="bi-cart-check"
                   selected={purchaseFilter}
                   onChange={setPurchaseFilter}
@@ -411,17 +546,13 @@ const DashboardHome = () => {
 
                 <SummaryCard
                   title={t.pendingOrders}
-                  value={loading ? t.loading : dashboardSummary.pendingOrders}
+                  value={loading ? t.loading : summary.pendingOrders}
                   icon="bi-hourglass-split"
                 />
 
                 <SummaryCard
                   title={t.lowStock}
-                  value={
-                    loading
-                      ? t.loading
-                      : `${dashboardSummary.lowStock} ${t.items}`
-                  }
+                  value={loading ? t.loading : `${summary.lowStock} ${t.items}`}
                   icon="bi-box-seam"
                 />
               </div>
@@ -429,7 +560,6 @@ const DashboardHome = () => {
           )}
         </div>
 
-        {/* Shortcut Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <ShortcutCard
             title={t.customers}
@@ -453,7 +583,6 @@ const DashboardHome = () => {
           />
         </div>
 
-        {/* Today Transactions */}
         <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-sky-100 bg-white">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -477,56 +606,40 @@ const DashboardHome = () => {
             <table className="w-full text-sm text-slate-600">
               <thead>
                 <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
-                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.id}
                   </th>
-
-                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.type}
                   </th>
-
-                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.party}
                   </th>
-
-                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.date}
                   </th>
-
-                  <th className={`px-5 py-4 ${isUrdu ? 'text-left' : 'text-right'}`}>
+                  <th className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>
                     {t.amount}
                   </th>
-
-                  <th className="px-5 py-4 text-center">
-                    {t.status}
-                  </th>
+                  <th className="px-5 py-4 text-center">{t.status}</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="px-6 py-12 text-center text-slate-400"
-                    >
+                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : todayTransactions.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="px-6 py-12 text-center text-slate-400"
-                    >
+                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400">
                       <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-3">
                         <i className="bi bi-inbox text-xl"></i>
                       </div>
-
-                      <p className="font-semibold">
-                        {t.noTransactions}
-                      </p>
+                      <p className="font-semibold">{t.noTransactions}</p>
                     </td>
                   </tr>
                 ) : (
@@ -547,7 +660,6 @@ const DashboardHome = () => {
   );
 };
 
-// Shortcut Card
 const ShortcutCard = ({ title, to, icon, openText }) => (
   <Link
     to={to}
@@ -559,10 +671,7 @@ const ShortcutCard = ({ title, to, icon, openText }) => (
       </div>
 
       <div>
-        <div className="font-bold text-slate-950 text-sm">
-          {title}
-        </div>
-
+        <div className="font-bold text-slate-950 text-sm">{title}</div>
         <div className="text-xs text-sky-700 mt-1 font-semibold">
           {openText}
         </div>
@@ -573,7 +682,6 @@ const ShortcutCard = ({ title, to, icon, openText }) => (
   </Link>
 );
 
-// Summary Card With Dropdown
 const DropdownSummaryCard = ({
   title,
   value,
@@ -601,30 +709,19 @@ const DropdownSummaryCard = ({
       </select>
     </div>
 
-    <p className="text-xs text-slate-500 mb-2">
-      {title}
-    </p>
-
-    <p className="text-2xl font-extrabold text-slate-950">
-      {value}
-    </p>
+    <p className="text-xs text-slate-500 mb-2">{title}</p>
+    <p className="text-2xl font-extrabold text-slate-950">{value}</p>
   </div>
 );
 
-// Simple Summary Card
 const SummaryCard = ({ title, value, icon }) => (
   <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
     <div className="w-10 h-10 rounded-xl bg-white text-sky-600 flex items-center justify-center shadow-sm mb-3">
       <i className={`${icon} text-lg`}></i>
     </div>
 
-    <p className="text-xs text-slate-500 mb-2">
-      {title}
-    </p>
-
-    <p className="text-2xl font-extrabold text-slate-950">
-      {value}
-    </p>
+    <p className="text-xs text-slate-500 mb-2">{title}</p>
+    <p className="text-2xl font-extrabold text-slate-950">{value}</p>
   </div>
 );
 
@@ -634,14 +731,10 @@ const TransactionRow = ({ transaction, isUrdu }) => {
 
   return (
     <tr className="hover:bg-sky-50/60 transition">
-      <td className="px-5 py-4 font-bold text-slate-950">
-        {transaction.id}
-      </td>
+      <td className="px-5 py-4 font-bold text-slate-950">{transaction.id}</td>
 
       <td className="px-5 py-4">
-        <span
-          className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${typeClass}`}
-        >
+        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${typeClass}`}>
           {transaction.type}
         </span>
       </td>
@@ -654,14 +747,16 @@ const TransactionRow = ({ transaction, isUrdu }) => {
         {formatDate(transaction.date)}
       </td>
 
-      <td className={`px-5 py-4 font-mono font-bold text-slate-950 ${isUrdu ? 'text-left' : 'text-right'}`}>
+      <td
+        className={`px-5 py-4 font-mono font-bold text-slate-950 ${
+          isUrdu ? "text-left" : "text-right"
+        }`}
+      >
         {formatCurrency(transaction.amount)}
       </td>
 
       <td className="px-5 py-4 text-center">
-        <span
-          className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${statusClass}`}
-        >
+        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${statusClass}`}>
           {transaction.status}
         </span>
       </td>
@@ -669,15 +764,24 @@ const TransactionRow = ({ transaction, isUrdu }) => {
   );
 };
 
-// Helpers
-async function fetchJson(path) {
-  const res = await fetch(`${API_BASE}${path}`);
+function getSalesParty(item) {
+  return item.customer_name || item.customer || item.customer_name_en || "-";
+}
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${path}`);
-  }
+function getSalesReturnParty(item) {
+  return item.product_name || item.invoice_ref || "-";
+}
 
-  return res.json();
+function getPurchaseParty(item) {
+  return item.supplier_name || item.supplier || "-";
+}
+
+function getPurchaseReturnParty(item) {
+  return item.supplier_name || item.invoice_no || "-";
+}
+
+function getCacheKey(kind, id, text) {
+  return `${kind}:${id || "no-id"}:${String(text || "").trim()}`;
 }
 
 function normalizeArray(data) {
@@ -690,11 +794,10 @@ function normalizeArray(data) {
 
 function getFirstAmount(item, fields = []) {
   for (const field of fields) {
-    if (item?.[field] !== undefined && item?.[field] !== null && item?.[field] !== '') {
+    if (item?.[field] !== undefined && item?.[field] !== null && item?.[field] !== "") {
       return Number(item[field]) || 0;
     }
   }
-
   return 0;
 }
 
@@ -705,7 +808,7 @@ function sumByDateRange(items, range, dateField, amountFields) {
 }
 
 function isInRange(dateValue, range) {
-  if (range === 'all') return true;
+  if (range === "all") return true;
   if (!dateValue) return false;
 
   const date = new Date(dateValue);
@@ -716,25 +819,24 @@ function isInRange(dateValue, range) {
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const itemDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  if (range === 'today') {
+  if (range === "today") {
     return itemDate.getTime() === startToday.getTime();
   }
 
-  if (range === 'week') {
+  if (range === "week") {
     const startOfWeek = new Date(startToday);
     startOfWeek.setDate(startToday.getDate() - startToday.getDay());
-
     return itemDate >= startOfWeek && itemDate <= startToday;
   }
 
-  if (range === 'month') {
+  if (range === "month") {
     return (
       itemDate.getFullYear() === now.getFullYear() &&
       itemDate.getMonth() === now.getMonth()
     );
   }
 
-  if (range === 'year') {
+  if (range === "year") {
     return itemDate.getFullYear() === now.getFullYear();
   }
 
@@ -742,46 +844,46 @@ function isInRange(dateValue, range) {
 }
 
 function isToday(dateValue) {
-  return isInRange(dateValue, 'today');
+  return isInRange(dateValue, "today");
 }
 
 function formatCurrency(value) {
-  return `₨ ${Number(value || 0).toLocaleString('en-PK')}`;
+  return `₨ ${Number(value || 0).toLocaleString("en-PK")}`;
 }
 
 function formatDate(dateValue) {
-  if (!dateValue) return '-';
+  if (!dateValue) return "-";
 
   const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return '-';
+  if (Number.isNaN(date.getTime())) return "-";
 
-  return date.toLocaleDateString('en-GB');
+  return date.toLocaleDateString("en-GB");
 }
 
 function getTypeClass(type) {
-  if (type === 'Sale') return 'bg-sky-100 text-sky-700';
-  if (type === 'Sale Return') return 'bg-rose-100 text-rose-700';
-  if (type === 'Purchase') return 'bg-emerald-100 text-emerald-700';
-  if (type === 'Purchase Return') return 'bg-amber-100 text-amber-700';
-  return 'bg-slate-100 text-slate-700';
+  if (type === "Sale") return "bg-sky-100 text-sky-700";
+  if (type === "Sale Return") return "bg-rose-100 text-rose-700";
+  if (type === "Purchase") return "bg-emerald-100 text-emerald-700";
+  if (type === "Purchase Return") return "bg-amber-100 text-amber-700";
+  return "bg-slate-100 text-slate-700";
 }
 
 function getStatusClass(status) {
-  const s = String(status || '').toLowerCase();
+  const s = String(status || "").toLowerCase();
 
-  if (s.includes('complete') || s.includes('paid') || s.includes('مکمل')) {
-    return 'bg-emerald-100 text-emerald-700';
+  if (s.includes("complete") || s.includes("paid") || s.includes("مکمل")) {
+    return "bg-emerald-100 text-emerald-700";
   }
 
-  if (s.includes('return') || s.includes('واپس')) {
-    return 'bg-amber-100 text-amber-700';
+  if (s.includes("return") || s.includes("واپس")) {
+    return "bg-amber-100 text-amber-700";
   }
 
-  if (s.includes('pending') || s.includes('process') || s.includes('زیر')) {
-    return 'bg-orange-100 text-orange-700';
+  if (s.includes("pending") || s.includes("process") || s.includes("زیر")) {
+    return "bg-orange-100 text-orange-700";
   }
 
-  return 'bg-slate-100 text-slate-700';
+  return "bg-slate-100 text-slate-700";
 }
 
 export default DashboardHome;
