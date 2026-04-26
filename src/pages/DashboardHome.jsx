@@ -1,17 +1,95 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-// Bootstrap Icons via CDN
-const BootstrapIconsLink = () => (
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-  />
-);
+const LANG = {
+  en: {
+    title: 'Dashboard Overview',
+    subtitle: 'Business summary and today transactions',
+    toggleLang: 'اردو',
+    summaryBtn: 'View Summary',
+    summaryTitle: 'Dashboard Summary',
+    summarySubtitle: 'Overview of sales, purchases, pending orders and stock',
+    totalSales: 'Total Sales',
+    totalPurchase: 'Total Purchase',
+    pendingOrders: 'Pending Orders',
+    lowStock: 'Low Stock',
+    customers: 'Customers',
+    suppliers: 'Suppliers',
+    employees: 'Employees',
+    open: 'Open',
+    todayTransactions: 'Today Transactions',
+    refresh: 'Refresh',
+    id: 'ID',
+    type: 'Type',
+    party: 'Customer / Supplier',
+    date: 'Date',
+    amount: 'Amount',
+    status: 'Status',
+    noTransactions: 'No transactions found today',
+    loading: 'Loading dashboard data...',
+    items: 'items',
+    today: 'Today',
+    week: 'This Week',
+    month: 'This Month',
+    year: 'This Year',
+    all: 'All',
+    sale: 'Sale',
+    saleReturn: 'Sale Return',
+    purchase: 'Purchase',
+    purchaseReturn: 'Purchase Return',
+    completed: 'Completed',
+    returned: 'Returned',
+    pending: 'Pending',
+  },
+  ur: {
+    title: 'ڈیش بورڈ کا جائزہ',
+    subtitle: 'کاروباری خلاصہ اور آج کا لین دین',
+    toggleLang: 'English',
+    summaryBtn: 'سمری دیکھیں',
+    summaryTitle: 'ڈیش بورڈ سمری',
+    summarySubtitle: 'فروخت، خریداری، زیر التواء آرڈرز اور اسٹاک کا خلاصہ',
+    totalSales: 'کل فروخت',
+    totalPurchase: 'کل خریداری',
+    pendingOrders: 'زیر التواء آرڈرز',
+    lowStock: 'کم اسٹاک',
+    customers: 'گاہک',
+    suppliers: 'سپلائرز',
+    employees: 'ملازمین',
+    open: 'کھولیں',
+    todayTransactions: 'آج کا لین دین',
+    refresh: 'ریفریش',
+    id: 'نمبر',
+    type: 'قسم',
+    party: 'گاہک / سپلائر',
+    date: 'تاریخ',
+    amount: 'رقم',
+    status: 'حالت',
+    noTransactions: 'آج کوئی لین دین موجود نہیں',
+    loading: 'ڈیش بورڈ کا ڈیٹا لوڈ ہو رہا ہے...',
+    items: 'اشیاء',
+    today: 'آج',
+    week: 'اس ہفتے',
+    month: 'اس مہینے',
+    year: 'اس سال',
+    all: 'تمام',
+    sale: 'فروخت',
+    saleReturn: 'فروخت واپسی',
+    purchase: 'خریداری',
+    purchaseReturn: 'خریداری واپسی',
+    completed: 'مکمل',
+    returned: 'واپس',
+    pending: 'زیر التواء',
+  },
+};
 
 const DashboardHome = () => {
+  const [lang, setLang] = useState('en');
+  const t = LANG[lang];
+  const isUrdu = lang === 'ur';
+  const dir = isUrdu ? 'rtl' : 'ltr';
+
   const [showSummary, setShowSummary] = useState(false);
   const [salesFilter, setSalesFilter] = useState('today');
   const [purchaseFilter, setPurchaseFilter] = useState('today');
@@ -162,8 +240,8 @@ const DashboardHome = () => {
       .filter((item) => isToday(item.invoice_date))
       .map((item) => ({
         id: item.invoice_no || item.id || '-',
-        type: 'Sale',
-        urduType: 'فروخت',
+        type: t.sale,
+        typeKey: 'Sale',
         party: item.customer_name || item.customer || item.customer_name_en || '-',
         date: item.invoice_date,
         amount: getFirstAmount(item, [
@@ -172,15 +250,15 @@ const DashboardHome = () => {
           'total_amount',
           'amount',
         ]),
-        status: item.status || 'Completed',
+        status: item.status || t.completed,
       }));
 
     const saleReturns = salesReturns
       .filter((item) => isToday(item.return_date))
       .map((item) => ({
         id: item.return_no || item.id || '-',
-        type: 'Sale Return',
-        urduType: 'فروخت واپسی',
+        type: t.saleReturn,
+        typeKey: 'Sale Return',
         party: item.product_name || item.invoice_ref || '-',
         date: item.return_date,
         amount: getFirstAmount(item, [
@@ -188,15 +266,15 @@ const DashboardHome = () => {
           'total_amount',
           'amount',
         ]),
-        status: 'Returned',
+        status: t.returned,
       }));
 
     const purchases = purchaseInvoices
       .filter((item) => isToday(item.invoice_date))
       .map((item) => ({
         id: item.invoice_no || item.id || '-',
-        type: 'Purchase',
-        urduType: 'خریداری',
+        type: t.purchase,
+        typeKey: 'Purchase',
         party: item.supplier_name || item.supplier || '-',
         date: item.invoice_date,
         amount: getFirstAmount(item, [
@@ -205,15 +283,15 @@ const DashboardHome = () => {
           'invoice_total',
           'amount',
         ]),
-        status: item.status || 'Pending',
+        status: item.status || t.pending,
       }));
 
     const purchaseReturnList = purchaseReturns
       .filter((item) => isToday(item.return_date))
       .map((item) => ({
         id: item.invoice_no || item.id || '-',
-        type: 'Purchase Return',
-        urduType: 'خریداری واپسی',
+        type: t.purchaseReturn,
+        typeKey: 'Purchase Return',
         party: item.supplier_name || '-',
         date: item.return_date,
         amount: getFirstAmount(item, [
@@ -221,7 +299,7 @@ const DashboardHome = () => {
           'return_amount',
           'amount',
         ]),
-        status: 'Returned',
+        status: t.returned,
       }));
 
     return [
@@ -230,29 +308,49 @@ const DashboardHome = () => {
       ...purchases,
       ...purchaseReturnList,
     ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-  }, [salesInvoices, salesReturns, purchaseInvoices, purchaseReturns]);
+  }, [salesInvoices, salesReturns, purchaseInvoices, purchaseReturns, t]);
 
   return (
-    <>
-      <BootstrapIconsLink />
+    <div
+      dir={dir}
+      style={{
+        fontFamily: isUrdu
+          ? "'Noto Nastaliq Urdu', serif"
+          : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
+      }}
+      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 pb-20"
+    >
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
 
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 pb-20">
-        <div className="max-w-7xl mx-auto">
-          {/* Header Card */}
-          <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5 mb-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">
-                  Dashboard Overview
-                </h1>
+      <div className="max-w-7xl mx-auto">
+        {/* Header Card */}
+        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">
+                {t.title}
+              </h1>
 
-                <p
-                  className="text-sm text-slate-500 mt-1"
-                  style={{ fontFamily: 'serif', direction: 'rtl' }}
-                >
-                  ڈیش بورڈ کا جائزہ
-                </p>
-              </div>
+              <p className="text-sm text-slate-500 mt-1">
+                {t.subtitle}
+              </p>
+            </div>
+
+            <div className={`flex gap-2 flex-wrap ${isUrdu ? 'flex-row-reverse' : ''}`}>
+              <button
+                onClick={() => setLang((prev) => (prev === 'en' ? 'ur' : 'en'))}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm"
+              >
+                <i className="bi bi-translate"></i>
+                {t.toggleLang}
+              </button>
 
               <button
                 onClick={() => setShowSummary((v) => !v)}
@@ -263,262 +361,194 @@ const DashboardHome = () => {
                 }`}
               >
                 <i className="bi bi-bar-chart-line-fill"></i>
-                View Summary /{' '}
-                <span style={{ fontFamily: 'serif' }}>
-                  سمری دیکھیں
-                </span>
+                {t.summaryBtn}
                 <i
-                  className={`bi bi-chevron-${
-                    showSummary ? 'up' : 'down'
-                  } text-xs`}
+                  className={`bi bi-chevron-${showSummary ? 'up' : 'down'} text-xs`}
                 ></i>
               </button>
             </div>
+          </div>
 
-            {/* Summary Section */}
-            {showSummary && (
-              <div className="mt-5 pt-5 border-t border-sky-100">
-                <div className="mb-4">
-                  <h3 className="text-lg font-bold text-slate-800">
-                    Dashboard Summary
-                  </h3>
+          {/* Summary Section */}
+          {showSummary && (
+            <div className="mt-5 pt-5 border-t border-sky-100">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-slate-800">
+                  {t.summaryTitle}
+                </h3>
 
-                  <p
-                    className="text-sm text-slate-500"
-                    style={{ fontFamily: 'serif', direction: 'rtl' }}
-                  >
-                    ڈیش بورڈ کا خلاصہ
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <DropdownSummaryCard
-                    title="Total Sales"
-                    urduTitle="کل فروخت"
-                    value={
-                      loading
-                        ? 'Loading...'
-                        : formatCurrency(dashboardSummary.totalSales)
-                    }
-                    icon="bi-currency-rupee"
-                    selected={salesFilter}
-                    onChange={setSalesFilter}
-                  />
-
-                  <DropdownSummaryCard
-                    title="Total Purchase"
-                    urduTitle="کل خریداری"
-                    value={
-                      loading
-                        ? 'Loading...'
-                        : formatCurrency(dashboardSummary.totalPurchase)
-                    }
-                    icon="bi-cart-check"
-                    selected={purchaseFilter}
-                    onChange={setPurchaseFilter}
-                  />
-
-                  <SummaryCard
-                    title="Pending Orders"
-                    urduTitle="زیر التواء آرڈرز"
-                    value={loading ? 'Loading...' : dashboardSummary.pendingOrders}
-                    icon="bi-hourglass-split"
-                  />
-
-                  <SummaryCard
-                    title="Low Stock"
-                    urduTitle="کم اسٹاک"
-                    value={
-                      loading
-                        ? 'Loading...'
-                        : `${dashboardSummary.lowStock} items`
-                    }
-                    icon="bi-box-seam"
-                  />
-                </div>
+                <p className="text-sm text-slate-500">
+                  {t.summarySubtitle}
+                </p>
               </div>
-            )}
-          </div>
 
-          {/* Shortcut Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <ShortcutCard
-              title="Customers"
-              urduTitle="گاہک"
-              to="/app/sales/customer"
-              icon="bi-people-fill"
-            />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <DropdownSummaryCard
+                  title={t.totalSales}
+                  value={
+                    loading
+                      ? t.loading
+                      : formatCurrency(dashboardSummary.totalSales)
+                  }
+                  icon="bi-currency-rupee"
+                  selected={salesFilter}
+                  onChange={setSalesFilter}
+                  t={t}
+                />
 
-            <ShortcutCard
-              title="Suppliers"
-              urduTitle="سپلائرز"
-              to="/app/purchase/supplier"
-              icon="bi-truck"
-            />
+                <DropdownSummaryCard
+                  title={t.totalPurchase}
+                  value={
+                    loading
+                      ? t.loading
+                      : formatCurrency(dashboardSummary.totalPurchase)
+                  }
+                  icon="bi-cart-check"
+                  selected={purchaseFilter}
+                  onChange={setPurchaseFilter}
+                  t={t}
+                />
 
-            <ShortcutCard
-              title="Employees"
-              urduTitle="ملازمین"
-              to="/app/hr/employee"
-              icon="bi-person-badge-fill"
-            />
-          </div>
+                <SummaryCard
+                  title={t.pendingOrders}
+                  value={loading ? t.loading : dashboardSummary.pendingOrders}
+                  icon="bi-hourglass-split"
+                />
 
-          {/* Today Transactions */}
-          <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-sky-100 bg-white">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h2 className="font-extrabold text-slate-800">
-                    Today Transactions
-                  </h2>
-
-                  <p
-                    className="text-xs text-slate-400 mt-0.5"
-                    style={{ direction: 'rtl', fontFamily: 'serif' }}
-                  >
-                    آج کا لین دین
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={loadDashboardData}
-                  className="text-sm text-sky-700 font-semibold hover:underline"
-                >
-                  Refresh /{' '}
-                  <span style={{ fontFamily: 'serif' }}>
-                    ریفریش
-                  </span>
-                </button>
+                <SummaryCard
+                  title={t.lowStock}
+                  value={
+                    loading
+                      ? t.loading
+                      : `${dashboardSummary.lowStock} ${t.items}`
+                  }
+                  icon="bi-box-seam"
+                />
               </div>
             </div>
+          )}
+        </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-slate-600">
-                <thead>
-                  <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
-                    <th className="px-5 py-4 text-left">
-                      ID
-                      <br />
-                      <span
-                        className="font-normal text-slate-400"
-                        style={{ fontFamily: 'serif' }}
-                      >
-                        نمبر
-                      </span>
-                    </th>
+        {/* Shortcut Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <ShortcutCard
+            title={t.customers}
+            to="/app/sales/customer"
+            icon="bi-people-fill"
+            openText={t.open}
+          />
 
-                    <th className="px-5 py-4 text-left">
-                      Type
-                      <br />
-                      <span
-                        className="font-normal text-slate-400"
-                        style={{ fontFamily: 'serif' }}
-                      >
-                        قسم
-                      </span>
-                    </th>
+          <ShortcutCard
+            title={t.suppliers}
+            to="/app/purchase/supplier"
+            icon="bi-truck"
+            openText={t.open}
+          />
 
-                    <th className="px-5 py-4 text-left">
-                      Customer / Supplier
-                      <br />
-                      <span
-                        className="font-normal text-slate-400"
-                        style={{ fontFamily: 'serif' }}
-                      >
-                        گاہک / سپلائر
-                      </span>
-                    </th>
+          <ShortcutCard
+            title={t.employees}
+            to="/app/hr/employee"
+            icon="bi-person-badge-fill"
+            openText={t.open}
+          />
+        </div>
 
-                    <th className="px-5 py-4 text-left">
-                      Date
-                      <br />
-                      <span
-                        className="font-normal text-slate-400"
-                        style={{ fontFamily: 'serif' }}
-                      >
-                        تاریخ
-                      </span>
-                    </th>
+        {/* Today Transactions */}
+        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
+          <div className="px-6 py-5 border-b border-sky-100 bg-white">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h2 className="font-extrabold text-slate-800">
+                  {t.todayTransactions}
+                </h2>
+              </div>
 
-                    <th className="px-5 py-4 text-right">
-                      Amount
-                      <br />
-                      <span
-                        className="font-normal text-slate-400"
-                        style={{ fontFamily: 'serif' }}
-                      >
-                        رقم
-                      </span>
-                    </th>
+              <button
+                type="button"
+                onClick={loadDashboardData}
+                className="text-sm text-sky-700 font-semibold hover:underline"
+              >
+                {t.refresh}
+              </button>
+            </div>
+          </div>
 
-                    <th className="px-5 py-4 text-center">
-                      Status
-                      <br />
-                      <span
-                        className="font-normal text-slate-400"
-                        style={{ fontFamily: 'serif' }}
-                      >
-                        حالت
-                      </span>
-                    </th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-slate-600">
+              <thead>
+                <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
+                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                    {t.id}
+                  </th>
+
+                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                    {t.type}
+                  </th>
+
+                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                    {t.party}
+                  </th>
+
+                  <th className={`px-5 py-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
+                    {t.date}
+                  </th>
+
+                  <th className={`px-5 py-4 ${isUrdu ? 'text-left' : 'text-right'}`}>
+                    {t.amount}
+                  </th>
+
+                  <th className="px-5 py-4 text-center">
+                    {t.status}
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-sky-50">
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-6 py-12 text-center text-slate-400"
+                    >
+                      <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                      <p className="mt-2">{t.loading}</p>
+                    </td>
                   </tr>
-                </thead>
+                ) : todayTransactions.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-6 py-12 text-center text-slate-400"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-3">
+                        <i className="bi bi-inbox text-xl"></i>
+                      </div>
 
-                <tbody className="divide-y divide-sky-50">
-                  {loading ? (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="px-6 py-12 text-center text-slate-400"
-                      >
-                        <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                        <p className="mt-2">Loading dashboard data...</p>
-                      </td>
-                    </tr>
-                  ) : todayTransactions.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="px-6 py-12 text-center text-slate-400"
-                      >
-                        <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-3">
-                          <i className="bi bi-inbox text-xl"></i>
-                        </div>
-
-                        <p className="font-semibold">
-                          No transactions found today
-                        </p>
-
-                        <p
-                          className="text-xs mt-1"
-                          style={{ fontFamily: 'serif' }}
-                        >
-                          آج کوئی لین دین موجود نہیں
-                        </p>
-                      </td>
-                    </tr>
-                  ) : (
-                    todayTransactions.map((transaction, index) => (
-                      <TransactionRow
-                        key={`${transaction.type}-${transaction.id}-${index}`}
-                        transaction={transaction}
-                      />
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      <p className="font-semibold">
+                        {t.noTransactions}
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  todayTransactions.map((transaction, index) => (
+                    <TransactionRow
+                      key={`${transaction.typeKey}-${transaction.id}-${index}`}
+                      transaction={transaction}
+                      isUrdu={isUrdu}
+                    />
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
 // Shortcut Card
-const ShortcutCard = ({ title, urduTitle, to, icon }) => (
+const ShortcutCard = ({ title, to, icon, openText }) => (
   <Link
     to={to}
     className="bg-white p-5 rounded-3xl shadow-sm border border-sky-100 flex items-center justify-between hover:bg-sky-50/60 hover:shadow-md transition"
@@ -533,18 +563,8 @@ const ShortcutCard = ({ title, urduTitle, to, icon }) => (
           {title}
         </div>
 
-        <div
-          className="text-slate-400 text-xs"
-          style={{ fontFamily: 'serif', direction: 'rtl' }}
-        >
-          {urduTitle}
-        </div>
-
         <div className="text-xs text-sky-700 mt-1 font-semibold">
-          Open /{' '}
-          <span style={{ fontFamily: 'serif' }}>
-            کھولیں
-          </span>
+          {openText}
         </div>
       </div>
     </div>
@@ -556,11 +576,11 @@ const ShortcutCard = ({ title, urduTitle, to, icon }) => (
 // Summary Card With Dropdown
 const DropdownSummaryCard = ({
   title,
-  urduTitle,
   value,
   icon,
   selected,
   onChange,
+  t,
 }) => (
   <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
     <div className="flex items-start justify-between gap-3 mb-3">
@@ -573,23 +593,16 @@ const DropdownSummaryCard = ({
         onChange={(e) => onChange(e.target.value)}
         className="text-xs border border-sky-100 rounded-xl px-2 py-1 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-100"
       >
-        <option value="today">Today</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-        <option value="year">This Year</option>
-        <option value="all">All</option>
+        <option value="today">{t.today}</option>
+        <option value="week">{t.week}</option>
+        <option value="month">{t.month}</option>
+        <option value="year">{t.year}</option>
+        <option value="all">{t.all}</option>
       </select>
     </div>
 
-    <p className="text-xs text-slate-500 mb-1">
+    <p className="text-xs text-slate-500 mb-2">
       {title}
-    </p>
-
-    <p
-      className="text-xs text-slate-400 mb-2"
-      style={{ fontFamily: 'serif', direction: 'rtl' }}
-    >
-      {urduTitle}
     </p>
 
     <p className="text-2xl font-extrabold text-slate-950">
@@ -599,21 +612,14 @@ const DropdownSummaryCard = ({
 );
 
 // Simple Summary Card
-const SummaryCard = ({ title, urduTitle, value, icon }) => (
+const SummaryCard = ({ title, value, icon }) => (
   <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
     <div className="w-10 h-10 rounded-xl bg-white text-sky-600 flex items-center justify-center shadow-sm mb-3">
       <i className={`${icon} text-lg`}></i>
     </div>
 
-    <p className="text-xs text-slate-500 mb-1">
+    <p className="text-xs text-slate-500 mb-2">
       {title}
-    </p>
-
-    <p
-      className="text-xs text-slate-400 mb-2"
-      style={{ fontFamily: 'serif', direction: 'rtl' }}
-    >
-      {urduTitle}
     </p>
 
     <p className="text-2xl font-extrabold text-slate-950">
@@ -622,8 +628,8 @@ const SummaryCard = ({ title, urduTitle, value, icon }) => (
   </div>
 );
 
-const TransactionRow = ({ transaction }) => {
-  const typeClass = getTypeClass(transaction.type);
+const TransactionRow = ({ transaction, isUrdu }) => {
+  const typeClass = getTypeClass(transaction.typeKey);
   const statusClass = getStatusClass(transaction.status);
 
   return (
@@ -636,10 +642,7 @@ const TransactionRow = ({ transaction }) => {
         <span
           className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${typeClass}`}
         >
-          {transaction.type} /{' '}
-          <span style={{ fontFamily: 'serif' }}>
-            {transaction.urduType}
-          </span>
+          {transaction.type}
         </span>
       </td>
 
@@ -651,7 +654,7 @@ const TransactionRow = ({ transaction }) => {
         {formatDate(transaction.date)}
       </td>
 
-      <td className="px-5 py-4 text-right font-mono font-bold text-slate-950">
+      <td className={`px-5 py-4 font-mono font-bold text-slate-950 ${isUrdu ? 'text-left' : 'text-right'}`}>
         {formatCurrency(transaction.amount)}
       </td>
 
@@ -766,15 +769,15 @@ function getTypeClass(type) {
 function getStatusClass(status) {
   const s = String(status || '').toLowerCase();
 
-  if (s.includes('complete') || s.includes('paid')) {
+  if (s.includes('complete') || s.includes('paid') || s.includes('مکمل')) {
     return 'bg-emerald-100 text-emerald-700';
   }
 
-  if (s.includes('return')) {
+  if (s.includes('return') || s.includes('واپس')) {
     return 'bg-amber-100 text-amber-700';
   }
 
-  if (s.includes('pending') || s.includes('process')) {
+  if (s.includes('pending') || s.includes('process') || s.includes('زیر')) {
     return 'bg-orange-100 text-orange-700';
   }
 
