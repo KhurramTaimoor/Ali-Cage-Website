@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 async function apiFetch(path) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -560,7 +560,7 @@ const DashboardHome = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
           <ShortcutCard
             title={t.customers}
             to="/app/sales/customer"
@@ -663,22 +663,22 @@ const DashboardHome = () => {
 const ShortcutCard = ({ title, to, icon, openText }) => (
   <Link
     to={to}
-    className="bg-white p-5 rounded-3xl shadow-sm border border-sky-100 flex items-center justify-between hover:bg-sky-50/60 hover:shadow-md transition"
+    className="bg-white p-3 rounded-2xl shadow-sm border border-sky-100 flex items-center justify-between hover:bg-sky-50/60 hover:shadow-md transition"
   >
-    <div className="flex items-center gap-4">
-      <div className="w-11 h-11 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center shadow-sm">
-        <i className={`${icon} text-lg`}></i>
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shadow-sm">
+        <i className={`${icon} text-base`}></i>
       </div>
 
       <div>
-        <div className="font-bold text-slate-950 text-sm">{title}</div>
-        <div className="text-xs text-sky-700 mt-1 font-semibold">
+        <div className="font-bold text-slate-950 text-xs">{title}</div>
+        <div className="text-[11px] text-sky-700 mt-0.5 font-semibold">
           {openText}
         </div>
       </div>
     </div>
 
-    <i className="bi bi-arrow-right text-slate-400"></i>
+    <i className="bi bi-arrow-right text-slate-400 text-sm"></i>
   </Link>
 );
 
