@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
@@ -10,6 +11,7 @@ const LANG = {
     searchPlaceholder: "Search by invoice no, customer or date...",
     invoiceNo: "Invoice No",
     invoiceNoRequired: "Invoice No is required.",
+    referenceNo: "Reference No",
     customer: "Customer",
     customerRequired: "Please select a customer.",
     date: "Invoice Date",
@@ -88,6 +90,7 @@ const LANG = {
     slipCustomer: "Customer",
     slipDate: "Invoice Date",
     slipShipmentTo: "Shipment To",
+    slipRefNo: "Reference No",
     slipPrevBalance: "Previous Balance",
     slipDiscount: "Discount",
     slipInvoiceTotal: "Invoice Total",
@@ -109,6 +112,7 @@ const LANG = {
     searchPlaceholder: "انوائس نمبر، گاہک یا تاریخ سے تلاش کریں...",
     invoiceNo: "انوائس نمبر",
     invoiceNoRequired: "انوائس نمبر ضروری ہے۔",
+    referenceNo: "ریفرنس نمبر",
     customer: "گاہک",
     customerRequired: "گاہک منتخب کرنا ضروری ہے۔",
     date: "انوائس تاریخ",
@@ -187,6 +191,7 @@ const LANG = {
     slipCustomer: "گاہک",
     slipDate: "انوائس تاریخ",
     slipShipmentTo: "شپمنٹ ٹو",
+    slipRefNo: "ریفرنس نمبر",
     slipPrevBalance: "سابقہ رقم",
     slipDiscount: "ڈسکاؤنٹ",
     slipInvoiceTotal: "ٹوٹل انوائس رقم",
@@ -226,6 +231,21 @@ const money = (value) =>
 const toNumber = (value) => {
   const n = parseFloat(value);
   return Number.isFinite(n) ? n : 0;
+};
+
+// ─── Auto-generate invoice number ───────────────────────────────────────────
+const generateInvoiceNo = (existingInvoices) => {
+  // Find highest existing sales-invoiceXX number
+  let maxNum = 0;
+  existingInvoices.forEach((inv) => {
+    const match = String(inv.invoice_no || "").match(/^sales-invoice(\d+)$/i);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  });
+  const nextNum = maxNum + 1;
+  return `sales-invoice${String(nextNum).padStart(2, "0")}`;
 };
 
 async function translateText(text) {
@@ -327,8 +347,10 @@ const createEmptyItem = () => ({
   amount: "0",
 });
 
+// NOTE: invoice_no is now auto-generated on openAdd; previous_balance & discount moved to bottom section
 const createEmptyForm = () => ({
   invoice_no: "",
+  reference_no: "",
   customer_id: "",
   invoice_date: new Date().toISOString().slice(0, 10),
   shipment_to: "",
@@ -362,7 +384,7 @@ function useLookup(url) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRINT FUNCTION — Info on top, items table in middle, totals at bottom
+// PRINT FUNCTION
 // ─────────────────────────────────────────────────────────────────────────────
 function generateInvoicePrint(invoice, lang, urduCache) {
   const t = LANG[lang || "en"];
@@ -444,8 +466,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
             border-radius: 24px;
             overflow: hidden;
           }
-
-          /* ── Header ── */
           .header {
             background: linear-gradient(135deg, #0f4c97 0%, #155eaf 65%, #3b82f6 100%);
             color: white;
@@ -465,10 +485,7 @@ function generateInvoicePrint(invoice, lang, urduCache) {
             color: rgba(255,255,255,0.88);
             line-height: 1.8;
           }
-
-          /* ── Content wrapper ── */
           .content { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-
           .hint {
             background: #eff6ff;
             color: #1d4ed8;
@@ -477,11 +494,9 @@ function generateInvoicePrint(invoice, lang, urduCache) {
             padding: 12px 14px;
             font-size: 13px;
           }
-
-          /* ── Top info cards (invoice no, customer, date, shipment) ── */
           .info-cards {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 14px;
           }
           .card {
@@ -497,13 +512,11 @@ function generateInvoicePrint(invoice, lang, urduCache) {
             margin-bottom: 6px;
           }
           .card .value {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
             color: #0f172a;
             word-break: break-word;
           }
-
-          /* ── Items table ── */
           table {
             width: 100%;
             border-collapse: collapse;
@@ -531,8 +544,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
           }
           .strong { font-weight: 800; }
           .violet { color: #7c3aed; }
-
-          /* ── Bottom totals ── */
           .totals {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -561,8 +572,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
             font-family: 'Inter', Arial, sans-serif;
           }
           .total-box.grand .value { color: #1d4ed8; }
-
-          /* ── Footer ── */
           .footer {
             background: #0f4c97;
             color: rgba(255,255,255,0.9);
@@ -571,7 +580,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
             justify-content: space-between;
             font-size: 11px;
           }
-
           @media print {
             @page { size: A4 landscape; margin: 10mm; }
             body { background: white; }
@@ -584,8 +592,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
       <body>
         <div class="page">
           <div class="sheet">
-
-            <!-- ── Company header ── -->
             <div class="header">
               <div class="header-row">
                 <div class="brand">
@@ -598,17 +604,16 @@ function generateInvoicePrint(invoice, lang, urduCache) {
                 </div>
               </div>
             </div>
-
             <div class="content">
-
-              <!-- Print hint (hidden on print) -->
               <div class="hint">${t.savePdfHint}</div>
-
-              <!-- ── TOP: Invoice info cards ── -->
               <div class="info-cards">
                 <div class="card">
                   <small>${t.invoiceNo}</small>
                   <div class="value">${invoice.invoice_no || "-"}</div>
+                </div>
+                <div class="card">
+                  <small>${t.referenceNo}</small>
+                  <div class="value">${invoice.reference_no || "-"}</div>
                 </div>
                 <div class="card">
                   <small>${t.slipCustomer}</small>
@@ -623,8 +628,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
                   <div class="value">${invoice.shipment_to || "-"}</div>
                 </div>
               </div>
-
-              <!-- ── MIDDLE: Items table ── -->
               <table>
                 <thead>
                   <tr>
@@ -642,8 +645,6 @@ function generateInvoicePrint(invoice, lang, urduCache) {
                   ${rowsHtml}
                 </tbody>
               </table>
-
-              <!-- ── BOTTOM: Totals ── -->
               <div class="totals">
                 <div class="total-box">
                   <span class="label">${t.slipInvoiceTotal}</span>
@@ -662,21 +663,15 @@ function generateInvoicePrint(invoice, lang, urduCache) {
                   <div class="value">${money(grandTotal)}</div>
                 </div>
               </div>
-
-            </div><!-- /content -->
-
+            </div>
             <div class="footer">
               <span>${t.companyName} — ${t.slipThank}</span>
               <span>Page 1 / 1</span>
             </div>
-
-          </div><!-- /sheet -->
-        </div><!-- /page -->
-
+          </div>
+        </div>
         <script>
-          window.onload = () => {
-            setTimeout(() => { window.print(); }, 400);
-          };
+          window.onload = () => { setTimeout(() => { window.print(); }, 400); };
         </script>
       </body>
     </html>
@@ -702,12 +697,12 @@ const SalesInvoicePage = () => {
     ? "'Noto Nastaliq Urdu', serif"
     : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
 
-  const labelClass = "block text-sm font-semibold text-slate-500 mb-1.5";
-  const inputCls = `w-full border border-sky-100 rounded-2xl py-3.5 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-    isUrdu ? "pr-4 pl-4 text-right" : "px-4"
+  const labelClass = "block text-[11px] font-semibold text-slate-500 mb-0.5";
+  const inputCls = `w-full min-w-0 border border-sky-100 rounded-lg py-1.5 text-xs text-black bg-white focus:outline-none focus:ring-2 focus:ring-sky-100 truncate ${
+    isUrdu ? "pr-2 pl-2 text-right" : "px-2"
   }`;
   const readonlyClass =
-    "w-full rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3.5 text-base font-bold font-mono text-slate-950 text-right";
+    "w-full min-w-0 rounded-lg border border-sky-100 bg-sky-50 px-2 py-1.5 text-xs font-bold font-mono text-slate-950 text-right truncate";
   const monoBlack = "font-mono text-black";
 
   const { data: customers, loading: customersLoading, error: customersError, refetch: refetchCustomers } =
@@ -861,7 +856,7 @@ const SalesInvoicePage = () => {
     });
     if (!search.trim()) return list;
     return list.filter((inv) =>
-      [inv.invoice_no, inv.customer_name || customerMap[String(inv.customer_id)] || "",
+      [inv.invoice_no, inv.reference_no || "", inv.customer_name || customerMap[String(inv.customer_id)] || "",
        urduCache[`customer:${inv.customer_id}`] || "", inv.invoice_date, inv.shipment_to || ""]
         .join(" ").toLowerCase().includes(search.toLowerCase())
     );
@@ -873,9 +868,11 @@ const SalesInvoicePage = () => {
     totalValue:    invoices.reduce((sum, inv) => sum + toNumber(inv.grand_total), 0),
   }), [invoices]);
 
+  // ── Open new invoice: auto-generate invoice number ──
   const openAdd = () => {
     setEditingId(null);
-    setForm(createEmptyForm());
+    const autoNo = generateInvoiceNo(invoices);
+    setForm({ ...createEmptyForm(), invoice_no: autoNo });
     setItems([createEmptyItem()]);
     setShowForm(true);
   };
@@ -887,6 +884,7 @@ const SalesInvoicePage = () => {
       setEditingId(inv.id);
       setForm({
         invoice_no:       inv.invoice_no || "",
+        reference_no:     inv.reference_no || "",
         customer_id:      String(inv.customer_id || ""),
         invoice_date:     inv.invoice_date || new Date().toISOString().slice(0, 10),
         shipment_to:      inv.shipment_to || "",
@@ -938,6 +936,7 @@ const SalesInvoicePage = () => {
       const preparedInvoice = {
         ...inv,
         customer_name: inv.customer_name || customerMap[String(inv.customer_id)] || "",
+        reference_no:  inv.reference_no || "",
         items:         normalizedItems,
         invoice_total: inv.invoice_total ?? normalizedItems.reduce((s, r) => s + toNumber(r.amount), 0),
         previous_balance: inv.previous_balance || 0,
@@ -1049,6 +1048,7 @@ const SalesInvoicePage = () => {
     }));
     const payload = {
       invoice_no:       form.invoice_no.trim(),
+      reference_no:     form.reference_no.trim(),
       customer_id:      Number(form.customer_id),
       invoice_date:     form.invoice_date,
       shipment_to:      form.shipment_to || "",
@@ -1073,14 +1073,14 @@ const SalesInvoicePage = () => {
     <div
       dir={dir}
       style={{ fontFamily: baseFont }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4 sm:p-6 pb-20"
+      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-2 sm:p-4 pb-16"
     >
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* Toast */}
       {message.text && (
-        <div className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-base font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-sky-600"}`}>
+        <div className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-sky-600"}`}>
           <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
@@ -1088,7 +1088,7 @@ const SalesInvoicePage = () => {
 
       {/* Translating indicator */}
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-1.5">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
@@ -1101,17 +1101,17 @@ const SalesInvoicePage = () => {
           <div className={`flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-black">{t.title}</h1>
-              <p className="text-base text-slate-500 mt-1">{t.subtitle}</p>
+              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
             </div>
             <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <button onClick={handleLangToggle} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-sky-200 text-sky-700 text-base font-semibold hover:bg-sky-50 transition shadow-sm">
+              <button onClick={handleLangToggle} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm">
                 <i className="bi bi-translate"></i>{t.toggleLang}
               </button>
-              <button onClick={() => setShowSummary((v) => !v)} className={`flex items-center gap-2 px-4 py-3 rounded-xl text-base font-semibold transition shadow-sm ${showSummary ? "bg-sky-600 text-white hover:bg-sky-700" : "bg-sky-100 text-sky-700 hover:bg-sky-200"}`}>
+              <button onClick={() => setShowSummary((v) => !v)} className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition shadow-sm ${showSummary ? "bg-sky-600 text-white hover:bg-sky-700" : "bg-sky-100 text-sky-700 hover:bg-sky-200"}`}>
                 <i className="bi bi-bar-chart-line-fill"></i>{t.summaryBtn}
                 <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-sm`}></i>
               </button>
-              <button onClick={openAdd} className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl shadow-lg shadow-sky-200 font-semibold text-base flex items-center gap-2">
+              <button onClick={openAdd} className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl shadow-lg shadow-sky-200 font-semibold text-sm flex items-center gap-1.5">
                 <i className="bi bi-file-earmark-plus-fill"></i>{t.newInvoice}
               </button>
             </div>
@@ -1144,7 +1144,7 @@ const SalesInvoicePage = () => {
           <div className="relative flex-1 min-w-[200px] max-w-md">
             <i className={`bi bi-search absolute ${isUrdu ? "right-4" : "left-4"} top-1/2 -translate-y-1/2 text-slate-400`}></i>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder}
-              className={`w-full rounded-2xl border border-sky-100 bg-white ${isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"} py-3.5 text-base text-black focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm`} />
+              className={`w-full rounded-xl border border-sky-100 bg-white ${isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"} py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-sky-100 shadow-sm`} />
           </div>
           <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
             <span className="text-sm font-semibold text-slate-500">{t.filterLabel}</span>
@@ -1164,8 +1164,8 @@ const SalesInvoicePage = () => {
 
         {/* ── Invoice form modal ── */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 p-3 overflow-y-auto">
-            <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden mt-6">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 p-2 overflow-y-auto">
+            <div className="max-w-[1200px] mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden mt-3">
               <div className={`px-5 sm:px-6 py-4 border-b border-sky-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
                 <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
                   <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
@@ -1173,7 +1173,7 @@ const SalesInvoicePage = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl font-extrabold text-black">{editingId ? t.editTitle : t.newTitle}</h2>
-                    <p className="text-base text-slate-500 mt-1">{t.formSubtitle}</p>
+                    <p className="text-sm text-slate-500 mt-1">{t.formSubtitle}</p>
                   </div>
                 </div>
                 <button onClick={() => setShowForm(false)} className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500">
@@ -1181,9 +1181,9 @@ const SalesInvoicePage = () => {
                 </button>
               </div>
 
-              <div className="p-5 sm:p-6 space-y-5">
+              <div className="p-3 sm:p-4 space-y-3">
                 {mastersError && (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-base">
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm">
                     {t.masterError}
                     <div className="mt-2 flex gap-2 flex-wrap">
                       <button onClick={refetchCustomers} className="px-3 py-1 rounded-lg bg-white border">{t.customers}</button>
@@ -1194,12 +1194,36 @@ const SalesInvoicePage = () => {
                   </div>
                 )}
 
-                {/* Form fields */}
-                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                {/* ── TOP FORM FIELDS: Invoice No (auto), Ref No, Customer, Date, Shipment ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-1.5">
+                  {/* Invoice No — auto-generated, still editable if needed */}
                   <div>
-                    <label className={labelClass}>{t.invoiceNo} *</label>
-                    <input type="text" value={form.invoice_no} onChange={(e) => setForm((f) => ({ ...f, invoice_no: e.target.value }))} className={inputCls} />
+                    <label className={labelClass}>
+                      {t.invoiceNo} *
+                      <span className="ml-2 text-xs font-normal text-sky-500 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
+                        Auto
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.invoice_no}
+                      onChange={(e) => setForm((f) => ({ ...f, invoice_no: e.target.value }))}
+                      className={`${inputCls} font-mono`}
+                    />
                   </div>
+
+                  {/* Reference No — new field */}
+                  <div>
+                    <label className={labelClass}>{t.referenceNo}</label>
+                    <input
+                      type="text"
+                      value={form.reference_no}
+                      onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))}
+                      placeholder="e.g. PO-2025-001"
+                      className={inputCls}
+                    />
+                  </div>
+
                   <div>
                     <label className={labelClass}>{t.customer} *</label>
                     <select value={form.customer_id} onChange={(e) => setForm((f) => ({ ...f, customer_id: e.target.value }))} className={inputCls}>
@@ -1217,45 +1241,51 @@ const SalesInvoicePage = () => {
                     <label className={labelClass}>{t.shipmentTo}</label>
                     <input type="text" value={form.shipment_to} onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))} className={inputCls} />
                   </div>
-                  <div>
-                    <label className={labelClass}>{t.previousBalance}</label>
-                    <input type="number" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} className={`${inputCls} font-mono`} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>{t.discount}</label>
-                    <input type="number" value={form.discount} onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))} className={`${inputCls} font-mono`} />
-                  </div>
                 </div>
 
                 {/* Items header */}
                 <div className={`flex items-center justify-between gap-3 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
                   <div>
-                    <h3 className="text-xl font-extrabold text-black">{t.items}</h3>
+                    <h3 className="text-lg font-extrabold text-black">{t.items}</h3>
                     <p className="text-sm text-slate-500">{t.itemsSubtitle}</p>
                   </div>
-                  <button onClick={addItemRow} className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl text-base font-semibold flex items-center gap-2 shadow-sm">
+                  <button onClick={addItemRow} className="bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm">
                     <i className="bi bi-plus-lg"></i>{t.newLine}
                   </button>
                 </div>
 
                 {/* Items table */}
-                <div className="rounded-3xl border border-sky-100 overflow-hidden bg-white">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1500px] text-sm text-slate-600">
+                <div className="rounded-2xl border border-sky-100 overflow-hidden bg-white">
+                  <div className="overflow-hidden">
+                    <table className="w-full table-fixed text-[11px] text-slate-600">
+                      <colgroup>
+                        <col className="w-[4%]" />
+                        <col className="w-[14%]" />
+                        <col className="w-[16%]" />
+                        <col className="w-[9%]" />
+                        <col className="w-[9%]" />
+                        <col className="w-[8%]" />
+                        <col className="w-[8%]" />
+                        <col className="w-[8%]" />
+                        <col className="w-[6%]" />
+                        <col className="w-[7%]" />
+                        <col className="w-[7%]" />
+                        <col className="w-[4%]" />
+                      </colgroup>
                       <thead className="bg-sky-50">
                         <tr className="text-slate-600 text-sm font-bold border-b border-sky-100">
-                          <th className="px-3 py-3.5 text-center w-16">{t.col_no}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-36`}>{t.saleType}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-28`}>{t.piecesPerCarton}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-32`}>{t.cartonQty}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-32`}>{t.piecesQty}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-28`}>{t.qty}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-36`}>{t.rate}</th>
-                          <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-36`}>{t.amount}</th>
-                          <th className="px-3 py-3.5 text-center w-24">{t.delete}</th>
+                          <th className="px-2 py-2 text-center w-10">{t.col_no}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-16`}>{t.saleType}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-20`}>{t.piecesPerCarton}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-20`}>{t.cartonQty}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-20`}>{t.piecesQty}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-20`}>{t.qty}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-16`}>{t.rate}</th>
+                          <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"} w-16`}>{t.amount}</th>
+                          <th className="px-2 py-2 text-center w-16">{t.delete}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-sky-50">
@@ -1267,26 +1297,26 @@ const SalesInvoicePage = () => {
                           const filteredProducts = !row.category_id ? products : matchedProducts.length ? matchedProducts : products;
                           return (
                             <tr key={index} className="hover:bg-sky-50/60">
-                              <td className="px-3 py-3 text-center font-mono text-slate-500 text-base">{index + 1}</td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2 text-center font-mono text-slate-500 text-sm">{index + 1}</td>
+                              <td className="px-2 py-2">
                                 <select value={row.category_id} onChange={(e) => handleItemChange(index, "category_id", e.target.value)} className={inputCls}>
                                   <option value="">{categoriesLoading ? t.loadingMaster : t.selectCategory}</option>
                                   {categories.map((c) => <option key={c.id} value={c.id}>{getTranslatedMapValue("category", c.id, getCategoryName(c))}</option>)}
                                 </select>
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <select value={row.product_id} onChange={(e) => handleItemChange(index, "product_id", e.target.value)} className={inputCls}>
                                   <option value="">{productsLoading ? t.loadingMaster : t.selectProduct}</option>
                                   {filteredProducts.map((p) => <option key={p.id} value={p.id}>{getTranslatedMapValue("product", p.id, getProductName(p))}</option>)}
                                 </select>
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <select value={row.unit_id} onChange={(e) => handleItemChange(index, "unit_id", e.target.value)} className={inputCls}>
                                   <option value="">{unitsLoading ? t.loadingMaster : t.selectUnit}</option>
                                   {units.map((u) => <option key={u.id} value={u.id}>{getTranslatedMapValue("unit", u.id, getUnitName(u))}</option>)}
                                 </select>
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 {isCartonProduct ? (
                                   <select value={row.sale_type} onChange={(e) => handleItemChange(index, "sale_type", e.target.value)} className={inputCls}>
                                     <option value="pieces">{t.pieces}</option>
@@ -1296,30 +1326,30 @@ const SalesInvoicePage = () => {
                                   <input readOnly type="text" value={t.single} className={readonlyClass} />
                                 )}
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <input readOnly type="text" value={row.pieces_per_carton || "0"} className={readonlyClass} />
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <input type="number" value={row.carton_qty} onChange={(e) => handleItemChange(index, "carton_qty", e.target.value)}
                                   disabled={!isCartonProduct || row.sale_type !== "carton"}
                                   className={`${inputCls} font-mono disabled:bg-slate-100 disabled:text-slate-400`} />
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <input type="number" value={row.pieces_qty} onChange={(e) => handleItemChange(index, "pieces_qty", e.target.value)}
                                   disabled={!isCartonProduct || row.sale_type !== "pieces"}
                                   className={`${inputCls} font-mono disabled:bg-slate-100 disabled:text-slate-400`} />
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <input type="text" readOnly value={row.qty} className={readonlyClass} />
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <input type="text" readOnly value={money(row.rate)} className={readonlyClass} />
                               </td>
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-2">
                                 <input type="text" readOnly value={money(row.amount)} className={readonlyClass} />
                               </td>
-                              <td className="px-3 py-3 text-center">
-                                <button onClick={() => removeItemRow(index)} className="px-3 py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100">
+                              <td className="px-2 py-2 text-center">
+                                <button onClick={() => removeItemRow(index)} className="px-2 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100">
                                   <i className="bi bi-trash3 text-sm"></i>
                                 </button>
                               </td>
@@ -1331,34 +1361,55 @@ const SalesInvoicePage = () => {
                   </div>
                 </div>
 
-                {/* Totals bar */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.invoiceTotal}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">{money(invoiceTotal)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.prevBalance}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">{money(form.previous_balance)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.discount}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">{money(form.discount)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-sky-100 border border-sky-200 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.grandTotal}</p>
-                    <div className="text-3xl font-extrabold text-slate-950 font-mono">{money(grandTotal)}</div>
+                {/* ── TOTALS BAR — Previous Balance & Discount are now HERE (moved from top) ── */}
+                <div className="rounded-xl border border-sky-100 bg-sky-50/40 p-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+
+                    {/* Invoice Total — read-only computed */}
+                    <div className="rounded-lg bg-white border border-sky-100 p-2">
+                      <p className="text-xs text-slate-500 mb-1">{t.invoiceTotal}</p>
+                      <div className="text-lg font-extrabold text-slate-950 font-mono">{money(invoiceTotal)}</div>
+                    </div>
+
+                    {/* Previous Balance — editable input moved here */}
+                    <div className="rounded-lg bg-white border border-sky-100 p-2">
+                      <label className="block text-xs text-slate-500 mb-1">{t.previousBalance}</label>
+                      <input
+                        type="number"
+                        value={form.previous_balance}
+                        onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))}
+                        className="w-full bg-transparent text-lg font-extrabold text-slate-950 font-mono border-none outline-none focus:outline-none p-0"
+                      />
+                    </div>
+
+                    {/* Discount — editable input moved here */}
+                    <div className="rounded-lg bg-white border border-sky-100 p-2">
+                      <label className="block text-xs text-slate-500 mb-1">{t.discount}</label>
+                      <input
+                        type="number"
+                        value={form.discount}
+                        onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+                        className="w-full bg-transparent text-lg font-extrabold text-slate-950 font-mono border-none outline-none focus:outline-none p-0"
+                      />
+                    </div>
+
+                    {/* Grand Total — computed */}
+                    <div className="rounded-lg bg-sky-100 border border-sky-200 p-2">
+                      <p className="text-xs text-slate-500 mb-1">{t.grandTotal}</p>
+                      <div className="text-xl font-extrabold text-slate-950 font-mono">{money(grandTotal)}</div>
+                    </div>
+
                   </div>
                 </div>
 
                 {/* Save / Cancel */}
-                <div className={`flex gap-3 pt-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`flex gap-3 pt-1 ${isUrdu ? "flex-row-reverse" : ""}`}>
                   <button onClick={handleSave} disabled={mastersLoading}
-                    className="flex-1 bg-sky-600 hover:bg-sky-700 disabled:opacity-60 text-white rounded-2xl py-3.5 font-semibold text-base shadow-lg shadow-sky-200">
+                    className="flex-1 bg-sky-600 hover:bg-sky-700 disabled:opacity-60 text-white rounded-xl py-2.5 font-semibold text-sm shadow-lg shadow-sky-200">
                     {editingId ? t.updateInvoice : t.saveInvoice}
                   </button>
                   <button onClick={() => setShowForm(false)}
-                    className="flex-1 border border-sky-200 bg-white hover:bg-sky-50 text-sky-700 rounded-2xl py-3.5 font-semibold text-base">
+                    className="flex-1 border border-sky-200 bg-white hover:bg-sky-50 text-sky-700 rounded-xl py-2.5 font-semibold text-sm">
                     {t.cancel}
                   </button>
                 </div>
@@ -1370,62 +1421,64 @@ const SalesInvoicePage = () => {
         {/* ── Invoices list table ── */}
         <div className="bg-white border border-sky-100 rounded-3xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-sm text-slate-600">
+            <table className="w-full min-w-[900px] text-xs text-slate-600">
               <thead className="bg-sky-50 border-b border-sky-100">
                 <tr className="text-slate-600 text-sm font-bold">
-                  <th className="px-3 py-3.5 text-center w-16">{t.col_no}</th>
-                  <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.col_invoiceNo}</th>
-                  <th className={`px-3 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.col_customer}</th>
-                  <th className="px-3 py-3.5 text-center">{t.col_date}</th>
-                  <th className="px-3 py-3.5 text-center">{t.col_items}</th>
-                  <th className={`px-3 py-3.5 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_invoiceTotal}</th>
-                  <th className={`px-3 py-3.5 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_prevBalance}</th>
-                  <th className={`px-3 py-3.5 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_discount}</th>
-                  <th className={`px-3 py-3.5 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_grandTotal}</th>
-                  <th className="px-3 py-3.5 text-center">{t.col_actions}</th>
+                  <th className="px-2 py-2 text-center w-10">{t.col_no}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"}`}>{t.col_invoiceNo}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"}`}>{t.referenceNo}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-right" : "text-left"}`}>{t.col_customer}</th>
+                  <th className="px-2 py-2 text-center">{t.col_date}</th>
+                  <th className="px-2 py-2 text-center">{t.col_items}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_invoiceTotal}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_prevBalance}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_discount}</th>
+                  <th className={`px-2 py-2 ${isUrdu ? "text-left" : "text-right"}`}>{t.col_grandTotal}</th>
+                  <th className="px-2 py-2 text-center">{t.col_actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sky-50">
                 {loadingInvoices ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-slate-400">
+                    <td colSpan={11} className="px-4 py-8 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                      <p className="mt-2 text-base">{t.loading}</p>
+                      <p className="mt-2 text-sm">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filteredInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-10 text-center text-slate-400 text-base">{t.noRecords}</td>
+                    <td colSpan={11} className="px-4 py-8 text-center text-slate-400 text-sm">{t.noRecords}</td>
                   </tr>
                 ) : (
                   filteredInvoices.map((inv, idx) => (
                     <tr key={inv.id} className="hover:bg-sky-50/60">
-                      <td className="px-3 py-3 text-center text-slate-400 font-mono text-base">{idx + 1}</td>
-                      <td className="px-3 py-3 font-bold font-mono text-slate-950 text-base">{inv.invoice_no}</td>
-                      <td className="px-3 py-3 font-semibold text-black text-base">
+                      <td className="px-2 py-2 text-center text-slate-400 font-mono text-sm">{idx + 1}</td>
+                      <td className="px-2 py-2 font-bold font-mono text-slate-950 text-sm">{inv.invoice_no}</td>
+                      <td className="px-2 py-2 font-mono text-slate-600 text-sm">{inv.reference_no || <span className="text-slate-300">—</span>}</td>
+                      <td className="px-2 py-2 font-semibold text-black text-sm">
                         {isUrdu
                           ? urduCache[`customer:${inv.customer_id}`] || inv.customer_name || customerMap[String(inv.customer_id)] || "-"
                           : inv.customer_name || customerMap[String(inv.customer_id)] || "-"}
                       </td>
-                      <td className="px-3 py-3 text-center text-black font-mono text-base">{inv.invoice_date || "-"}</td>
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-2 py-2 text-center text-black font-mono text-sm">{inv.invoice_date || "-"}</td>
+                      <td className="px-2 py-2 text-center">
                         <span className="inline-block px-3 py-1.5 rounded-full bg-sky-100 text-black text-sm font-bold border border-sky-200">
                           {inv.items_count || inv.items?.length || 0}
                         </span>
                       </td>
-                      <td className={`px-3 py-3 ${monoBlack} text-base ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.invoice_total)}</td>
-                      <td className={`px-3 py-3 ${monoBlack} text-base ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.previous_balance)}</td>
-                      <td className={`px-3 py-3 ${monoBlack} text-base ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.discount)}</td>
-                      <td className={`px-3 py-3 font-mono font-bold text-slate-950 text-base ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.grand_total)}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => openEdit(inv.id)} className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 hover:bg-sky-200 flex items-center justify-center" title="Edit">
+                      <td className={`px-2 py-2 ${monoBlack} text-sm ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.invoice_total)}</td>
+                      <td className={`px-2 py-2 ${monoBlack} text-sm ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.previous_balance)}</td>
+                      <td className={`px-2 py-2 ${monoBlack} text-sm ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.discount)}</td>
+                      <td className={`px-2 py-2 font-mono font-bold text-slate-950 text-sm ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.grand_total)}</td>
+                      <td className="px-2 py-2">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button onClick={() => openEdit(inv.id)} className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 hover:bg-sky-200 flex items-center justify-center" title="Edit">
                             <i className="bi bi-pencil-square"></i>
                           </button>
-                          <button onClick={() => handleDelete(inv.id)} className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 hover:bg-rose-200 flex items-center justify-center" title="Delete">
+                          <button onClick={() => handleDelete(inv.id)} className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 hover:bg-rose-200 flex items-center justify-center" title="Delete">
                             <i className="bi bi-trash3"></i>
                           </button>
-                          <button onClick={() => handlePrint(inv.id)} className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center justify-center" title={t.downloadPdf}>
+                          <button onClick={() => handlePrint(inv.id)} className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center justify-center" title={t.downloadPdf}>
                             <i className="bi bi-printer-fill"></i>
                           </button>
                         </div>
