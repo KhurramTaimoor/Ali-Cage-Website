@@ -736,6 +736,11 @@ const RateListPage = () => {
         .rate-btn:hover { transform: translateY(-1px); }
         .rate-field { height: 36px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color:#0f172a; font-size:12px; font-weight:600; outline:none; transition: all .15s ease; }
         .rate-field:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.14); }
+        .rate-price-grid { display:grid; grid-template-columns: minmax(190px,2fr) minmax(190px,2fr) minmax(145px,1.25fr) minmax(112px,1fr) minmax(126px,1fr) minmax(126px,1fr); gap:10px; align-items:end; }
+        .rate-price-label { min-height:18px; display:flex; align-items:center; gap:4px; white-space:nowrap; font-size:10px; font-weight:900; letter-spacing:.05em; text-transform:uppercase; color:#475569; margin-bottom:6px; line-height:1; }
+        .rate-price-cell { min-width:0; }
+        @media (max-width:1100px) { .rate-price-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width:640px) { .rate-price-grid { grid-template-columns: 1fr; } }
         .rate-table thead th { background:#0f172a; color:#f8fafc; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:10px 12px; white-space:nowrap; }
         .rate-table tbody td { padding:12px; font-size:12px; color:#334155; border-bottom:1px solid #eef2f7; vertical-align:top; }
         .rate-table tbody tr:hover td { background:#f8fafc; }
@@ -859,7 +864,7 @@ const RateListPage = () => {
         {/* Add / Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto">
-            <div className="rate-slide-up mx-auto w-full max-w-[1040px] max-h-[calc(100vh-36px)] bg-white rounded-[22px] shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
+            <div className="rate-slide-up mx-auto w-full max-w-[1180px] max-h-[calc(100vh-36px)] bg-white rounded-[22px] shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
               <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between gap-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
                 <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
                   <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
@@ -968,9 +973,11 @@ const RateListPage = () => {
                           </button>
                         </div>
 
-                        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 items-end">
-                          <div className="lg:col-span-3">
-                            <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.categoryLabel} <span className="text-rose-500">*</span></label>
+                        <div className="p-3 rate-price-grid">
+                          <div className="rate-price-cell">
+                            <label className={`rate-price-label ${isUrdu ? "justify-end text-right" : ""}`}>
+                              {t.categoryLabel}<span className="text-rose-500">*</span>
+                            </label>
                             <select
                               value={row.category_id}
                               onChange={(e) => updatePriceRow(index, "category_id", e.target.value)}
@@ -983,8 +990,10 @@ const RateListPage = () => {
                             </select>
                           </div>
 
-                          <div className="lg:col-span-3">
-                            <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.typeLabel} <span className="text-rose-500">*</span></label>
+                          <div className="rate-price-cell">
+                            <label className={`rate-price-label ${isUrdu ? "justify-end text-right" : ""}`}>
+                              {t.typeLabel}<span className="text-rose-500">*</span>
+                            </label>
                             <select
                               value={row.product_type_id}
                               onChange={(e) => updatePriceRow(index, "product_type_id", e.target.value)}
@@ -997,8 +1006,10 @@ const RateListPage = () => {
                             </select>
                           </div>
 
-                          <div className="lg:col-span-2">
-                            <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.unitLabel}</label>
+                          <div className="rate-price-cell">
+                            <label className={`rate-price-label ${isUrdu ? "justify-end text-right" : ""}`}>
+                              {t.unitLabel}
+                            </label>
                             <select
                               value={row.unit_id}
                               onChange={(e) => updatePriceRow(index, "unit_id", e.target.value)}
@@ -1011,37 +1022,43 @@ const RateListPage = () => {
                             </select>
                           </div>
 
-                          <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                            <div>
-                              <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.retailRate}</label>
-                              <input
-                                type="number"
-                                value={row.retail_rate}
-                                onChange={(e) => updatePriceRow(index, "retail_rate", e.target.value)}
-                                className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
-                                placeholder="0"
-                              />
-                            </div>
-                            <div>
-                              <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.wholesaleRate}</label>
-                              <input
-                                type="number"
-                                value={row.wholesale_rate}
-                                onChange={(e) => updatePriceRow(index, "wholesale_rate", e.target.value)}
-                                className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
-                                placeholder="0"
-                              />
-                            </div>
-                            <div>
-                              <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.distributorRate}</label>
-                              <input
-                                type="number"
-                                value={row.distributor_rate}
-                                onChange={(e) => updatePriceRow(index, "distributor_rate", e.target.value)}
-                                className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
-                                placeholder="0"
-                              />
-                            </div>
+                          <div className="rate-price-cell">
+                            <label className={`rate-price-label ${isUrdu ? "justify-end text-right" : ""}`}>
+                              {t.retailRate}
+                            </label>
+                            <input
+                              type="number"
+                              value={row.retail_rate}
+                              onChange={(e) => updatePriceRow(index, "retail_rate", e.target.value)}
+                              className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
+                              placeholder="0"
+                            />
+                          </div>
+
+                          <div className="rate-price-cell">
+                            <label className={`rate-price-label ${isUrdu ? "justify-end text-right" : ""}`}>
+                              {t.wholesaleRate}
+                            </label>
+                            <input
+                              type="number"
+                              value={row.wholesale_rate}
+                              onChange={(e) => updatePriceRow(index, "wholesale_rate", e.target.value)}
+                              className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
+                              placeholder="0"
+                            />
+                          </div>
+
+                          <div className="rate-price-cell">
+                            <label className={`rate-price-label ${isUrdu ? "justify-end text-right" : ""}`}>
+                              {t.distributorRate}
+                            </label>
+                            <input
+                              type="number"
+                              value={row.distributor_rate}
+                              onChange={(e) => updatePriceRow(index, "distributor_rate", e.target.value)}
+                              className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
+                              placeholder="0"
+                            />
                           </div>
                         </div>
                       </div>
