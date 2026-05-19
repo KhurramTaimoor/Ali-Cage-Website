@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 const LANG = {
   en: {
     title: "Purchase Rate",
-    subtitle: "Manage purchase rates for suppliers and products",
+    subtitle: "Manage multiple purchase rates for each supplier and product",
     addBtn: "Add Purchase Rate",
-    searchPlaceholder: "Search by supplier, product, unit, category or type...",
+    summaryBtn: "Summary",
+    searchPlaceholder: "Search by supplier, product, unit, category, type or rate...",
     supplier: "Supplier",
     product: "Product",
     unit: "Unit",
     category: "Category",
     type: "Type",
-    rate: "Rate (PKR)",
-    quantity: "Quantity (Pcs)",
+    rate: "Rate",
+    quantity: "Qty",
     effectiveDate: "Effective Date",
     save: "Save",
     saving: "Saving...",
@@ -32,29 +33,48 @@ const LANG = {
     unitPlaceholder: "Select unit",
     categoryPlaceholder: "Select category",
     typePlaceholder: "Select type",
-    quantityPlaceholder: "e.g. 50",
+    quantityPlaceholder: "0",
+    ratePlaceholder: "0.00",
     fetchError: "Failed to load purchase rates.",
     saveError: "Failed to save purchase rate.",
     deleteError: "Failed to delete purchase rate.",
-    productRequiredError: "At least one product is required.",
-    addProductRow: "Add Product",
+    productRequiredError: "At least one product/rate row is required.",
+    addProductRow: "Add Purchase Rate Row",
     removeProductRow: "Remove",
-    productGroup: "Product",
+    productGroup: "Rate Set",
     loading: "Loading...",
     optional: "Optional",
+    masterDataIssue: "Some master data could not be loaded.",
+    totalSuppliers: "Total Suppliers",
+    totalProducts: "Total Product Rows",
+    totalRateRows: "Total Rate Sets",
+    latestRate: "Latest Rate",
+    formTitleAdd: "New Purchase Rate",
+    formTitleEdit: "Edit Purchase Rate",
+    formSubtitle: "One product can be repeated with multiple purchase rates, quantities and effective dates.",
+    supplierInfo: "Supplier Information",
+    supplierInfoSubtitle: "Select supplier for these purchase rates",
+    rateDetails: "Purchase Rate Details",
+    rateDetailsSubtitle: "Add multiple rate sets for the same product when needed",
+    readyToSave: "Ready to save purchase rates",
+    successSave: "Purchase rate saved successfully!",
+    successDelete: "Purchase rate deleted successfully!",
+    deleteConfirm: "Are you sure you want to delete this purchase rate group?",
+    all: "All",
   },
   ur: {
     title: "خریداری کا ریٹ",
-    subtitle: "سپلائرز اور مصنوعات کے خریداری ریٹس کا انتظام کریں",
+    subtitle: "ہر سپلائر اور پروڈکٹ کے ملٹیپل خریداری ریٹس مینج کریں",
     addBtn: "نیا خریداری ریٹ شامل کریں",
-    searchPlaceholder: "سپلائر، پروڈکٹ، یونٹ، کیٹیگری یا ٹائپ سے تلاش کریں...",
+    summaryBtn: "سمری",
+    searchPlaceholder: "سپلائر، پروڈکٹ، یونٹ، کیٹیگری، ٹائپ یا ریٹ سے تلاش کریں...",
     supplier: "سپلائر",
     product: "پروڈکٹ",
     unit: "یونٹ",
     category: "کیٹیگری",
     type: "ٹائپ",
-    rate: "ریٹ (روپے)",
-    quantity: "تعداد (پیس)",
+    rate: "ریٹ",
+    quantity: "تعداد",
     effectiveDate: "مؤثر تاریخ",
     save: "محفوظ کریں",
     saving: "محفوظ ہو رہا ہے...",
@@ -73,16 +93,34 @@ const LANG = {
     unitPlaceholder: "یونٹ منتخب کریں",
     categoryPlaceholder: "کیٹیگری منتخب کریں",
     typePlaceholder: "ٹائپ منتخب کریں",
-    quantityPlaceholder: "مثلاً ۵۰",
+    quantityPlaceholder: "0",
+    ratePlaceholder: "0.00",
     fetchError: "خریداری کے ریٹس لوڈ نہیں ہو سکے۔",
     saveError: "خریداری کا ریٹ محفوظ نہیں ہو سکا۔",
     deleteError: "خریداری کا ریٹ حذف نہیں ہو سکا۔",
-    productRequiredError: "کم از کم ایک پروڈکٹ ضروری ہے۔",
-    addProductRow: "پروڈکٹ شامل کریں",
+    productRequiredError: "کم از کم ایک پروڈکٹ/ریٹ لائن ضروری ہے۔",
+    addProductRow: "خریداری ریٹ لائن شامل کریں",
     removeProductRow: "ہٹائیں",
-    productGroup: "پروڈکٹ",
+    productGroup: "ریٹ سیٹ",
     loading: "لوڈ ہو رہا ہے...",
     optional: "اختیاری",
+    masterDataIssue: "کچھ ماسٹر ڈیٹا لوڈ نہیں ہو سکا۔",
+    totalSuppliers: "کل سپلائرز",
+    totalProducts: "کل پروڈکٹ لائنز",
+    totalRateRows: "کل ریٹ سیٹس",
+    latestRate: "تازہ ریٹ",
+    formTitleAdd: "نیا خریداری ریٹ",
+    formTitleEdit: "خریداری ریٹ ترمیم",
+    formSubtitle: "ایک ہی پروڈکٹ کو مختلف ریٹس، تعداد اور تاریخ کے ساتھ دوبارہ add کیا جا سکتا ہے۔",
+    supplierInfo: "سپلائر معلومات",
+    supplierInfoSubtitle: "ان خریداری ریٹس کے لیے سپلائر منتخب کریں",
+    rateDetails: "خریداری ریٹ تفصیل",
+    rateDetailsSubtitle: "ایک پروڈکٹ کے لیے multiple purchase rates add کریں",
+    readyToSave: "خریداری ریٹس save کرنے کے لیے ready",
+    successSave: "خریداری ریٹ محفوظ ہو گیا!",
+    successDelete: "خریداری ریٹ حذف ہو گیا!",
+    deleteConfirm: "کیا آپ واقعی یہ خریداری ریٹ گروپ حذف کرنا چاہتے ہیں؟",
+    all: "سب",
   },
 };
 
@@ -98,24 +136,141 @@ const emptyProduct = () => ({
   effective_date: "",
 });
 
-const fmt = (v) => Number(v || 0).toLocaleString("en-PK");
+const fmt = (v) =>
+  Number(v || 0).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+
+const getList = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.result)) return data.result;
+  return [];
+};
 
 const getOptionLabel = (item) =>
   item?.name ||
   item?.title ||
   item?.label ||
   item?.supplier_name ||
+  item?.supplier_name_en ||
   item?.product_name ||
+  item?.product_name_en ||
+  item?.product_item_en ||
   item?.unit_name ||
+  item?.unit_name_en ||
   item?.category_name ||
+  item?.category_name_en ||
   item?.type_name ||
+  item?.type_name_en ||
   item?.product_type_en ||
   "";
 
-const extractOptions = (data) => {
-  if (!Array.isArray(data)) return [];
-  return data.map((item) => getOptionLabel(item)).filter(Boolean);
+const uniqueOptions = (data, mapper = getOptionLabel) => {
+  const set = new Set();
+  getList(data).forEach((item) => {
+    const label = mapper(item);
+    if (label) set.add(String(label));
+  });
+  return Array.from(set);
 };
+
+const getProducts = (record) => (Array.isArray(record?.products) ? record.products : []);
+
+function generatePrintDocument(records, lang, isPdf = false) {
+  const t = LANG[lang];
+  const isUrdu = lang === "ur";
+  const dir = isUrdu ? "rtl" : "ltr";
+  const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Inter', Arial, sans-serif";
+
+  const rowsHtml = records
+    .flatMap((record, recordIndex) => {
+      const products = getProducts(record);
+      if (!products.length) {
+        return [
+          `<tr>
+            <td>${recordIndex + 1}</td>
+            <td><strong>${record.supplier_name || "—"}</strong></td>
+            <td colspan="7" style="text-align:center;color:#94a3b8">${t.noRecords}</td>
+          </tr>`,
+        ];
+      }
+
+      return products.map((product, productIndex) => `
+        <tr>
+          ${
+            productIndex === 0
+              ? `<td rowspan="${products.length}" class="center strong">${recordIndex + 1}</td>
+                 <td rowspan="${products.length}" class="strong">${record.supplier_name || "—"}</td>`
+              : ""
+          }
+          <td class="strong">${product.product_name || "—"}</td>
+          <td>${product.category_name || "—"}</td>
+          <td>${product.type_name || "—"}</td>
+          <td class="center">${product.unit_name || "—"}</td>
+          <td class="num">${product.quantity > 0 ? fmt(product.quantity) : "—"}</td>
+          <td class="num strong blue">${product.rate !== null && product.rate !== undefined && product.rate !== "" ? `PKR ${fmt(product.rate)}` : "—"}</td>
+          <td class="center">${product.effective_date || "—"}</td>
+        </tr>`);
+    })
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html dir="${dir}" lang="${lang}">
+<head>
+  <meta charset="UTF-8" />
+  <title>${t.reportHeader}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:${font};background:#f8fafc;color:#0f172a;padding:18px}
+    .sheet{max-width:1400px;margin:0 auto;background:white;border:1px solid #dbeafe;border-radius:22px;overflow:hidden;box-shadow:0 16px 44px rgba(15,23,42,.10)}
+    .header{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 48%,#4f46e5 100%);color:white;padding:24px 28px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+    .brand h1{font-size:28px;font-weight:850;letter-spacing:-.6px}.brand p{font-size:12px;color:rgba(255,255,255,.72);margin-top:4px}.meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:rgba(255,255,255,.78);line-height:1.8}
+    .content{padding:18px}.hint{background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:12px}
+    table{width:100%;border-collapse:collapse}thead th{background:#0f172a;color:white;font-size:11px;text-transform:uppercase;letter-spacing:.45px;padding:11px 10px;text-align:${isUrdu ? "right" : "left"};white-space:nowrap}tbody td{border-bottom:1px solid #e5e7eb;padding:10px;font-size:12px;color:#334155;vertical-align:top}tbody tr:nth-child(even) td{background:#f8fafc}.center{text-align:center!important}.num{text-align:${isUrdu ? "left" : "right"}!important;font-family:'Inter',Arial,sans-serif;font-variant-numeric:tabular-nums}.strong{font-weight:800}.blue{color:#4f46e5}.footer{background:#0f172a;color:rgba(255,255,255,.75);font-size:11px;padding:10px 16px;display:flex;justify-content:space-between}
+    @media print{@page{size:A4 landscape;margin:9mm}body{padding:0;background:white}.sheet{box-shadow:none;border:none;border-radius:0}.hint{display:none}}
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="header">
+      <div class="brand"><h1>Ali Cages</h1><p>${t.reportHeader}</p></div>
+      <div class="meta"><div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div><div>${records.length} ${t.supplier}</div></div>
+    </div>
+    <div class="content">
+      ${isPdf ? `<div class="hint">Choose <strong>Save as PDF</strong> in the print dialog.</div>` : ""}
+      <table>
+        <thead>
+          <tr>
+            <th class="center">#</th>
+            <th>${t.supplier}</th>
+            <th>${t.product}</th>
+            <th>${t.category}</th>
+            <th>${t.type}</th>
+            <th class="center">${t.unit}</th>
+            <th class="num">${t.quantity}</th>
+            <th class="num">${t.rate}</th>
+            <th class="center">${t.effectiveDate}</th>
+          </tr>
+        </thead>
+        <tbody>${records.length ? rowsHtml : `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:30px">${t.noRecords}</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="footer"><span>Ali Cages</span><span>${t.reportHeader}</span></div>
+  </div>
+  <script>window.onload=()=>{setTimeout(()=>{window.print();${!isPdf ? "window.onafterprint=()=>window.close();" : ""}},350)}</script>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank", "width=1400,height=900");
+  if (!w) return;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
 
 const PurchaseRatePage = () => {
   const [lang, setLang] = useState("en");
@@ -128,6 +283,7 @@ const PurchaseRatePage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [editingName, setEditingName] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
 
@@ -136,6 +292,7 @@ const PurchaseRatePage = () => {
   const [unitOptions, setUnitOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [typeOptions, setTypeOptions] = useState([]);
+  const [masterIssue, setMasterIssue] = useState(false);
 
   const [form, setForm] = useState({
     supplier_name: "",
@@ -150,50 +307,38 @@ const PurchaseRatePage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setMasterIssue(false);
 
-      const [
-        purchaseRes,
-        suppliersRes,
-        productsRes,
-        unitsRes,
-        categoriesRes,
-        productTypesRes,
-      ] = await Promise.allSettled([
-        axios.get(`${API_BASE}/purchase-rates`),
-        axios.get(`${API_BASE}/suppliers`),
-        axios.get(`${API_BASE}/products`),
-        axios.get(`${API_BASE}/units`),
-        axios.get(`${API_BASE}/categories`),
-        axios.get(`${API_BASE}/product-types`),
-      ]);
+      const [purchaseRes, suppliersRes, productsRes, unitsRes, categoriesRes, productTypesRes] =
+        await Promise.allSettled([
+          axios.get(`${API_BASE}/purchase-rates`),
+          axios.get(`${API_BASE}/suppliers`),
+          axios.get(`${API_BASE}/products`),
+          axios.get(`${API_BASE}/units`),
+          axios.get(`${API_BASE}/categories`),
+          axios.get(`${API_BASE}/product-types`),
+        ]);
 
-      const purchaseData =
-        purchaseRes.status === "fulfilled" && Array.isArray(purchaseRes.value?.data)
-          ? purchaseRes.value.data
-          : [];
+      if (purchaseRes.status === "fulfilled") {
+        setRecords(getList(purchaseRes.value?.data));
+      } else {
+        setRecords([]);
+        showToast("error", purchaseRes.reason?.response?.data?.message || t.fetchError);
+      }
 
-      const suppliersData =
-        suppliersRes.status === "fulfilled" ? suppliersRes.value?.data : [];
-      const productsData =
-        productsRes.status === "fulfilled" ? productsRes.value?.data : [];
-      const unitsData = unitsRes.status === "fulfilled" ? unitsRes.value?.data : [];
-      const categoriesData =
-        categoriesRes.status === "fulfilled" ? categoriesRes.value?.data : [];
-      const productTypesData =
-        productTypesRes.status === "fulfilled" ? productTypesRes.value?.data : [];
-
-      setRecords(purchaseData);
-      setSupplierOptions(extractOptions(suppliersData));
-      setProductOptions(extractOptions(productsData));
-      setUnitOptions(extractOptions(unitsData));
-      setCategoryOptions(extractOptions(categoriesData));
+      setSupplierOptions(suppliersRes.status === "fulfilled" ? uniqueOptions(suppliersRes.value?.data) : []);
+      setProductOptions(productsRes.status === "fulfilled" ? uniqueOptions(productsRes.value?.data) : []);
+      setUnitOptions(unitsRes.status === "fulfilled" ? uniqueOptions(unitsRes.value?.data) : []);
+      setCategoryOptions(categoriesRes.status === "fulfilled" ? uniqueOptions(categoriesRes.value?.data) : []);
       setTypeOptions(
-        Array.isArray(productTypesData)
-          ? productTypesData
-              .map((item) => item?.product_type_en || "")
-              .filter(Boolean)
+        productTypesRes.status === "fulfilled"
+          ? uniqueOptions(productTypesRes.value?.data, (item) => item?.product_type_en || getOptionLabel(item))
           : []
       );
+
+      if ([suppliersRes, productsRes, unitsRes, categoriesRes, productTypesRes].some((res) => res.status !== "fulfilled")) {
+        setMasterIssue(true);
+      }
     } catch (err) {
       showToast("error", err?.response?.data?.message || t.fetchError);
       setRecords([]);
@@ -204,76 +349,69 @@ const PurchaseRatePage = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openAdd = () => {
-    setForm({
-      supplier_name: "",
-      products: [emptyProduct()],
-    });
+    setForm({ supplier_name: "", products: [emptyProduct()] });
     setEditingName(null);
     setShowForm(true);
   };
 
-  const openEdit = (r) => {
+  const openEdit = (record) => {
     setForm({
-      supplier_name: r.supplier_name || "",
-      products: r.products?.length
-        ? r.products.map((p) => ({
-            product_name: p.product_name || "",
-            unit_name: p.unit_name || "",
-            category_name: p.category_name || "",
-            type_name: p.type_name || "",
-            rate: p.rate ?? "",
-            quantity: p.quantity ?? "",
-            effective_date: p.effective_date || "",
+      supplier_name: record.supplier_name || "",
+      products: getProducts(record).length
+        ? getProducts(record).map((product) => ({
+            product_name: product.product_name || "",
+            unit_name: product.unit_name || "",
+            category_name: product.category_name || "",
+            type_name: product.type_name || "",
+            rate: product.rate ?? "",
+            quantity: product.quantity ?? "",
+            effective_date: product.effective_date || "",
           }))
         : [emptyProduct()],
     });
-
-    setEditingName(r.supplier_name || "");
+    setEditingName(record.supplier_name || "");
     setShowForm(true);
   };
 
   const updateProduct = (index, key, value) => {
     setForm((prev) => ({
       ...prev,
-      products: prev.products.map((p, i) =>
-        i === index ? { ...p, [key]: value } : p
+      products: prev.products.map((product, i) =>
+        i === index ? { ...product, [key]: value } : product
       ),
     }));
   };
 
   const addProduct = () => {
-    setForm((prev) => ({
-      ...prev,
-      products: [...prev.products, emptyProduct()],
-    }));
+    setForm((prev) => ({ ...prev, products: [...prev.products, emptyProduct()] }));
   };
 
   const removeProduct = (index) => {
-    setForm((prev) =>
-      prev.products.length === 1
-        ? prev
-        : {
-            ...prev,
-            products: prev.products.filter((_, i) => i !== index),
-          }
-    );
+    setForm((prev) => ({
+      ...prev,
+      products:
+        prev.products.length === 1
+          ? prev.products
+          : prev.products.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSave = async () => {
     const cleanedProducts = form.products
-      .map((p) => ({
-        product_name: p.product_name?.trim() || "",
-        unit_name: p.unit_name?.trim() || "",
-        category_name: p.category_name?.trim() || "",
-        type_name: p.type_name?.trim() || "",
-        rate: p.rate === "" ? null : Number(p.rate) || 0,
-        quantity: p.quantity === "" ? null : Number(p.quantity) || 0,
-        effective_date: p.effective_date || null,
+      .map((product) => ({
+        product_name: String(product.product_name || "").trim(),
+        unit_name: String(product.unit_name || "").trim(),
+        category_name: String(product.category_name || "").trim(),
+        type_name: String(product.type_name || "").trim(),
+        rate: product.rate === "" ? null : Number(product.rate) || 0,
+        quantity: product.quantity === "" ? null : Number(product.quantity) || 0,
+        effective_date: product.effective_date || null,
       }))
-      .filter((p) => p.product_name);
+      .filter((product) => product.product_name);
 
     if (!cleanedProducts.length) {
       showToast("error", t.productRequiredError);
@@ -281,7 +419,7 @@ const PurchaseRatePage = () => {
     }
 
     const payload = {
-      supplier_name: form.supplier_name?.trim() || null,
+      supplier_name: String(form.supplier_name || "").trim() || null,
       products: cleanedProducts,
     };
 
@@ -289,28 +427,16 @@ const PurchaseRatePage = () => {
       setSubmitting(true);
 
       if (editingName) {
-        const res = await axios.put(
-          `${API_BASE}/purchase-rates/${encodeURIComponent(editingName)}`,
-          payload
-        );
-
-        const updated = res?.data?.data;
-
-        setRecords((prev) =>
-          prev.map((r) => (r.supplier_name === editingName ? updated : r))
-        );
+        await axios.put(`${API_BASE}/purchase-rates/${encodeURIComponent(editingName)}`, payload);
       } else {
-        const res = await axios.post(`${API_BASE}/purchase-rates`, payload);
-        const created = res?.data?.data;
-        setRecords((prev) => [created, ...prev]);
+        await axios.post(`${API_BASE}/purchase-rates`, payload);
       }
 
+      showToast("success", t.successSave);
       setShowForm(false);
       setEditingName(null);
-      setForm({
-        supplier_name: "",
-        products: [emptyProduct()],
-      });
+      setForm({ supplier_name: "", products: [emptyProduct()] });
+      await fetchData();
     } catch (err) {
       showToast("error", err?.response?.data?.message || t.saveError);
     } finally {
@@ -318,369 +444,274 @@ const PurchaseRatePage = () => {
     }
   };
 
-  const handleDelete = async (supplier_name) => {
+  const handleDelete = async (supplierName) => {
+    if (!window.confirm(t.deleteConfirm)) return;
+
     try {
-      await axios.delete(
-        `${API_BASE}/purchase-rates/${encodeURIComponent(supplier_name)}`
-      );
-      setRecords((prev) => prev.filter((r) => r.supplier_name !== supplier_name));
+      await axios.delete(`${API_BASE}/purchase-rates/${encodeURIComponent(supplierName || "")}`);
+      showToast("success", t.successDelete);
+      setRecords((prev) => prev.filter((record) => record.supplier_name !== supplierName));
     } catch (err) {
       showToast("error", err?.response?.data?.message || t.deleteError);
     }
   };
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return records;
+    const query = search.toLowerCase().trim();
+    if (!query) return records;
 
-    return records.filter(
-      (r) =>
-        (r.supplier_name || "").toLowerCase().includes(q) ||
-        r.products?.some(
-          (p) =>
-            (p.product_name || "").toLowerCase().includes(q) ||
-            (p.unit_name || "").toLowerCase().includes(q) ||
-            (p.category_name || "").toLowerCase().includes(q) ||
-            (p.type_name || "").toLowerCase().includes(q)
+    return records.filter((record) =>
+      [record.supplier_name]
+        .concat(
+          getProducts(record).flatMap((product) => [
+            product.product_name,
+            product.unit_name,
+            product.category_name,
+            product.type_name,
+            String(product.rate ?? ""),
+            String(product.quantity ?? ""),
+            product.effective_date,
+          ])
         )
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
     );
   }, [records, search]);
 
-  const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
+  const summary = useMemo(() => {
+    const supplierCount = records.length;
+    const rateRows = records.reduce((sum, record) => sum + getProducts(record).length, 0);
+    const latestRate = records.reduce((max, record) => {
+      getProducts(record).forEach((product) => {
+        const rate = Number(product.rate || 0);
+        if (rate > max) max = rate;
+      });
+      return max;
+    }, 0);
 
-    const rowsHtml = filtered
-      .map((r, i) =>
-        (r.products || [])
-          .map(
-            (p, idx) => `
-          <tr>
-            ${
-              idx === 0
-                ? `<td rowspan="${r.products.length}">${i + 1}</td>
-                   <td rowspan="${r.products.length}"><strong>${r.supplier_name || "—"}</strong></td>`
-                : ""
-            }
-            <td>${p.product_name || "—"}</td>
-            <td>${p.unit_name || "—"}</td>
-            <td>${p.category_name || "—"}</td>
-            <td>${p.type_name || "—"}</td>
-            <td style="text-align:center"><strong>${p.quantity > 0 ? fmt(p.quantity) : "—"}</strong></td>
-            <td style="text-align:right"><strong>${
-              p.rate !== null && p.rate !== undefined && p.rate !== ""
-                ? `₨ ${fmt(p.rate)}`
-                : "—"
-            }</strong></td>
-            <td>${p.effective_date || "—"}</td>
-          </tr>`
-          )
-          .join("")
-      )
-      .join("");
+    return {
+      supplierCount,
+      productRows: rateRows,
+      rateRows,
+      latestRate,
+    };
+  }, [records]);
 
-    const html = `<!DOCTYPE html>
-<html dir="${dir}" lang="${lang}">
-<head>
-  <meta charset="UTF-8"/>
-  <title>${t.title}</title>
-  ${
-    isUrdu
-      ? `<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">`
-      : ""
-  }
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:${font};background:#fff;color:#0f172a;padding:40px}
-    .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1e40af;padding-bottom:20px;margin-bottom:30px}
-    .brand{font-size:28px;font-weight:bold;color:#1e40af;text-transform:uppercase}
-    .report-title{font-size:18px;color:#64748b;margin-top:5px}
-    .meta{text-align:right;font-size:12px;color:#64748b}
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th{background:#1e40af;color:#fff;padding:12px;font-weight:normal;text-align:left}
-    td{border-bottom:1px solid #e2e8f0;padding:12px;color:#334155;vertical-align:middle}
-    tr:nth-child(even) td{background:#f8fafc}
-    .hint{background:#eff6ff;color:#1d4ed8;padding:15px;text-align:center;border-radius:8px;margin-bottom:20px;font-size:14px;border:1px solid #bfdbfe}
-    @media print{body{padding:0}.hint{display:none}}
-  </style>
-</head>
-<body>
-  ${
-    isPdf
-      ? `<div class="hint">Please select <strong>"Save as PDF"</strong> in destination dropdown.</div>`
-      : ""
-  }
-  <div class="header">
-    <div>
-      <div class="brand">Ali Cages</div>
-      <div class="report-title">${t.reportHeader}</div>
-    </div>
-    <div class="meta">${t.printedOn}: ${new Date().toLocaleString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}</div>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>${t.supplier}</th>
-        <th>${t.product}</th>
-        <th>${t.unit}</th>
-        <th>${t.category}</th>
-        <th>${t.type}</th>
-        <th style="text-align:center">${t.quantity}</th>
-        <th style="text-align:right">${t.rate}</th>
-        <th>${t.effectiveDate}</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${
-        filtered.length
-          ? rowsHtml
-          : `<tr><td colspan="9" style="text-align:center">${t.noRecords}</td></tr>`
-      }
-    </tbody>
-  </table>
-  <script>window.onload=()=>{setTimeout(()=>{window.print();${
-    !isPdf ? "window.onafterprint=()=>window.close();" : ""
-  }},300)}</script>
-</body>
-</html>`;
-
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(html);
-    w.document.close();
-  };
+  const fieldBase = `w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[12px] font-semibold text-slate-950 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "text-right" : ""}`;
+  const compactSelect = `${fieldBase} cursor-pointer`;
+  const moneyInput = `${fieldBase} font-mono text-right`;
+  const labelBase = `block text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 mb-1 whitespace-nowrap ${isUrdu ? "text-right" : ""}`;
 
   return (
     <div
       dir={dir}
-      style={{ fontFamily: isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif" }}
-      className="min-h-screen bg-slate-50 p-6"
+      style={{ fontFamily: isUrdu ? "'Noto Nastaliq Urdu', serif" : "Helvetica, 'Helvetica Neue', Arial, sans-serif" }}
+      className="min-h-screen bg-[#f3f6fb] p-2 sm:p-4 pb-20"
     >
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-      />
-      {isUrdu && (
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap"
-          rel="stylesheet"
-        />
-      )}
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {message.text && (
         <div
-          className={`fixed bottom-6 ${
-            isUrdu ? "left-6" : "right-6"
-          } z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${
-            message.type === "error" ? "bg-rose-600" : "bg-emerald-600"
-          }`}
+          className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[70] px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}
         >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
+          <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3 max-w-6xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">{t.title}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t.subtitle}</p>
-        </div>
+      <div className="max-w-7xl mx-auto mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 sm:px-6 py-5">
+          <div className={`flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{t.title}</h1>
+              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
+            </div>
 
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setLang(lang === "en" ? "ur" : "en")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition"
-          >
-            <i className="bi bi-translate"></i>
-            {t.toggleLang}
-          </button>
+            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+              <button
+                onClick={() => setLang(lang === "en" ? "ur" : "en")}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition shadow-sm"
+              >
+                <i className="bi bi-translate"></i>
+                {t.toggleLang}
+              </button>
 
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 transition shadow"
-          >
-            <i className="bi bi-plus-lg"></i>
-            {t.addBtn}
-          </button>
+              <button
+                onClick={() => setShowSummary((prev) => !prev)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition shadow-sm ${showSummary ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+              >
+                <i className="bi bi-bar-chart-fill"></i>
+                {t.summaryBtn}
+              </button>
+
+              <button
+                onClick={() => generatePrintDocument(filtered, lang, false)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition shadow-sm"
+              >
+                <i className="bi bi-printer text-indigo-600"></i>
+                {t.printBtn}
+              </button>
+
+              <button
+                onClick={() => generatePrintDocument(filtered, lang, true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition shadow-sm"
+              >
+                <i className="bi bi-file-earmark-pdf text-rose-600"></i>
+                {t.pdfBtn}
+              </button>
+
+              <button
+                onClick={openAdd}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+              >
+                <i className="bi bi-plus-square-fill"></i>
+                {t.addBtn}
+              </button>
+            </div>
+          </div>
+
+          {showSummary && (
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-100">
+              {[
+                { label: t.totalSuppliers, value: summary.supplierCount, icon: "bi-building", color: "text-indigo-600" },
+                { label: t.totalProducts, value: summary.productRows, icon: "bi-box-seam", color: "text-sky-600" },
+                { label: t.totalRateRows, value: summary.rateRows, icon: "bi-list-check", color: "text-emerald-600" },
+                { label: t.latestRate, value: fmt(summary.latestRate), icon: "bi-cash-stack", color: "text-violet-600" },
+              ].map((card) => (
+                <div key={card.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm mb-3 ${card.color}`}>
+                    <i className={`bi ${card.icon}`}></i>
+                  </div>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">{card.label}</p>
+                  <p className="text-2xl font-black text-slate-950 font-mono">{card.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="relative w-full max-w-sm">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                isUrdu ? "right-3" : "left-3"
-              }`}
-            ></i>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-4" : "left-4"}`}></i>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm ${
-                isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"
-              }`}
+              className={`w-full h-10 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm ${isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"}`}
             />
           </div>
 
-          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button
-              onClick={() => generatePrintDocument(false)}
-              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm"
-            >
-              <i className="bi bi-printer text-blue-600"></i>
-              {t.printBtn}
-            </button>
-
-            <button
-              onClick={() => generatePrintDocument(true)}
-              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm"
-            >
-              <i className="bi bi-file-earmark-pdf text-red-600"></i>
-              {t.pdfBtn}
-            </button>
-          </div>
+          {masterIssue && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700">
+              <i className="bi bi-exclamation-triangle-fill mr-2"></i>
+              {t.masterDataIssue}
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
+            <table className="w-full min-w-[1050px] text-sm text-slate-600">
+              <thead className="bg-slate-950 text-white text-[11px] font-black uppercase tracking-wide">
                 <tr>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>#</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.supplier}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
-                  <th className="px-5 py-3 text-center">{t.quantity}</th>
-                  <th className="px-5 py-3 text-right">{t.rate}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.effectiveDate}</th>
-                  <th className="px-5 py-3 text-center">{t.actions}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.supplier}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
+                  <th className="px-4 py-3 text-center">{t.unit}</th>
+                  <th className="px-4 py-3 text-right">{t.quantity}</th>
+                  <th className="px-4 py-3 text-right">{t.rate}</th>
+                  <th className="px-4 py-3 text-center">{t.effectiveDate}</th>
+                  <th className="px-4 py-3 text-center">{t.actions}</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={10} className="px-6 py-10 text-center text-slate-400">
-                      {t.loading}
+                    <td colSpan={10} className="px-6 py-12 text-center text-slate-400">
+                      <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                      <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-6 py-10 text-center text-slate-400">
-                      {t.noRecords}
-                    </td>
+                    <td colSpan={10} className="px-6 py-12 text-center text-slate-400">{t.noRecords}</td>
                   </tr>
                 ) : (
-                  filtered.map((r, i) => (
-                    <tr key={`${r.supplier_name || "no-supplier"}-${i}`} className="hover:bg-blue-50 transition align-top">
-                      <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{i + 1}</td>
-
-                      <td className="px-5 py-3.5 font-bold text-slate-700">
-                        {r.supplier_name || "—"}
-                      </td>
-
-                      <td className="px-5 py-3.5">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx}>
-                              <span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-semibold">
-                                {p.product_name || "—"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-slate-500">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx}>{p.unit_name || "—"}</div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-slate-500">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx}>{p.category_name || "—"}</div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-slate-500">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx}>{p.type_name || "—"}</div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-center">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx} className="font-mono font-bold text-blue-700">
-                              {p.quantity > 0 ? fmt(p.quantity) : "—"}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx} className="font-mono font-bold text-green-700">
-                              {p.rate !== null && p.rate !== undefined && p.rate !== ""
-                                ? `₨ ${fmt(p.rate)}`
-                                : "—"}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-xs text-slate-500">
-                        <div className="space-y-1.5">
-                          {(r.products || []).map((p, idx) => (
-                            <div key={idx}>{p.effective_date || "—"}</div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5">
-                        <div
-                          className={`flex items-center justify-center gap-1.5 ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
-                        >
-                          <button
-                            onClick={() => openEdit(r)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition"
-                          >
-                            <i className="bi bi-pencil-square"></i>
-                            {t.edit}
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(r.supplier_name)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 transition"
-                          >
-                            <i className="bi bi-trash3"></i>
-                            {t.delete}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filtered.map((record, index) => {
+                    const products = getProducts(record);
+                    return (
+                      <tr key={`${record.supplier_name || "no-supplier"}-${index}`} className="hover:bg-slate-50/80 transition align-top">
+                        <td className="px-4 py-4 text-slate-400 font-mono text-xs">{index + 1}</td>
+                        <td className={`px-4 py-4 font-black text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                          <div className={`flex items-center gap-2.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                              <i className="bi bi-building-fill"></i>
+                            </span>
+                            <span>{record.supplier_name || "—"}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="space-y-1.5">
+                            {products.map((product, productIndex) => (
+                              <div key={productIndex} className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 text-xs font-black">
+                                <span className="font-mono text-[10px] opacity-70">#{productIndex + 1}</span>
+                                {product.product_name || "—"}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="space-y-1.5">{products.map((product, productIndex) => <div key={productIndex} className="text-xs font-semibold text-slate-700">{product.category_name || "—"}</div>)}</div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="space-y-1.5">{products.map((product, productIndex) => <div key={productIndex} className="text-xs font-semibold text-slate-700">{product.type_name || "—"}</div>)}</div>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <div className="space-y-1.5">{products.map((product, productIndex) => <div key={productIndex} className="text-xs font-bold text-slate-950">{product.unit_name || "—"}</div>)}</div>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <div className="space-y-1.5">{products.map((product, productIndex) => <div key={productIndex} className="font-mono text-xs font-black text-slate-950">{product.quantity > 0 ? fmt(product.quantity) : "—"}</div>)}</div>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <div className="space-y-1.5">
+                            {products.map((product, productIndex) => (
+                              <div key={productIndex} className="inline-flex justify-end min-w-[70px] rounded-lg bg-slate-100 px-2 py-0.5 font-mono text-xs font-black text-slate-950">
+                                {product.rate !== null && product.rate !== undefined && product.rate !== "" ? fmt(product.rate) : "—"}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <div className="space-y-1.5">{products.map((product, productIndex) => <div key={productIndex} className="text-xs font-mono text-slate-600">{product.effective_date || "—"}</div>)}</div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className={`flex items-center justify-center gap-1.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <button
+                              onClick={() => openEdit(record)}
+                              className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center justify-center"
+                              title={t.edit}
+                            >
+                              <i className="bi bi-pencil-square text-sm"></i>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(record.supplier_name)}
+                              className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition flex items-center justify-center"
+                              title={t.delete}
+                            >
+                              <i className="bi bi-trash3-fill text-sm"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
