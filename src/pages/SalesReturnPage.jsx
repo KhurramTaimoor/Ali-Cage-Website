@@ -1022,18 +1022,19 @@ const SalesReturnPage = () => {
     [filtered]
   );
 
-  const labelClass = "block text-sm font-semibold text-slate-500 mb-1.5";
-  const inputCls = (readOnly = false) =>
-    `w-full border rounded-2xl py-3.5 text-base focus:outline-none focus:ring-4 ${
+
+  const labelClass = `block text-[10px] font-black uppercase tracking-[0.55px] text-slate-600 mb-1.5 ${isUrdu ? "text-right" : ""}`;
+  const fieldClass = (readOnly = false) =>
+    `w-full h-9 rounded-lg border px-3 text-[12px] font-semibold outline-none transition ${
       readOnly
-        ? "border-sky-200 bg-sky-50 text-black font-bold cursor-not-allowed focus:ring-sky-100"
-        : "border-sky-100 bg-white text-black focus:ring-sky-100"
-    } ${isUrdu ? "pr-4 pl-4 text-right" : "pl-4 pr-4"}`;
+        ? "border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+        : "border-slate-300 bg-white text-slate-950 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+    } ${isUrdu ? "text-right" : ""}`;
 
-  const readonlyAmountClass =
-    "w-full border border-sky-200 rounded-2xl py-3.5 px-4 text-base font-bold text-black bg-sky-50 cursor-not-allowed font-mono";
+  const amountFieldClass =
+    "w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-[12px] font-black text-indigo-700 font-mono text-right cursor-not-allowed";
 
-  const valueClass = "text-black font-medium";
+  const valueClass = "text-slate-950 font-semibold";
 
   return (
     <div
@@ -1041,82 +1042,93 @@ const SalesReturnPage = () => {
       style={{
         fontFamily: isUrdu
           ? "'Noto Nastaliq Urdu', serif"
-          : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
+          : "'DM Sans', Helvetica, Arial, sans-serif",
       }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 pb-20"
+      className="min-h-screen bg-slate-50 pb-16"
     >
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
       />
       <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
         rel="stylesheet"
       />
 
+      <style>{`
+        * { box-sizing: border-box; }
+        @keyframes srSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .sr-slide { animation: srSlide .25s ease-out both; }
+        .sr-table-head th {
+          background: #0f172a;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: .45px;
+          white-space: nowrap;
+        }
+        .sr-table-body tr:hover td { background: #f8fafc; }
+        .sr-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+        .sr-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .sr-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+      `}</style>
+
       {message.text && (
         <div
-          className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-base font-semibold flex items-center gap-2 ${
+          className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[80] px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-bold flex items-center gap-2 ${
             message.type === "error" ? "bg-rose-600" : "bg-emerald-600"
           }`}
         >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
+          <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
       )}
 
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] px-4 py-3 rounded-xl shadow-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5 mb-6">
-          <div
-            className={`flex items-center justify-between flex-wrap gap-4 ${
-              isUrdu ? "flex-row-reverse" : ""
-            }`}
-          >
+      <div className="max-w-[1280px] mx-auto px-4 py-5">
+        {/* Page Header */}
+        <div className="sr-slide bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-5 mb-5">
+          <div className={`flex items-center justify-between flex-wrap gap-4 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
             <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-black">
+              <h1 className="m-0 text-[28px] leading-tight font-black text-slate-950 tracking-[-0.5px]">
                 {t.title}
               </h1>
-              <p className="text-base text-slate-500 mt-1">{t.subtitle}</p>
+              <p className="m-0 mt-1 text-[13px] font-medium text-slate-500">{t.subtitle}</p>
             </div>
 
             <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
               <button
                 onClick={handleLangToggle}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-sky-200 text-sky-700 text-base font-semibold hover:bg-sky-50 transition shadow-sm"
+                disabled={translating}
+                className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 flex items-center gap-2"
               >
-                <i className="bi bi-translate"></i>
+                <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
                 {t.toggleLang}
               </button>
 
               <button
                 onClick={() => setShowSummary((v) => !v)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-base font-semibold transition shadow-sm ${
+                className={`h-10 px-4 rounded-xl text-sm font-bold transition shadow-sm flex items-center gap-2 ${
                   showSummary
-                    ? "bg-sky-600 text-white hover:bg-sky-700"
-                    : "bg-sky-100 text-sky-700 hover:bg-sky-200"
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 <i className="bi bi-bar-chart-line-fill"></i>
                 {t.summaryBtn}
-                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-sm`}></i>
+                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-[10px]`}></i>
               </button>
 
               <button
                 onClick={openAdd}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-sky-600 text-white text-base font-semibold hover:bg-sky-700 transition shadow-lg shadow-sky-200"
+                className="h-10 px-5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center gap-2"
               >
                 <i className="bi bi-arrow-return-left"></i>
                 {t.addBtn}
@@ -1125,50 +1137,40 @@ const SalesReturnPage = () => {
           </div>
 
           {showSummary && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-sky-100">
-              <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm mb-3 text-sky-600">
-                  <i className="bi bi-arrow-return-left"></i>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100">
+              {[
+                { label: t.totalReturns, value: summary.totalReturns, icon: "bi-arrow-return-left", accent: "text-indigo-600" },
+                { label: t.totalQty, value: fmt(summary.totalQty), icon: "bi-boxes", accent: "text-emerald-600" },
+                { label: t.totalAmount, value: fmt(summary.totalAmount), icon: "bi-cash-stack", accent: "text-blue-600" },
+              ].map((card) => (
+                <div key={card.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className={`w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm mb-3 ${card.accent}`}>
+                    <i className={`bi ${card.icon}`}></i>
+                  </div>
+                  <p className="m-0 text-xs font-bold text-slate-500">{card.label}</p>
+                  <p className="m-0 mt-1 text-2xl font-black text-slate-950 font-mono">{card.value}</p>
                 </div>
-                <p className="text-sm text-slate-500 mb-1">{t.totalReturns}</p>
-                <p className="text-3xl font-extrabold text-slate-950">{summary.totalReturns}</p>
-              </div>
-
-              <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm mb-3 text-emerald-600">
-                  <i className="bi bi-boxes"></i>
-                </div>
-                <p className="text-sm text-slate-500 mb-1">{t.totalQty}</p>
-                <p className="text-3xl font-extrabold text-slate-950">{summary.totalQty}</p>
-              </div>
-
-              <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                <p className="text-sm text-slate-500 mb-1">{t.totalAmount}</p>
-                <p className="text-2xl font-extrabold text-slate-950">{fmt(summary.totalAmount)}</p>
-              </div>
+              ))}
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                isUrdu ? "right-4" : "left-4"
-              }`}
-            ></i>
+        {/* Search and Filters */}
+        <div className={`flex flex-wrap items-center gap-3 mb-5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <div className="relative flex-1 min-w-[240px] max-w-[420px]">
+            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 text-sm ${isUrdu ? "right-3" : "left-3"}`}></i>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className={`w-full border border-sky-100 rounded-2xl py-3.5 bg-white text-base text-black focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm ${
-                isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
+              className={`w-full h-10 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 shadow-sm ${
+                isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
               }`}
             />
           </div>
 
           <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <span className="text-sm font-semibold text-slate-500">{t.filterLabel}</span>
+            <span className="text-[11px] uppercase tracking-wide font-black text-slate-500">{t.filterLabel}</span>
             {[
               { key: "24h", label: t.filter24h, icon: "bi-clock" },
               { key: "7d", label: t.filter7d, icon: "bi-calendar-week" },
@@ -1178,10 +1180,10 @@ const SalesReturnPage = () => {
               <button
                 key={f.key}
                 onClick={() => setDateFilter(f.key)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm ${
+                className={`h-9 px-3 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-1.5 ${
                   dateFilter === f.key
-                    ? "bg-sky-600 text-white shadow-sky-200"
-                    : "bg-white border border-sky-100 text-sky-700 hover:bg-sky-50"
+                    ? "bg-indigo-600 text-white shadow-indigo-200"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 <i className={`bi ${f.icon}`}></i>
@@ -1191,180 +1193,198 @@ const SalesReturnPage = () => {
           </div>
         </div>
 
+        {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto" dir={dir}>
-              <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
-                <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                  <i className="bi bi-arrow-return-left text-sky-700 text-xl"></i>
+          <div className="fixed inset-0 bg-slate-950/55 z-50 flex items-center justify-center p-3 backdrop-blur-sm">
+            <div className="w-full max-w-[1120px] max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-white/80 overflow-hidden flex flex-col sr-slide" dir={dir}>
+              {/* Modal Header */}
+              <div className={`sticky top-0 z-10 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100 shrink-0">
+                    <i className="bi bi-arrow-return-left text-lg"></i>
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <h2 className="m-0 text-xl font-black text-slate-950 tracking-tight">{editingId ? t.edit : t.addBtn}</h2>
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[11px] font-black uppercase">
+                        {form.return_no || t.returnNo}
+                      </span>
+                    </div>
+                    <p className="m-0 mt-1 text-xs font-medium text-slate-500">{t.subtitle}</p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-extrabold text-black">
-                  {editingId ? t.edit : t.addBtn}
-                </h2>
+                <button
+                  onClick={() => setShowForm(false)}
+                  disabled={submitting}
+                  className="w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition flex items-center justify-center disabled:opacity-60"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>{t.returnNo}</label>
-                  <input
-                    type="text"
-                    value={form.return_no}
-                    onChange={(e) => setForm((f) => ({ ...f, return_no: e.target.value }))}
-                    className={inputCls(false)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.invoiceSelect}</label>
-                  <select
-                    value={form.invoice_id}
-                    onChange={(e) => handleInvoiceSelect(e.target.value)}
-                    className={inputCls(false)}
-                  >
-                    <option value="">
-                      {invoiceLoading ? t.loadingInvoices : t.selectInvoice}
-                    </option>
-                    {invoices.map((inv) => (
-                      <option key={inv.id} value={inv.id}>
-                        {inv.invoice_no} - {inv.customer_name || "Customer"} - {inv.invoice_date || ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.invoiceRef}</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={form.invoice_ref}
-                    className={inputCls(true)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.product}</label>
-                  <select
-                    value={form.invoice_item_id}
-                    onChange={(e) => handleProductSelect(e.target.value)}
-                    disabled={!form.invoice_id || itemLoading}
-                    className={inputCls(false)}
-                  >
-                    <option value="">
-                      {itemLoading ? t.loadingProducts : t.selectProduct}
-                    </option>
-                    {invoiceItems.map((item) => (
-                      <option key={item.invoice_item_id} value={item.invoice_item_id}>
-                        {isUrdu
-                          ? urduCache[`product:${item.product_id}`] || item.product_name
-                          : item.product_name}{" "}
-                        | Sold: {item.qty} | Returned: {item.returned_qty || 0}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.saleOrderDate}</label>
-                  <input
-                    type="date"
-                    value={form.sale_order_date}
-                    readOnly
-                    className={inputCls(true)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.returnDate}</label>
-                  <input
-                    type="date"
-                    value={form.return_date}
-                    onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))}
-                    className={inputCls(false)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.soldQty}</label>
-                  <input type="text" readOnly value={fmt(form.sold_qty)} className={inputCls(true)} />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.alreadyReturnedQty}</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={fmt(form.already_returned_qty)}
-                    className={inputCls(true)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.availableQty}</label>
-                  <input type="text" readOnly value={fmt(form.available_qty)} className={inputCls(true)} />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.returnQty}</label>
-                  <input
-                    type="number"
-                    value={form.return_qty}
-                    max={form.available_qty}
-                    onChange={(e) => setForm((f) => ({ ...f, return_qty: e.target.value }))}
-                    className={inputCls(false)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>{t.rate}</label>
-                  <input
-                    type="number"
-                    value={form.rate}
-                    onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))}
-                    className={inputCls(false)}
-                  />
-                </div>
-
-                <div className="md:col-span-2 bg-sky-50/70 p-4 rounded-2xl border border-sky-100">
-                  <label className="block text-sm font-bold text-sky-800 mb-1.5">
-                    {t.returnAmount}
-                    <span className={`${isUrdu ? "mr-2" : "ml-2"} text-sky-500 font-normal text-sm`}>
-                      ⚡ {t.autoCalcNote}
+              <div className="flex-1 overflow-y-auto sr-scroll p-4 bg-slate-50 space-y-4">
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                      <i className="bi bi-file-earmark-text-fill"></i>
                     </span>
-                  </label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={fmt(form.return_amount)}
-                    className={readonlyAmountClass}
-                  />
-                </div>
+                    <div>
+                      <h3 className="m-0 text-sm font-black text-slate-950">Return Information</h3>
+                      <p className="m-0 mt-0.5 text-[11px] text-slate-500">Invoice reference, product and return date</p>
+                    </div>
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label className={labelClass}>{t.reason}</label>
-                  <textarea
-                    rows={3}
-                    value={form.reason}
-                    onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
-                    className={`${inputCls(false)} resize-none`}
-                  />
-                </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3">
+                    <div className="xl:col-span-2">
+                      <label className={labelClass}>{t.returnNo} *</label>
+                      <input
+                        type="text"
+                        value={form.return_no}
+                        onChange={(e) => setForm((f) => ({ ...f, return_no: e.target.value }))}
+                        className={fieldClass(false)}
+                      />
+                    </div>
+
+                    <div className="xl:col-span-4">
+                      <label className={labelClass}>{t.invoiceSelect} *</label>
+                      <select
+                        value={form.invoice_id}
+                        onChange={(e) => handleInvoiceSelect(e.target.value)}
+                        className={fieldClass(false)}
+                      >
+                        <option value="">{invoiceLoading ? t.loadingInvoices : t.selectInvoice}</option>
+                        {invoices.map((inv) => (
+                          <option key={inv.id} value={inv.id}>
+                            {inv.invoice_no} - {inv.customer_name || "Customer"} - {inv.invoice_date || ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="xl:col-span-3">
+                      <label className={labelClass}>{t.invoiceRef}</label>
+                      <input type="text" readOnly value={form.invoice_ref} className={fieldClass(true)} />
+                    </div>
+
+                    <div className="xl:col-span-3">
+                      <label className={labelClass}>{t.product} *</label>
+                      <select
+                        value={form.invoice_item_id}
+                        onChange={(e) => handleProductSelect(e.target.value)}
+                        disabled={!form.invoice_id || itemLoading}
+                        className={fieldClass(false)}
+                      >
+                        <option value="">{itemLoading ? t.loadingProducts : t.selectProduct}</option>
+                        {invoiceItems.map((item) => (
+                          <option key={item.invoice_item_id} value={item.invoice_item_id}>
+                            {isUrdu ? urduCache[`product:${item.product_id}`] || item.product_name : item.product_name}
+                            {" | Sold: "}{item.qty}{" | Returned: "}{item.returned_qty || 0}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="xl:col-span-2">
+                      <label className={labelClass}>{t.saleOrderDate}</label>
+                      <input type="date" value={form.sale_order_date} readOnly className={fieldClass(true)} />
+                    </div>
+
+                    <div className="xl:col-span-2">
+                      <label className={labelClass}>{t.returnDate}</label>
+                      <input
+                        type="date"
+                        value={form.return_date}
+                        onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))}
+                        className={fieldClass(false)}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 xl:col-span-8">
+                      <label className={labelClass}>{t.reason}</label>
+                      <textarea
+                        rows={2}
+                        value={form.reason}
+                        onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+                        className={`${fieldClass(false)} h-[70px] resize-none py-2 leading-relaxed`}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <span className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <i className="bi bi-calculator-fill"></i>
+                    </span>
+                    <div>
+                      <h3 className="m-0 text-sm font-black text-slate-950">Quantity & Amount</h3>
+                      <p className="m-0 mt-0.5 text-[11px] text-slate-500">Return quantity, rate and auto calculated amount</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 items-end">
+                    <div>
+                      <label className={labelClass}>{t.soldQty}</label>
+                      <input type="text" readOnly value={fmt(form.sold_qty)} className={fieldClass(true)} />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>{t.alreadyReturnedQty}</label>
+                      <input type="text" readOnly value={fmt(form.already_returned_qty)} className={fieldClass(true)} />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>{t.availableQty}</label>
+                      <input type="text" readOnly value={fmt(form.available_qty)} className={fieldClass(true)} />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>{t.returnQty} *</label>
+                      <input
+                        type="number"
+                        value={form.return_qty}
+                        max={form.available_qty}
+                        onChange={(e) => setForm((f) => ({ ...f, return_qty: e.target.value }))}
+                        className={fieldClass(false)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>{t.rate}</label>
+                      <input
+                        type="number"
+                        value={form.rate}
+                        onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))}
+                        className={`${fieldClass(false)} font-mono text-right`}
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <label className={labelClass}>{t.returnAmount}</label>
+                      <input type="text" readOnly value={fmt(form.return_amount)} className={amountFieldClass} />
+                      <p className="m-0 mt-1 text-[10px] font-semibold text-indigo-600">
+                        <i className="bi bi-lightning-charge-fill"></i> {t.autoCalcNote}
+                      </p>
+                    </div>
+                  </div>
+                </section>
               </div>
 
-              <div className={`flex gap-3 mt-6 pt-4 border-t border-sky-100 ${isUrdu ? "flex-row-reverse" : ""}`}>
+              {/* Modal Footer */}
+              <div className={`sticky bottom-0 bg-white border-t border-slate-200 px-5 py-4 flex gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
                 <button
                   onClick={handleSave}
                   disabled={submitting}
-                  className="flex-1 bg-sky-600 text-white py-3.5 rounded-2xl font-semibold text-base hover:bg-sky-700 transition shadow-lg shadow-sky-200 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 h-11 rounded-xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save"}`}></i>
+                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
                   {submitting ? t.saving : t.save}
                 </button>
 
                 <button
                   onClick={() => setShowForm(false)}
                   disabled={submitting}
-                  className="flex-1 border border-sky-200 bg-white text-sky-700 py-3.5 rounded-2xl font-semibold text-base hover:bg-sky-50 transition disabled:opacity-60"
+                  className="flex-1 h-11 rounded-xl bg-white border border-slate-300 text-slate-700 font-black text-sm hover:bg-slate-50 transition disabled:opacity-60"
                 >
                   {t.cancel}
                 </button>
@@ -1373,38 +1393,39 @@ const SalesReturnPage = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
-              <thead>
-                <tr className="bg-sky-50 text-slate-600 text-sm font-bold border-b border-sky-100 whitespace-nowrap">
-                  <th className={`px-4 py-3.5 ${isUrdu ? "text-right" : "text-left"} w-10`}>#</th>
-                  <th className={`px-4 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.returnNo}</th>
-                  <th className={`px-4 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.invoiceRef}</th>
-                  <th className={`px-4 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                  <th className="px-4 py-3.5 text-center">{t.saleOrderDate}</th>
-                  <th className="px-4 py-3.5 text-center">{t.returnDate}</th>
-                  <th className="px-4 py-3.5 text-right">{t.returnQty}</th>
-                  <th className="px-4 py-3.5 text-right">{t.rate}</th>
-                  <th className="px-4 py-3.5 text-right">{t.returnAmount}</th>
-                  <th className="px-4 py-3.5 text-right">{t.debit}</th>
-                  <th className="px-4 py-3.5 text-right">{t.credit}</th>
-                  <th className={`px-4 py-3.5 ${isUrdu ? "text-right" : "text-left"}`}>{t.reason}</th>
-                  <th className="px-4 py-3.5 text-center">{t.actions}</th>
+        {/* Returns Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto sr-scroll">
+            <table className="w-full min-w-[1180px] text-[12px] text-slate-600">
+              <thead className="sr-table-head">
+                <tr>
+                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"} w-10`}>#</th>
+                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.returnNo}</th>
+                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.invoiceRef}</th>
+                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
+                  <th className="px-3 py-3 text-center">{t.saleOrderDate}</th>
+                  <th className="px-3 py-3 text-center">{t.returnDate}</th>
+                  <th className="px-3 py-3 text-right">{t.returnQty}</th>
+                  <th className="px-3 py-3 text-right">{t.rate}</th>
+                  <th className="px-3 py-3 text-right">{t.returnAmount}</th>
+                  <th className="px-3 py-3 text-right">{t.debit}</th>
+                  <th className="px-3 py-3 text-right">{t.credit}</th>
+                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.reason}</th>
+                  <th className="px-3 py-3 text-center">{t.actions}</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-sky-50">
+              <tbody className="sr-table-body divide-y divide-slate-100">
                 {loading ? (
                   <tr>
                     <td colSpan={13} className="px-6 py-12 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                      <p className="mt-2 text-base">{t.loading}</p>
+                      <p className="mt-2 text-sm">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="px-6 py-12 text-center text-slate-400 text-base">
+                    <td colSpan={13} className="px-6 py-12 text-center text-slate-400 text-sm">
                       {t.noRecords}
                     </td>
                   </tr>
@@ -1412,58 +1433,44 @@ const SalesReturnPage = () => {
                   filtered.map((r, i) => {
                     const returnAmt = Number(r.return_amount || 0);
                     return (
-                      <tr key={r.id} className="hover:bg-sky-50/60 transition">
-                        <td className="px-4 py-3 text-slate-400 font-mono text-base">{i + 1}</td>
-                        <td className="px-4 py-3 font-bold text-slate-950 font-mono text-base">{r.return_no}</td>
-                        <td className="px-4 py-3 text-base text-black">{r.invoice_ref || "—"}</td>
-                        <td className={`px-4 py-3 text-base ${valueClass}`}>
-                          {isUrdu
-                            ? urduCache[`product:${r.product_id}`] || r.product_name || "—"
-                            : r.product_name || "—"}
+                      <tr key={r.id} className="transition">
+                        <td className="px-3 py-3 text-slate-400 font-mono font-bold">{i + 1}</td>
+                        <td className="px-3 py-3 font-black text-slate-950 font-mono">{r.return_no}</td>
+                        <td className="px-3 py-3 text-slate-800">{r.invoice_ref || "—"}</td>
+                        <td className={`px-3 py-3 ${valueClass}`}>
+                          <span className={translating ? "opacity-40" : ""}>
+                            {isUrdu ? urduCache[`product:${r.product_id}`] || r.product_name || "—" : r.product_name || "—"}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-center font-mono text-base text-black">
-                          {r.sale_order_date || "—"}
+                        <td className="px-3 py-3 text-center font-mono text-slate-700">{r.sale_order_date || "—"}</td>
+                        <td className="px-3 py-3 text-center font-mono text-slate-700">{r.return_date || "—"}</td>
+                        <td className="px-3 py-3 text-right font-mono font-bold text-slate-950">{fmt(r.return_qty)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-slate-700">{fmt(r.rate)}</td>
+                        <td className="px-3 py-3 text-right font-mono font-black text-indigo-700">{fmt(returnAmt)}</td>
+                        <td className="px-3 py-3 text-right font-mono font-bold text-slate-700">{fmt(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono font-bold text-slate-700">{fmt(returnAmt)}</td>
+                        <td className="px-3 py-3 max-w-[210px] truncate text-slate-700">
+                          {isUrdu ? urduCache[`reason:${r.id || r.return_no}`] || r.reason || "—" : r.reason || "—"}
                         </td>
-                        <td className="px-4 py-3 text-center font-mono text-base text-black">
-                          {r.return_date || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold text-black text-base">
-                          {fmt(r.return_qty)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono text-black text-base">{fmt(r.rate)}</td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-slate-950 text-base">
-                          {fmt(returnAmt)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold text-black text-base">
-                          {fmt(0)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-semibold text-black text-base">
-                          {fmt(returnAmt)}
-                        </td>
-                        <td className="px-4 py-3 max-w-[180px] truncate text-base text-black">
-                          {isUrdu
-                            ? urduCache[`reason:${r.id || r.return_no}`] || r.reason || "—"
-                            : r.reason || "—"}
-                        </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           <div className={`flex items-center justify-center gap-1.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
                             <button
                               onClick={() => openEdit(r)}
-                              className="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 hover:bg-sky-200 transition flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition flex items-center justify-center"
                               title={t.edit}
                             >
                               <i className="bi bi-pencil-square text-sm"></i>
                             </button>
                             <button
                               onClick={() => handleDelete(r.id)}
-                              className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 hover:bg-rose-200 transition flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition flex items-center justify-center"
                               title={t.delete}
                             >
                               <i className="bi bi-trash3 text-sm"></i>
                             </button>
                             <button
                               onClick={() => handlePrint(r)}
-                              className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 hover:bg-amber-200 transition flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 transition flex items-center justify-center"
                               title={t.printSlip}
                             >
                               <i className="bi bi-printer-fill text-sm"></i>
