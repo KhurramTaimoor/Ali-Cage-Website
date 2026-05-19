@@ -722,38 +722,56 @@ const RateListPage = () => {
           ? "'Noto Nastaliq Urdu', serif"
           : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
       }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 pb-20"
+      className="min-h-screen bg-slate-100 pb-16"
     >
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
+      <style>{`
+        @keyframes rateSlideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes rateFadeIn { from { opacity:0; } to { opacity:1; } }
+        .rate-slide-up { animation: rateSlideUp .28s ease-out both; }
+        .rate-fade-in { animation: rateFadeIn .18s ease-out both; }
+        .rate-btn { transition: all .15s ease; }
+        .rate-btn:hover { transform: translateY(-1px); }
+        .rate-field { height: 36px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color:#0f172a; font-size:12px; font-weight:600; outline:none; transition: all .15s ease; }
+        .rate-field:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.14); }
+        .rate-table thead th { background:#0f172a; color:#f8fafc; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:10px 12px; white-space:nowrap; }
+        .rate-table tbody td { padding:12px; font-size:12px; color:#334155; border-bottom:1px solid #eef2f7; vertical-align:top; }
+        .rate-table tbody tr:hover td { background:#f8fafc; }
+        .rate-scroll::-webkit-scrollbar { width:6px; height:6px; }
+        .rate-scroll::-webkit-scrollbar-track { background:#f1f5f9; }
+        .rate-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+      `}</style>
+
       {message.text && (
-        <div className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}>
+        <div className={`rate-fade-in fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[80] px-4 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}>
           <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
       )}
 
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] px-4 py-3 rounded-2xl shadow-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">{t.title}</h1>
-              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-5 py-5">
+        {/* Page Header */}
+        <div className="rate-slide-up bg-white border border-slate-200 rounded-[20px] shadow-sm px-5 sm:px-6 py-5 mb-5">
+          <div className={`flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <div className={isUrdu ? "text-right" : ""}>
+              <h1 className="m-0 text-[28px] leading-tight font-black tracking-tight text-slate-900">{t.title}</h1>
+              <p className="m-0 mt-1 text-[13px] font-medium text-slate-400">{t.subtitle}</p>
             </div>
 
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
               <button
                 onClick={handleLangToggle}
                 disabled={translating}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="rate-btn h-10 inline-flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
                 {t.toggleLang}
@@ -761,18 +779,16 @@ const RateListPage = () => {
 
               <button
                 onClick={() => setShowSummary((v) => !v)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm ${showSummary ? "bg-sky-600 text-white hover:bg-sky-700" : "bg-sky-100 text-sky-700 hover:bg-sky-200"}`}
+                className={`rate-btn h-10 inline-flex items-center gap-2 px-4 rounded-xl text-sm font-bold border ${showSummary ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
               >
                 <i className="bi bi-bar-chart-line-fill"></i>
                 {t.summaryBtn}
-                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
+                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-[10px]`}></i>
               </button>
 
               <button
-                onClick={() =>
-                  downloadRatePdf(filtered, lang, { productMap, categoryMap, productTypeMap, unitMap }, urduCache)
-                }
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm"
+                onClick={() => downloadRatePdf(filtered, lang, { productMap, categoryMap, productTypeMap, unitMap }, urduCache)}
+                className="rate-btn h-10 inline-flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50"
               >
                 <i className="bi bi-file-earmark-pdf-fill"></i>
                 {t.downloadPdf}
@@ -780,7 +796,7 @@ const RateListPage = () => {
 
               <button
                 onClick={openAdd}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition shadow-lg shadow-sky-200"
+                className="rate-btn h-10 inline-flex items-center gap-2 px-4 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 shadow-lg shadow-indigo-200"
               >
                 <i className="bi bi-plus-circle-fill"></i>
                 {t.addBtn}
@@ -789,44 +805,50 @@ const RateListPage = () => {
           </div>
 
           {showSummary && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5 pt-5 border-t border-sky-100">
-              <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                <p className="text-xs text-slate-500 mb-1">{t.totalProducts}</p>
-                <p className="text-3xl font-extrabold text-slate-950">{summary.total}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5 pt-5 border-t border-slate-100">
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+                <div className="w-10 h-10 rounded-xl bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
+                  <i className="bi bi-tags-fill"></i>
+                </div>
+                <p className="m-0 text-xs font-bold text-slate-500">{t.totalProducts}</p>
+                <p className="m-0 mt-1 text-3xl font-black text-slate-950">{summary.total}</p>
               </div>
-              <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                <p className="text-xs text-slate-500 mb-1">{t.totalPriceSets}</p>
-                <p className="text-3xl font-extrabold text-slate-950">{summary.totalPriceSets}</p>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                <div className="w-10 h-10 rounded-xl bg-white text-emerald-600 flex items-center justify-center shadow-sm mb-3">
+                  <i className="bi bi-layers-fill"></i>
+                </div>
+                <p className="m-0 text-xs font-bold text-slate-500">{t.totalPriceSets}</p>
+                <p className="m-0 mt-1 text-3xl font-black text-slate-950">{summary.totalPriceSets}</p>
               </div>
             </div>
           )}
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-4" : "left-4"}`}></i>
+        {/* Search and Filters */}
+        <div className={`flex flex-wrap items-center gap-3 mb-5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 text-sm ${isUrdu ? "right-3" : "left-3"}`}></i>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className={`w-full border border-sky-100 rounded-2xl py-3 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm ${isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"}`}
+              className={`w-full h-10 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 shadow-sm ${isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"}`}
             />
           </div>
 
-          <div className={`flex flex-wrap gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <div className={`flex flex-wrap items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
             <button
               onClick={() => setFilterCategory("")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${!filterCategory ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-sky-100 hover:bg-sky-50"}`}
+              className={`rate-btn h-9 px-3 rounded-xl text-xs font-black border ${!filterCategory ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
             >
+              <i className="bi bi-list-ul me-1"></i>
               {t.all}
             </button>
             {usedCategories.map((catId) => (
               <button
                 key={catId}
-                onClick={() => setFilterCategory(filterCategory === catId ? "" : catId)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${String(filterCategory) === String(catId) ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-sky-100 hover:bg-sky-50"}`}
+                onClick={() => setFilterCategory(String(filterCategory) === String(catId) ? "" : catId)}
+                className={`rate-btn h-9 px-3 rounded-xl text-xs font-black border ${String(filterCategory) === String(catId) ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
               >
                 <span className={translating ? "opacity-40" : ""}>{getCategoryName(catId)}</span>
               </button>
@@ -834,217 +856,330 @@ const RateListPage = () => {
           </div>
         </div>
 
+        {/* Add / Edit Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto" dir={dir}>
-              <div className="flex items-center gap-3 mb-5 border-b border-sky-100 pb-4">
-                <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                  <i className="bi bi-tags-fill text-sky-700 text-lg"></i>
+          <div className="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto">
+            <div className="rate-slide-up mx-auto w-full max-w-[1040px] max-h-[calc(100vh-36px)] bg-white rounded-[22px] shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
+              <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between gap-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                  <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
+                    <i className="bi bi-tags-fill text-lg"></i>
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <h2 className="m-0 text-xl font-black text-slate-950 tracking-tight">{editingId ? t.edit : t.addBtn}</h2>
+                      {form.product_id && (
+                        <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[11px] font-black uppercase tracking-wide truncate max-w-[280px]">
+                          {getProductName(form.product_id)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="m-0 mt-1 text-[12px] font-medium text-slate-500">{t.subtitle}</p>
+                  </div>
                 </div>
-                <h2 className="text-xl font-extrabold text-slate-800">{editingId ? t.edit : t.addBtn}</h2>
+
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-xs font-semibold text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>
-                    {t.productItemLabel} *
-                  </label>
-                  <select
-                    value={form.product_id}
-                    onChange={(e) => setForm((prev) => ({ ...prev, product_id: e.target.value }))}
-                    className={`w-full border border-sky-100 rounded-2xl py-3 px-4 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${isUrdu ? "text-right" : ""}`}
-                  >
-                    <option value="">{t.selectProduct}</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name || p.name_en || p.product_name || p.product_item_en || `#${p.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-4">
-                  {form.price_options.map((row, index) => (
-                    <div key={index} className="border border-sky-100 rounded-2xl p-4 bg-sky-50/40 space-y-3">
-                      <div className={`flex items-center justify-between gap-3 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                        <h3 className="text-sm font-bold text-slate-700">{t.priceGroup} {index + 1}</h3>
-                        {form.price_options.length > 1 && (
-                          <button type="button" onClick={() => removePriceRow(index)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-rose-100 text-rose-600 hover:bg-rose-200 transition">
-                            <i className="bi bi-trash3-fill"></i>
-                            {t.removePriceRow}
-                          </button>
-                        )}
+              <div className="flex-1 overflow-y-auto rate-scroll bg-slate-50 p-4 space-y-4">
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                        <i className="bi bi-box-seam-fill"></i>
                       </div>
+                      <div>
+                        <h3 className="m-0 text-sm font-black text-slate-950">{t.productItemLabel}</h3>
+                        <p className="m-0 mt-0.5 text-[11px] font-medium text-slate-500">Select product first, then add price sets below</p>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5">
+                      <i className="bi bi-asterisk text-rose-500"></i>
+                      Required
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>
+                      {t.productItemLabel} <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={form.product_id}
+                      onChange={(e) => setForm((prev) => ({ ...prev, product_id: e.target.value }))}
+                      className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}
+                    >
+                      <option value="">{t.selectProduct}</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name || p.name_en || p.product_name || p.product_item_en || `#${p.id}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </section>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {[
-                          ["category_id", t.categoryLabel, categories, (c) => c.name || c.name_en || c.category_name || `#${c.id}`, t.selectCategory],
-                          ["product_type_id", t.typeLabel, types, (x) => x.product_type_en || x.name || x.name_en || x.type_name || `#${x.id}`, t.selectType],
-                          ["unit_id", t.unitLabel, units, (u) => u.name || u.name_en || u.unit_name || `#${u.id}`, t.selectUnit],
-                        ].map(([key, label, list, labelFn, placeholder]) => (
-                          <div key={key}>
-                            <label className={`block text-xs font-semibold text-slate-500 mb-1 ${isUrdu ? "text-right" : ""}`}>{label}</label>
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center">
+                        <i className="bi bi-cash-coin"></i>
+                      </div>
+                      <div>
+                        <h3 className="m-0 text-sm font-black text-slate-950">{t.totalPriceSets}</h3>
+                        <p className="m-0 mt-0.5 text-[11px] font-medium text-slate-500">Category, type, unit and pricing in compact rows</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addPriceRow}
+                      className="rate-btn h-9 px-4 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      <i className="bi bi-plus-lg"></i>
+                      {t.addPriceRow}
+                    </button>
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    {form.price_options.map((row, index) => (
+                      <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden">
+                        <div className={`px-3 py-2 bg-white border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                          <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-black font-mono">{index + 1}</span>
+                            <div>
+                              <p className="m-0 text-sm font-black text-slate-950">{t.priceGroup} {index + 1}</p>
+                              <p className="m-0 text-[11px] font-medium text-slate-400">Retail · Wholesale · Distributor</p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => removePriceRow(index)}
+                            disabled={form.price_options.length === 1}
+                            className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center"
+                            title={t.removePriceRow}
+                          >
+                            <i className="bi bi-trash3 text-sm"></i>
+                          </button>
+                        </div>
+
+                        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 items-end">
+                          <div className="lg:col-span-3">
+                            <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.categoryLabel} <span className="text-rose-500">*</span></label>
                             <select
-                              value={row[key]}
-                              onChange={(e) => updatePriceRow(index, key, e.target.value)}
-                              className={`w-full border border-sky-100 rounded-2xl py-2.5 px-4 text-sm text-slate-700 bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${isUrdu ? "text-right" : ""}`}
+                              value={row.category_id}
+                              onChange={(e) => updatePriceRow(index, "category_id", e.target.value)}
+                              className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}
                             >
-                              <option value="">{placeholder}</option>
-                              {list.map((item) => (
-                                <option key={item.id} value={item.id}>{labelFn(item)}</option>
+                              <option value="">{t.selectCategory}</option>
+                              {categories.map((item) => (
+                                <option key={item.id} value={item.id}>{item.name || item.name_en || item.category_name || `#${item.id}`}</option>
                               ))}
                             </select>
                           </div>
-                        ))}
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {[
-                          ["retail_rate", t.retailRate],
-                          ["wholesale_rate", t.wholesaleRate],
-                          ["distributor_rate", t.distributorRate],
-                        ].map(([key, label]) => (
-                          <div key={key}>
-                            <label className={`block text-xs font-semibold text-slate-500 mb-1 ${isUrdu ? "text-right" : ""}`}>{label}</label>
-                            <input
-                              type="number"
-                              value={row[key]}
-                              onChange={(e) => updatePriceRow(index, key, e.target.value)}
-                              className={`w-full border border-sky-100 rounded-2xl py-2.5 px-3 text-sm text-slate-700 bg-white font-mono focus:outline-none focus:ring-4 focus:ring-sky-100 ${isUrdu ? "text-right" : ""}`}
-                            />
+                          <div className="lg:col-span-3">
+                            <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.typeLabel} <span className="text-rose-500">*</span></label>
+                            <select
+                              value={row.product_type_id}
+                              onChange={(e) => updatePriceRow(index, "product_type_id", e.target.value)}
+                              className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}
+                            >
+                              <option value="">{t.selectType}</option>
+                              {types.map((item) => (
+                                <option key={item.id} value={item.id}>{item.product_type_en || item.name || item.name_en || item.type_name || `#${item.id}`}</option>
+                              ))}
+                            </select>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
 
-                  <button
-                    type="button"
-                    onClick={addPriceRow}
-                    className="w-full border border-dashed border-sky-300 text-sky-700 py-3 rounded-2xl text-sm font-semibold hover:bg-sky-50 transition flex items-center justify-center gap-2"
-                  >
-                    <i className="bi bi-plus-circle"></i>
-                    {t.addPriceRow}
-                  </button>
-                </div>
+                          <div className="lg:col-span-2">
+                            <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.unitLabel}</label>
+                            <select
+                              value={row.unit_id}
+                              onChange={(e) => updatePriceRow(index, "unit_id", e.target.value)}
+                              className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}
+                            >
+                              <option value="">{t.selectUnit}</option>
+                              {units.map((item) => (
+                                <option key={item.id} value={item.id}>{item.name || item.name_en || item.unit_name || `#${item.id}`}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                              <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.retailRate}</label>
+                              <input
+                                type="number"
+                                value={row.retail_rate}
+                                onChange={(e) => updatePriceRow(index, "retail_rate", e.target.value)}
+                                className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.wholesaleRate}</label>
+                              <input
+                                type="number"
+                                value={row.wholesale_rate}
+                                onChange={(e) => updatePriceRow(index, "wholesale_rate", e.target.value)}
+                                className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.distributorRate}</label>
+                              <input
+                                type="number"
+                                value={row.distributor_rate}
+                                onChange={(e) => updatePriceRow(index, "distributor_rate", e.target.value)}
+                                className={`rate-field w-full px-3 font-mono text-right ${isUrdu ? "text-left" : ""}`}
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </div>
 
-              <div className={`flex gap-3 mt-6 pt-4 border-t border-sky-100 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                <button onClick={handleSave} disabled={submitting} className="flex-1 bg-sky-600 text-white py-3 rounded-2xl font-semibold text-sm hover:bg-sky-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save"}`}></i>
-                  {submitting ? t.saving : t.save}
-                </button>
-                <button onClick={() => setShowForm(false)} disabled={submitting} className="flex-1 bg-white border border-sky-200 text-sky-700 py-3 rounded-2xl font-semibold text-sm hover:bg-sky-50 transition disabled:opacity-60">
+              <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-5 py-3 flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`hidden sm:flex items-center gap-2 text-xs font-bold text-slate-500 flex-1 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                  <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <i className="bi bi-shield-check"></i>
+                  </span>
+                  Ready to save rate record
+                </div>
+                <button
+                  onClick={() => setShowForm(false)}
+                  disabled={submitting}
+                  className="rate-btn h-11 min-w-[150px] rounded-xl bg-white border border-slate-300 text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-60"
+                >
                   {t.cancel}
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={submitting}
+                  className="rate-btn h-11 min-w-[170px] rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
+                  {submitting ? t.saving : t.save}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
+        {/* Table */}
+        <div className="rate-slide-up bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto rate-scroll">
+            <table className="rate-table w-full min-w-[980px] border-collapse">
               <thead>
-                <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.productItem}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
-                  <th className="px-5 py-4 text-center">{t.unit}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>{t.retailRate}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>{t.wholesaleRate}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>{t.distributorRate}</th>
-                  <th className="px-5 py-4 text-center">{t.actions}</th>
+                <tr>
+                  <th className="text-center w-12">#</th>
+                  <th className={isUrdu ? "text-right" : "text-left"}>{t.productItem}</th>
+                  <th className={isUrdu ? "text-right" : "text-left"}>{t.category}</th>
+                  <th className={isUrdu ? "text-right" : "text-left"}>{t.type}</th>
+                  <th className="text-center">{t.unit}</th>
+                  <th className={isUrdu ? "text-left" : "text-right"}>{t.retailRate}</th>
+                  <th className={isUrdu ? "text-left" : "text-right"}>{t.wholesaleRate}</th>
+                  <th className={isUrdu ? "text-left" : "text-right"}>{t.distributorRate}</th>
+                  <th className="text-center w-28">{t.actions}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sky-50">
+              <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={9} className="!py-14 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                      <p className="mt-2">{t.loading}</p>
+                      <p className="mt-2 text-sm font-semibold">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-slate-400">{t.noRecords}</td>
+                    <td colSpan={9} className="!py-14 text-center text-slate-400 text-sm font-semibold">{t.noRecords}</td>
                   </tr>
                 ) : (
                   filtered.map((r, i) => {
                     const priceOptions = normalizePriceOptions(r);
                     return (
-                      <tr key={r.id} className="hover:bg-sky-50/70 transition align-top">
-                        <td className="px-5 py-4 text-slate-400 font-mono text-xs">{i + 1}</td>
-                        <td className={`px-5 py-4 font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
-                          <span className={translating ? "opacity-40" : ""}>{getProductName(r.product_id)}</span>
+                      <tr key={r.id} className="align-top">
+                        <td className="text-center text-slate-400 font-mono text-xs font-bold">{i + 1}</td>
+                        <td className={`font-black text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                          <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                              <i className="bi bi-box-seam-fill"></i>
+                            </span>
+                            <span className={translating ? "opacity-40" : ""}>{getProductName(r.product_id)}</span>
+                          </div>
                         </td>
-                        <td className={`px-5 py-4 font-semibold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                        <td className={isUrdu ? "text-right" : ""}>
                           <div className="space-y-1.5">
                             {priceOptions.map((p, idx) => (
                               <div key={idx}>
-                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-700 border border-sky-200 ${translating ? "opacity-40" : ""}`}>
+                                <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100 ${translating ? "opacity-40" : ""}`}>
                                   {getCategoryName(p.category_id)}
                                 </span>
                               </div>
                             ))}
                           </div>
                         </td>
-                        <td className={`px-5 py-4 font-semibold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                        <td className={isUrdu ? "text-right" : ""}>
                           <div className="space-y-1.5">
                             {priceOptions.map((p, idx) => (
                               <div key={idx}>
-                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-700 border border-violet-200 ${translating ? "opacity-40" : ""}`}>
+                                <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-black bg-violet-50 text-violet-700 border border-violet-100 ${translating ? "opacity-40" : ""}`}>
                                   {getTypeName(p.product_type_id)}
                                 </span>
                               </div>
                             ))}
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="text-center">
                           <div className="space-y-1.5">
                             {priceOptions.map((p, idx) => (
                               <div key={idx}>
-                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-950 border border-slate-200 ${translating ? "opacity-40" : ""}`}>
+                                <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-black bg-slate-100 text-slate-700 border border-slate-200 ${translating ? "opacity-40" : ""}`}>
                                   {getUnitName(p.unit_id)}
                                 </span>
                               </div>
                             ))}
                           </div>
                         </td>
-                        <td className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>
+                        <td className={isUrdu ? "text-left" : "text-right"}>
                           <div className="space-y-1.5">
                             {priceOptions.map((p, idx) => (
-                              <div key={idx}>
-                                <span className="inline-flex font-mono font-bold text-slate-950 bg-slate-100 px-2 py-0.5 rounded">{fmt(p.retail_rate)}</span>
-                              </div>
+                              <div key={idx}><span className="inline-flex px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-mono font-black border border-emerald-100">{fmt(p.retail_rate)}</span></div>
                             ))}
                           </div>
                         </td>
-                        <td className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>
+                        <td className={isUrdu ? "text-left" : "text-right"}>
                           <div className="space-y-1.5">
                             {priceOptions.map((p, idx) => (
-                              <div key={idx}>
-                                <span className="inline-flex font-mono font-bold text-slate-950 bg-slate-100 px-2 py-0.5 rounded">{fmt(p.wholesale_rate)}</span>
-                              </div>
+                              <div key={idx}><span className="inline-flex px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 font-mono font-black border border-blue-100">{fmt(p.wholesale_rate)}</span></div>
                             ))}
                           </div>
                         </td>
-                        <td className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>
+                        <td className={isUrdu ? "text-left" : "text-right"}>
                           <div className="space-y-1.5">
                             {priceOptions.map((p, idx) => (
-                              <div key={idx}>
-                                <span className="inline-flex font-mono font-bold text-slate-950 bg-slate-100 px-2 py-0.5 rounded">{fmt(p.distributor_rate)}</span>
-                              </div>
+                              <div key={idx}><span className="inline-flex px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 font-mono font-black border border-amber-100">{fmt(p.distributor_rate)}</span></div>
                             ))}
                           </div>
                         </td>
-                        <td className="px-5 py-4">
-                          <div className={`flex items-center justify-center gap-1.5 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                            <button onClick={() => openEdit(r)} className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 hover:bg-sky-200 transition flex items-center justify-center" title={t.edit}>
+                        <td>
+                          <div className={`flex items-center justify-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <button onClick={() => openEdit(r)} className="rate-btn w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 flex items-center justify-center" title={t.edit}>
                               <i className="bi bi-pencil-square"></i>
                             </button>
-                            <button onClick={() => handleDelete(r.id)} className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center" title={t.delete}>
+                            <button onClick={() => handleDelete(r.id)} className="rate-btn w-9 h-9 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100 flex items-center justify-center" title={t.delete}>
                               <i className="bi bi-trash3-fill"></i>
                             </button>
                           </div>
