@@ -409,6 +409,293 @@ function getStatusLabel(status, t) {
   return status || "-";
 }
 
+
+// ─── Shared professional form components ─────────────────────────────────────
+function FieldBox({
+  label,
+  children,
+  highlight = false,
+  span = 1,
+  icon = "",
+  helper = "",
+  required,
+}) {
+  const isRequired = required ?? String(label || "").includes("*");
+  const cleanLabel = String(label || "").replace("*", "").trim();
+
+  return (
+    <div style={{
+      gridColumn: `span ${span}`,
+      minWidth: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: 5,
+    }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        minHeight: 18,
+      }}>
+        <label style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          minWidth: 0,
+          fontSize: 10.2,
+          fontWeight: 850,
+          color: "#334155",
+          textTransform: "uppercase",
+          letterSpacing: "0.55px",
+          lineHeight: 1.15,
+        }}>
+          {icon && (
+            <span style={{
+              width: 18,
+              height: 18,
+              borderRadius: 6,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: highlight ? "#dbeafe" : "#f1f5f9",
+              color: highlight ? "#1d4ed8" : "#64748b",
+              flex: "0 0 auto",
+              fontSize: 9.5,
+            }}>
+              <i className={`bi ${icon}`}></i>
+            </span>
+          )}
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cleanLabel}</span>
+          {isRequired && (
+            <em style={{
+              fontStyle: "normal",
+              fontSize: 8.2,
+              fontWeight: 900,
+              color: "#be123c",
+              background: "#fff1f2",
+              border: "1px solid #fecdd3",
+              padding: "1px 5px",
+              borderRadius: 999,
+              letterSpacing: "0.3px",
+              flex: "0 0 auto",
+            }}>
+              Required
+            </em>
+          )}
+        </label>
+        {helper && (
+          <span style={{
+            fontSize: 9.5,
+            fontWeight: 750,
+            color: "#64748b",
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 999,
+            padding: "2px 7px",
+            whiteSpace: "nowrap",
+          }}>{helper}</span>
+        )}
+      </div>
+      <div style={{
+        borderRadius: 10,
+        background: highlight ? "#eff6ff" : "transparent",
+        boxShadow: highlight ? "0 0 0 4px rgba(59,130,246,0.06)" : "none",
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const compactInputStyle = (isUrdu) => ({
+  width: "100%",
+  height: 36,
+  minHeight: 36,
+  border: "1.5px solid #cbd5e1",
+  borderRadius: 9,
+  padding: "7px 10px",
+  fontSize: 12.2,
+  fontWeight: 650,
+  color: "#0f172a",
+  background: "#ffffff",
+  outline: "none",
+  transition: "border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease",
+  textAlign: isUrdu ? "right" : "left",
+  fontFamily: "inherit",
+  boxShadow: "0 1px 1px rgba(15,23,42,0.035)",
+});
+
+const compactReadonlyStyle = () => ({
+  width: "100%",
+  height: 36,
+  minHeight: 36,
+  border: "1.5px solid #dbeafe",
+  borderRadius: 9,
+  padding: "7px 10px",
+  fontSize: 12.2,
+  color: "#1d4ed8",
+  background: "#eff6ff",
+  outline: "none",
+  textAlign: "right",
+  fontWeight: 850,
+  fontFamily: "monospace",
+  fontVariantNumeric: "tabular-nums",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+});
+
+function StyledInput({ isUrdu, readOnly, style = {}, onFocus, onBlur, ...props }) {
+  const [focus, setFocus] = useState(false);
+  const base = readOnly ? compactReadonlyStyle() : compactInputStyle(isUrdu);
+  return (
+    <input
+      {...props}
+      readOnly={readOnly}
+      style={{
+        ...base,
+        ...style,
+        borderColor: readOnly ? "#dbeafe" : focus ? "#2563eb" : (style.borderColor || "#cbd5e1"),
+        backgroundColor: props.disabled ? "#f1f5f9" : focus ? "#ffffff" : (style.backgroundColor || style.background || base.background),
+        boxShadow: readOnly
+          ? base.boxShadow
+          : focus
+            ? "0 0 0 3px rgba(37,99,235,0.10), 0 1px 2px rgba(15,23,42,0.05)"
+            : (style.boxShadow || base.boxShadow),
+        opacity: props.disabled ? (style.opacity ?? 0.58) : (style.opacity ?? 1),
+        cursor: props.disabled ? "not-allowed" : readOnly ? "default" : "text",
+      }}
+      onFocus={(e) => { setFocus(true); onFocus?.(e); }}
+      onBlur={(e) => { setFocus(false); onBlur?.(e); }}
+    />
+  );
+}
+
+function StyledSelect({ isUrdu, children, style = {}, onFocus, onBlur, ...props }) {
+  const [focus, setFocus] = useState(false);
+  const base = compactInputStyle(isUrdu);
+  return (
+    <select
+      {...props}
+      style={{
+        ...base,
+        ...style,
+        borderColor: focus ? "#2563eb" : (style.borderColor || "#cbd5e1"),
+        backgroundColor: props.disabled ? "#f1f5f9" : "#ffffff",
+        boxShadow: focus
+          ? "0 0 0 3px rgba(37,99,235,0.10), 0 1px 2px rgba(15,23,42,0.05)"
+          : (style.boxShadow || base.boxShadow),
+        cursor: props.disabled ? "not-allowed" : "pointer",
+        appearance: "none",
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: isUrdu ? "left 10px center" : "right 10px center",
+        paddingRight: isUrdu ? "10px" : "30px",
+        paddingLeft: isUrdu ? "30px" : "10px",
+        opacity: props.disabled ? 0.65 : (style.opacity ?? 1),
+      }}
+      onFocus={(e) => { setFocus(true); onFocus?.(e); }}
+      onBlur={(e) => { setFocus(false); onBlur?.(e); }}
+    >
+      {children}
+    </select>
+  );
+}
+
+function SectionCard({ title, subtitle, icon, iconBg = "#eef2ff", iconColor = "#2563eb", action, children, isUrdu }) {
+  return (
+    <section style={{
+      background: "#ffffff",
+      border: "1px solid #d7deea",
+      borderRadius: 14,
+      overflow: "visible",
+      boxShadow: "0 8px 22px rgba(15,23,42,0.045)",
+      display: "block",
+      position: "relative",
+    }}>
+      <div style={{
+        padding: "11px 14px",
+        borderBottom: "1px solid #e8eef6",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+        background: "linear-gradient(180deg,#ffffff,#fbfdff)",
+        borderTopLeftRadius: 14,
+        borderTopRightRadius: 14,
+        flexDirection: isUrdu ? "row-reverse" : "row",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+          <div style={{
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            background: iconBg,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "0 0 auto",
+          }}>
+            <i className={`bi ${icon}`} style={{ color: iconColor, fontSize: 15 }}></i>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.25px" }}>{title}</h3>
+            {subtitle && <p style={{ margin: "4px 0 0", fontSize: 11.2, fontWeight: 550, color: "#64748b", lineHeight: 1.45 }}>{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div
+        className="sales-section-body"
+        style={{
+          padding: 12,
+          background: "#ffffff",
+          display: "block",
+          visibility: "visible",
+          opacity: 1,
+          height: "auto",
+          minHeight: 0,
+          maxHeight: "none",
+          overflow: "visible",
+          position: "relative",
+          zIndex: 1,
+          borderBottomLeftRadius: 14,
+          borderBottomRightRadius: 14,
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function AmountBox({ label, value, children, accent = "#0f172a", highlight = false }) {
+  return (
+    <div style={{
+      border: `1px solid ${highlight ? "#93c5fd" : "#dbe3ee"}`,
+      borderRadius: 10,
+      padding: 10,
+      background: highlight ? "linear-gradient(135deg,#eff6ff,#ffffff)" : "#ffffff",
+      boxShadow: "0 6px 16px rgba(15,23,42,0.04)",
+      minHeight: 82,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      gap: 10,
+    }}>
+      <label style={{
+        fontSize: 9.8,
+        fontWeight: 900,
+        color: highlight ? "#1d4ed8" : "#64748b",
+        textTransform: "uppercase",
+        letterSpacing: "0.6px",
+      }}>{label}</label>
+      {children || (
+        <div style={{ fontSize: 17, fontWeight: 950, color: accent, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.7px" }}>{value}</div>
+      )}
+    </div>
+  );
+}
+
 function generateSlipPrint(order, lang, maps, urduCache) {
   const t = LANG[lang];
   const isUrdu = lang === "ur";
@@ -542,7 +829,7 @@ const SaleOrderPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("24h");
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -1075,9 +1362,72 @@ const SaleOrderPage = () => {
   );
 
   return (
-    <div dir={dir} style={{ fontFamily: baseFont }} className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-2 sm:p-4 pb-20">
+    <div dir={dir} style={{ fontFamily: baseFont, minHeight: "100vh", background: "#f8fafc", paddingBottom: 60 }}>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+      <style>{`
+        * { box-sizing: border-box; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+        .slide-up  { animation: slideUp 0.28s ease-out both; }
+        .fade-in   { animation: fadeIn  0.2s ease-out both; }
+        .inv-btn { transition:all 0.15s; }
+        .inv-btn:hover { transform:translateY(-1px); }
+        .filter-btn { transition:all 0.15s; cursor:pointer; border:none; }
+        .filter-btn:hover { transform:translateY(-1px); }
+        .tbl-row:hover td { background:#f8fafc; }
+        ::-webkit-scrollbar { width:6px; height:6px; }
+        ::-webkit-scrollbar-track { background:#f1f5f9; }
+        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+        .sales-modal-grid-12 {
+          display:grid;
+          grid-template-columns:repeat(12,minmax(0,1fr));
+          gap:10px;
+          align-items:start;
+        }
+        .sales-item-grid {
+          padding:12px;
+          display:grid;
+          grid-template-columns:repeat(12,minmax(0,1fr));
+          gap:10px;
+          align-items:start;
+        }
+        .sales-totals-grid {
+          display:grid;
+          grid-template-columns:repeat(5,minmax(0,1fr));
+          gap:10px;
+          align-items:stretch;
+        }
+        .sales-section-body {
+          display:block !important;
+          visibility:visible !important;
+          opacity:1 !important;
+          height:auto !important;
+          max-height:none !important;
+          overflow:visible !important;
+        }
+        .sales-section-body input,
+        .sales-section-body select,
+        .sales-section-body textarea {
+          display:block !important;
+          visibility:visible !important;
+          opacity:1 !important;
+        }
+        @media (max-width:1180px) {
+          .sales-modal-grid-12,
+          .sales-item-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
+          .sales-totals-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width:760px) {
+          .sales-modal-grid-12,
+          .sales-item-grid,
+          .sales-totals-grid { grid-template-columns:1fr; }
+          .sales-modal-grid-12 > div,
+          .sales-item-grid > div { grid-column:span 1 !important; }
+        }
+      `}</style>
+
 
       {message.text && (
         <div className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}>
@@ -1093,540 +1443,780 @@ const SaleOrderPage = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5">
-          <div className={`flex items-center justify-between flex-wrap gap-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "20px 16px" }}>
+
+        {/* ── Header ── */}
+        <div className="slide-up" style={{
+          background: "white", borderRadius: 20, border: "1.5px solid #e2e8f0",
+          padding: "20px 24px", marginBottom: 20,
+          boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, flexDirection: isUrdu ? "row-reverse" : "row" }}>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">{t.title}</h1>
-              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
+              <h1 style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.5px", margin: 0 }}>{t.title}</h1>
+              <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 4, margin: 0 }}>{t.subtitle}</p>
             </div>
-
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <button onClick={handleLangToggle} disabled={translating} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm disabled:opacity-60">
-                <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
-                {t.toggleLang}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+              <button onClick={handleLangToggle} disabled={translating} className="inv-btn" style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                background: "white", border: "1.5px solid #e2e8f0", color: "#64748b", cursor: translating ? "not-allowed" : "pointer",
+                opacity: translating ? 0.65 : 1,
+              }}>
+                <i className={`bi ${translating ? "bi-arrow-repeat" : "bi-translate"}`}></i>{t.toggleLang}
               </button>
-
-              <button onClick={() => setShowSummary((v) => !v)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm ${showSummary ? "bg-sky-600 text-white hover:bg-sky-700" : "bg-sky-100 text-sky-700 hover:bg-sky-200"}`}>
-                <i className="bi bi-bar-chart-line-fill"></i>
-                {t.summaryBtn}
-                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
+              <button onClick={() => setShowSummary(v => !v)} className="inv-btn" style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                background: showSummary ? "#eef2ff" : "white",
+                border: `1.5px solid ${showSummary ? "#c7d2fe" : "#e2e8f0"}`,
+                color: showSummary ? "#6366f1" : "#64748b", cursor: "pointer",
+              }}>
+                <i className="bi bi-bar-chart-line-fill"></i>{t.summaryBtn}
+                <i className={`bi bi-chevron-${showSummary ? "up" : "down"}`} style={{ fontSize: 10 }}></i>
               </button>
-
-              <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition shadow-lg shadow-sky-200">
-                <i className="bi bi-plus-circle-fill"></i>
-                {t.addBtn}
+              <button onClick={openAdd} className="inv-btn" style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "9px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+                background: "#6366f1", color: "white", border: "none", cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+              }}>
+                <i className="bi bi-file-earmark-plus-fill"></i>{t.addBtn}
               </button>
             </div>
           </div>
 
           {showSummary && (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-5 pt-5 border-t border-sky-100">
+            <div className="fade-in" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginTop: 16, paddingTop: 16, borderTop: "1.5px solid #f1f5f9" }}>
               {[
-                { label: t.totalOrders, val: summary.total, icon: "bi-receipt", color: "text-sky-600", money: false },
-                { label: t.totalPending, val: summary.pending, icon: "bi-clock-fill", color: "text-orange-500", money: false },
-                { label: t.totalCompleted, val: summary.completed, icon: "bi-check-circle-fill", color: "text-emerald-600", money: false },
-                { label: t.totalCancelled, val: summary.cancelled, icon: "bi-x-circle-fill", color: "text-rose-500", money: false },
-                { label: t.totalValue, val: summary.value, icon: "bi-cash-stack", color: "text-blue-600", money: true },
-              ].map((card, idx) => (
-                <div key={idx} className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                  <div className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm mb-3 ${card.color}`}>
-                    <i className={`bi ${card.icon}`}></i>
+                { icon: "bi-receipt-cutoff", label: t.totalOrders,     value: summary.total,     color: "#6366f1", bg: "#eef2ff" },
+                { icon: "bi-clock-fill",     label: t.totalPending,    value: summary.pending,   color: "#f59e0b", bg: "#fef3c7" },
+                { icon: "bi-check-circle",   label: t.totalCompleted,  value: summary.completed, color: "#10b981", bg: "#d1fae5" },
+                { icon: "bi-x-circle",       label: t.totalCancelled,  value: summary.cancelled, color: "#ef4444", bg: "#fee2e2" },
+                { icon: "bi-cash-coin",      label: t.totalValue,      value: fmt(summary.value), color: "#0ea5e9", bg: "#e0f2fe" },
+              ].map(s => (
+                <div key={s.label} style={{ background: s.bg, borderRadius: 14, padding: "14px 16px", border: `1.5px solid ${s.color}22` }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "white", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                    <i className={`bi ${s.icon}`} style={{ color: s.color, fontSize: 16 }}></i>
                   </div>
-                  <p className="text-xs text-slate-500 mb-1">{card.label}</p>
-                  <p className={`font-extrabold text-slate-950 ${card.money ? "text-2xl" : "text-3xl"}`}>{card.money ? fmt(card.val) : card.val}</p>
+                  <p style={{ fontSize: 10.5, color: "#64748b", fontWeight: 600, marginBottom: 4, margin: 0 }}>{s.label}</p>
+                  <p style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", margin: 0 }}>{s.value}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-4" : "left-4"}`}></i>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} className={`w-full border border-sky-100 rounded-2xl py-3 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm ${isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"}`} />
+        {/* ── Search & Filters ── */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 16, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 380 }}>
+            <i className="bi bi-search" style={{ position: "absolute", [isUrdu ? "right" : "left"]: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 13 }}></i>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.searchPlaceholder}
+              style={{
+                width: "100%", border: "1.5px solid #e2e8f0", borderRadius: 10,
+                padding: isUrdu ? "9px 36px 9px 12px" : "9px 12px 9px 34px",
+                fontSize: 13, color: "#0f172a", background: "white", outline: "none",
+                textAlign: isUrdu ? "right" : "left",
+              }} />
           </div>
-
-          <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <span className="text-xs font-semibold text-slate-500">{t.filterLabel}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.filterLabel}</span>
             {[
-              { key: "24h", label: t.filter24h, icon: "bi-clock" },
-              { key: "7d", label: t.filter7d, icon: "bi-calendar-week" },
+              { key: "24h",   label: t.filter24h,   icon: "bi-clock-history"  },
+              { key: "7d",    label: t.filter7d,    icon: "bi-calendar-week"  },
               { key: "month", label: t.filterMonth, icon: "bi-calendar-month" },
-              { key: "all", label: t.filterAll, icon: "bi-list-ul" },
-            ].map((f) => (
-              <button key={f.key} onClick={() => setDateFilter(f.key)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition shadow-sm ${dateFilter === f.key ? "bg-sky-600 text-white shadow-sky-200" : "bg-white border border-sky-100 text-sky-700 hover:bg-sky-50"}`}>
-                <i className={`bi ${f.icon}`}></i>
-                {f.label}
+              { key: "all",   label: t.filterAll,   icon: "bi-list-ul"        },
+            ].map(f => (
+              <button key={f.key} onClick={() => setDateFilter(f.key)} className="filter-btn" style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 13px", borderRadius: 9, fontSize: 11.8, fontWeight: 600,
+                background: dateFilter === f.key ? "#6366f1" : "white",
+                border: `1.5px solid ${dateFilter === f.key ? "#6366f1" : "#e2e8f0"}`,
+                color: dateFilter === f.key ? "white" : "#64748b",
+                boxShadow: dateFilter === f.key ? "0 2px 8px rgba(99,102,241,0.3)" : "none",
+              }}>
+                <i className={`bi ${f.icon}`} style={{ fontSize: 12 }}></i>{f.label}
               </button>
             ))}
           </div>
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto">
-            <div className="mx-auto max-w-[1280px] min-h-[calc(100vh-32px)] bg-slate-50 rounded-[28px] shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
-              <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 sm:px-7 py-4 flex items-center justify-between gap-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                  <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
-                    <i className="bi bi-clipboard2-check-fill text-xl"></i>
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            overflowY: "auto",
+            padding: 10,
+            background: "rgba(2,6,23,0.62)",
+            backdropFilter: "blur(8px)",
+          }}>
+            <div className="slide-up" dir={dir} style={{
+              maxWidth: 1080,
+              margin: "0 auto",
+              background: "#ffffff",
+              borderRadius: 18,
+              overflow: "hidden",
+              border: "1px solid rgba(226,232,240,0.95)",
+              boxShadow: "0 32px 90px rgba(2,6,23,0.38)",
+            }}>
+              {/* Modal header */}
+              <div style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                padding: "12px 16px",
+                background: "linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#1d4ed8 100%)",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexDirection: isUrdu ? "row-reverse" : "row",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 13,
+                    background: "rgba(255,255,255,0.14)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 18px 42px rgba(0,0,0,0.18)",
+                    flex: "0 0 auto",
+                  }}>
+                    <i className="bi bi-clipboard2-check-fill" style={{ fontSize: 18 }}></i>
                   </div>
-                  <div className="min-w-0">
-                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                      <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight m-0">
-                        {editingId ? t.edit : t.addBtn}
-                      </h2>
-                      <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-extrabold uppercase tracking-wide">
-                        {form.order_no || t.orderNo}
-                      </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 7,
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.13)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: "rgba(255,255,255,0.82)",
+                      fontSize: 9.5,
+                      fontWeight: 900,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.65px",
+                      marginBottom: 4,
+                    }}>
+                      <span style={{ width: 7, height: 7, borderRadius: 99, background: editingId ? "#fbbf24" : "#22c55e" }}></span>
+                      {editingId ? "Edit Mode" : "Create Mode"}
                     </div>
-                    <p className="text-[13px] text-slate-500 mt-1 m-0">{t.subtitle}</p>
+                    <h2 style={{ margin: 0, fontSize: 17, fontWeight: 950, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+                      {editingId ? t.edit : t.addBtn}
+                    </h2>
+                    <p style={{ margin: "4px 0 0", fontSize: 10.5, color: "rgba(255,255,255,0.68)", fontWeight: 500 }}>
+                      {t.subtitle}
+                    </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
-                  aria-label="Close"
-                >
-                  <i className="bi bi-x-lg"></i>
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                  <div style={{
+                    minWidth: 108,
+                    padding: "6px 10px",
+                    borderRadius: 11,
+                    background: "rgba(255,255,255,0.09)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                  }}>
+                    <div style={{ fontSize: 9.5, fontWeight: 900, color: "rgba(255,255,255,0.58)", textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 3 }}>{t.orderNo}</div>
+                    <div style={{ fontSize: 12, fontWeight: 900, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis" }}>{form.order_no || "-"}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 11,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(255,255,255,0.10)",
+                      color: "white",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <i className="bi bi-x-lg"></i>
+                  </button>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className={`px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                        <i className="bi bi-file-earmark-text-fill"></i>
-                      </div>
-                      <div>
-                        <h3 className="text-base font-black text-slate-950 m-0">Order Information</h3>
-                        <p className="text-xs text-slate-500 mt-0.5 m-0">Select party, dates, reference and shipment details</p>
-                      </div>
-                    </div>
-                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5">
-                      <i className="bi bi-asterisk text-rose-500"></i>
-                      Required fields
-                    </span>
+              {/* Body */}
+              <div style={{
+                padding: 12,
+                paddingBottom: 18,
+                background: "#f3f6fb",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                maxHeight: "calc(100vh - 140px)",
+                overflowY: "auto",
+              }}>
+                <SectionCard
+                  isUrdu={isUrdu}
+                  icon="bi-person-vcard-fill"
+                  iconBg="#eef2ff"
+                  iconColor="#4f46e5"
+                  title="Order Information"
+                  subtitle="Select party, reference, order dates and shipment destination"
+                >
+                  <div className="sales-modal-grid-12">
+                    <FieldBox label={`${t.orderNo} *`} icon="bi-hash" span={3} helper="Auto">
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="text"
+                        value={form.order_no}
+                        onChange={(e) => setForm((f) => ({ ...f, order_no: e.target.value }))}
+                        placeholder={t.orderNoPlaceholder}
+                        style={{ fontFamily: "monospace", fontWeight: 900, letterSpacing: "0.2px" }}
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={t.referenceNo} icon="bi-bookmark-check" span={3}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="text"
+                        value={form.reference_no}
+                        onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))}
+                        placeholder="e.g. PO-2026-001"
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={`${t.partyType} *`} icon="bi-diagram-3-fill" span={3}>
+                      <StyledSelect
+                        isUrdu={isUrdu}
+                        value={form.party_type}
+                        onChange={(e) => handlePartyTypeChange(e.target.value)}
+                      >
+                        <option value="">{t.selectPartyType}</option>
+                        {PARTY_TYPES.map((p) => (
+                          <option key={p.value} value={p.value}>{t[p.labelKey]}</option>
+                        ))}
+                      </StyledSelect>
+                    </FieldBox>
+
+                    <FieldBox label={`${t.partyName} *`} icon="bi-person-check-fill" span={3}>
+                      <StyledSelect
+                        isUrdu={isUrdu}
+                        value={form.party_id}
+                        onChange={(e) => handlePartyIdChange(e.target.value)}
+                        disabled={!form.party_type}
+                      >
+                        <option value="">{!form.party_type ? t.selectPartyType : t.selectPartyName}</option>
+                        {selectedPartyData.list.map((item) => {
+                          const id = getRecordId(item);
+                          const name = getPartyEntityName(form.party_type, item) || `#${id}`;
+                          return <option key={`${form.party_type}-${id}`} value={id}>{name}</option>;
+                        })}
+                      </StyledSelect>
+                    </FieldBox>
+
+                    <FieldBox label={t.orderDate} icon="bi-calendar2-week" span={3}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="date"
+                        value={form.order_date}
+                        onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))}
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={t.deliveryDate} icon="bi-calendar-check" span={3}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="date"
+                        value={form.delivery_date}
+                        onChange={(e) => setForm((f) => ({ ...f, delivery_date: e.target.value }))}
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={t.status} icon="bi-flag-fill" span={3}>
+                      <StyledSelect
+                        isUrdu={isUrdu}
+                        value={form.status}
+                        onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                      >
+                        <option value="Pending">{t.pending}</option>
+                        <option value="Completed">{t.completed}</option>
+                        <option value="Cancelled">{t.cancelled}</option>
+                      </StyledSelect>
+                    </FieldBox>
+
+                    <FieldBox label={t.shipmentTo} icon="bi-geo-alt-fill" span={3}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="text"
+                        value={form.shipment_to}
+                        onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))}
+                        placeholder={t.shipmentPlaceholder}
+                      />
+                    </FieldBox>
                   </div>
+                </SectionCard>
 
-                  <div className="p-5 bg-white">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4">
-                      <div className="xl:col-span-2">
-                        <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
-                          {t.orderNo}<span className="text-rose-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <i className={`bi bi-hash absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                          <input
-                            type="text"
-                            value={form.order_no}
-                            onChange={(e) => setForm((f) => ({ ...f, order_no: e.target.value }))}
-                            placeholder={t.orderNoPlaceholder}
-                            className={`w-full h-12 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"}`}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="xl:col-span-2">
-                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.referenceNo}</label>
-                        <input
-                          type="text"
-                          value={form.reference_no}
-                          onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))}
-                          className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
-                        />
-                      </div>
-
-                      <div className="xl:col-span-2">
-                        <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
-                          {t.partyType}<span className="text-rose-500">*</span>
-                        </label>
-                        <select
-                          value={form.party_type}
-                          onChange={(e) => handlePartyTypeChange(e.target.value)}
-                          className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
-                        >
-                          <option value="">{t.selectPartyType}</option>
-                          {PARTY_TYPES.map((p) => (
-                            <option key={p.value} value={p.value}>{t[p.labelKey]}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="xl:col-span-3">
-                        <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
-                          {t.partyName}<span className="text-rose-500">*</span>
-                        </label>
-                        <select
-                          value={form.party_id}
-                          onChange={(e) => handlePartyIdChange(e.target.value)}
-                          disabled={!form.party_type}
-                          className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed ${isUrdu ? "text-right" : ""}`}
-                        >
-                          <option value="">{t.selectPartyName}</option>
-                          {selectedPartyData.list.map((item) => {
-                            const id = getRecordId(item);
-                            const name = getPartyEntityName(form.party_type, item) || `#${id}`;
-                            return <option key={id} value={id}>{name}</option>;
-                          })}
-                        </select>
-                      </div>
-
-                      <div className="xl:col-span-1">
-                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.orderDate}</label>
-                        <input
-                          type="date"
-                          value={form.order_date}
-                          onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))}
-                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                        />
-                      </div>
-
-                      <div className="xl:col-span-2">
-                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.deliveryDate}</label>
-                        <input
-                          type="date"
-                          value={form.delivery_date}
-                          onChange={(e) => setForm((f) => ({ ...f, delivery_date: e.target.value }))}
-                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2 xl:col-span-6">
-                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.shipmentTo}</label>
-                        <div className="relative">
-                          <i className={`bi bi-geo-alt-fill absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                          <input
-                            type="text"
-                            value={form.shipment_to}
-                            onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))}
-                            placeholder={t.shipmentPlaceholder}
-                            className={`w-full h-12 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"}`}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="xl:col-span-2">
-                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.previousBalance}</label>
-                        <input
-                          type="number"
-                          value={form.previous_balance}
-                          onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))}
-                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
-                        />
-                      </div>
-
-                      <div className="xl:col-span-2">
-                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.discount}</label>
-                        <input
-                          type="number"
-                          value={form.discount}
-                          onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
-                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
-                        />
-                      </div>
-
-                      <div className="xl:col-span-2">
-                        {showDeliveryCharges ? (
-                          <>
-                            <div className={`flex items-center justify-between gap-2 mb-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500">{t.deliveryCharges}</label>
-                              <button
-                                type="button"
-                                onClick={() => { setShowDeliveryCharges(false); setForm((f) => ({ ...f, delivery_charges: "0" })); }}
-                                className="text-[11px] text-rose-600 font-black hover:underline"
-                              >
-                                {t.removeDeliveryCharges}
-                              </button>
-                            </div>
-                            <input
-                              type="number"
-                              value={form.delivery_charges}
-                              onChange={(e) => setForm((f) => ({ ...f, delivery_charges: e.target.value }))}
-                              className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
-                            />
-                          </>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setShowDeliveryCharges(true)}
-                            className="w-full h-[68px] rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-700 text-xs font-black hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition flex items-center justify-center gap-2"
-                          >
-                            <i className="bi bi-plus-circle-fill"></i>
-                            {t.addDeliveryCharges}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className={`px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                      <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-700 flex items-center justify-center">
-                        <i className="bi bi-box-seam-fill"></i>
-                      </div>
-                      <div>
-                        <h3 className="text-base font-black text-slate-950 m-0">Line Items</h3>
-                        <p className="text-xs text-slate-500 mt-0.5 m-0">Select product details, quantity, rate, debit and credit</p>
-                      </div>
-                    </div>
+                <SectionCard
+                  isUrdu={isUrdu}
+                  icon="bi-box-seam-fill"
+                  iconBg="#e0f2fe"
+                  iconColor="#0284c7"
+                  title="Line Items"
+                  subtitle="Product type, category, product, unit and quantity per line"
+                  action={(
                     <button
                       type="button"
                       onClick={addItemRow}
-                      className="h-10 px-4 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-blue-700 transition shadow-lg shadow-slate-200 flex items-center gap-2"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        padding: "8px 12px",
+                        borderRadius: 10,
+                        border: "none",
+                        background: "#0f172a",
+                        color: "white",
+                        fontSize: 12,
+                        fontWeight: 900,
+                        cursor: "pointer",
+                        boxShadow: "0 10px 22px rgba(15,23,42,0.18)",
+                      }}
                     >
-                      <i className="bi bi-plus-lg"></i>
-                      {t.addProductRow}
+                      <i className="bi bi-plus-lg"></i>{t.addProductRow}
                     </button>
-                  </div>
-
-                  <div className="p-5 space-y-4">
+                  )}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {form.order_items.map((item, index) => {
                       const lineTotal = calcLineTotal(item);
-
                       return (
-                        <div key={index} className="rounded-3xl border border-slate-200 bg-slate-50/70 overflow-hidden">
-                          <div className={`px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                            <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                              <span className="w-9 h-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-sm font-black shadow-sm">
-                                {index + 1}
-                              </span>
-                              <div>
-                                <h4 className="text-sm font-black text-slate-950 m-0">{t.itemGroup} {index + 1}</h4>
-                                <p className="text-[11px] text-slate-500 m-0">Product, quantity and amount in one clean row</p>
+                        <div key={index} className="row-card" style={{
+                          border: "1px solid #dbe3ee",
+                          borderRadius: 13,
+                          background: "#ffffff",
+                          overflow: "visible",
+                          transition: "all 0.16s ease",
+                          boxShadow: "0 5px 14px rgba(15,23,42,0.035)",
+                        }}>
+                          <div style={{
+                            padding: "9px 12px",
+                            borderBottom: "1px solid #edf2f7",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 10,
+                            background: "linear-gradient(180deg,#ffffff,#fbfdff)",
+                            borderTopLeftRadius: 13,
+                            borderTopRightRadius: 13,
+                            flexDirection: isUrdu ? "row-reverse" : "row",
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                              <span style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 10,
+                                background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)",
+                                color: "white",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 12,
+                                fontWeight: 900,
+                                flex: "0 0 auto",
+                              }}>{index + 1}</span>
+                              <div style={{ minWidth: 0 }}>
+                                <h4 style={{ margin: 0, fontSize: 12.2, fontWeight: 950, color: "#0f172a" }}>{t.itemGroup} {index + 1}</h4>
+                                <p style={{ margin: "2px 0 0", fontSize: 10.5, color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {t.productType}, {t.category}, {t.product}, {t.orderQty}
+                                </p>
                               </div>
                             </div>
-                            <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                              <span className="min-w-[96px] h-9 px-3 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-end text-xs font-mono font-black">
+
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                              <div style={{
+                                minWidth: 74,
+                                height: 30,
+                                borderRadius: 10,
+                                background: "#eff6ff",
+                                border: "1px solid #bfdbfe",
+                                color: "#1d4ed8",
+                                fontFamily: "monospace",
+                                fontSize: 12,
+                                fontWeight: 900,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "0 10px",
+                              }}>
                                 {fmt(lineTotal)}
-                              </span>
-                              {form.order_items.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeItemRow(index)}
-                                  className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition flex items-center justify-center"
-                                  title={t.removeProductRow}
-                                >
-                                  <i className="bi bi-trash3-fill text-sm"></i>
-                                </button>
-                              )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeItemRow(index)}
+                                disabled={form.order_items.length === 1}
+                                title={t.removeProductRow}
+                                style={{
+                                  width: 30,
+                                  height: 30,
+                                  borderRadius: 10,
+                                  border: "1px solid #fee2e2",
+                                  background: form.order_items.length === 1 ? "#f8fafc" : "#fff1f2",
+                                  color: form.order_items.length === 1 ? "#cbd5e1" : "#ef4444",
+                                  cursor: form.order_items.length === 1 ? "not-allowed" : "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <i className="bi bi-trash3"></i>
+                              </button>
                             </div>
                           </div>
 
-                          <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4">
-                            <div className="xl:col-span-2">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.productType}</label>
-                              <select
+                          <div className="sales-item-grid">
+                            <FieldBox label={`${t.productType} *`} icon="bi-tags-fill" span={2}>
+                              <StyledSelect
+                                isUrdu={isUrdu}
                                 value={item.product_type_id}
                                 onChange={(e) => updateItemRow(index, "product_type_id", e.target.value)}
-                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
                               >
                                 <option value="">{t.selectType}</option>
-                                {types.map((x) => <option key={x.id} value={x.id}>{getTypeName(x)}</option>)}
-                              </select>
-                            </div>
+                                {types.map((x) => (
+                                  <option key={x.id} value={x.id}>{getTypeName(x)}</option>
+                                ))}
+                              </StyledSelect>
+                            </FieldBox>
 
-                            <div className="xl:col-span-2">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.category}</label>
-                              <select
+                            <FieldBox label={`${t.category} *`} icon="bi-grid-fill" span={2}>
+                              <StyledSelect
+                                isUrdu={isUrdu}
                                 value={item.category_id}
                                 onChange={(e) => updateItemRow(index, "category_id", e.target.value)}
-                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
                               >
                                 <option value="">{t.selectCategory}</option>
-                                {categories.map((c) => <option key={c.id} value={c.id}>{getCategoryName(c)}</option>)}
-                              </select>
-                            </div>
+                                {categories.map((c) => (
+                                  <option key={c.id} value={c.id}>{getCategoryName(c)}</option>
+                                ))}
+                              </StyledSelect>
+                            </FieldBox>
 
-                            <div className="xl:col-span-3">
-                              <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
-                                {t.product}<span className="text-rose-500">*</span>
-                              </label>
-                              <select
+                            <FieldBox label={`${t.product} *`} icon="bi-box-fill" span={2}>
+                              <StyledSelect
+                                isUrdu={isUrdu}
                                 value={item.product_id}
                                 onChange={(e) => updateItemRow(index, "product_id", e.target.value)}
-                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
                               >
                                 <option value="">{t.selectProduct}</option>
-                                {products.map((p) => <option key={p.id} value={p.id}>{getProductName(p)}</option>)}
-                              </select>
-                            </div>
+                                {products.map((p) => (
+                                  <option key={p.id} value={p.id}>{getProductName(p)}</option>
+                                ))}
+                              </StyledSelect>
+                            </FieldBox>
 
-                            <div className="xl:col-span-2">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.unit}</label>
-                              <select
+                            <FieldBox label={`${t.unit} *`} icon="bi-rulers" span={1}>
+                              <StyledSelect
+                                isUrdu={isUrdu}
                                 value={item.unit_id}
                                 onChange={(e) => updateItemRow(index, "unit_id", e.target.value)}
-                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
                               >
                                 <option value="">{t.selectUnit}</option>
-                                {units.map((u) => <option key={u.id} value={u.id}>{getUnitName(u)}</option>)}
-                              </select>
-                            </div>
+                                {units.map((u) => (
+                                  <option key={u.id} value={u.id}>{getUnitName(u)}</option>
+                                ))}
+                              </StyledSelect>
+                            </FieldBox>
 
-                            <div className="xl:col-span-1">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.orderQty}</label>
-                              <input
+                            <FieldBox label={`${t.orderQty} *`} icon="bi-123" span={1}>
+                              <StyledInput
+                                isUrdu={isUrdu}
                                 type="number"
                                 value={item.order_qty}
                                 onChange={(e) => updateItemRow(index, "order_qty", e.target.value)}
-                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                                style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}
                               />
-                            </div>
+                            </FieldBox>
 
-                            <div className="xl:col-span-1">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.rate}</label>
-                              <input
+                            <FieldBox label={t.rate} icon="bi-currency-dollar" span={1}>
+                              <StyledInput
+                                isUrdu={isUrdu}
                                 type="number"
                                 value={item.rate}
                                 onChange={(e) => updateItemRow(index, "rate", e.target.value)}
-                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                                style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}
                               />
-                            </div>
+                            </FieldBox>
 
-                            <div className="xl:col-span-1">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.debit}</label>
-                              <input
+                            <FieldBox label={t.lineTotal} icon="bi-calculator-fill" span={1} helper={t.autoCalcNote}>
+                              <StyledInput
+                                isUrdu={isUrdu}
+                                readOnly
+                                value={fmt(lineTotal)}
+                              />
+                            </FieldBox>
+
+                            <FieldBox label={t.debit} icon="bi-arrow-down-left-circle" span={1}>
+                              <StyledInput
+                                isUrdu={isUrdu}
                                 type="number"
                                 value={item.debit}
                                 onChange={(e) => updateItemRow(index, "debit", e.target.value)}
-                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                                style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}
                               />
-                            </div>
+                            </FieldBox>
 
-                            <div className="xl:col-span-1">
-                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.credit}</label>
-                              <input
+                            <FieldBox label={t.credit} icon="bi-arrow-up-right-circle" span={1}>
+                              <StyledInput
+                                isUrdu={isUrdu}
                                 type="number"
                                 value={item.credit}
                                 onChange={(e) => updateItemRow(index, "credit", e.target.value)}
-                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                                style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}
                               />
-                            </div>
+                            </FieldBox>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </section>
+                </SectionCard>
 
-                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className={`px-5 py-4 border-b border-slate-100 flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                      <i className="bi bi-calculator-fill"></i>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black text-slate-950 m-0">Invoice Totals</h3>
-                      <p className="text-xs text-slate-500 mt-0.5 m-0">Grand total updates automatically when quantity, delivery or discount changes</p>
+                <SectionCard
+                  isUrdu={isUrdu}
+                  icon="bi-calculator-fill"
+                  iconBg="#dcfce7"
+                  iconColor="#16a34a"
+                  title="Order Totals"
+                  subtitle="Grand total updates automatically when quantity, delivery or discount changes"
+                >
+                  <div className="sales-totals-grid">
+                    <AmountBox label={t.totalAmount} value={fmt(formTotal)} highlight />
+
+                    <AmountBox label={t.previousBalance}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="number"
+                        value={form.previous_balance}
+                        onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))}
+                        style={{ fontSize: 16, fontWeight: 900, textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                      />
+                    </AmountBox>
+
+                    <AmountBox label={t.deliveryCharges}>
+                      {!showDeliveryCharges ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowDeliveryCharges(true)}
+                          style={{
+                            width: "100%",
+                            height: 36,
+                            borderRadius: 9,
+                            border: "1.5px dashed #cbd5e1",
+                            background: "#f8fafc",
+                            color: "#1d4ed8",
+                            fontSize: 11.5,
+                            fontWeight: 900,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 7,
+                          }}
+                        >
+                          <i className="bi bi-plus-circle-fill"></i>{t.addDeliveryCharges}
+                        </button>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              onClick={() => { setShowDeliveryCharges(false); setForm((f) => ({ ...f, delivery_charges: "0" })); }}
+                              style={{
+                                padding: "3px 8px",
+                                borderRadius: 999,
+                                border: "1px solid #e2e8f0",
+                                background: "#f8fafc",
+                                color: "#64748b",
+                                fontSize: 10,
+                                fontWeight: 900,
+                                cursor: "pointer",
+                              }}
+                            >✕ {t.removeDeliveryCharges}</button>
+                          </div>
+                          <StyledInput
+                            isUrdu={isUrdu}
+                            type="number"
+                            value={form.delivery_charges}
+                            onChange={(e) => setForm((f) => ({ ...f, delivery_charges: e.target.value }))}
+                            autoFocus
+                            style={{ fontSize: 15, fontWeight: 900, textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                          />
+                        </div>
+                      )}
+                    </AmountBox>
+
+                    <AmountBox label={t.discount}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="number"
+                        value={form.discount}
+                        onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+                        style={{ fontSize: 16, fontWeight: 900, textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                      />
+                    </AmountBox>
+
+                    <div style={{
+                      borderRadius: 14,
+                      padding: 10,
+                      minHeight: 82,
+                      background: "linear-gradient(135deg,#0f172a 0%,#1d4ed8 100%)",
+                      boxShadow: "0 18px 42px rgba(29,78,216,0.28)",
+                      color: "white",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                        <p style={{ fontSize: 10, fontWeight: 900, color: "rgba(255,255,255,0.76)", textTransform: "uppercase", letterSpacing: "0.7px", margin: 0 }}>{t.grandTotal}</p>
+                        <i className="bi bi-stars" style={{ color: "rgba(255,255,255,0.85)", fontSize: 15 }}></i>
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 950, fontVariantNumeric: "tabular-nums", letterSpacing: "-1px" }}>{fmt(formGrandTotal)}</div>
+                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.66)", fontFamily: "monospace", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {fmt(formTotal)}
+                        {num(form.previous_balance) !== 0 ? ` + ${fmt(form.previous_balance)}` : ""}
+                        {showDeliveryCharges && num(form.delivery_charges) !== 0 ? ` ${num(form.delivery_charges) >= 0 ? "+" : "−"} ${fmt(Math.abs(num(form.delivery_charges)))}` : ""}
+                        {num(form.discount) !== 0 ? ` − ${fmt(form.discount)}` : ""}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                      <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
-                        {t.totalAmount}<span className="text-blue-500 font-bold normal-case tracking-normal">⚡ {t.autoCalcNote}</span>
-                      </label>
-                      <input type="text" value={fmt(formTotal)} readOnly className="w-full h-12 rounded-2xl border border-slate-200 bg-white px-3 text-right text-base font-mono font-black text-slate-950 shadow-sm" />
-                    </div>
-
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                      <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.status}</label>
-                      <select
-                        value={form.status}
-                        onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                        className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
-                      >
-                        <option value="Pending">{t.pending}</option>
-                        <option value="Completed">{t.completed}</option>
-                        <option value="Cancelled">{t.cancelled}</option>
-                      </select>
-                    </div>
-
-                    <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
-                      <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-blue-700 mb-2">
-                        {t.grandTotal}<span className="text-blue-500 font-bold normal-case tracking-normal">⚡ {t.autoCalcNote}</span>
-                      </label>
-                      <input type="text" value={fmt(formGrandTotal)} readOnly className="w-full h-12 rounded-2xl border border-blue-200 bg-white px-3 text-right text-lg font-mono font-black text-blue-700 shadow-sm" />
-                    </div>
-                  </div>
-                </section>
+                </SectionCard>
               </div>
 
-              <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-5 sm:px-7 py-4 flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                <div className={`hidden md:flex items-center gap-2 text-xs font-bold text-slate-500 flex-1 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                  <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                    <i className="bi bi-shield-check"></i>
+              {/* Footer */}
+              <div style={{
+                position: "sticky",
+                bottom: 0,
+                zIndex: 5,
+                padding: "10px 14px",
+                background: "#ffffff",
+                borderTop: "1px solid #dbe3ee",
+                boxShadow: "0 -14px 38px rgba(15,23,42,0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+                flexDirection: isUrdu ? "row-reverse" : "row",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, color: "#64748b", fontSize: 11.8, fontWeight: 750, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                  <span style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 9,
+                    background: loading ? "#fff7ed" : "#eef2ff",
+                    color: loading ? "#ea580c" : "#4f46e5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: "0 0 auto",
+                  }}>
+                    <i className={`bi ${loading ? "bi-arrow-repeat" : "bi-shield-check"}`}></i>
                   </span>
-                  Ready to save sale order
+                  <span>{loading ? t.loadingOrders : "Ready to save order"}</span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  disabled={submitting}
-                  className="h-12 px-8 min-w-[150px] rounded-2xl bg-white border border-slate-300 text-slate-700 text-sm font-black hover:bg-slate-50 transition disabled:opacity-60"
-                >
-                  {t.cancel}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={submitting}
-                  className="h-12 px-8 min-w-[170px] rounded-2xl bg-blue-700 text-white text-sm font-black hover:bg-blue-800 transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
-                  {submitting ? t.saving : t.save}
-                </button>
+                <div style={{ display: "flex", gap: 10, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    style={{
+                      minWidth: 160,
+                      padding: "12px 18px",
+                      borderRadius: 10,
+                      fontSize: 14,
+                      fontWeight: 900,
+                      background: "#ffffff",
+                      color: "#334155",
+                      border: "1.5px solid #cbd5e1",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={submitting || loading}
+                    style={{
+                      minWidth: 180,
+                      padding: "12px 18px",
+                      borderRadius: 10,
+                      fontSize: 14,
+                      fontWeight: 900,
+                      background: submitting || loading ? "#94a3b8" : "#1d4ed8",
+                      color: "white",
+                      border: "1.5px solid #1d4ed8",
+                      cursor: submitting || loading ? "not-allowed" : "pointer",
+                      boxShadow: submitting || loading ? "none" : "0 12px 26px rgba(29,78,216,0.26)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <i className="bi bi-save2-fill"></i>
+                    {submitting ? t.saving : editingId ? (isUrdu ? "اپڈیٹ کریں" : "Update Order") : t.save}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
+        {/* ── Table ── */}
+        <div className="slide-up" style={{ background: "white", borderRadius: 10, border: "1.5px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: 1120, borderCollapse: "collapse" }}>
               <thead>
-                <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100 whitespace-nowrap">
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"} w-10`}>#</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.orderNo}</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.partyType}</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.partyName}</th>
-                  <th className="px-3 py-3 text-center">{t.orderDate}</th>
-                  <th className="px-3 py-3 text-center">{t.deliveryDate}</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.shipmentTo}</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.productType}</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                  <th className={`px-3 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                  <th className="px-3 py-3 text-center">{t.unit}</th>
-                  <th className="px-3 py-3 text-right">{t.orderQty}</th>
-                  <th className="px-3 py-3 text-right">{t.rate}</th>
-                  <th className="px-3 py-3 text-right">{t.totalAmount}</th>
-                  <th className="px-3 py-3 text-right">{t.grandTotal}</th>
-                  <th className="px-3 py-3 text-center">{t.status}</th>
-                  <th className="px-3 py-3 text-center">{t.actions}</th>
+                <tr style={{ background: "#0f172a" }}>
+                  {[
+                    { k: "no",     l: "#",            align: "center", w: 40 },
+                    { k: "ord",    l: t.orderNo,      align: isUrdu ? "right" : "left" },
+                    { k: "ref",    l: t.referenceNo,  align: isUrdu ? "right" : "left" },
+                    { k: "type",   l: t.partyType,    align: "center" },
+                    { k: "name",   l: t.partyName,    align: isUrdu ? "right" : "left" },
+                    { k: "date",   l: t.orderDate,    align: "center" },
+                    { k: "delivery", l: t.deliveryDate, align: "center" },
+                    { k: "items",  l: t.itemsLabel,   align: isUrdu ? "right" : "left" },
+                    { k: "total",  l: t.totalAmount,  align: "right" },
+                    { k: "grand",  l: t.grandTotal,   align: "right" },
+                    { k: "status", l: t.status,       align: "center" },
+                    { k: "act",    l: t.actions,      align: "center" },
+                  ].map(col => (
+                    <th key={col.k} style={{
+                      padding: "11px 10px", textAlign: col.align, width: col.w,
+                      fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.75)",
+                      textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap",
+                      borderBottom: "none",
+                    }}>
+                      {col.l}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-
-              <tbody className="divide-y divide-sky-50">
+              <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={17} className="px-6 py-12 text-center text-slate-400">
-                      <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                      <p className="mt-2 text-sm">{t.loadingOrders}</p>
-                    </td>
-                  </tr>
+                  <tr><td colSpan={12} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                    <i className="bi bi-arrow-repeat" style={{ fontSize: 24, display: "block", marginBottom: 8, animation: "spin 1s linear infinite" }}></i>
+                    <span style={{ fontSize: 13 }}>{t.loadingOrders}</span>
+                  </td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={17} className="px-6 py-12 text-center text-slate-400 text-sm">{t.noRecords}</td>
-                  </tr>
+                  <tr><td colSpan={12} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>{t.noRecords}</td></tr>
                 ) : (
                   filtered.map((o, i) => {
                     const items = normalizeOrderItems(o);
@@ -1634,89 +2224,97 @@ const SaleOrderPage = () => {
                     const partyTypeObj = PARTY_TYPES.find((p) => p.value === partyType);
                     const total = num(o.total_amount) || calcOrderTotal(items);
                     const grand = num(o.grand_total) || total + num(o.previous_balance) + num(o.delivery_charges) - num(o.discount);
+                    const partyBadge = partyType === "employee"
+                      ? { background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }
+                      : partyType === "supplier"
+                        ? { background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }
+                        : partyType === "general_ledger"
+                          ? { background: "#ede9fe", color: "#5b21b6", border: "1px solid #c4b5fd" }
+                          : { background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" };
+                    const statusTone = o.status === "Completed"
+                      ? { background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }
+                      : o.status === "Cancelled"
+                        ? { background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }
+                        : { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" };
 
                     return (
-                      <tr key={o.id || i} className="hover:bg-sky-50/70 transition align-top">
-                        <td className="px-3 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
-                        <td className="px-3 py-3">
-                          <span className="font-bold text-slate-950 font-mono block text-sm">{o.order_no}</span>
-                          <span className="text-xs text-slate-400">{items.length} {t.itemsLabel}</span>
+                      <tr key={o.id || i} className="tbl-row" style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.1s", verticalAlign: "top" }}>
+                        <td style={{ padding: "10px", textAlign: "center", color: "#94a3b8", fontFamily: "monospace", fontSize: 12 }}>{i + 1}</td>
+                        <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                          <div style={{ fontFamily: "monospace", fontWeight: 800, color: "#0f172a", fontSize: 11.8 }}>{o.order_no}</div>
+                          <div style={{ marginTop: 3, fontSize: 10.5, color: "#94a3b8", fontWeight: 600 }}>{items.length} {t.itemsLabel}</div>
                         </td>
-                        <td className="px-3 py-3">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-100">
-                            <i className={`bi ${partyTypeObj?.icon || "bi-person"}`}></i>
-                            {partyTypeObj ? t[partyTypeObj.labelKey] : "-"}
+                        <td style={{ padding: "10px", fontFamily: "monospace", color: "#64748b", fontSize: 12 }}>{o.reference_no || <span style={{ color: "#e2e8f0" }}>—</span>}</td>
+                        <td style={{ padding: "10px", textAlign: "center" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", ...partyBadge }}>
+                            <i className={`bi ${partyTypeObj?.icon || "bi-person-fill"}`}></i>{partyTypeObj ? t[partyTypeObj.labelKey] : "-"}
                           </span>
                         </td>
-                        <td className={`px-3 py-3 text-sm ${valueClass}`}>{getOrderPartyName(o)}</td>
-                        <td className="px-3 py-3 text-center font-mono text-slate-950 whitespace-nowrap text-xs">{o.order_date || "—"}</td>
-                        <td className="px-3 py-3 text-center font-mono text-slate-950 whitespace-nowrap text-xs">{o.delivery_date || "—"}</td>
-                        <td className={`px-3 py-3 text-sm ${valueClass}`}>{o.shipment_to || "—"}</td>
-
-                        <td className="px-3 py-3">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx}><span className="bg-sky-50 text-slate-950 px-2.5 py-1 rounded-lg text-xs font-medium inline-block border border-sky-100">{getTranslatedMapValue("product_type", item.product_type_id, typeMap[item.product_type_id] || `#${item.product_type_id}`)}</span></div>)}</div>
+                        <td style={{ padding: "10px", fontWeight: 600, color: "#0f172a", fontSize: 13, minWidth: 130 }}>{getOrderPartyName(o)}</td>
+                        <td style={{ padding: "10px", textAlign: "center", fontFamily: "monospace", fontSize: 10.5, color: "#475569", whiteSpace: "nowrap" }}>{o.order_date || "—"}</td>
+                        <td style={{ padding: "10px", textAlign: "center", fontFamily: "monospace", fontSize: 10.5, color: "#475569", whiteSpace: "nowrap" }}>{o.delivery_date || "—"}</td>
+                        <td style={{ padding: "10px", minWidth: 280 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {items.slice(0, 2).map((item, idx) => (
+                              <div key={idx} style={{ border: "1px solid #e2e8f0", background: "#f8fafc", borderRadius: 9, padding: "6px 8px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                                  <span style={{ color: "#0f172a", fontSize: 11.5, fontWeight: 800 }}>
+                                    {getTranslatedMapValue("product", item.product_id, productMap[item.product_id] || `#${item.product_id}`)}
+                                  </span>
+                                  <span style={{ color: "#1e40af", fontSize: 11, fontWeight: 800, fontFamily: "monospace", whiteSpace: "nowrap" }}>
+                                    {fmt(calcLineTotal(item))}
+                                  </span>
+                                </div>
+                                <div style={{ marginTop: 3, color: "#64748b", fontSize: 10.5, lineHeight: 1.5 }}>
+                                  {getTranslatedMapValue("category", item.category_id, categoryMap[item.category_id] || `#${item.category_id}`)} · {getTranslatedMapValue("product_type", item.product_type_id, typeMap[item.product_type_id] || `#${item.product_type_id}`)} · {getTranslatedMapValue("unit", item.unit_id, unitMap[item.unit_id] || `#${item.unit_id}`)} · {t.orderQty}: {item.order_qty || 0} · {t.rate}: {fmt(item.rate)}
+                                </div>
+                              </div>
+                            ))}
+                            {items.length > 2 && (
+                              <span style={{ display: "inline-block", alignSelf: isUrdu ? "flex-end" : "flex-start", padding: "3px 9px", borderRadius: 20, background: "#eef2ff", color: "#6366f1", fontSize: 10.5, fontWeight: 800, border: "1px solid #c7d2fe" }}>
+                                +{items.length - 2} {t.itemsLabel}
+                              </span>
+                            )}
+                          </div>
                         </td>
-
-                        <td className="px-3 py-3">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx} className={`text-sm ${valueClass}`}>{getTranslatedMapValue("category", item.category_id, categoryMap[item.category_id] || `#${item.category_id}`)}</div>)}</div>
+                        <td style={{ padding: "10px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 700, color: "#475569", fontSize: 11.8, whiteSpace: "nowrap" }}>{fmt(total)}</td>
+                        <td style={{ padding: "10px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 800, color: "#1e40af", fontSize: 13, whiteSpace: "nowrap" }}>{fmt(grand)}</td>
+                        <td style={{ padding: "10px", textAlign: "center" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: 20, fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap", ...statusTone }}>
+                            {getStatusLabel(o.status, t)}
+                          </span>
                         </td>
-
-                        <td className="px-3 py-3">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx} className="text-slate-950 font-medium text-sm">{getTranslatedMapValue("product", item.product_id, productMap[item.product_id] || `#${item.product_id}`)}</div>)}</div>
-                        </td>
-
-                        <td className="px-3 py-3 text-center">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx} className={`text-sm ${valueClass}`}>{getTranslatedMapValue("unit", item.unit_id, unitMap[item.unit_id] || `#${item.unit_id}`)}</div>)}</div>
-                        </td>
-
-                        <td className="px-3 py-3 text-right">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx} className={`${monoBlack} font-semibold text-sm`}>{item.order_qty || 0}</div>)}</div>
-                        </td>
-
-                        <td className="px-3 py-3 text-right">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx} className={`${monoBlack} text-sm`}>{fmt(item.rate)}</div>)}</div>
-                        </td>
-
-                        <td className="px-3 py-3 text-right">
-                          <div className="space-y-1.5">{items.map((item, idx) => <div key={idx} className={`${monoBlack} text-sm`}>{fmt(calcLineTotal(item))}</div>)}</div>
-                        </td>
-
-                        <td className={`px-3 py-3 text-right ${monoBlack} font-bold`}>{fmt(grand)}</td>
-
-                        <td className="px-3 py-3 text-center">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-sky-50 text-slate-950 border border-sky-100">{getStatusLabel(o.status, t)}</span>
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <div className={`flex items-center justify-center gap-1.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                            <button onClick={() => openEdit(o)} className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 hover:bg-sky-200 transition flex items-center justify-center" title={t.edit}>
-                              <i className="bi bi-pencil-square text-sm"></i>
-                            </button>
-                            <button onClick={() => handleDelete(o.id)} className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 hover:bg-rose-200 transition flex items-center justify-center" title={t.delete}>
-                              <i className="bi bi-trash3-fill text-sm"></i>
-                            </button>
-                            <button
-                              onClick={async () => {
-                                let cacheToUse = urduCache;
-                                if (lang === "ur") {
-                                  setTranslating(true);
-                                  try {
-                                    const updatedCache = await ensureOrderPrintTranslations(o);
-                                    if (updatedCache) cacheToUse = updatedCache;
-                                  } finally {
-                                    setTranslating(false);
+                        <td style={{ padding: "10px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                            {[
+                              { icon: "bi-pencil-square", bg: "#eef2ff", color: "#6366f1", hbg: "#e0e7ff", title: t.edit, fn: () => openEdit(o) },
+                              { icon: "bi-trash3",        bg: "#fef2f2", color: "#ef4444", hbg: "#fee2e2", title: t.delete, fn: () => handleDelete(o.id) },
+                              { icon: "bi-printer-fill",  bg: "#fefce8", color: "#ca8a04", hbg: "#fef9c3", title: t.printSlip, fn: async () => {
+                                  let cacheToUse = urduCache;
+                                  if (lang === "ur") {
+                                    setTranslating(true);
+                                    try {
+                                      const updatedCache = await ensureOrderPrintTranslations(o);
+                                      if (updatedCache) cacheToUse = updatedCache;
+                                    } finally { setTranslating(false); }
                                   }
+                                  generateSlipPrint(o, lang, { productMap, categoryMap, typeMap, unitMap }, cacheToUse);
                                 }
-                                generateSlipPrint(o, lang, { productMap, categoryMap, typeMap, unitMap }, cacheToUse);
+                              },
+                              { icon: "bi-file-earmark-arrow-up-fill", bg: "#ecfdf5", color: "#059669", hbg: "#d1fae5", title: t.changeToInvoice, fn: () => handleConvertToInvoice(o) },
+                            ].map(btn => (
+                              <button key={btn.icon} onClick={btn.fn} title={btn.title} style={{
+                                width: 30, height: 30, borderRadius: 8, border: "none",
+                                background: btn.bg, color: btn.color, cursor: "pointer",
+                                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+                                transition: "all 0.15s",
                               }}
-                              className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 hover:bg-amber-200 transition flex items-center justify-center"
-                              title={t.printSlip}
-                            >
-                              <i className="bi bi-printer-fill text-sm"></i>
-                            </button>
-                            <button onClick={() => handleConvertToInvoice(o)} className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition flex items-center justify-center" title={t.changeToInvoice}>
-                              <i className="bi bi-file-earmark-arrow-up-fill text-sm"></i>
-                            </button>
+                                onMouseEnter={e => e.currentTarget.style.background = btn.hbg}
+                                onMouseLeave={e => e.currentTarget.style.background = btn.bg}
+                              >
+                                <i className={`bi ${btn.icon}`}></i>
+                              </button>
+                            ))}
                           </div>
                         </td>
                       </tr>
