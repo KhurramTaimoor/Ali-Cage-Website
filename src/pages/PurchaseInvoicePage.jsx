@@ -1,2266 +1,1370 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 
 const LANG = {
   en: {
     title: "Purchase Invoice",
-    subtitle: "Create and manage your purchase invoices",
-    addBtn: "New Invoice",
-    editBtn: "Edit",
-    newEntry: "New Invoice Entry",
-    editEntry: "Edit Purchase Invoice",
+    subtitle: "Multi-product purchase invoices with debit, credit & printable receipt",
+    newInvoice: "New Invoice",
+    summaryBtn: "View Summary",
+    searchPlaceholder: "Search by invoice no, supplier, product or date...",
     invoiceNo: "Invoice No",
+    invoiceNoRequired: "Invoice No is required.",
     supplier: "Supplier",
+    supplierRequired: "Please select a supplier.",
     supplierPlaceholder: "Select supplier",
     date: "Invoice Date",
     debit: "Debit (PKR)",
     credit: "Credit (PKR)",
     debitPlaceholder: "Amount owed to supplier",
     creditPlaceholder: "Amount paid to supplier",
-    totalAmount: "Total Amount (PKR)",
-    items: "Invoice Items",
-    addItem: "Add Item",
-    removeItem: "Remove",
-    product: "Product",
-    productPlaceholder: "Select product",
-    unit: "Unit",
-    unitPlaceholder: "Select unit",
+    totalAmount: "Invoice Total",
+    grandTotal: "Grand Total",
+    balance: "Balance",
+    items: "Items",
+    itemsSubtitle: "Select category, product, unit and quantity per line",
+    newLine: "Add Line",
     category: "Category",
-    categoryPlaceholder: "Select category",
+    product: "Product",
+    productDescription: "Product Description",
+    productDescriptionPlaceholder: "Write a detailed product description — specs, notes, batch info, special instructions...",
+    productDescriptionHint: "Optional · Appears on printed invoice",
+    unit: "Unit",
     type: "Type",
     typePlaceholder: "Select type",
-    qty: "Quantity",
+    qty: "Qty",
     rate: "Rate",
     amount: "Amount",
-    save: "Save Invoice",
-    update: "Update Invoice",
-    saving: "Saving...",
-    cancel: "Cancel",
-    records: "Records",
-    searchPlaceholder:
-      "Search by invoice no, supplier, product, unit, category or type...",
-    actions: "Actions",
     delete: "Delete",
-    noRecords: "No records found.",
-    loading: "Loading purchase invoices...",
-    toggleLang: "اردو",
-    printList: "Print",
-    pdfList: "Download PDF",
-    reportHeader: "Purchase Invoices List",
-    printedOn: "Printed On",
-    balance: "Balance",
-    fetchError: "Failed to load purchase invoices.",
-    saveError: "Failed to save purchase invoice.",
-    updateError: "Failed to update purchase invoice.",
-    deleteError: "Failed to delete purchase invoice.",
-    successMsg: "Purchase Invoice saved successfully!",
-    updateSuccess: "Purchase Invoice updated successfully!",
-    deleteSuccess: "Purchase Invoice deleted successfully!",
+    saveInvoice: "Save Invoice",
+    updateInvoice: "Update Invoice",
+    cancel: "Cancel",
+    editTitle: "Edit Invoice",
+    newTitle: "New Purchase Invoice",
+    formSubtitle: "Purchase invoice with debit, credit and product details",
+    col_no: "#",
+    col_invoiceNo: "Invoice No",
+    col_supplier: "Supplier",
+    col_date: "Date",
+    col_items: "Items",
+    col_invoiceTotal: "Invoice Total",
+    col_debit: "Debit",
+    col_credit: "Credit",
+    col_balance: "Balance",
+    col_actions: "Actions",
+    loading: "Loading invoices...",
+    noRecords: "No invoices found.",
+    loadingMaster: "Loading...",
+    selectCategory: "-- Select Category --",
+    selectProduct: "-- Select Product --",
+    selectUnit: "-- Select Unit --",
+    selectSupplier: "-- Select Supplier --",
+    selectType: "-- Select Type --",
+    masterError: "Master data load issue:",
     deleteConfirm: "Are you sure you want to delete this invoice?",
-    optional: "Optional",
-    translating: "Translating to Urdu…",
-    savePdfHint: 'Choose "Save as PDF" in print dialog',
+    deleteSuccess: "Invoice deleted.",
+    deleteError: "Delete failed.",
+    saveSuccess: "Invoice saved.",
+    updateSuccess: "Invoice updated.",
+    saveError: "Save failed. Please check backend.",
+    printError: "Could not load invoice for print.",
+    editError: "Could not load invoice details.",
+    invoicesError: "Invoices could not be loaded.",
+    validItemRequired: "Please add at least one valid item.",
+    toggleLang: "اردو",
+    totalInvoices: "Total Invoices",
+    totalItems: "Total Items",
+    totalValue: "Total Value",
+    filterAll: "All",
+    filter24h: "Last 24 Hours",
+    filter7d: "Last 7 Days",
+    filterMonth: "This Month",
+    filterLabel: "Filter:",
+    slipTitle: "Purchase Invoice Receipt",
+    slipSupplier: "Supplier",
+    slipDate: "Invoice Date",
+    slipDebit: "Debit",
+    slipCredit: "Credit",
+    slipBalance: "Balance",
+    slipInvoiceTotal: "Invoice Total",
+    slipPrintedOn: "Generated",
+    slipThank: "Thank you for your business!",
     companyName: "Ali Cages",
-    thankYou: "Thank you for your business!",
+    savePdfHint: 'Choose "Save as PDF" in print dialog',
+    translating: "Translating to Urdu…",
+    descClear: "Clear",
+    descChars: "chars",
+    suppliers: "Suppliers",
+    categories: "Categories",
+    products: "Products",
+    units: "Units",
+    types: "Types",
+    na: "-",
   },
   ur: {
     title: "پرچیز انوائس",
-    subtitle: "اپنی خریداری کی انوائسز بنائیں اور ان کا انتظام کریں",
-    addBtn: "نئی انوائس",
-    editBtn: "ترمیم",
-    newEntry: "نئی انوائس کا اندراج",
-    editEntry: "خریداری کی انوائس میں ترمیم",
+    subtitle: "ملٹی پروڈکٹ، ڈیبٹ، کریڈٹ اور پرنٹ ایبل پرچیز انوائس",
+    newInvoice: "نئی انوائس",
+    summaryBtn: "سمری دیکھیں",
+    searchPlaceholder: "انوائس نمبر، سپلائر یا تاریخ سے تلاش کریں...",
     invoiceNo: "انوائس نمبر",
+    invoiceNoRequired: "انوائس نمبر ضروری ہے۔",
     supplier: "سپلائر",
+    supplierRequired: "سپلائر منتخب کرنا ضروری ہے۔",
     supplierPlaceholder: "سپلائر منتخب کریں",
-    date: "انوائس کی تاریخ",
+    date: "انوائس تاریخ",
     debit: "ڈیبٹ (روپے)",
     credit: "کریڈٹ (روپے)",
     debitPlaceholder: "سپلائر کو واجب الادا رقم",
     creditPlaceholder: "سپلائر کو ادا کی گئی رقم",
-    totalAmount: "کل رقم (روپے)",
-    items: "انوائس کی اشیاء",
-    addItem: "آئٹم شامل کریں",
-    removeItem: "ہٹائیں",
-    product: "پروڈکٹ",
-    productPlaceholder: "پروڈکٹ منتخب کریں",
-    unit: "یونٹ",
-    unitPlaceholder: "یونٹ منتخب کریں",
+    totalAmount: "کل رقم",
+    grandTotal: "ٹوٹل بل رقم",
+    balance: "بیلنس",
+    items: "آئٹمز",
+    itemsSubtitle: "ہر لائن میں کیٹیگری، پروڈکٹ، یونٹ اور مقدار",
+    newLine: "نئی لائن",
     category: "کیٹیگری",
-    categoryPlaceholder: "کیٹیگری منتخب کریں",
+    product: "پروڈکٹ",
+    productDescription: "پروڈکٹ تفصیل",
+    productDescriptionPlaceholder: "تفصیل لکھیں — اسپیک، نوٹ، بیچ معلومات، خاص ہدایات...",
+    productDescriptionHint: "اختیاری · پرنٹ شدہ انوائس پر ظاہر ہوگا",
+    unit: "یونٹ",
     type: "ٹائپ",
     typePlaceholder: "ٹائپ منتخب کریں",
     qty: "مقدار",
     rate: "ریٹ",
     amount: "رقم",
-    save: "انوائس محفوظ کریں",
-    update: "انوائس اپڈیٹ کریں",
-    saving: "محفوظ ہو رہا ہے...",
-    cancel: "منسوخ",
-    records: "ریکارڈز",
-    searchPlaceholder:
-      "انوائس نمبر، سپلائر، پروڈکٹ، یونٹ، کیٹیگری یا ٹائپ سے تلاش کریں...",
-    actions: "اقدامات",
     delete: "حذف",
-    noRecords: "کوئی ریکارڈ نہیں ملا۔",
-    loading: "پرچیز انوائسز لوڈ ہو رہی ہیں...",
+    saveInvoice: "انوائس محفوظ کریں",
+    updateInvoice: "انوائس اپڈیٹ کریں",
+    cancel: "منسوخ",
+    editTitle: "انوائس ترمیم",
+    newTitle: "نئی پرچیز انوائس",
+    formSubtitle: "پرچیز انوائس بمعہ ڈیبٹ، کریڈٹ اور پروڈکٹ تفصیل",
+    col_no: "#",
+    col_invoiceNo: "انوائس نمبر",
+    col_supplier: "سپلائر",
+    col_date: "تاریخ",
+    col_items: "آئٹمز",
+    col_invoiceTotal: "انوائس رقم",
+    col_debit: "ڈیبٹ",
+    col_credit: "کریڈٹ",
+    col_balance: "بیلنس",
+    col_actions: "اقدامات",
+    loading: "Invoices لوڈ ہو رہی ہیں...",
+    noRecords: "کوئی انوائس نہیں ملی۔",
+    loadingMaster: "لوڈ ہو رہا ہے...",
+    selectCategory: "-- کیٹیگری منتخب کریں --",
+    selectProduct: "-- پروڈکٹ منتخب کریں --",
+    selectUnit: "-- یونٹ منتخب کریں --",
+    selectSupplier: "-- سپلائر منتخب کریں --",
+    selectType: "-- ٹائپ منتخب کریں --",
+    masterError: "Master data load issue:",
+    deleteConfirm: "کیا آپ واقعی اس انوائس کو حذف کرنا چاہتے ہیں؟",
+    deleteSuccess: "انوائس حذف ہو گئی۔",
+    deleteError: "حذف نہیں ہوئی۔",
+    saveSuccess: "انوائس محفوظ ہو گئی۔",
+    updateSuccess: "انوائس اپڈیٹ ہو گئی۔",
+    saveError: "محفوظ نہیں ہوئی۔ Backend چیک کریں۔",
+    printError: "پرنٹ کے لیے انوائس لوڈ نہیں ہوئی۔",
+    editError: "انوائس تفصیل لوڈ نہیں ہوئی۔",
+    invoicesError: "Invoices لوڈ نہیں ہوئیں۔",
+    validItemRequired: "کم از کم ایک valid item ضرور add کریں۔",
     toggleLang: "English",
-    printList: "پرنٹ کریں",
-    pdfList: "پی ڈی ایف ڈاؤنلوڈ",
-    reportHeader: "پرچیز انوائسز کی فہرست",
-    printedOn: "پرنٹ کی تاریخ",
-    balance: "بیلنس",
-    fetchError: "پرچیز انوائسز لوڈ نہیں ہو سکیں۔",
-    saveError: "پرچیز انوائس محفوظ نہیں ہو سکی۔",
-    updateError: "پرچیز انوائس اپڈیٹ نہیں ہو سکی۔",
-    deleteError: "پرچیز انوائس حذف نہیں ہو سکی۔",
-    successMsg: "پرچیز انوائس کامیابی سے محفوظ ہو گئی!",
-    updateSuccess: "پرچیز انوائس کامیابی سے اپڈیٹ ہو گئی!",
-    deleteSuccess: "پرچیز انوائس کامیابی سے حذف ہو گئی!",
-    deleteConfirm: "کیا آپ واقعی یہ انوائس حذف کرنا چاہتے ہیں؟",
-    optional: "اختیاری",
-    translating: "اردو میں ترجمہ ہو رہا ہے…",
-    savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
+    totalInvoices: "کل انوائسز",
+    totalItems: "کل آئٹمز",
+    totalValue: "کل رقم",
+    filterAll: "سب",
+    filter24h: "آخری 24 گھنٹے",
+    filter7d: "آخری 7 دن",
+    filterMonth: "یہ مہینہ",
+    filterLabel: "فلٹر:",
+    slipTitle: "پرچیز انوائس رسید",
+    slipSupplier: "سپلائر",
+    slipDate: "انوائس تاریخ",
+    slipDebit: "ڈیبٹ",
+    slipCredit: "کریڈٹ",
+    slipBalance: "بیلنس",
+    slipInvoiceTotal: "ٹوٹل انوائس رقم",
+    slipPrintedOn: "تیار کردہ",
+    slipThank: "آپ کے کاروبار کا شکریہ!",
     companyName: "علی کیجز",
-    thankYou: "آپ کے کاروبار کا شکریہ!",
+    savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
+    translating: "اردو میں ترجمہ ہو رہا ہے…",
+    descClear: "صاف کریں",
+    descChars: "حروف",
+    suppliers: "Suppliers",
+    categories: "Categories",
+    products: "Products",
+    units: "Units",
+    types: "Types",
+    na: "-",
   },
 };
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_ROOT         = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE         = `${API_ROOT}/api/purchase-invoices`;
+const SUPPLIERS_API    = `${API_ROOT}/api/suppliers`;
+const CATEGORIES_API   = `${API_ROOT}/api/categories`;
+const PRODUCTS_API     = `${API_ROOT}/api/products`;
+const UNITS_API        = `${API_ROOT}/api/units`;
+const PROD_TYPES_API   = `${API_ROOT}/api/product-types`;
 
-const emptyItem = () => ({
-  product_name: "",
-  unit_name: "",
-  category_name: "",
-  type_name: "",
-  quantity: "",
-  rate: "",
-  amount: "",
-});
+const DESC_MAX = 500;
 
-const emptyForm = {
-  invoice_no: "",
-  supplier_name: "",
-  invoice_date: "",
-  total_amount: "",
-  debit: "",
-  credit: "",
+const getList = (data) => {
+  if (Array.isArray(data))           return data;
+  if (Array.isArray(data?.data))     return data.data;
+  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.result))   return data.result;
+  return [];
 };
 
-const getOptionLabel = (item) =>
-  item?.name ||
-  item?.title ||
-  item?.label ||
-  item?.supplier_name ||
-  item?.product_name ||
-  item?.unit_name ||
-  item?.category_name ||
-  item?.type_name ||
-  item?.product_type_en ||
-  "";
+const money    = (v) => Number(v || 0).toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const toNumber = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 
-const extractOptions = (data) => {
-  if (!Array.isArray(data)) return [];
-  return data.map((item) => getOptionLabel(item)).filter(Boolean);
-};
+const getSupplierName  = (o) => o?.supplier_name  || o?.supplier_name_en  || o?.name || o?.name_en || o?.title || "";
+const getCategoryName  = (o) => o?.category_name  || o?.category_name_en  || o?.name || o?.name_en || o?.title || "";
+const getProductName   = (o) => o?.product_name   || o?.product_name_en   || o?.name || o?.name_en || o?.item_name || o?.title || "";
+const getProductDesc   = (o) => o?.product_description || o?.product_description_en || o?.description || o?.details || o?.remarks || "";
+const getUnitName      = (o) => o?.unit_name      || o?.unit_name_en      || o?.name || o?.name_en || o?.symbol || o?.title || "";
+const getTypeName      = (o) => o?.product_type_en || o?.type_name || o?.type_name_en || o?.name || o?.name_en || o?.title || "";
+const getRecordId      = (o) => o?.id ?? o?.value ?? o?.supplier_id ?? "";
+const getProductRate   = (o) => o?.purchase_rate ?? o?.piece_rate ?? o?.rate ?? o?.price ?? 0;
+const getProductCatId  = (o) => o?.category_id ?? o?.categoryId ?? o?.category?.id ?? o?.category ?? "";
+const getProductUnitId = (o) => o?.unit_id ?? o?.unitId ?? o?.unit?.id ?? o?.unit ?? "";
 
-const money = (value) =>
-  Number(value || 0).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+const generateInvoiceNo = (existing) => {
+  let max = 0;
+  existing.forEach((inv) => {
+    const m = String(inv.invoice_no || "").match(/^PI-(\d+)$/i);
+    if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
   });
+  return `PI-${String(max + 1).padStart(3, "0")}`;
+};
 
 async function translateText(text) {
   if (!text || !String(text).trim()) return text;
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-      String(text).trim()
-    )}&langpair=en|ur`;
-    const res = await fetch(url);
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(String(text).trim())}&langpair=en|ur`;
+    const res  = await fetch(url);
     if (!res.ok) return text;
     const data = await res.json();
-    const translated = data?.responseData?.translatedText;
-    if (!translated || translated.toLowerCase() === String(text).trim().toLowerCase()) {
-      return text;
-    }
-    return translated;
-  } catch {
-    return text;
-  }
+    const tr   = data?.responseData?.translatedText;
+    if (!tr || tr.toLowerCase() === String(text).trim().toLowerCase()) return text;
+    return tr;
+  } catch { return text; }
 }
 
+const createEmptyItem = () => ({
+  category_id: "", product_id: "", product_description: "",
+  unit_id: "", type_name: "", qty: "", rate: "0", amount: "0",
+});
+
+const createEmptyForm = () => ({
+  invoice_no: "",
+  supplier_id: "",
+  invoice_date: new Date().toISOString().slice(0, 10),
+  debit: "0",
+  credit: "0",
+});
+
+function useLookup(url) {
+  const [data, setData]       = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState("");
+  const fetchData = async () => {
+    setLoading(true); setError("");
+    try { const res = await axios.get(url); setData(getList(res.data)); }
+    catch (err) { setError(err?.message || "Load error"); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { fetchData(); }, [url]);
+  return { data, loading, error, refetch: fetchData };
+}
+
+function useAutoResize(value) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.style.height = "auto";
+    ref.current.style.height = `${ref.current.scrollHeight}px`;
+  }, [value]);
+  return ref;
+}
+
+function ProductDescriptionBox({ value, onChange, onClear, t, isUrdu }) {
+  const textareaRef = useAutoResize(value);
+  const len       = (value || "").length;
+  const nearLimit = len > DESC_MAX * 0.8;
+  const atLimit   = len >= DESC_MAX;
+  const hasContent = len > 0;
+
+  return (
+    <div className={`rounded-2xl border-2 transition-all duration-200 overflow-hidden
+      ${hasContent
+        ? "border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white shadow-sm shadow-indigo-100"
+        : "border-sky-100 bg-sky-50/30"
+      }`}
+    >
+      <div className={`flex items-center justify-between gap-2 px-3 pt-2.5 pb-1.5 border-b
+        ${hasContent ? "border-indigo-100" : "border-sky-100"}`}
+      >
+        <div className={`flex items-center gap-1.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <span className={`flex items-center justify-center w-6 h-6 rounded-lg text-[11px]
+            ${hasContent ? "bg-indigo-100 text-indigo-600" : "bg-sky-100 text-sky-500"}`}>
+            <i className="bi bi-card-text"></i>
+          </span>
+          <span className={`text-[11px] font-bold tracking-wide uppercase
+            ${hasContent ? "text-indigo-600" : "text-slate-500"}`}>
+            {t.productDescription}
+          </span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+            ${hasContent ? "bg-indigo-100 text-indigo-500" : "bg-sky-100 text-sky-400"}`}>
+            {t.productDescriptionHint}
+          </span>
+        </div>
+        <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <span className={`text-[10px] font-mono font-semibold transition-colors
+            ${atLimit ? "text-rose-500" : nearLimit ? "text-amber-500" : "text-slate-400"}`}>
+            {len}/{DESC_MAX} {t.descChars}
+          </span>
+          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-300
+              ${atLimit ? "bg-rose-400" : nearLimit ? "bg-amber-400" : "bg-indigo-400"}`}
+              style={{ width: `${Math.min((len / DESC_MAX) * 100, 100)}%` }} />
+          </div>
+          {hasContent && (
+            <button type="button" onClick={onClear} title={t.descClear}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold
+                bg-white border border-slate-200 text-slate-500 hover:bg-rose-50
+                hover:border-rose-200 hover:text-rose-500 transition-all">
+              <i className="bi bi-x-circle text-[11px]"></i>{t.descClear}
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="relative px-3 py-2">
+        <textarea ref={textareaRef} value={value}
+          onChange={(e) => onChange(e.target.value.slice(0, DESC_MAX))}
+          placeholder={t.productDescriptionPlaceholder}
+          rows={3} dir={isUrdu ? "rtl" : "ltr"}
+          className={`w-full resize-none bg-transparent border-0 outline-none focus:ring-0
+            text-[12.5px] leading-relaxed text-slate-800 placeholder:text-slate-300
+            min-h-[72px] transition-all duration-200
+            ${isUrdu ? "text-right" : "text-left"}`}
+          style={{ fontFamily: isUrdu ? "'Noto Nastaliq Urdu', serif" : "inherit" }} />
+        {!hasContent && (
+          <i className={`bi bi-pencil-fill absolute top-3 text-slate-200 text-base pointer-events-none
+            ${isUrdu ? "left-4" : "right-4"}`} />
+        )}
+      </div>
+      {!hasContent && (
+        <div className={`flex gap-1.5 flex-wrap px-3 pb-2.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          {["Batch info", "Size / weight", "Color", "Special notes"].map((chip) => (
+            <button key={chip} type="button" onClick={() => onChange(chip + ": ")}
+              className="text-[10px] px-2 py-0.5 rounded-full border border-sky-200
+                bg-white text-sky-600 hover:bg-sky-50 hover:border-sky-300 transition-all">
+              + {chip}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function generateInvoicePrint(invoice, lang, urduCache, { categoryMap, productMap, unitMap, supplierMap }) {
+  const t      = LANG[lang || "en"];
+  const isUrdu = lang === "ur";
+  const dir    = isUrdu ? "rtl" : "ltr";
+  const items  = Array.isArray(invoice?.items) ? invoice.items : [];
+
+  const invoiceTotal = toNumber(invoice?.invoice_total);
+  const debit        = toNumber(invoice?.debit);
+  const credit       = toNumber(invoice?.credit);
+  const balance      = debit - credit;
+
+  const supplierName = isUrdu
+    ? urduCache[`supplier:${invoice.supplier_id}`] || invoice.supplier_name || "-"
+    : invoice.supplier_name || "-";
+
+  const translated = (prefix, id, fallback) =>
+    isUrdu ? urduCache[`${prefix}:${id}`] || fallback || "-" : fallback || "-";
+
+  const rowsHtml = items.map((row, idx) => {
+    const descHtml = (row.product_description || "")
+      ? `<div style="font-size:10px;color:#64748b;margin-top:3px;line-height:1.5;white-space:pre-wrap">${row.product_description}</div>`
+      : "";
+    return `
+      <tr>
+        <td class="center">${idx + 1}</td>
+        <td><div>${translated("product", row.product_id, row.product_name || "")}</div>${descHtml}</td>
+        <td>${translated("category", row.category_id, row.category_name || "")}</td>
+        <td class="center">${translated("unit", row.unit_id, row.unit_name || "")}</td>
+        <td>${row.type_name || "-"}</td>
+        <td class="num">${money(row.qty)}</td>
+        <td class="num">${money(row.rate)}</td>
+        <td class="num strong violet">${money(row.amount)}</td>
+      </tr>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="${lang}" dir="${dir}">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${invoice.invoice_no || "purchase-invoice"}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0;background:#f8fafc;color:#0f172a;font-family:${isUrdu?"'Noto Nastaliq Urdu',serif":"'Inter',Arial,sans-serif"};}
+    .page{width:100%;min-height:100vh;background:linear-gradient(135deg,#eff6ff 0%,#ffffff 45%,#f8fafc 100%);padding:20px;}
+    .sheet{max-width:1400px;margin:0 auto;background:white;border:1px solid #dbeafe;box-shadow:0 12px 40px rgba(15,23,42,0.08);border-radius:24px;overflow:hidden;}
+    .header{background:linear-gradient(135deg,#0f4c97 0%,#155eaf 65%,#3b82f6 100%);color:white;padding:26px 28px 22px;}
+    .header-row{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+    .brand h1{margin:0;font-size:30px;font-weight:800;}
+    .brand p{margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.82);}
+    .meta{text-align:${isUrdu?"left":"right"};font-size:12px;color:rgba(255,255,255,0.88);line-height:1.8;}
+    .content{padding:18px;display:flex;flex-direction:column;gap:14px;}
+    .hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px;}
+    .info-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+    .card{border-radius:16px;padding:14px 16px;border:1px solid #dbeafe;background:#f8fafc;}
+    .card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px;}
+    .card .value{font-size:16px;font-weight:800;color:#0f172a;word-break:break-word;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{background:#0f4c97;color:white;font-size:12px;padding:12px 10px;border:1px solid #1d4ed8;text-align:${isUrdu?"right":"left"};}
+    tbody td{border:1px solid #dbeafe;padding:10px;font-size:12px;vertical-align:top;}
+    tbody tr:nth-child(even) td{background:#f8fbff;}
+    .center{text-align:center!important;}
+    .num{text-align:${isUrdu?"left":"right"}!important;white-space:nowrap;font-weight:700;font-family:'Inter',Arial,sans-serif;}
+    .strong{font-weight:800;}
+    .violet{color:#7c3aed;}
+    .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+    .total-box{border-radius:16px;padding:16px 18px;border:1px solid #dbeafe;background:#f8fafc;}
+    .total-box.grand{background:#eff6ff;border-color:#bfdbfe;}
+    .total-box .label{display:block;font-size:12px;color:#64748b;margin-bottom:8px;}
+    .total-box .value{font-size:26px;font-weight:800;color:#0f172a;font-family:'Inter',Arial,sans-serif;}
+    .total-box.grand .value{color:#1d4ed8;}
+    .footer{background:#0f4c97;color:rgba(255,255,255,0.9);padding:10px 16px;display:flex;justify-content:space-between;font-size:11px;}
+    @media print{@page{size:A4 landscape;margin:10mm;}body{background:white;}.page{padding:0;background:white;}.sheet{box-shadow:none;border:none;border-radius:0;max-width:none;}.hint{display:none;}}
+  </style>
+</head>
+<body>
+  <div class="page"><div class="sheet">
+    <div class="header"><div class="header-row">
+      <div class="brand"><h1>${t.companyName}</h1><p>${t.slipTitle}</p></div>
+      <div class="meta">
+        <div>${t.slipPrintedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
+        <div>${t.slipDate}: ${invoice.invoice_date || "-"}</div>
+      </div>
+    </div></div>
+    <div class="content">
+      <div class="hint">${t.savePdfHint}</div>
+      <div class="info-cards">
+        <div class="card"><small>${t.invoiceNo}</small><div class="value">${invoice.invoice_no || "-"}</div></div>
+        <div class="card"><small>${t.supplier}</small><div class="value">${supplierName}</div></div>
+        <div class="card"><small>${t.slipDate}</small><div class="value">${invoice.invoice_date || "-"}</div></div>
+        <div class="card"><small>${t.slipInvoiceTotal}</small><div class="value">${money(invoiceTotal)}</div></div>
+        <div class="card"><small>${t.slipDebit}</small><div class="value">${money(debit)}</div></div>
+        <div class="card"><small>${t.slipCredit}</small><div class="value">${money(credit)}</div></div>
+      </div>
+      <table>
+        <thead><tr>
+          <th class="center">#</th><th>${t.product}</th><th>${t.category}</th>
+          <th class="center">${t.unit}</th><th>${t.type}</th>
+          <th class="num">${t.qty}</th><th class="num">${t.rate}</th><th class="num">${t.amount}</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div class="totals">
+        <div class="total-box"><span class="label">${t.slipInvoiceTotal}</span><div class="value">${money(invoiceTotal)}</div></div>
+        <div class="total-box"><span class="label">${t.slipDebit}</span><div class="value">${money(debit)}</div></div>
+        <div class="total-box"><span class="label">${t.slipCredit}</span><div class="value">${money(credit)}</div></div>
+        <div class="total-box grand"><span class="label">${t.slipBalance}</span><div class="value">${money(balance)}</div></div>
+      </div>
+    </div>
+    <div class="footer"><span>${t.companyName} — ${t.slipThank}</span><span>Page 1 / 1</span></div>
+  </div></div>
+  <script>window.onload=()=>{setTimeout(()=>{window.print();},400);};<\/script>
+</body></html>`;
+
+  const w = window.open("", "_blank", "width=1400,height=900");
+  if (!w) return;
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const PurchaseInvoicePage = () => {
   const [lang, setLang] = useState("en");
-  const t = LANG[lang];
+  const t      = LANG[lang];
   const isUrdu = lang === "ur";
-  const dir = isUrdu ? "rtl" : "ltr";
+  const dir    = isUrdu ? "rtl" : "ltr";
 
   const baseFont = isUrdu
     ? "'Noto Nastaliq Urdu', serif"
     : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
 
-  const fmt = (v) => money(v);
+  const labelClass  = "block text-[11px] font-semibold text-slate-500 mb-0.5";
+  const inputCls    = `w-full min-w-0 border border-sky-100 rounded-lg py-1.5 text-xs text-black bg-white focus:outline-none focus:ring-2 focus:ring-sky-100 truncate ${isUrdu ? "pr-2 pl-2 text-right" : "px-2"}`;
+  const readonlyClass = "w-full min-w-0 rounded-lg border border-sky-100 bg-sky-50 px-2 py-1.5 text-xs font-bold font-mono text-slate-950 text-right truncate";
 
-  const [records, setRecords] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState("");
-  const [message, setMessage] = useState({ type: "", text: "" });
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [items, setItems] = useState([emptyItem()]);
-  const [translating, setTranslating] = useState(false);
+  const { data: suppliers,   loading: suppliersLoading,   error: suppliersError,   refetch: refetchSuppliers   } = useLookup(SUPPLIERS_API);
+  const { data: categories,  loading: categoriesLoading,  error: categoriesError,  refetch: refetchCategories  } = useLookup(CATEGORIES_API);
+  const { data: products,    loading: productsLoading,    error: productsError,    refetch: refetchProducts    } = useLookup(PRODUCTS_API);
+  const { data: units,       loading: unitsLoading,       error: unitsError,       refetch: refetchUnits       } = useLookup(UNITS_API);
+  const { data: productTypes,loading: typesLoading,       error: typesError,       refetch: refetchTypes       } = useLookup(PROD_TYPES_API);
 
-  const [supplierOptions, setSupplierOptions] = useState([]);
-  const [productOptions, setProductOptions] = useState([]);
-  const [unitOptions, setUnitOptions] = useState([]);
-  const [categoryOptions, setCategoryOptions] = useState([]);
-  const [typeOptions, setTypeOptions] = useState([]);
-  const [urduCache, setUrduCache] = useState({});
+  const [invoices,        setInvoices]        = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [search,          setSearch]          = useState("");
+  const [dateFilter,      setDateFilter]      = useState("24h");
+  const [showForm,        setShowForm]        = useState(false);
+  const [showSummary,     setShowSummary]     = useState(false);
+  const [editingId,       setEditingId]       = useState(null);
+  const [form,            setForm]            = useState(createEmptyForm());
+  const [items,           setItems]           = useState([createEmptyItem()]);
+  const [message,         setMessage]         = useState({ type: "", text: "" });
+  const [urduCache,       setUrduCache]       = useState({});
+  const [translating,     setTranslating]     = useState(false);
 
-  const showMsg = (type, text) => {
+  const mastersLoading = suppliersLoading || categoriesLoading || productsLoading || unitsLoading || typesLoading;
+  const mastersError   = suppliersError   || categoriesError   || productsError   || unitsError   || typesError;
+
+  const showToast = (type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   };
 
-  const getTranslatedValue = (prefix, value) => {
-    if (!value) return "";
-    return isUrdu ? urduCache[`${prefix}:${value}`] || value : value;
+  const supplierMap = useMemo(() => {
+    const map = {};
+    suppliers.forEach((s) => { const id = getRecordId(s); if (id !== "") map[String(id)] = getSupplierName(s) || `#${id}`; });
+    return map;
+  }, [suppliers]);
+
+  const categoryMap = useMemo(() => {
+    const map = {};
+    categories.forEach((c) => { map[String(c.id)] = getCategoryName(c) || `#${c.id}`; });
+    return map;
+  }, [categories]);
+
+  const productMap = useMemo(() => {
+    const map = {};
+    products.forEach((p) => { map[String(p.id)] = getProductName(p) || `#${p.id}`; });
+    return map;
+  }, [products]);
+
+  const unitMap = useMemo(() => {
+    const map = {};
+    units.forEach((u) => { map[String(u.id)] = getUnitName(u) || `#${u.id}`; });
+    return map;
+  }, [units]);
+
+  const typeOptions = useMemo(() =>
+    productTypes.map((pt) => getTypeName(pt)).filter(Boolean),
+  [productTypes]);
+
+  const getTranslated = (prefix, id, fallback) =>
+    isUrdu ? urduCache[`${prefix}:${id}`] || fallback || "-" : fallback || "-";
+
+  const fetchInvoices = async () => {
+    setLoadingInvoices(true);
+    try { const res = await axios.get(API_BASE); setInvoices(getList(res.data)); }
+    catch { showToast("error", t.invoicesError); }
+    finally { setLoadingInvoices(false); }
   };
 
-  const normalizeRecord = (r) => ({
-    id: r?.id,
-    invoice_no: r?.invoice_no || "",
-    supplier_name: r?.supplier_name || "",
-    invoice_date: r?.invoice_date || "",
-    total_amount: Number(r?.total_amount) || 0,
-    debit: Number(r?.debit) || 0,
-    credit: Number(r?.credit) || 0,
-    items: Array.isArray(r?.items)
-      ? r.items.map((item) => ({
-          id: item?.id,
-          product_name: item?.product_name || "",
-          unit_name: item?.unit_name || "",
-          category_name: item?.category_name || "",
-          type_name: item?.type_name || "",
-          quantity: item?.quantity ?? "",
-          rate: item?.rate ?? "",
-          amount: item?.amount ?? "",
-        }))
-      : [],
-  });
-
-  const fetchAll = async () => {
-    try {
-      setLoading(true);
-
-      const [
-        invoicesRes,
-        suppliersRes,
-        productsRes,
-        unitsRes,
-        categoriesRes,
-        productTypesRes,
-      ] = await Promise.allSettled([
-        axios.get(`${API_BASE}/purchase-invoices`),
-        axios.get(`${API_BASE}/suppliers`),
-        axios.get(`${API_BASE}/products`),
-        axios.get(`${API_BASE}/units`),
-        axios.get(`${API_BASE}/categories`),
-        axios.get(`${API_BASE}/product-types`),
-      ]);
-
-      const invoiceList =
-        invoicesRes.status === "fulfilled"
-          ? Array.isArray(invoicesRes.value?.data)
-            ? invoicesRes.value.data
-            : invoicesRes.value?.data?.data || []
-          : [];
-
-      const suppliersData =
-        suppliersRes.status === "fulfilled" ? suppliersRes.value?.data : [];
-      const productsData =
-        productsRes.status === "fulfilled" ? productsRes.value?.data : [];
-      const unitsData =
-        unitsRes.status === "fulfilled" ? unitsRes.value?.data : [];
-      const categoriesData =
-        categoriesRes.status === "fulfilled" ? categoriesRes.value?.data : [];
-      const productTypesData =
-        productTypesRes.status === "fulfilled"
-          ? productTypesRes.value?.data
-          : [];
-
-      setRecords(invoiceList.map(normalizeRecord));
-      setSupplierOptions(extractOptions(suppliersData));
-      setProductOptions(extractOptions(productsData));
-      setUnitOptions(extractOptions(unitsData));
-      setCategoryOptions(extractOptions(categoriesData));
-      setTypeOptions(
-        Array.isArray(productTypesData)
-          ? productTypesData
-              .map((item) => item?.product_type_en || "")
-              .filter(Boolean)
-          : []
-      );
-    } catch (err) {
-      setRecords([]);
-      showMsg("error", err?.response?.data?.message || t.fetchError);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchInvoices(); }, []);
 
   const handleLangToggle = async () => {
     const newLang = lang === "en" ? "ur" : "en";
     setLang(newLang);
-
     if (newLang !== "ur") return;
-
     setTranslating(true);
     try {
       const nextCache = { ...urduCache };
-
-      const translateList = async (prefix, arr) => {
-        await Promise.all(
-          arr.map(async (value) => {
-            if (value && !nextCache[`${prefix}:${value}`]) {
-              nextCache[`${prefix}:${value}`] = await translateText(value);
-            }
-          })
-        );
-      };
-
-      await translateList("supplier", supplierOptions);
-      await translateList("product", productOptions);
-      await translateList("unit", unitOptions);
-      await translateList("category", categoryOptions);
-      await translateList("type", typeOptions);
-
+      const tasks = [
+        ...suppliers.map(async (s) => {
+          const id = getRecordId(s); const base = getSupplierName(s);
+          if (base && !nextCache[`supplier:${id}`]) nextCache[`supplier:${id}`] = await translateText(base);
+        }),
+        ...categories.map(async (c) => {
+          const base = getCategoryName(c);
+          if (base && !nextCache[`category:${c.id}`]) nextCache[`category:${c.id}`] = await translateText(base);
+        }),
+        ...products.map(async (p) => {
+          const base = getProductName(p);
+          if (base && !nextCache[`product:${p.id}`]) nextCache[`product:${p.id}`] = await translateText(base);
+        }),
+        ...units.map(async (u) => {
+          const base = getUnitName(u);
+          if (base && !nextCache[`unit:${u.id}`]) nextCache[`unit:${u.id}`] = await translateText(base);
+        }),
+      ];
+      await Promise.all(tasks);
       setUrduCache(nextCache);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setTranslating(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setTranslating(false); }
   };
 
-  const ensureInvoiceTranslations = async (invoice) => {
+  const ensurePrintTranslations = async (invoice) => {
     if (lang !== "ur") return urduCache;
-
     const nextCache = { ...urduCache };
-
-    if (invoice?.supplier_name && !nextCache[`supplier:${invoice.supplier_name}`]) {
-      nextCache[`supplier:${invoice.supplier_name}`] = await translateText(invoice.supplier_name);
-    }
-
+    const supName = invoice.supplier_name || supplierMap[String(invoice.supplier_id)] || "";
+    if (supName && !nextCache[`supplier:${invoice.supplier_id}`])
+      nextCache[`supplier:${invoice.supplier_id}`] = await translateText(supName);
     for (const row of invoice.items || []) {
-      if (row.product_name && !nextCache[`product:${row.product_name}`]) {
-        nextCache[`product:${row.product_name}`] = await translateText(row.product_name);
-      }
-      if (row.unit_name && !nextCache[`unit:${row.unit_name}`]) {
-        nextCache[`unit:${row.unit_name}`] = await translateText(row.unit_name);
-      }
-      if (row.category_name && !nextCache[`category:${row.category_name}`]) {
-        nextCache[`category:${row.category_name}`] = await translateText(row.category_name);
-      }
-      if (row.type_name && !nextCache[`type:${row.type_name}`]) {
-        nextCache[`type:${row.type_name}`] = await translateText(row.type_name);
-      }
+      const prodBase = row.product_name  || productMap[String(row.product_id)];
+      const catBase  = row.category_name || categoryMap[String(row.category_id)];
+      const unitBase = row.unit_name     || unitMap[String(row.unit_id)];
+      if (row.product_id  && prodBase  && !nextCache[`product:${row.product_id}`])   nextCache[`product:${row.product_id}`]   = await translateText(prodBase);
+      if (row.category_id && catBase   && !nextCache[`category:${row.category_id}`]) nextCache[`category:${row.category_id}`] = await translateText(catBase);
+      if (row.unit_id     && unitBase  && !nextCache[`unit:${row.unit_id}`])          nextCache[`unit:${row.unit_id}`]         = await translateText(unitBase);
     }
-
     setUrduCache(nextCache);
     return nextCache;
   };
 
-  const resetForm = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setItems([emptyItem()]);
-    setMessage({ type: "", text: "" });
-  };
+  // Totals
+  const invoiceTotal = useMemo(() => items.reduce((sum, row) => sum + toNumber(row.amount), 0), [items]);
+  const balance      = useMemo(() => toNumber(form.debit) - toNumber(form.credit), [form.debit, form.credit]);
+
+  const filteredInvoices = useMemo(() => {
+    const now = new Date();
+    let list = invoices.filter((inv) => {
+      if (!inv.invoice_date) return dateFilter === "all";
+      const d = new Date(inv.invoice_date);
+      if (dateFilter === "24h")   return now - d <= 24 * 60 * 60 * 1000;
+      if (dateFilter === "7d")    return now - d <= 7 * 24 * 60 * 60 * 1000;
+      if (dateFilter === "month") return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      return true;
+    });
+    if (!search.trim()) return list;
+    const q = search.toLowerCase();
+    return list.filter((inv) => [
+      inv.invoice_no,
+      supplierMap[String(inv.supplier_id)] || inv.supplier_name || "",
+      inv.invoice_date,
+    ].join(" ").toLowerCase().includes(q));
+  }, [invoices, search, dateFilter, supplierMap]);
+
+  const summary = useMemo(() => ({
+    totalInvoices: invoices.length,
+    totalItems:    invoices.reduce((sum, inv) => sum + Number(inv.items_count || inv.items?.length || 0), 0),
+    totalValue:    invoices.reduce((sum, inv) => sum + toNumber(inv.invoice_total), 0),
+  }), [invoices]);
 
   const openAdd = () => {
-    resetForm();
+    setEditingId(null);
+    setForm({ ...createEmptyForm(), invoice_no: generateInvoiceNo(invoices) });
+    setItems([createEmptyItem()]);
     setShowForm(true);
   };
 
-  const openEdit = async (id) => {
+  const openEdit = async (invoiceId) => {
     try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE}/purchase-invoices/${id}`);
-      const data = normalizeRecord(res.data?.data || res.data);
-
-      if (lang === "ur") {
-        setTranslating(true);
-        try {
-          await ensureInvoiceTranslations(data);
-        } finally {
-          setTranslating(false);
-        }
-      }
-
-      setEditingId(data.id);
+      const res = await axios.get(`${API_BASE}/${invoiceId}`);
+      const inv = res.data?.data || res.data;
+      setEditingId(inv.id);
       setForm({
-        invoice_no: data.invoice_no,
-        supplier_name: data.supplier_name || "",
-        invoice_date: data.invoice_date || "",
-        total_amount: data.total_amount || "",
-        debit: data.debit || "",
-        credit: data.credit || "",
+        invoice_no:   inv.invoice_no   || "",
+        supplier_id:  String(inv.supplier_id || ""),
+        invoice_date: inv.invoice_date || new Date().toISOString().slice(0, 10),
+        debit:        String(inv.debit  || 0),
+        credit:       String(inv.credit || 0),
       });
-
-      setItems(
-        data.items?.length
-          ? data.items.map((item) => ({
-              id: item.id,
-              product_name: item.product_name || "",
-              unit_name: item.unit_name || "",
-              category_name: item.category_name || "",
-              type_name: item.type_name || "",
-              quantity: item.quantity ?? "",
-              rate: item.rate ?? "",
-              amount: item.amount ?? "",
-            }))
-          : [emptyItem()]
-      );
-
-      setMessage({ type: "", text: "" });
+      const invoiceItems = Array.isArray(inv.items) && inv.items.length
+        ? inv.items.map((row) => ({
+            category_id:         String(row.category_id ?? ""),
+            product_id:          String(row.product_id  ?? ""),
+            product_description: String(row.product_description ?? row.description ?? ""),
+            unit_id:             String(row.unit_id ?? ""),
+            type_name:           String(row.type_name || ""),
+            qty:                 String(row.qty || row.quantity || ""),
+            rate:                String(row.rate   || 0),
+            amount:              String(row.amount || 0),
+          }))
+        : [createEmptyItem()];
+      setItems(invoiceItems);
       setShowForm(true);
-    } catch (err) {
-      showMsg("error", err?.response?.data?.message || t.fetchError);
-    } finally {
-      setLoading(false);
-    }
+    } catch { showToast("error", t.editError); }
   };
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleItemChange = (index, key, value) => {
-    setItems((prev) => {
-      const updated = prev.map((item, i) => {
-        if (i !== index) return item;
-        const next = { ...item, [key]: value };
-        const qty = parseFloat(key === "quantity" ? value : next.quantity) || 0;
-        const rate = parseFloat(key === "rate" ? value : next.rate) || 0;
-        next.amount =
-          qty && rate
-            ? (qty * rate).toFixed(2)
-            : qty || rate
-            ? (qty * rate).toFixed(2)
-            : "";
-        return next;
-      });
-
-      const total = updated.reduce(
-        (sum, item) => sum + (parseFloat(item.amount) || 0),
-        0
-      );
-
-      setForm((f) => ({
-        ...f,
-        total_amount: total ? total.toFixed(2) : "",
-        debit: total ? total.toFixed(2) : "",
+  const handlePrint = async (invoiceId) => {
+    try {
+      const res = await axios.get(`${API_BASE}/${invoiceId}`);
+      const inv = res.data?.data || res.data;
+      const normalizedItems = (inv.items || []).map((row, idx) => ({
+        sr:                  idx + 1,
+        category_id:         String(row.category_id ?? ""),
+        product_id:          String(row.product_id  ?? ""),
+        product_description: row.product_description || row.description || "",
+        unit_id:             String(row.unit_id ?? ""),
+        type_name:           row.type_name || "",
+        category_name:       row.category_name || categoryMap[String(row.category_id)] || "",
+        product_name:        row.product_name  || productMap[String(row.product_id)]   || "",
+        unit_name:           row.unit_name     || unitMap[String(row.unit_id)]          || "",
+        qty:                 row.qty || row.quantity || 0,
+        rate:                row.rate   || 0,
+        amount:              row.amount || 0,
       }));
-
-      return updated;
-    });
-  };
-
-  const addItem = () => setItems((prev) => [...prev, emptyItem()]);
-
-  const removeItem = (index) => {
-    const updated = items.filter((_, i) => i !== index);
-    const safeItems = updated.length ? updated : [emptyItem()];
-    setItems(safeItems);
-
-    const total = safeItems.reduce(
-      (sum, item) => sum + (parseFloat(item.amount) || 0),
-      0
-    );
-
-    setForm((f) => ({
-      ...f,
-      total_amount: total ? total.toFixed(2) : "",
-      debit: total ? total.toFixed(2) : "",
-    }));
-  };
-
-  const handleSave = async () => {
-    const cleanedItems = items
-      .map((item) => ({
-        product_name: item.product_name?.trim() || "",
-        unit_name: item.unit_name?.trim() || "",
-        category_name: item.category_name?.trim() || "",
-        type_name: item.type_name?.trim() || "",
-        quantity: item.quantity === "" ? null : Number(item.quantity) || 0,
-        rate: item.rate === "" ? null : Number(item.rate) || 0,
-        amount:
-          item.quantity === "" && item.rate === ""
-            ? null
-            : Number(item.quantity || 0) * Number(item.rate || 0),
-      }))
-      .filter(
-        (item) =>
-          item.product_name ||
-          item.unit_name ||
-          item.category_name ||
-          item.type_name ||
-          item.quantity !== null ||
-          item.rate !== null
-      );
-
-    const totalAmount = cleanedItems.reduce(
-      (sum, item) => sum + (Number(item.amount) || 0),
-      0
-    );
-
-    const payload = {
-      invoice_no: form.invoice_no.trim() || null,
-      supplier_name: form.supplier_name.trim() || null,
-      invoice_date: form.invoice_date || null,
-      total_amount: Number(totalAmount.toFixed(2)) || 0,
-      debit:
-        form.debit === "" || form.debit === null
-          ? Number(totalAmount.toFixed(2)) || 0
-          : Number(form.debit) || 0,
-      credit:
-        form.credit === "" || form.credit === null ? 0 : Number(form.credit) || 0,
-      items: cleanedItems.map((item) => ({
-        ...item,
-        amount:
-          item.amount === null ? null : Number((item.amount || 0).toFixed(2)),
-      })),
-    };
-
-    try {
-      setSubmitting(true);
-      let res;
-
-      if (editingId) {
-        res = await axios.put(`${API_BASE}/purchase-invoices/${editingId}`, payload);
-      } else {
-        res = await axios.post(`${API_BASE}/purchase-invoices`, payload);
-      }
-
-      const saved = normalizeRecord(res?.data?.data || res?.data);
-
-      setRecords((prev) =>
-        editingId
-          ? prev.map((r) => (r.id === editingId ? saved : r))
-          : [saved, ...prev]
-      );
-
-      showMsg(
-        "success",
-        res?.data?.message || (editingId ? t.updateSuccess : t.successMsg)
-      );
-      setShowForm(false);
-      resetForm();
-    } catch (err) {
-      showMsg(
-        "error",
-        err?.response?.data?.message || (editingId ? t.updateError : t.saveError)
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm(t.deleteConfirm)) return;
-    try {
-      const res = await axios.delete(`${API_BASE}/purchase-invoices/${id}`);
-      setRecords((prev) => prev.filter((r) => r.id !== id));
-      showMsg("success", res?.data?.message || t.deleteSuccess);
-    } catch (err) {
-      showMsg("error", err?.response?.data?.message || t.deleteError);
-    }
-  };
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return records;
-
-    return records.filter(
-      (r) =>
-        (r.invoice_no || "").toLowerCase().includes(q) ||
-        (r.supplier_name || "").toLowerCase().includes(q) ||
-        (urduCache[`supplier:${r.supplier_name}`] || "").toLowerCase().includes(q) ||
-        r.items?.some(
-          (item) =>
-            (item.product_name || "").toLowerCase().includes(q) ||
-            (item.unit_name || "").toLowerCase().includes(q) ||
-            (item.category_name || "").toLowerCase().includes(q) ||
-            (item.type_name || "").toLowerCase().includes(q) ||
-            (urduCache[`product:${item.product_name}`] || "")
-              .toLowerCase()
-              .includes(q) ||
-            (urduCache[`unit:${item.unit_name}`] || "")
-              .toLowerCase()
-              .includes(q) ||
-            (urduCache[`category:${item.category_name}`] || "")
-              .toLowerCase()
-              .includes(q) ||
-            (urduCache[`type:${item.type_name}`] || "")
-              .toLowerCase()
-              .includes(q)
-        )
-    );
-  }, [records, search, urduCache]);
-
-  const generateSingleInvoicePrint = (invoice, isPdf = false, cache = urduCache) => {
-    const font = isUrdu
-      ? "'Noto Nastaliq Urdu', serif"
-      : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
-
-    const rowItems =
-      Array.isArray(invoice?.items) && invoice.items.length
-        ? invoice.items
-        : [emptyItem()];
-
-    const totalAmount = Number(invoice?.total_amount) || 0;
-    const debit = Number(invoice?.debit) || 0;
-    const credit = Number(invoice?.credit) || 0;
-    const balance = debit - credit;
-
-    const translate = (prefix, value) =>
-      isUrdu ? cache[`${prefix}:${value}`] || value || "-" : value || "-";
-
-    const rowsHtml = rowItems
-      .map(
-        (item, index) => `
-          <tr>
-            <td class="center">${index + 1}</td>
-            <td>${translate("product", item.product_name)}</td>
-            <td>${translate("category", item.category_name)}</td>
-            <td class="center">${translate("unit", item.unit_name)}</td>
-            <td>${translate("type", item.type_name)}</td>
-            <td class="num">${
-              item.quantity !== "" && item.quantity != null
-                ? fmt(item.quantity)
-                : "-"
-            }</td>
-            <td class="num">${
-              item.rate !== "" && item.rate != null ? fmt(item.rate) : "-"
-            }</td>
-            <td class="num strong violet">${
-              item.amount !== "" && item.amount != null ? fmt(item.amount) : "-"
-            }</td>
-          </tr>
-        `
-      )
-      .join("");
-
-    const html = `
-      <!DOCTYPE html>
-      <html lang="${lang}" dir="${dir}">
-        <head>
-          <meta charset="UTF-8" />
-          <title>${invoice.invoice_no || "purchase-invoice"}</title>
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              margin: 0;
-              background: #f8fafc;
-              color: #0f172a;
-              font-family: ${font};
-            }
-            .page {
-              width: 100%;
-              min-height: 100vh;
-              background: linear-gradient(135deg, #eff6ff 0%, #ffffff 45%, #f8fafc 100%);
-              padding: 20px;
-            }
-            .sheet {
-              max-width: 1400px;
-              margin: 0 auto;
-              background: white;
-              border: 1px solid #dbeafe;
-              box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
-              border-radius: 24px;
-              overflow: hidden;
-            }
-            .header {
-              position: relative;
-              background: linear-gradient(135deg, #0f4c97 0%, #155eaf 65%, #3b82f6 100%);
-              color: white;
-              padding: 26px 28px 22px;
-              overflow: hidden;
-            }
-            .header:before {
-              content: "";
-              position: absolute;
-              top: 0;
-              ${isUrdu ? "left" : "right"}: 0;
-              width: 240px;
-              height: 100%;
-              background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-              clip-path: polygon(35% 0, 100% 0, 100% 100%, 0 100%);
-            }
-            .header-row {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              gap: 20px;
-              position: relative;
-              z-index: 2;
-            }
-            .brand-wrap {
-              display: flex;
-              align-items: center;
-              gap: 14px;
-            }
-            .logo {
-              width: 58px;
-              height: 58px;
-              min-width: 58px;
-              border-radius: 999px;
-              border: 4px solid rgba(255,255,255,0.85);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: 800;
-              letter-spacing: 0.5px;
-              background: rgba(255,255,255,0.08);
-              color: white;
-              font-size: 13px;
-            }
-            .brand h1 {
-              margin: 0;
-              font-size: 30px;
-              line-height: 1.15;
-              font-weight: 800;
-            }
-            .brand p {
-              margin: 6px 0 0;
-              font-size: 13px;
-              color: rgba(255,255,255,0.82);
-            }
-            .meta {
-              text-align: ${isUrdu ? "left" : "right"};
-              font-size: 12px;
-              color: rgba(255,255,255,0.88);
-              line-height: 1.8;
-              white-space: nowrap;
-            }
-            .content { padding: 18px; }
-            .hint {
-              background: #eff6ff;
-              color: #1d4ed8;
-              border: 1px solid #bfdbfe;
-              border-radius: 14px;
-              padding: 12px 14px;
-              font-size: 13px;
-              margin-bottom: 14px;
-            }
-            .cards {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 14px;
-              margin-bottom: 16px;
-            }
-            .card {
-              border-radius: 18px;
-              border: 2px solid;
-              padding: 14px 16px;
-              min-height: 100px;
-              position: relative;
-              overflow: hidden;
-            }
-            .card:before {
-              content: "";
-              position: absolute;
-              top: 0;
-              ${isUrdu ? "right" : "left"}: 0;
-              width: 6px;
-              height: 100%;
-              background: currentColor;
-              opacity: 0.9;
-            }
-            .card small {
-              display: block;
-              font-size: 12px;
-              opacity: 0.9;
-              margin-bottom: 12px;
-            }
-            .pill {
-              position: absolute;
-              top: 12px;
-              ${isUrdu ? "left" : "right"}: 12px;
-              font-size: 10px;
-              font-weight: 800;
-              color: white;
-              padding: 5px 12px;
-              border-radius: 999px;
-            }
-            .card .value {
-              font-size: 24px;
-              font-weight: 800;
-              line-height: 1.2;
-              word-break: break-word;
-            }
-            .card.blue { background: #eff6ff; color: #0f4c97; border-color: #60a5fa; }
-            .card.blue .pill { background: #0f4c97; }
-            .card.green { background: #ecfdf5; color: #059669; border-color: #34d399; }
-            .card.green .pill { background: #059669; }
-            .card.orange { background: #fff7ed; color: #c2410c; border-color: #fb923c; }
-            .card.orange .pill { background: #c2410c; }
-            .totals {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 14px;
-              margin-bottom: 14px;
-            }
-            .total-box {
-              background: #f8fafc;
-              border: 1px solid #dbeafe;
-              border-radius: 16px;
-              padding: 14px 16px;
-            }
-            .total-box .label {
-              font-size: 12px;
-              color: #64748b;
-              margin-bottom: 6px;
-            }
-            .total-box .value {
-              font-size: 24px;
-              font-weight: 800;
-              color: #0f172a;
-              font-family: Helvetica, Arial, sans-serif;
-            }
-            .section-bar {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              background: #f1f5f9;
-              border-radius: 10px;
-              padding: 8px 12px;
-              margin-bottom: 8px;
-              color: #475569;
-              font-size: 12px;
-              font-weight: 700;
-            }
-            .watermark-wrap { position: relative; }
-            .watermark {
-              position: absolute;
-              inset: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              pointer-events: none;
-              font-size: 82px;
-              font-weight: 800;
-              color: rgba(15, 76, 151, 0.06);
-              transform: rotate(-28deg);
-              user-select: none;
-              z-index: 0;
-              letter-spacing: 2px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              position: relative;
-              z-index: 1;
-            }
-            thead th {
-              background: #0f4c97;
-              color: white;
-              font-size: 12px;
-              padding: 12px 10px;
-              border: 1px solid #1d4ed8;
-              text-align: ${isUrdu ? "right" : "left"};
-              white-space: nowrap;
-            }
-            tbody td, tfoot td {
-              border: 1px solid #dbeafe;
-              padding: 10px 10px;
-              font-size: 12px;
-              vertical-align: top;
-            }
-            tbody tr:nth-child(even) td { background: #f8fbff; }
-            .center { text-align: center !important; }
-            .num {
-              text-align: ${isUrdu ? "left" : "right"} !important;
-              white-space: nowrap;
-              font-weight: 700;
-              font-family: Helvetica, Arial, sans-serif;
-            }
-            .strong { font-weight: 800; }
-            .violet { color: #7c3aed; }
-            .foot-row td {
-              background: #eaf3ff;
-              font-weight: 800;
-              color: #0f172a;
-            }
-            .footer {
-              background: #0f4c97;
-              color: rgba(255,255,255,0.9);
-              padding: 10px 16px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 11px;
-            }
-            @media print {
-              @page { size: A4 landscape; margin: 10mm; }
-              body { background: white; }
-              .page { padding: 0; background: white; }
-              .sheet {
-                box-shadow: none;
-                border: none;
-                border-radius: 0;
-                max-width: none;
-              }
-              .hint { display: none; }
-            }
-            @media (max-width: 900px) {
-              .cards, .totals { grid-template-columns: 1fr; }
-              .header-row {
-                flex-direction: column;
-                align-items: flex-start;
-              }
-              .meta {
-                text-align: ${isUrdu ? "right" : "left"};
-                white-space: normal;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="page">
-            <div class="sheet">
-              <div class="header">
-                <div class="header-row">
-                  <div class="brand-wrap">
-                    <div class="logo">PINV</div>
-                    <div class="brand">
-                      <h1>${t.companyName}</h1>
-                      <p>${t.title}</p>
-                    </div>
-                  </div>
-                  <div class="meta">
-                    <div>${t.printedOn}: ${new Date().toLocaleString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}</div>
-                    <div>${t.date}: ${invoice.invoice_date || "-"}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="content">
-                ${
-                  isPdf
-                    ? `<div class="hint">${t.savePdfHint}</div>`
-                    : ""
-                }
-
-                <div class="cards">
-                  <div class="card blue">
-                    <small>${t.invoiceNo}</small>
-                    <div class="pill">INV</div>
-                    <div class="value">${invoice.invoice_no || "-"}</div>
-                  </div>
-
-                  <div class="card green">
-                    <small>${t.supplier}</small>
-                    <div class="pill">SUP</div>
-                    <div class="value">${translate("supplier", invoice.supplier_name)}</div>
-                  </div>
-
-                  <div class="card orange">
-                    <small>${t.date}</small>
-                    <div class="pill">DATE</div>
-                    <div class="value">${invoice.invoice_date || "-"}</div>
-                  </div>
-                </div>
-
-                <div class="totals">
-                  <div class="total-box">
-                    <div class="label">${t.totalAmount}</div>
-                    <div class="value">${fmt(totalAmount)}</div>
-                  </div>
-                  <div class="total-box">
-                    <div class="label">${t.debit}</div>
-                    <div class="value">${fmt(debit)}</div>
-                  </div>
-                  <div class="total-box">
-                    <div class="label">${t.credit}</div>
-                    <div class="value">${fmt(credit)}</div>
-                  </div>
-                  <div class="total-box">
-                    <div class="label">${t.balance}</div>
-                    <div class="value">${fmt(Math.abs(balance))}</div>
-                  </div>
-                </div>
-
-                <div class="section-bar">
-                  <span>${t.items}</span>
-                  <span>${rowItems.length}</span>
-                </div>
-
-                <div class="watermark-wrap">
-                  <div class="watermark">${t.companyName}</div>
-
-                  <table>
-                    <thead>
-                      <tr>
-                        <th class="center">#</th>
-                        <th>${t.product}</th>
-                        <th>${t.category}</th>
-                        <th class="center">${t.unit}</th>
-                        <th>${t.type}</th>
-                        <th class="num">${t.qty}</th>
-                        <th class="num">${t.rate}</th>
-                        <th class="num">${t.amount}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${rowsHtml}
-                    </tbody>
-                    <tfoot>
-                      <tr class="foot-row">
-                        <td colspan="7">${t.totalAmount}</td>
-                        <td class="num">${fmt(totalAmount)}</td>
-                      </tr>
-                      <tr class="foot-row">
-                        <td colspan="7">${t.debit}</td>
-                        <td class="num">${fmt(debit)}</td>
-                      </tr>
-                      <tr class="foot-row">
-                        <td colspan="7">${t.credit}</td>
-                        <td class="num">${fmt(credit)}</td>
-                      </tr>
-                      <tr class="foot-row">
-                        <td colspan="7">${t.balance}</td>
-                        <td class="num">${fmt(Math.abs(balance))}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
-              <div class="footer">
-                <span>${t.companyName} — ${t.thankYou}</span>
-                <span>Page 1 / 1</span>
-              </div>
-            </div>
-          </div>
-
-          <script>
-            window.onload = () => {
-              setTimeout(() => {
-                window.print();
-              }, 400);
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    const w = window.open("", "_blank", "width=1400,height=900");
-    if (!w) return;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  };
-
-  const handlePrintSingle = async (id) => {
-    try {
-      const res = await axios.get(`${API_BASE}/purchase-invoices/${id}`);
-      const data = normalizeRecord(res.data?.data || res.data);
-
+      const prepared = {
+        ...inv,
+        supplier_name: inv.supplier_name || supplierMap[String(inv.supplier_id)] || "",
+        items:         normalizedItems,
+        invoice_total: inv.invoice_total ?? normalizedItems.reduce((s, r) => s + toNumber(r.amount), 0),
+        debit:         inv.debit  || 0,
+        credit:        inv.credit || 0,
+      };
       let cacheToUse = urduCache;
       if (lang === "ur") {
         setTranslating(true);
-        try {
-          cacheToUse = await ensureInvoiceTranslations(data);
-        } finally {
-          setTranslating(false);
-        }
+        try { cacheToUse = await ensurePrintTranslations(prepared); }
+        finally { setTranslating(false); }
       }
-
-      generateSingleInvoicePrint(data, false, cacheToUse);
-    } catch (err) {
-      showMsg("error", err?.response?.data?.message || t.fetchError);
-    }
+      generateInvoicePrint(prepared, lang, cacheToUse, { categoryMap, productMap, unitMap, supplierMap });
+    } catch { showToast("error", t.printError); }
   };
 
-  const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu
-      ? "'Noto Nastaliq Urdu', serif"
-      : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
+  const handleDelete = async (invoiceId) => {
+    if (!window.confirm(t.deleteConfirm)) return;
+    try { await axios.delete(`${API_BASE}/${invoiceId}`); showToast("success", t.deleteSuccess); fetchInvoices(); }
+    catch { showToast("error", t.deleteError); }
+  };
 
-    const balanceTotal = filtered.reduce(
-      (sum, r) => sum + ((Number(r.debit) || 0) - (Number(r.credit) || 0)),
-      0
-    );
+  const calculateRow = (row) => {
+    const qty    = toNumber(row.qty);
+    const rate   = toNumber(row.rate);
+    const amount = qty * rate;
+    return { amount: String(amount.toFixed(2)) };
+  };
 
-    const totalAmountSum = filtered.reduce(
-      (sum, r) => sum + (Number(r.total_amount) || 0),
-      0
-    );
-
-    const debitSum = filtered.reduce(
-      (sum, r) => sum + (Number(r.debit) || 0),
-      0
-    );
-
-    const creditSum = filtered.reduce(
-      (sum, r) => sum + (Number(r.credit) || 0),
-      0
-    );
-
-    const translate = (prefix, value) =>
-      isUrdu ? urduCache[`${prefix}:${value}`] || value || "-" : value || "-";
-
-    const rowsHtml = filtered
-      .map((r, i) => {
-        const rowItems =
-          Array.isArray(r.items) && r.items.length ? r.items : [emptyItem()];
-
-        return rowItems
-          .map(
-            (item, itemIndex) => `
-              <tr>
-                ${
-                  itemIndex === 0
-                    ? `
-                      <td class="center" rowspan="${rowItems.length}">${i + 1}</td>
-                      <td rowspan="${rowItems.length}"><strong>${r.invoice_no || "-"}</strong></td>
-                      <td rowspan="${rowItems.length}">${translate("supplier", r.supplier_name)}</td>
-                      <td class="center" rowspan="${rowItems.length}">${r.invoice_date || "-"}</td>
-                    `
-                    : ""
-                }
-
-                <td>${translate("product", item.product_name)}</td>
-                <td>${translate("category", item.category_name)}</td>
-                <td class="center">${translate("unit", item.unit_name)}</td>
-                <td>${translate("type", item.type_name)}</td>
-                <td class="num">${
-                  item.quantity !== "" && item.quantity != null
-                    ? fmt(item.quantity)
-                    : "-"
-                }</td>
-                <td class="num">${
-                  item.rate !== "" && item.rate != null ? fmt(item.rate) : "-"
-                }</td>
-                <td class="num strong violet">${
-                  item.amount !== "" && item.amount != null
-                    ? fmt(item.amount)
-                    : "-"
-                }</td>
-
-                ${
-                  itemIndex === 0
-                    ? `
-                      <td class="num" rowspan="${rowItems.length}">${fmt(r.total_amount)}</td>
-                      <td class="num" rowspan="${rowItems.length}">${fmt(r.debit)}</td>
-                      <td class="num" rowspan="${rowItems.length}">${fmt(r.credit)}</td>
-                      <td class="num strong" rowspan="${rowItems.length}">
-                        ${fmt(
-                          Math.abs((Number(r.debit) || 0) - (Number(r.credit) || 0))
-                        )}
-                        ${
-                          (Number(r.debit) || 0) - (Number(r.credit) || 0) > 0
-                            ? " DR"
-                            : (Number(r.debit) || 0) - (Number(r.credit) || 0) < 0
-                            ? " CR"
-                            : ""
-                        }
-                      </td>
-                    `
-                    : ""
-                }
-              </tr>
-            `
-          )
-          .join("");
+  const handleItemChange = (index, field, value) => {
+    setItems((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        let updated = { ...row, [field]: value };
+        if (field === "category_id") {
+          updated.product_id = ""; updated.product_description = "";
+          updated.unit_id = ""; updated.type_name = "";
+          updated.qty = ""; updated.rate = "0"; updated.amount = "0";
+        }
+        if (field === "product_id") {
+          const sel = products.find((p) => String(p.id) === String(value));
+          if (sel) {
+            updated.category_id         = String(getProductCatId(sel)  || updated.category_id || "");
+            updated.unit_id             = String(getProductUnitId(sel)  || "");
+            updated.product_description = getProductDesc(sel)           || updated.product_description || "";
+            updated.rate                = String(getProductRate(sel)    || 0);
+          }
+        }
+        if (field === "product_description") return updated;
+        const calc    = calculateRow(updated);
+        updated.amount = calc.amount;
+        return updated;
       })
-      .join("");
-
-    const html = `
-      <!DOCTYPE html>
-      <html lang="${lang}" dir="${dir}">
-        <head>
-          <meta charset="UTF-8" />
-          <title>${t.title}</title>
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              margin: 0;
-              background: #f8fafc;
-              color: #0f172a;
-              font-family: ${font};
-            }
-            .page {
-              width: 100%;
-              min-height: 100vh;
-              background: linear-gradient(135deg, #eff6ff 0%, #ffffff 45%, #f8fafc 100%);
-              padding: 20px;
-            }
-            .sheet {
-              max-width: 1400px;
-              margin: 0 auto;
-              background: white;
-              border: 1px solid #dbeafe;
-              box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
-              border-radius: 24px;
-              overflow: hidden;
-            }
-            .header {
-              position: relative;
-              background: linear-gradient(135deg, #0f4c97 0%, #155eaf 65%, #3b82f6 100%);
-              color: white;
-              padding: 26px 28px 22px;
-              overflow: hidden;
-            }
-            .header:before {
-              content: "";
-              position: absolute;
-              top: 0;
-              ${isUrdu ? "left" : "right"}: 0;
-              width: 240px;
-              height: 100%;
-              background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-              clip-path: polygon(35% 0, 100% 0, 100% 100%, 0 100%);
-            }
-            .header-row {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              gap: 20px;
-              position: relative;
-              z-index: 2;
-            }
-            .brand-wrap {
-              display: flex;
-              align-items: center;
-              gap: 14px;
-            }
-            .logo {
-              width: 58px;
-              height: 58px;
-              min-width: 58px;
-              border-radius: 999px;
-              border: 4px solid rgba(255,255,255,0.85);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: 800;
-              letter-spacing: 0.5px;
-              background: rgba(255,255,255,0.08);
-              color: white;
-              font-size: 13px;
-            }
-            .brand h1 {
-              margin: 0;
-              font-size: 30px;
-              line-height: 1.15;
-              font-weight: 800;
-            }
-            .brand p {
-              margin: 6px 0 0;
-              font-size: 13px;
-              color: rgba(255,255,255,0.82);
-            }
-            .meta {
-              text-align: ${isUrdu ? "left" : "right"};
-              font-size: 12px;
-              color: rgba(255,255,255,0.88);
-              line-height: 1.8;
-              white-space: nowrap;
-            }
-            .content { padding: 18px; }
-            .hint {
-              background: #eff6ff;
-              color: #1d4ed8;
-              border: 1px solid #bfdbfe;
-              border-radius: 14px;
-              padding: 12px 14px;
-              font-size: 13px;
-              margin-bottom: 14px;
-            }
-            .cards {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 14px;
-              margin-bottom: 16px;
-            }
-            .card {
-              border-radius: 18px;
-              border: 2px solid;
-              padding: 14px 16px;
-              min-height: 100px;
-              position: relative;
-              overflow: hidden;
-            }
-            .card:before {
-              content: "";
-              position: absolute;
-              top: 0;
-              ${isUrdu ? "right" : "left"}: 0;
-              width: 6px;
-              height: 100%;
-              background: currentColor;
-              opacity: 0.9;
-            }
-            .card small {
-              display: block;
-              font-size: 12px;
-              opacity: 0.9;
-              margin-bottom: 12px;
-            }
-            .pill {
-              position: absolute;
-              top: 12px;
-              ${isUrdu ? "left" : "right"}: 12px;
-              font-size: 10px;
-              font-weight: 800;
-              color: white;
-              padding: 5px 12px;
-              border-radius: 999px;
-            }
-            .card .value {
-              font-size: 24px;
-              font-weight: 800;
-              line-height: 1.2;
-              word-break: break-word;
-            }
-            .card.blue { background: #eff6ff; color: #0f4c97; border-color: #60a5fa; }
-            .card.blue .pill { background: #0f4c97; }
-            .card.green { background: #ecfdf5; color: #059669; border-color: #34d399; }
-            .card.green .pill { background: #059669; }
-            .card.orange { background: #fff7ed; color: #c2410c; border-color: #fb923c; }
-            .card.orange .pill { background: #c2410c; }
-
-            .totals {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 14px;
-              margin-bottom: 14px;
-            }
-            .total-box {
-              background: #f8fafc;
-              border: 1px solid #dbeafe;
-              border-radius: 16px;
-              padding: 14px 16px;
-            }
-            .total-box .label {
-              font-size: 12px;
-              color: #64748b;
-              margin-bottom: 6px;
-            }
-            .total-box .value {
-              font-size: 24px;
-              font-weight: 800;
-              color: #0f172a;
-              font-family: Helvetica, Arial, sans-serif;
-            }
-            .section-bar {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              background: #f1f5f9;
-              border-radius: 10px;
-              padding: 8px 12px;
-              margin-bottom: 8px;
-              color: #475569;
-              font-size: 12px;
-              font-weight: 700;
-            }
-            .watermark-wrap { position: relative; }
-            .watermark {
-              position: absolute;
-              inset: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              pointer-events: none;
-              font-size: 82px;
-              font-weight: 800;
-              color: rgba(15, 76, 151, 0.06);
-              transform: rotate(-28deg);
-              user-select: none;
-              z-index: 0;
-              letter-spacing: 2px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              position: relative;
-              z-index: 1;
-            }
-            thead th {
-              background: #0f4c97;
-              color: white;
-              font-size: 12px;
-              padding: 12px 10px;
-              border: 1px solid #1d4ed8;
-              text-align: ${isUrdu ? "right" : "left"};
-              white-space: nowrap;
-            }
-            tbody td, tfoot td {
-              border: 1px solid #dbeafe;
-              padding: 10px 10px;
-              font-size: 12px;
-              vertical-align: top;
-            }
-            tbody tr:nth-child(even) td { background: #f8fbff; }
-            .center { text-align: center !important; }
-            .num {
-              text-align: ${isUrdu ? "left" : "right"} !important;
-              white-space: nowrap;
-              font-weight: 700;
-              font-family: Helvetica, Arial, sans-serif;
-            }
-            .strong { font-weight: 800; }
-            .violet { color: #7c3aed; }
-            .foot-row td {
-              background: #eaf3ff;
-              font-weight: 800;
-              color: #0f172a;
-            }
-            .footer {
-              background: #0f4c97;
-              color: rgba(255,255,255,0.9);
-              padding: 10px 16px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 11px;
-            }
-            @media print {
-              @page { size: A4 landscape; margin: 10mm; }
-              body { background: white; }
-              .page { padding: 0; background: white; }
-              .sheet {
-                box-shadow: none;
-                border: none;
-                border-radius: 0;
-                max-width: none;
-              }
-              .hint { display: none; }
-            }
-            @media (max-width: 900px) {
-              .cards, .totals { grid-template-columns: 1fr; }
-              .header-row {
-                flex-direction: column;
-                align-items: flex-start;
-              }
-              .meta {
-                text-align: ${isUrdu ? "right" : "left"};
-                white-space: normal;
-              }
-            }
-          </style>
-        </head>
-
-        <body>
-          <div class="page">
-            <div class="sheet">
-              <div class="header">
-                <div class="header-row">
-                  <div class="brand-wrap">
-                    <div class="logo">PINV</div>
-                    <div class="brand">
-                      <h1>${t.companyName}</h1>
-                      <p>${t.reportHeader}</p>
-                    </div>
-                  </div>
-
-                  <div class="meta">
-                    <div>${t.printedOn}: ${new Date().toLocaleString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}</div>
-                    <div>${t.records}: ${filtered.length}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="content">
-                ${isPdf ? `<div class="hint">${t.savePdfHint}</div>` : ""}
-
-                <div class="cards">
-                  <div class="card blue">
-                    <small>${t.records}</small>
-                    <div class="pill">REC</div>
-                    <div class="value">${filtered.length}</div>
-                  </div>
-
-                  <div class="card green">
-                    <small>${t.totalAmount}</small>
-                    <div class="pill">TOT</div>
-                    <div class="value">₨ ${fmt(totalAmountSum)}</div>
-                  </div>
-
-                  <div class="card orange">
-                    <small>${t.balance}</small>
-                    <div class="pill">BAL</div>
-                    <div class="value">₨ ${fmt(Math.abs(balanceTotal))}</div>
-                  </div>
-                </div>
-
-                <div class="totals">
-                  <div class="total-box">
-                    <div class="label">${t.totalAmount}</div>
-                    <div class="value">${fmt(totalAmountSum)}</div>
-                  </div>
-
-                  <div class="total-box">
-                    <div class="label">${t.debit}</div>
-                    <div class="value">${fmt(debitSum)}</div>
-                  </div>
-
-                  <div class="total-box">
-                    <div class="label">${t.credit}</div>
-                    <div class="value">${fmt(creditSum)}</div>
-                  </div>
-
-                  <div class="total-box">
-                    <div class="label">${t.balance}</div>
-                    <div class="value">${fmt(Math.abs(balanceTotal))}</div>
-                  </div>
-                </div>
-
-                <div class="section-bar">
-                  <span>${t.records}</span>
-                  <span>${filtered.length}</span>
-                </div>
-
-                <div class="watermark-wrap">
-                  <div class="watermark">${t.companyName}</div>
-
-                  <table>
-                    <thead>
-                      <tr>
-                        <th class="center">#</th>
-                        <th>${t.invoiceNo}</th>
-                        <th>${t.supplier}</th>
-                        <th class="center">${t.date}</th>
-                        <th>${t.product}</th>
-                        <th>${t.category}</th>
-                        <th class="center">${t.unit}</th>
-                        <th>${t.type}</th>
-                        <th class="num">${t.qty}</th>
-                        <th class="num">${t.rate}</th>
-                        <th class="num">${t.amount}</th>
-                        <th class="num">${t.totalAmount}</th>
-                        <th class="num">${t.debit}</th>
-                        <th class="num">${t.credit}</th>
-                        <th class="num">${t.balance}</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      ${
-                        filtered.length
-                          ? rowsHtml
-                          : `<tr><td colspan="15" style="text-align:center">${t.noRecords}</td></tr>`
-                      }
-                    </tbody>
-
-                    <tfoot>
-                      <tr class="foot-row">
-                        <td colspan="11">${t.totalAmount}</td>
-                        <td class="num">${fmt(totalAmountSum)}</td>
-                        <td class="num">${fmt(debitSum)}</td>
-                        <td class="num">${fmt(creditSum)}</td>
-                        <td class="num">${fmt(Math.abs(balanceTotal))}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
-              <div class="footer">
-                <span>${t.companyName} — ${t.thankYou}</span>
-                <span>Page 1 / 1</span>
-              </div>
-            </div>
-          </div>
-
-          <script>
-            window.onload = () => {
-              setTimeout(() => {
-                window.print();
-              }, 400);
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    const w = window.open("", "_blank", "width=1400,height=900");
-    if (!w) return;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
+    );
   };
+
+  const addItemRow    = () => setItems((prev) => [...prev, createEmptyItem()]);
+  const removeItemRow = (index) => setItems((prev) => prev.length === 1 ? prev : prev.filter((_, i) => i !== index));
+
+  const handleSave = async () => {
+    if (!form.invoice_no.trim()) { showToast("error", t.invoiceNoRequired); return; }
+    if (!form.supplier_id)        { showToast("error", t.supplierRequired);  return; }
+    const validItems = items.filter((row) =>
+      row.product_id && row.unit_id && toNumber(row.qty) > 0
+    );
+    if (!validItems.length) { showToast("error", t.validItemRequired); return; }
+    const preparedItems = validItems.map((row, idx) => ({
+      sr:                  idx + 1,
+      category_id:         Number(row.category_id) || null,
+      product_id:          Number(row.product_id),
+      product_description: String(row.product_description || "").trim(),
+      description:         String(row.product_description || "").trim(),
+      unit_id:             Number(row.unit_id),
+      type_name:           row.type_name || "",
+      qty:                 toNumber(row.qty),
+      quantity:            toNumber(row.qty),
+      rate:                toNumber(row.rate),
+      amount:              toNumber(row.amount),
+    }));
+    const invTotal = preparedItems.reduce((s, r) => s + toNumber(r.amount), 0);
+    const payload  = {
+      invoice_no:    form.invoice_no.trim(),
+      supplier_id:   Number(form.supplier_id),
+      invoice_date:  form.invoice_date,
+      invoice_total: invTotal,
+      debit:         toNumber(form.debit),
+      credit:        toNumber(form.credit),
+      items:         preparedItems,
+    };
+    try {
+      if (editingId) { await axios.put(`${API_BASE}/${editingId}`, payload); showToast("success", t.updateSuccess); }
+      else           { await axios.post(API_BASE, payload);                  showToast("success", t.saveSuccess);   }
+      setShowForm(false); setEditingId(null);
+      setForm(createEmptyForm()); setItems([createEmptyItem()]);
+      fetchInvoices();
+    } catch { showToast("error", t.saveError); }
+  };
+
+  // ─── RENDER ────────────────────────────────────────────────────────────────
+  const fieldLabel = "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5";
+  const fieldInput = `w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-3 focus:ring-indigo-100 disabled:bg-slate-100 disabled:text-slate-400 ${isUrdu ? "text-right" : ""}`;
+  const moneyInput = "w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 text-right outline-none transition focus:border-indigo-500 focus:ring-3 focus:ring-indigo-100";
+  const readAmount = "w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-mono font-black text-indigo-700 text-right flex items-center justify-end";
 
   return (
-    <div
-      dir={dir}
-      style={{ fontFamily: baseFont }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4 sm:p-6 pb-20"
-    >
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
+    <div dir={dir} style={{ fontFamily: baseFont }} className="min-h-screen bg-slate-100 pb-16">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <style>{`
+        @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .pi-modal-in { animation: modalIn .22s ease-out both; }
+        .pi-toast-in { animation: toastIn .18s ease-out both; }
+        .pi-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+        .pi-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .pi-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        .pi-table-row:hover td { background: #f8fafc; }
+      `}</style>
 
-      {message.text && !showForm && (
-        <div
-          className={`fixed bottom-6 ${
-            isUrdu ? "left-6" : "right-6"
-          } z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-base font-semibold flex items-center gap-2 ${
-            message.type === "error" ? "bg-rose-600" : "bg-sky-600"
-          }`}
-        >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
+      {message.text && (
+        <div className={`pi-toast-in fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[70] px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-bold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}>
+          <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
       )}
 
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] px-4 py-3 rounded-xl shadow-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
       )}
 
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5 mb-6">
-          <div
-            className={`flex items-center justify-between gap-4 flex-wrap ${
-              isUrdu ? "flex-row-reverse" : ""
-            }`}
-          >
-            <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-black">
-                {t.title}
-              </h1>
-              <p className="text-base text-slate-500 mt-1">{t.subtitle}</p>
-            </div>
+        {/* Page header - same Sales Invoice style */}
+        <div className={`bg-white border border-slate-200 shadow-sm rounded-b-2xl px-5 sm:px-6 py-5 mb-5 flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+          <div>
+            <h1 className="text-[26px] sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight m-0">{t.title}</h1>
+            <p className="text-[13px] text-slate-500 mt-1 m-0">{t.subtitle}</p>
+          </div>
 
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <button
-                onClick={handleLangToggle}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-sky-200 text-sky-700 text-base font-semibold hover:bg-sky-50 transition shadow-sm"
-              >
-                <i className="bi bi-translate"></i>
-                {t.toggleLang}
-              </button>
+          <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <button
+              type="button"
+              onClick={handleLangToggle}
+              disabled={translating}
+              className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-bold transition shadow-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
+              {t.toggleLang}
+            </button>
 
-              <button
-                onClick={openAdd}
-                className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl shadow-lg shadow-sky-200 font-semibold text-base flex items-center gap-2"
-              >
-                <i className="bi bi-file-earmark-plus-fill"></i>
-                {t.addBtn}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowSummary((v) => !v)}
+              className={`h-10 px-4 rounded-xl border text-sm font-bold transition shadow-sm flex items-center gap-2 ${showSummary ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-200" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+            >
+              <i className="bi bi-bar-chart-fill"></i>
+              {t.summaryBtn.replace("View ", "")}
+              <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-[10px]`}></i>
+            </button>
+
+            <button
+              type="button"
+              onClick={openAdd}
+              className="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center gap-2"
+            >
+              <i className="bi bi-file-earmark-plus-fill"></i>
+              {t.newInvoice}
+            </button>
           </div>
         </div>
 
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="relative w-full max-w-md">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                isUrdu ? "right-4" : "left-4"
-              }`}
-            ></i>
+        {showSummary && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-0 sm:px-0 mb-5">
+            {[
+              { label: t.totalInvoices, value: summary.totalInvoices, icon: "bi-receipt", tone: "bg-indigo-50 text-indigo-700 border-indigo-100" },
+              { label: t.totalItems, value: summary.totalItems, icon: "bi-box-seam", tone: "bg-sky-50 text-sky-700 border-sky-100" },
+              { label: t.totalValue, value: money(summary.totalValue), icon: "bi-cash-stack", tone: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+            ].map((card) => (
+              <div key={card.label} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-3 ${card.tone}`}>
+                  <i className={`bi ${card.icon}`}></i>
+                </div>
+                <p className="text-xs font-bold text-slate-500 m-0">{card.label}</p>
+                <p className="text-2xl font-black text-slate-900 mt-1 m-0">{card.value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Search & filters - same Sales Invoice style */}
+        <div className={`flex flex-wrap items-center gap-2 mb-5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <div className="relative w-full sm:w-[376px]">
+            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className={`w-full rounded-2xl border border-sky-100 bg-white ${
-                isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
-              } py-3.5 text-base text-black focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm`}
+              className={`w-full h-9 rounded-lg border border-slate-300 bg-white text-[13px] text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`}
             />
           </div>
 
-          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400 px-1">{t.filterLabel.replace(":", "")}</span>
+          {[
+            { key: "24h", label: t.filter24h.replace("Last ", ""), icon: "bi-clock" },
+            { key: "7d", label: t.filter7d.replace("Last ", ""), icon: "bi-calendar-week" },
+            { key: "month", label: t.filterMonth, icon: "bi-calendar-month" },
+            { key: "all", label: t.filterAll, icon: "bi-list-ul" },
+          ].map((f) => (
             <button
-              onClick={() => generatePrintDocument(false)}
-              className="flex items-center gap-2 bg-white border border-sky-200 text-sky-700 hover:bg-sky-50 px-4 py-3 rounded-xl font-semibold text-base transition shadow-sm"
+              key={f.key}
+              type="button"
+              onClick={() => setDateFilter(f.key)}
+              className={`h-9 px-3 rounded-lg border text-[13px] font-bold transition shadow-sm flex items-center gap-1.5 ${dateFilter === f.key ? "bg-indigo-600 border-indigo-600 text-white shadow-indigo-200" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
             >
-              <i className="bi bi-printer text-blue-600"></i>
-              {t.printList}
+              <i className={`bi ${f.icon}`}></i>
+              {f.label}
             </button>
-
-            <button
-              onClick={() => generatePrintDocument(true)}
-              className="flex items-center gap-2 bg-white border border-sky-200 text-sky-700 hover:bg-sky-50 px-4 py-3 rounded-xl font-semibold text-base transition shadow-sm"
-            >
-              <i className="bi bi-file-earmark-pdf text-red-600"></i>
-              {t.pdfList}
-            </button>
-          </div>
+          ))}
         </div>
 
-        <div className="bg-white border border-sky-100 rounded-3xl overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-sky-100 bg-sky-50 flex items-center gap-2">
-            <i className="bi bi-table text-slate-400"></i>
-            <h3 className="font-bold text-slate-700 text-sm">
-              {t.records}
-              <span className="mx-2 bg-sky-100 text-sky-700 text-xs px-2.5 py-0.5 rounded-full font-mono">
-                {filtered.length}
-              </span>
-            </h3>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600 min-w-[1400px]">
-              <thead className="bg-sky-50 border-b border-sky-100">
-                <tr className="text-slate-600 text-sm font-bold">
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>#</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.invoiceNo}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.supplier}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.date}</th>
-                  <th className="px-5 py-3 text-right">{t.totalAmount}</th>
-                  <th className="px-5 py-3 text-right">{t.debit}</th>
-                  <th className="px-5 py-3 text-right">{t.credit}</th>
-                  <th className="px-5 py-3 text-right">{t.balance}</th>
-                  <th className="px-5 py-3 text-center">{t.actions}</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-sky-50">
-                {loading ? (
-                  <tr>
-                    <td colSpan={13} className="px-6 py-10 text-center text-slate-400">
-                      {t.loading}
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={13} className="px-6 py-10 text-center text-slate-400">
-                      {t.noRecords}
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((r, i) => {
-                    const balance = (Number(r.debit) || 0) - (Number(r.credit) || 0);
-                    const rowItems =
-                      Array.isArray(r.items) && r.items.length ? r.items : [emptyItem()];
-
-                    return rowItems.map((item, itemIndex) => (
-                      <tr
-                        key={`${r.id}-${itemIndex}`}
-                        className="hover:bg-sky-50/60 transition align-top"
-                      >
-                        {itemIndex === 0 && (
-                          <>
-                            <td
-                              rowSpan={rowItems.length}
-                              className="px-5 py-3.5 text-slate-400 font-mono text-xs"
-                            >
-                              {i + 1}
-                            </td>
-
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-100 text-slate-700 text-xs font-mono font-semibold border border-sky-200">
-                                <i className="bi bi-receipt text-xs"></i>
-                                {r.invoice_no || "—"}
-                              </span>
-                            </td>
-
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 font-medium text-black">
-                              {getTranslatedValue("supplier", r.supplier_name) || "—"}
-                            </td>
-                          </>
-                        )}
-
-                        <td className="px-5 py-3.5">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-semibold">
-                            {getTranslatedValue("product", item.product_name) || "—"}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-3.5 text-slate-600">
-                          {getTranslatedValue("unit", item.unit_name) || "—"}
-                        </td>
-
-                        <td className="px-5 py-3.5 text-slate-600">
-                          {getTranslatedValue("category", item.category_name) || "—"}
-                        </td>
-
-                        <td className="px-5 py-3.5 text-slate-600">
-                          {getTranslatedValue("type", item.type_name) || "—"}
-                        </td>
-
-                        {itemIndex === 0 && (
-                          <>
-                            <td
-                              rowSpan={rowItems.length}
-                              className="px-5 py-3.5 text-slate-500 text-xs"
-                            >
-                              {r.invoice_date || "—"}
-                            </td>
-
-                            <td
-                              rowSpan={rowItems.length}
-                              className="px-5 py-3.5 text-right font-mono font-bold text-slate-700"
-                            >
-                              ₨ {fmt(r.total_amount)}
-                            </td>
-
-                            <td
-                              rowSpan={rowItems.length}
-                              className="px-5 py-3.5 text-right font-mono font-bold text-slate-700"
-                            >
-                              ₨ {fmt(r.debit)}
-                            </td>
-
-                            <td
-                              rowSpan={rowItems.length}
-                              className="px-5 py-3.5 text-right font-mono font-bold text-slate-700"
-                            >
-                              ₨ {fmt(r.credit)}
-                            </td>
-
-                            <td
-                              rowSpan={rowItems.length}
-                              className="px-5 py-3.5 text-right font-mono font-bold text-slate-700"
-                            >
-                              ₨ {fmt(Math.abs(balance))}
-                              <span className="ml-1 text-[10px] font-semibold text-slate-500">
-                                {balance > 0 ? "DR" : balance < 0 ? "CR" : ""}
-                              </span>
-                            </td>
-
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5">
-                              <div className="flex justify-center gap-2 flex-wrap">
-                                <button
-                                  onClick={() => openEdit(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-100 text-sky-700 text-xs font-semibold hover:bg-sky-200 transition"
-                                >
-                                  <i className="bi bi-pencil-square"></i>
-                                  {t.editBtn}
-                                </button>
-
-                                <button
-                                  onClick={() => handleDelete(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-100 text-rose-600 text-xs font-semibold hover:bg-rose-200 transition"
-                                >
-                                  <i className="bi bi-trash3"></i>
-                                  {t.delete}
-                                </button>
-
-                                <button
-                                  onClick={() => handlePrintSingle(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-semibold hover:bg-amber-200 transition"
-                                >
-                                  <i className="bi bi-printer-fill"></i>
-                                  {t.printList}
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    ));
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
+        {/* Purchase invoice modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 p-3 overflow-y-auto">
-            <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden mt-6">
-              <div
-                className={`px-5 sm:px-6 py-4 border-b border-sky-100 flex items-center justify-between gap-3 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                    <i className="bi bi-receipt text-sky-700 text-xl"></i>
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto pi-scroll">
+            <div className="pi-modal-in mx-auto max-w-[1120px] max-h-[calc(100vh-32px)] bg-slate-50 rounded-2xl shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
+              <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
+                    <i className="bi bi-bag-check-fill text-lg"></i>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-extrabold text-black">
-                      {editingId ? t.editEntry : t.newEntry}
-                    </h2>
-                    <p className="text-base text-slate-500 mt-1">{t.subtitle}</p>
+                  <div className="min-w-0">
+                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <h2 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight m-0">
+                        {editingId ? t.editTitle : t.newTitle}
+                      </h2>
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase tracking-wide">
+                        {form.invoice_no || t.invoiceNo}
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.formSubtitle}</p>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => {
-                    setShowForm(false);
-                    resetForm();
-                  }}
-                  className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500"
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
                 >
-                  <i className="bi bi-x-lg"></i>
+                  <i className="bi bi-x-lg text-sm"></i>
                 </button>
               </div>
 
-              <div className="p-5 sm:p-6 space-y-5">
-                {message.text && (
-                  <div
-                    className={`mb-5 text-sm font-bold px-4 py-3 rounded-2xl flex items-center gap-2 border ${
-                      message.type === "error"
-                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    }`}
-                  >
-                    <i
-                      className={`bi ${
-                        message.type === "error"
-                          ? "bi-exclamation-triangle"
-                          : "bi-check-circle"
-                      }`}
-                    ></i>
-                    {message.text}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 pi-scroll">
+                {mastersError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-bold">
+                    <div className="flex items-center gap-2 mb-2">
+                      <i className="bi bi-exclamation-triangle-fill"></i>
+                      {t.masterError}
+                    </div>
+                    <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      {[
+                        [refetchSuppliers, t.suppliers],
+                        [refetchCategories, t.categories],
+                        [refetchProducts, t.products],
+                        [refetchUnits, t.units],
+                        [refetchTypes, t.types],
+                      ].map(([fn, label]) => (
+                        <button type="button" key={label} onClick={fn} className="h-8 px-3 rounded-lg bg-white border border-rose-200 text-rose-700 text-xs font-black">
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
-                      {t.invoiceNo} <span className="text-slate-400">({t.optional})</span>
-                    </label>
-                    <input
-                      name="invoice_no"
-                      value={form.invoice_no}
-                      onChange={handleChange}
-                      placeholder="PI-001"
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                      }`}
-                    />
+                {/* Invoice Information */}
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                        <i className="bi bi-file-earmark-text-fill"></i>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-950 m-0">Invoice Information</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5 m-0">Supplier, invoice number and date</p>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                      <i className="bi bi-asterisk text-rose-500"></i>
+                      Required
+                    </span>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
-                      {t.supplier} <span className="text-slate-400">({t.optional})</span>
-                    </label>
-                    <select
-                      name="supplier_name"
-                      value={form.supplier_name}
-                      onChange={handleChange}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                      }`}
-                    >
-                      <option value="">{t.supplierPlaceholder}</option>
-                      {supplierOptions.map((option, idx) => (
-                        <option key={`${option}-${idx}`} value={option}>
-                          {getTranslatedValue("supplier", option)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
-                      {t.date} <span className="text-slate-400">({t.optional})</span>
-                    </label>
-                    <input
-                      type="date"
-                      name="invoice_date"
-                      value={form.invoice_date}
-                      onChange={handleChange}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                        isUrdu ? "pr-4 pl-4" : "px-4"
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">
-                      {t.debit}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="debit"
-                      value={form.debit}
-                      onChange={handleChange}
-                      placeholder={t.debitPlaceholder}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 font-mono text-slate-950 ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                      }`}
-                    />
-                  </div>
-
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">
-                      {t.credit}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="credit"
-                      value={form.credit}
-                      onChange={handleChange}
-                      placeholder={t.creditPlaceholder}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 font-mono text-slate-950 ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    className={`flex items-center justify-between gap-3 flex-wrap ${
-                      isUrdu ? "flex-row-reverse" : ""
-                    }`}
-                  >
-                    <div>
-                      <h3 className="text-xl font-extrabold text-black">{t.items}</h3>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div className="md:col-span-3">
+                      <label className={fieldLabel}>{t.invoiceNo}<span className="text-rose-500">*</span></label>
+                      <div className="relative">
+                        <i className={`bi bi-hash absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
+                        <input
+                          type="text"
+                          value={form.invoice_no}
+                          onChange={(e) => setForm((f) => ({ ...f, invoice_no: e.target.value }))}
+                          className={`${fieldInput} font-mono ${isUrdu ? "pr-8" : "pl-8"}`}
+                        />
+                      </div>
                     </div>
 
+                    <div className="md:col-span-5">
+                      <label className={fieldLabel}>{t.supplier}<span className="text-rose-500">*</span></label>
+                      <select
+                        value={form.supplier_id}
+                        onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))}
+                        className={fieldInput}
+                      >
+                        <option value="">{suppliersLoading ? t.loadingMaster : t.selectSupplier}</option>
+                        {suppliers.map((s) => {
+                          const id = getRecordId(s);
+                          const label = getSupplierName(s);
+                          return <option key={id} value={id}>{isUrdu ? urduCache[`supplier:${id}`] || label : label}</option>;
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className={fieldLabel}>{t.date}</label>
+                      <input
+                        type="date"
+                        value={form.invoice_date}
+                        onChange={(e) => setForm((f) => ({ ...f, invoice_date: e.target.value }))}
+                        className={fieldInput}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className={fieldLabel}>{t.totalAmount}</label>
+                      <div className={readAmount}>{money(invoiceTotal)}</div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Line Items */}
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
+                        <i className="bi bi-box-seam-fill"></i>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-950 m-0">{t.items}</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5 m-0">{t.itemsSubtitle}</p>
+                      </div>
+                    </div>
                     <button
-                      onClick={addItem}
                       type="button"
-                      className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl text-base font-semibold flex items-center gap-2 shadow-sm"
+                      onClick={addItemRow}
+                      className="h-9 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 text-white text-[12px] font-black transition shadow-sm flex items-center gap-2"
                     >
                       <i className="bi bi-plus-lg"></i>
-                      {t.addItem}
+                      {t.newLine}
                     </button>
                   </div>
 
-                  <div className="rounded-3xl border border-sky-100 overflow-hidden bg-white mt-4">
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1100px] text-sm text-slate-600">
-                        <thead className="bg-sky-50">
-                          <tr className="text-slate-600 text-sm font-bold border-b border-sky-100">
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-32`}>{t.qty}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-36`}>{t.rate}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-36`}>{t.amount}</th>
-                            <th className="px-4 py-3 w-24 text-center"></th>
-                          </tr>
-                        </thead>
+                  <div className="p-4 space-y-3">
+                    {items.map((row, index) => {
+                      const matchedProducts = products.filter((p) =>
+                        !row.category_id || String(getProductCatId(p)) === String(row.category_id)
+                      );
+                      const filteredProducts = !row.category_id ? products : matchedProducts.length ? matchedProducts : products;
 
-                        <tbody className="divide-y divide-sky-50">
-                          {items.map((item, index) => (
-                            <tr key={index} className="hover:bg-sky-50/60">
-                              <td className="px-4 py-3">
-                                <select
-                                  value={item.product_name}
-                                  onChange={(e) =>
-                                    handleItemChange(index, "product_name", e.target.value)
-                                  }
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                                    isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                                  }`}
-                                >
-                                  <option value="">{t.productPlaceholder}</option>
-                                  {productOptions.map((option, idx) => (
-                                    <option key={`${option}-${idx}`} value={option}>
-                                      {getTranslatedValue("product", option)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
+                      return (
+                        <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
+                          <div className={`px-3 py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                            <div className={`flex items-center gap-2 min-w-0 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                              <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-[12px] font-black font-mono shrink-0">{index + 1}</span>
+                              <div>
+                                <p className="text-[13px] font-black text-slate-950 m-0">Item Row</p>
+                                <p className="text-[10px] text-slate-500 m-0">Category, product, quantity and description</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeItemRow(index)}
+                              disabled={items.length === 1}
+                              className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center"
+                              title={t.delete}
+                            >
+                              <i className="bi bi-trash3 text-[13px]"></i>
+                            </button>
+                          </div>
 
-                              <td className="px-4 py-3">
-                                <select
-                                  value={item.unit_name}
-                                  onChange={(e) =>
-                                    handleItemChange(index, "unit_name", e.target.value)
-                                  }
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                                    isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                                  }`}
-                                >
-                                  <option value="">{t.unitPlaceholder}</option>
-                                  {unitOptions.map((option, idx) => (
-                                    <option key={`${option}-${idx}`} value={option}>
-                                      {getTranslatedValue("unit", option)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-
-                              <td className="px-4 py-3">
-                                <select
-                                  value={item.category_name}
-                                  onChange={(e) =>
-                                    handleItemChange(index, "category_name", e.target.value)
-                                  }
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                                    isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                                  }`}
-                                >
-                                  <option value="">{t.categoryPlaceholder}</option>
-                                  {categoryOptions.map((option, idx) => (
-                                    <option key={`${option}-${idx}`} value={option}>
-                                      {getTranslatedValue("category", option)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-
-                              <td className="px-4 py-3">
-                                <select
-                                  value={item.type_name}
-                                  onChange={(e) =>
-                                    handleItemChange(index, "type_name", e.target.value)
-                                  }
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                                    isUrdu ? "pr-4 pl-4 text-right" : "px-4"
-                                  }`}
-                                >
-                                  <option value="">{t.typePlaceholder}</option>
-                                  {typeOptions.map((option, idx) => (
-                                    <option key={`${option}-${idx}`} value={option}>
-                                      {getTranslatedValue("type", option)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) =>
-                                    handleItemChange(index, "quantity", e.target.value)
-                                  }
-                                  className="w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 text-center font-mono"
-                                  placeholder="0"
-                                  min="0"
-                                />
-                              </td>
-
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  value={item.rate}
-                                  onChange={(e) =>
-                                    handleItemChange(index, "rate", e.target.value)
-                                  }
-                                  className="w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 text-right font-mono"
-                                  placeholder="0.00"
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </td>
-
-                              <td
-                                className={`px-4 py-3 font-mono font-bold text-slate-950 ${
-                                  isUrdu ? "text-left" : "text-right"
-                                }`}
+                          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 items-end">
+                            <div className="lg:col-span-2">
+                              <label className={fieldLabel}>{t.category}</label>
+                              <select
+                                value={row.category_id}
+                                onChange={(e) => handleItemChange(index, "category_id", e.target.value)}
+                                className={fieldInput}
                               >
-                                ₨ {fmt(item.amount)}
-                              </td>
+                                <option value="">{categoriesLoading ? t.loadingMaster : t.selectCategory}</option>
+                                {categories.map((c) => (
+                                  <option key={c.id} value={c.id}>{getTranslated("category", c.id, getCategoryName(c))}</option>
+                                ))}
+                              </select>
+                            </div>
 
-                              <td className="px-4 py-3 text-center">
-                                {items.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeItem(index)}
-                                    className="px-3 py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-sm font-semibold"
-                                  >
-                                    {t.removeItem}
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                            <div className="lg:col-span-3">
+                              <label className={fieldLabel}>{t.product}<span className="text-rose-500">*</span></label>
+                              <select
+                                value={row.product_id}
+                                onChange={(e) => handleItemChange(index, "product_id", e.target.value)}
+                                className={fieldInput}
+                              >
+                                <option value="">{productsLoading ? t.loadingMaster : t.selectProduct}</option>
+                                {filteredProducts.map((p) => (
+                                  <option key={p.id} value={p.id}>{getTranslated("product", p.id, getProductName(p))}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="lg:col-span-2">
+                              <label className={fieldLabel}>{t.unit}<span className="text-rose-500">*</span></label>
+                              <select
+                                value={row.unit_id}
+                                onChange={(e) => handleItemChange(index, "unit_id", e.target.value)}
+                                className={fieldInput}
+                              >
+                                <option value="">{unitsLoading ? t.loadingMaster : t.selectUnit}</option>
+                                {units.map((u) => (
+                                  <option key={u.id} value={u.id}>{getTranslated("unit", u.id, getUnitName(u))}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="lg:col-span-1">
+                              <label className={fieldLabel}>{t.type}</label>
+                              <select
+                                value={row.type_name}
+                                onChange={(e) => handleItemChange(index, "type_name", e.target.value)}
+                                className={fieldInput}
+                              >
+                                <option value="">{typesLoading ? t.loadingMaster : t.selectType}</option>
+                                {typeOptions.map((tp) => (
+                                  <option key={tp} value={tp}>{tp}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="lg:col-span-1">
+                              <label className={fieldLabel}>{t.qty}</label>
+                              <input
+                                type="number"
+                                value={row.qty}
+                                onChange={(e) => handleItemChange(index, "qty", e.target.value)}
+                                className={moneyInput}
+                                placeholder="0"
+                              />
+                            </div>
+
+                            <div className="lg:col-span-1">
+                              <label className={fieldLabel}>{t.rate}</label>
+                              <input
+                                type="number"
+                                value={row.rate}
+                                onChange={(e) => handleItemChange(index, "rate", e.target.value)}
+                                className={moneyInput}
+                                placeholder="0"
+                              />
+                            </div>
+
+                            <div className="lg:col-span-2">
+                              <label className={fieldLabel}>{t.amount}</label>
+                              <div className={readAmount}>{money(row.amount)}</div>
+                            </div>
+
+                            <div className="sm:col-span-2 lg:col-span-12">
+                              <ProductDescriptionBox
+                                value={row.product_description}
+                                onChange={(val) => handleItemChange(index, "product_description", val)}
+                                onClear={() => handleItemChange(index, "product_description", "")}
+                                t={t}
+                                isUrdu={isUrdu}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                {/* Totals */}
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <i className="bi bi-calculator-fill"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-950 m-0">Invoice Totals</h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5 m-0">Invoice total, debit, credit and balance</p>
                     </div>
                   </div>
+
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 m-0">{t.totalAmount}</p>
+                      <div className="text-xl font-black text-slate-950 font-mono mt-1">{money(invoiceTotal)}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <label className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1 block">{t.debit}</label>
+                      <input
+                        type="number"
+                        value={form.debit}
+                        onChange={(e) => setForm((f) => ({ ...f, debit: e.target.value }))}
+                        className={moneyInput}
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <label className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1 block">{t.credit}</label>
+                      <input
+                        type="number"
+                        value={form.credit}
+                        onChange={(e) => setForm((f) => ({ ...f, credit: e.target.value }))}
+                        className={moneyInput}
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+                      <p className="text-[11px] font-black uppercase tracking-wide text-indigo-700 m-0">{t.balance}</p>
+                      <div className="text-2xl font-black text-indigo-700 font-mono mt-1">{money(balance)}</div>
+                      <p className="text-[10px] font-mono text-indigo-500 mt-1 m-0">{money(form.debit)} − {money(form.credit)}</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`hidden sm:flex items-center gap-2 text-[12px] font-bold text-slate-500 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center">
+                    <i className="bi bi-shield-check"></i>
+                  </span>
+                  Ready to save invoice
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.totalAmount}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">
-                      ₨ {fmt(form.total_amount)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.debit}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">
-                      ₨ {fmt(form.debit)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.credit}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">
-                      ₨ {fmt(form.credit)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl bg-sky-100 border border-sky-200 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.balance}</p>
-                    <div className="text-3xl font-extrabold text-slate-950 font-mono">
-                      ₨ {fmt(
-                        Math.abs((Number(form.debit) || 0) - (Number(form.credit) || 0))
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`flex gap-3 pt-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`flex items-center gap-2 flex-1 sm:flex-none ${isUrdu ? "flex-row-reverse" : ""}`}>
                   <button
-                    onClick={handleSave}
-                    disabled={submitting}
-                    className="flex-1 bg-sky-600 hover:bg-sky-700 disabled:opacity-60 text-white rounded-2xl py-3.5 font-semibold text-base shadow-lg shadow-sky-200"
-                  >
-                    {submitting ? t.saving : editingId ? t.update : t.save}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowForm(false);
-                      resetForm();
-                    }}
-                    disabled={submitting}
-                    className="flex-1 border border-sky-200 bg-white hover:bg-sky-50 text-sky-700 rounded-2xl py-3.5 font-semibold text-base disabled:opacity-60"
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="h-10 w-full sm:w-40 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black transition"
                   >
                     {t.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={mastersLoading}
+                    className="h-10 w-full sm:w-44 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+                  >
+                    <i className="bi bi-file-earmark-check-fill"></i>
+                    {editingId ? t.updateInvoice : t.saveInvoice}
                   </button>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Invoice list table - same Sales Invoice style */}
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+          <div className="overflow-x-auto pi-scroll">
+            <table className="w-full min-w-[980px] text-[12px]">
+              <thead className="bg-slate-950 text-slate-200 uppercase tracking-wide">
+                <tr>
+                  <th className="px-3 py-3 text-center font-black w-12">{t.col_no}</th>
+                  <th className={`px-3 py-3 font-black ${isUrdu ? "text-right" : "text-left"}`}>{t.col_invoiceNo}</th>
+                  <th className={`px-3 py-3 font-black ${isUrdu ? "text-right" : "text-left"}`}>{t.col_supplier}</th>
+                  <th className="px-3 py-3 text-center font-black">{t.col_date}</th>
+                  <th className="px-3 py-3 text-center font-black">{t.col_items}</th>
+                  <th className={`px-3 py-3 font-black ${isUrdu ? "text-left" : "text-right"}`}>{t.col_invoiceTotal}</th>
+                  <th className={`px-3 py-3 font-black ${isUrdu ? "text-left" : "text-right"}`}>{t.col_debit}</th>
+                  <th className={`px-3 py-3 font-black ${isUrdu ? "text-left" : "text-right"}`}>{t.col_credit}</th>
+                  <th className={`px-3 py-3 font-black ${isUrdu ? "text-left" : "text-right"}`}>{t.col_balance}</th>
+                  <th className="px-3 py-3 text-center font-black">{t.col_actions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {loadingInvoices ? (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-14 text-center text-slate-400">
+                      <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                      <p className="mt-2 text-sm font-semibold">{t.loading}</p>
+                    </td>
+                  </tr>
+                ) : filteredInvoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-14 text-center text-slate-400 text-sm font-semibold">
+                      {t.noRecords}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredInvoices.map((inv, idx) => {
+                    const bal = toNumber(inv.debit) - toNumber(inv.credit);
+                    const supName = supplierMap[String(inv.supplier_id)] || inv.supplier_name || "-";
+                    const supDisplay = isUrdu ? urduCache[`supplier:${inv.supplier_id}`] || supName : supName;
+                    return (
+                      <tr key={inv.id} className="pi-table-row transition">
+                        <td className="px-3 py-3 text-center text-slate-400 font-mono font-bold">{idx + 1}</td>
+                        <td className="px-3 py-3 font-black font-mono text-slate-950">{inv.invoice_no}</td>
+                        <td className="px-3 py-3 font-bold text-slate-800">{supDisplay}</td>
+                        <td className="px-3 py-3 text-center text-slate-700 font-mono font-semibold">{inv.invoice_date || "-"}</td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="inline-flex items-center justify-center min-w-9 h-7 rounded-lg bg-indigo-50 text-indigo-700 text-[12px] font-black border border-indigo-100">
+                            {inv.items_count || inv.items?.length || 0}
+                          </span>
+                        </td>
+                        <td className={`px-3 py-3 font-mono font-bold text-slate-900 ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.invoice_total)}</td>
+                        <td className={`px-3 py-3 font-mono font-bold text-slate-700 ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.debit)}</td>
+                        <td className={`px-3 py-3 font-mono font-bold text-slate-700 ${isUrdu ? "text-left" : "text-right"}`}>{money(inv.credit)}</td>
+                        <td className={`px-3 py-3 font-mono font-black text-indigo-700 ${isUrdu ? "text-left" : "text-right"}`}>{money(bal)}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openEdit(inv.id)}
+                              className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 flex items-center justify-center transition"
+                              title="Edit"
+                            >
+                              <i className="bi bi-pencil-square"></i>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePrint(inv.id)}
+                              className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 flex items-center justify-center transition"
+                              title="Print"
+                            >
+                              <i className="bi bi-printer-fill"></i>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(inv.id)}
+                              className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 flex items-center justify-center transition"
+                              title="Delete"
+                            >
+                              <i className="bi bi-trash3"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
