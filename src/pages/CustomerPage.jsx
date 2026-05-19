@@ -275,7 +275,7 @@ function getSourceInfo(source, t) {
       return { label: t.salesReturn, bg: "bg-violet-100", text: "text-violet-700", isManual: false };
     case "ledger":
     default:
-      return { label: t.manual, bg: "bg-sky-100", text: "text-sky-700", isManual: true };
+      return { label: t.manual, bg: "bg-indigo-50", text: "text-indigo-700", isManual: true };
   }
 }
 
@@ -907,47 +907,69 @@ const CustomerPage = () => {
           ? "'Noto Nastaliq Urdu', serif"
           : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
       }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 pb-20"
+      className="min-h-screen bg-[#f8fafc] p-3 sm:p-4 pb-16"
     >
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
+      <style>{`
+        * { box-sizing: border-box; }
+        .same-page-card { background:#fff; border:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(15,23,42,.06); }
+        .same-btn { transition: all .15s ease; }
+        .same-btn:hover { transform: translateY(-1px); }
+        .same-field {
+          width:100%; height:38px; border:1.5px solid #dbe3ef; border-radius:10px;
+          background:#fff; padding:0 12px; font-size:13px; color:#0f172a; outline:none;
+          transition:border-color .15s ease, box-shadow .15s ease;
+        }
+        .same-field:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+        .same-field-icon-left { padding-left:34px; }
+        .same-field-icon-right { padding-right:34px; }
+        .same-label { display:block; font-size:10.5px; line-height:1; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:7px; }
+        .same-section { background:#fff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+        .same-section-head { padding:13px 16px; border-bottom:1px solid #eef2f7; display:flex; align-items:center; justify-content:space-between; gap:12px; background:#fff; }
+        .same-section-icon { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#eef2ff; color:#4f46e5; }
+        .same-dark-table th { background:#111827!important; color:#fff!important; font-size:11px!important; text-transform:uppercase; letter-spacing:.04em; padding:11px 14px!important; white-space:nowrap; }
+        .same-dark-table td { padding:12px 14px!important; border-bottom:1px solid #f1f5f9!important; }
+      `}</style>
+
+
       {message.text && (
-        <div className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}>
+        <div className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-2.5 rounded-lg shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}>
           <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
       )}
 
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-lg shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="max-w-7xl mx-auto mb-4">
+        <div className="bg-white rounded-[22px] border border-slate-200 shadow-sm px-4 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">{t.title}</h1>
+              <h1 className="text-[26px] font-extrabold tracking-tight text-slate-950">{t.title}</h1>
               <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
             </div>
             <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <button onClick={handleLangToggle} disabled={translating} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
+              <button onClick={handleLangToggle} disabled={translating} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
                 <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
                 {t.toggleLang}
               </button>
-              <button onClick={() => setShowSummary((v) => !v)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm ${showSummary ? "bg-sky-600 text-white hover:bg-sky-700" : "bg-sky-100 text-sky-700 hover:bg-sky-200"}`}>
+              <button onClick={() => setShowSummary((v) => !v)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm ${showSummary ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-indigo-50 text-indigo-700 hover:bg-sky-200"}`}>
                 <i className="bi bi-bar-chart-line-fill"></i>
                 {t.summaryBtn}
                 <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
               </button>
-              <button onClick={() => downloadAllPdf(filtered, lang, urduCache)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm">
+              <button onClick={() => downloadAllPdf(filtered, lang, urduCache)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm">
                 <i className="bi bi-file-earmark-pdf-fill"></i>
                 {t.downloadPdf}
               </button>
-              <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition shadow-lg shadow-sky-200">
+              <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
                 <i className="bi bi-person-plus-fill"></i>
                 {t.addBtn}
               </button>
@@ -955,24 +977,24 @@ const CustomerPage = () => {
           </div>
 
           {showSummary && (
-            <div className="mt-5 pt-5 border-t border-sky-100">
+            <div className="mt-5 pt-5 border-t border-slate-200">
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-slate-800">{t.summaryTitle}</h3>
+                <h3 className="text-lg font-bold text-slate-950">{t.summaryTitle}</h3>
                 <p className="text-sm text-slate-500">{t.summarySubtitle}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
-                  <div className="w-10 h-10 rounded-xl bg-white text-sky-600 flex items-center justify-center shadow-sm mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
                     <i className="bi bi-people-fill"></i>
                   </div>
                   <p className="text-xs text-slate-500 mb-1">{t.totalCustomers}</p>
                   <p className="text-3xl font-extrabold text-slate-950">{summary.totalCustomers}</p>
                 </div>
-                <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
                   <p className="text-xs text-slate-500 mb-1">{t.totalBalance}</p>
                   <p className="text-2xl font-extrabold text-slate-950">{formatMoney(summary.totalBalance)}</p>
                 </div>
-                <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
                   <p className="text-xs text-slate-500 mb-1">{t.totalOpeningBalance}</p>
                   <p className="text-2xl font-extrabold text-slate-950">{formatMoney(summary.totalOpeningBalance)}</p>
                 </div>
@@ -983,67 +1005,67 @@ const CustomerPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="relative mb-6 max-w-md">
+        <div className="relative mb-4 max-w-md">
           <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-4" : "left-4"}`}></i>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className={`w-full border border-sky-100 rounded-2xl py-3 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm ${isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"}`}
+            className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm ${isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"}`}
           />
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
+        <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-slate-600">
               <thead>
-                <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.name}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.phone}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.city}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>{t.amount}</th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-left" : "text-right"}`}>{t.openingBalance}</th>
-                  <th className="px-5 py-4 text-center">{t.actions}</th>
+                <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.name}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.phone}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.city}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-left" : "text-right"}`}>{t.amount}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-left" : "text-right"}`}>{t.openingBalance}</th>
+                  <th className="px-4 py-3 text-center">{t.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">{t.noRecords}</td>
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">{t.noRecords}</td>
                   </tr>
                 ) : (
                   filtered.map((c, i) => (
-                    <tr key={c.id} className="hover:bg-sky-50/70 transition">
-                      <td className="px-5 py-4 text-slate-400 font-mono text-xs">{i + 1}</td>
-                      <td className={`px-5 py-4 font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                    <tr key={c.id} className="hover:bg-slate-50/70 transition">
+                      <td className="px-4 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
+                      <td className={`px-4 py-3 font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
                         <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                          <div className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
                             <i className="bi bi-person-fill"></i>
                           </div>
                           <span className={translating ? "opacity-40" : ""}>{getName(c)}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-slate-950 font-mono text-xs font-semibold">{c.phone || "-"}</td>
-                      <td className={`px-5 py-4 text-slate-950 font-semibold ${translating ? "opacity-40" : ""}`}>{getCity(c)}</td>
-                      <td className={`px-5 py-4 font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>{formatMoney(c.current_balance)}</td>
-                      <td className={`px-5 py-4 font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>{formatMoney(c.opening_balance)}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">{c.phone || "-"}</td>
+                      <td className={`px-4 py-3 text-slate-950 font-semibold ${translating ? "opacity-40" : ""}`}>{getCity(c)}</td>
+                      <td className={`px-4 py-3 font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>{formatMoney(c.current_balance)}</td>
+                      <td className={`px-4 py-3 font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>{formatMoney(c.opening_balance)}</td>
+                      <td className="px-4 py-3">
                         <div className={`flex items-center justify-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                          <button onClick={() => openEdit(c)} className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 hover:bg-sky-200 transition flex items-center justify-center" title={t.edit}>
+                          <button onClick={() => openEdit(c)} className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-sky-200 transition flex items-center justify-center" title={t.edit}>
                             <i className="bi bi-pencil-square"></i>
                           </button>
-                          <button onClick={() => handleDelete(c.id)} className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center" title={t.delete}>
+                          <button onClick={() => handleDelete(c.id)} className="w-9 h-9 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center" title={t.delete}>
                             <i className="bi bi-trash3-fill"></i>
                           </button>
-                          <button onClick={() => openLedger(c)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700 transition">
+                          <button onClick={() => openLedger(c)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition">
                             <i className="bi bi-journal-text"></i>
                             {t.ledger}
                           </button>
@@ -1059,46 +1081,46 @@ const CustomerPage = () => {
 
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-6 flex flex-col" dir={dir}>
-              <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
-                <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                  <i className="bi bi-person-lines-fill text-sky-700 text-lg"></i>
+            <div className="bg-white rounded-[22px] shadow-2xl w-full max-w-2xl p-4 flex flex-col" dir={dir}>
+              <div className="flex items-center gap-3 mb-4 border-b border-slate-200 pb-4">
+                <div className="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <i className="bi bi-person-lines-fill text-indigo-700 text-lg"></i>
                 </div>
-                <h2 className="text-xl font-extrabold text-slate-800">{editingId ? t.edit : t.addBtn}</h2>
+                <h2 className="text-xl font-extrabold text-slate-950">{editingId ? t.edit : t.addBtn}</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-semibold text-slate-500 mb-1.5">{t.nameEn} *</label>
                   <div className="relative">
                     <i className={`bi bi-person absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                    <input type="text" value={form.customer_name_en} onChange={(e) => setForm({ ...form, customer_name_en: e.target.value })} placeholder={t.namePlaceholder} className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"}`} />
+                    <input type="text" value={form.customer_name_en} onChange={(e) => setForm({ ...form, customer_name_en: e.target.value })} placeholder={t.namePlaceholder} className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm text-slate-700 bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"}`} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1.5">{t.phone}</label>
                   <div className="relative">
                     <i className={`bi bi-telephone absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                    <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t.phonePlaceholder} className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 font-mono ${isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"}`} />
+                    <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t.phonePlaceholder} className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm text-slate-700 bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-indigo-100 font-mono ${isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"}`} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1.5">{t.cityEn}</label>
                   <div className="relative">
                     <i className={`bi bi-geo-alt absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                    <input type="text" value={form.city_en} onChange={(e) => setForm({ ...form, city_en: e.target.value })} placeholder={t.cityPlaceholder} className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"}`} />
+                    <input type="text" value={form.city_en} onChange={(e) => setForm({ ...form, city_en: e.target.value })} placeholder={t.cityPlaceholder} className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm text-slate-700 bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"}`} />
                   </div>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-sky-700 mb-1.5">{t.openingBalance}</label>
-                  <input type="number" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} placeholder={t.amountPlaceholder} className={`w-full border border-sky-100 rounded-2xl px-4 py-3 text-sm bg-sky-50/30 focus:outline-none focus:ring-4 focus:ring-sky-100 font-mono font-bold text-sky-700 ${isUrdu ? "text-right" : ""}`} />
+                  <label className="block text-xs font-bold text-indigo-700 mb-1.5">{t.openingBalance}</label>
+                  <input type="number" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} placeholder={t.amountPlaceholder} className={`w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-slate-50/30 focus:outline-none focus:ring-4 focus:ring-indigo-100 font-mono font-bold text-indigo-700 ${isUrdu ? "text-right" : ""}`} />
                 </div>
               </div>
-              <div className={`flex gap-3 pt-4 border-t border-sky-100 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                <button onClick={handleSave} disabled={submitting} className="flex-1 bg-sky-600 text-white py-3 rounded-2xl font-semibold text-sm hover:bg-sky-700 transition shadow-lg shadow-sky-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+              <div className={`flex gap-3 pt-4 border-t border-slate-200 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <button onClick={handleSave} disabled={submitting} className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
                   <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save"}`}></i>
                   {submitting ? t.saving : t.save}
                 </button>
-                <button onClick={() => setShowForm(false)} disabled={submitting} className="flex-1 bg-white border border-sky-200 text-sky-700 py-3 rounded-2xl font-semibold text-sm hover:bg-sky-50 transition disabled:opacity-60">
+                <button onClick={() => setShowForm(false)} disabled={submitting} className="flex-1 bg-white border border-slate-300 text-indigo-700 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-60">
                   {t.cancel}
                 </button>
               </div>
@@ -1108,14 +1130,14 @@ const CustomerPage = () => {
 
         {showLedger && selectedCustomer && (
           <div className="fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" dir={dir}>
-              <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-sky-100 bg-sky-50/80">
+            <div className="bg-white rounded-[22px] shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" dir={dir}>
+              <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-200 bg-slate-50/80">
                 <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                    <i className="bi bi-journal-text text-sky-700 text-lg"></i>
+                  <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                    <i className="bi bi-journal-text text-indigo-700 text-lg"></i>
                   </div>
                   <div>
-                    <h2 className="text-xl font-extrabold text-slate-800">{t.ledgerTitle}</h2>
+                    <h2 className="text-xl font-extrabold text-slate-950">{t.ledgerTitle}</h2>
                     <p className="text-sm text-slate-500">
                       {getName(selectedCustomer)}
                       {selectedCustomer.phone ? ` • ${selectedCustomer.phone}` : ""}
@@ -1123,18 +1145,18 @@ const CustomerPage = () => {
                   </div>
                 </div>
                 <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <button onClick={openAddLedgerForm} className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition flex items-center gap-2">
+                  <button onClick={openAddLedgerForm} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition flex items-center gap-2">
                     <i className="bi bi-plus-circle-fill"></i>
                     {t.addLedgerEntry}
                   </button>
-                  <button onClick={closeLedger} className="px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition">
+                  <button onClick={closeLedger} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">
                     {t.close}
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                   {[
                     { label: t.name, val: getName(selectedCustomer) },
                     { label: t.phone, val: selectedCustomer.phone || "-", mono: true },
@@ -1146,80 +1168,80 @@ const CustomerPage = () => {
                       highlight: true,
                     },
                   ].map((card, idx) => (
-                    <div key={idx} className={`${card.highlight ? "bg-sky-50 border-sky-100" : "bg-white border-sky-100"} border rounded-2xl p-4 shadow-sm`}>
-                      <p className={`text-xs mb-1 ${card.highlight ? "text-sky-600" : "text-slate-500"}`}>{card.label}</p>
-                      <p className={`font-bold ${card.highlight ? "text-sky-700" : "text-slate-950"} ${card.mono ? "font-mono" : ""}`}>{card.val}</p>
+                    <div key={idx} className={`${card.highlight ? "bg-slate-50 border-slate-200" : "bg-white border-slate-200"} border rounded-lg p-4 shadow-sm`}>
+                      <p className={`text-xs mb-1 ${card.highlight ? "text-indigo-600" : "text-slate-500"}`}>{card.label}</p>
+                      <p className={`font-bold ${card.highlight ? "text-indigo-700" : "text-slate-950"} ${card.mono ? "font-mono" : ""}`}>{card.val}</p>
                     </div>
                   ))}
                 </div>
 
                 {showLedgerForm && (
-                  <div className="mb-6 bg-sky-50/70 border border-sky-100 rounded-3xl p-5">
+                  <div className="mb-4 bg-slate-50/70 border border-slate-200 rounded-[22px] p-5">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                        <i className="bi bi-journal-plus text-sky-700"></i>
+                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                        <i className="bi bi-journal-plus text-indigo-700"></i>
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-800">{ledgerEditingId ? t.editLedgerEntry : t.addLedgerEntry}</h3>
+                        <h3 className="font-bold text-slate-950">{ledgerEditingId ? t.editLedgerEntry : t.addLedgerEntry}</h3>
                         <p className="text-xs text-slate-500">{t.ledgerEntryTypeHint}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1.5">{t.entryDate}</label>
-                        <input type="date" value={ledgerForm.entry_date} onChange={(e) => setLedgerForm({ ...ledgerForm, entry_date: e.target.value })} className="w-full border border-sky-100 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-sky-100" />
+                        <input type="date" value={ledgerForm.entry_date} onChange={(e) => setLedgerForm({ ...ledgerForm, entry_date: e.target.value })} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100" />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1.5">{t.description}</label>
-                        <input type="text" value={ledgerForm.description_en} onChange={(e) => setLedgerForm({ ...ledgerForm, description_en: e.target.value })} placeholder={t.descriptionPlaceholder} className={`w-full border border-sky-100 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${isUrdu ? "text-right" : ""}`} />
+                        <input type="text" value={ledgerForm.description_en} onChange={(e) => setLedgerForm({ ...ledgerForm, description_en: e.target.value })} placeholder={t.descriptionPlaceholder} className={`w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "text-right" : ""}`} />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-emerald-700 mb-1.5">{t.debit}</label>
-                        <input type="number" value={ledgerForm.debit} onChange={(e) => setLedgerForm({ ...ledgerForm, debit: e.target.value })} placeholder={t.debitPlaceholder} className={`w-full border border-emerald-100 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100 font-mono font-bold text-emerald-700 ${isUrdu ? "text-right" : ""}`} />
+                        <input type="number" value={ledgerForm.debit} onChange={(e) => setLedgerForm({ ...ledgerForm, debit: e.target.value })} placeholder={t.debitPlaceholder} className={`w-full border border-emerald-100 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100 font-mono font-bold text-emerald-700 ${isUrdu ? "text-right" : ""}`} />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-rose-700 mb-1.5">{t.credit}</label>
-                        <input type="number" value={ledgerForm.credit} onChange={(e) => setLedgerForm({ ...ledgerForm, credit: e.target.value })} placeholder={t.creditPlaceholder} className={`w-full border border-rose-100 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-rose-100 font-mono font-bold text-rose-700 ${isUrdu ? "text-right" : ""}`} />
+                        <input type="number" value={ledgerForm.credit} onChange={(e) => setLedgerForm({ ...ledgerForm, credit: e.target.value })} placeholder={t.creditPlaceholder} className={`w-full border border-rose-100 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-4 focus:ring-rose-100 font-mono font-bold text-rose-700 ${isUrdu ? "text-right" : ""}`} />
                       </div>
                     </div>
                     <div className={`flex gap-3 pt-5 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                      <button onClick={handleLedgerSave} disabled={ledgerSubmitting} className="px-5 py-2.5 rounded-2xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition disabled:opacity-60 flex items-center gap-2">
+                      <button onClick={handleLedgerSave} disabled={ledgerSubmitting} className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2">
                         <i className={`bi ${ledgerSubmitting ? "bi-arrow-repeat animate-spin" : "bi-save"}`}></i>
                         {ledgerSubmitting ? t.saving : t.saveEntry}
                       </button>
-                      <button onClick={() => { setShowLedgerForm(false); setLedgerEditingId(null); setLedgerForm(defaultLedgerForm); }} disabled={ledgerSubmitting} className="px-5 py-2.5 rounded-2xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition disabled:opacity-60">
+                      <button onClick={() => { setShowLedgerForm(false); setLedgerEditingId(null); setLedgerForm(defaultLedgerForm); }} disabled={ledgerSubmitting} className="px-5 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition disabled:opacity-60">
                         {t.cancel}
                       </button>
                     </div>
                   </div>
                 )}
 
-                <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
+                <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-slate-600">
                       <thead>
-                        <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
-                          <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>#</th>
-                          <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.date}</th>
-                          <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.source}</th>
-                          <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.details}</th>
-                          <th className="px-5 py-4 text-right">{t.debit}</th>
-                          <th className="px-5 py-4 text-right">{t.credit}</th>
-                          <th className="px-5 py-4 text-right">{t.balance}</th>
-                          <th className="px-5 py-4 text-center">{t.actions}</th>
+                        <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
+                          <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>#</th>
+                          <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.date}</th>
+                          <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.source}</th>
+                          <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.details}</th>
+                          <th className="px-4 py-3 text-right">{t.debit}</th>
+                          <th className="px-4 py-3 text-right">{t.credit}</th>
+                          <th className="px-4 py-3 text-right">{t.balance}</th>
+                          <th className="px-4 py-3 text-center">{t.actions}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-sky-50">
                         {ledgerLoading ? (
                           <tr>
-                            <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
+                            <td colSpan={8} className="px-6 py-10 text-center text-slate-400">
                               <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                               <p className="mt-2">{t.ledgerLoading}</p>
                             </td>
                           </tr>
                         ) : ledgerRows.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="px-6 py-12 text-center text-slate-400">{t.ledgerEmpty}</td>
+                            <td colSpan={8} className="px-6 py-10 text-center text-slate-400">{t.ledgerEmpty}</td>
                           </tr>
                         ) : (
                           ledgerRows.map((row, i) => {
@@ -1227,25 +1249,25 @@ const CustomerPage = () => {
                             const editDisabled   = row.isOpening || !row.can_edit;
                             const deleteDisabled = row.isOpening || !row.can_delete;
                             const rowBg = row.isOpening
-                              ? "bg-sky-50/60"
+                              ? "bg-slate-50/60"
                               : row.source === "invoice"
                               ? "bg-amber-50/40 hover:bg-amber-50/70"
                               : row.source === "return"
                               ? "bg-violet-50/40 hover:bg-violet-50/70"
-                              : "hover:bg-sky-50/40";
+                              : "hover:bg-slate-50/40";
 
                             return (
                               <tr key={`${row.source}-${row.id}-${i}`} className={`transition ${rowBg}`}>
-                                <td className="px-5 py-4 text-slate-400 font-mono text-xs">{i + 1}</td>
-                                <td className="px-5 py-4 text-slate-950 font-mono text-xs font-semibold">{row.isOpening ? "-" : getEntryDate(row) || "-"}</td>
-                                <td className="px-5 py-4">
+                                <td className="px-4 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
+                                <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">{row.isOpening ? "-" : getEntryDate(row) || "-"}</td>
+                                <td className="px-4 py-3">
                                   {row.isOpening ? (
                                     <span className="text-slate-400">—</span>
                                   ) : (
                                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${srcInfo.bg} ${srcInfo.text}`}>{srcInfo.label}</span>
                                   )}
                                 </td>
-                                <td className="px-5 py-4 font-semibold text-slate-950">
+                                <td className="px-4 py-3 font-semibold text-slate-950">
                                   <div className="flex flex-col">
                                     <span>
                                       {row.isOpening
@@ -1258,18 +1280,18 @@ const CustomerPage = () => {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-5 py-4 text-right font-mono text-emerald-700 font-bold">{row.isOpening ? "-" : row.debit > 0 ? formatMoney(row.debit) : "-"}</td>
-                                <td className="px-5 py-4 text-right font-mono text-rose-700 font-bold">{row.isOpening ? "-" : row.credit > 0 ? formatMoney(row.credit) : "-"}</td>
-                                <td className="px-5 py-4 text-right font-mono text-slate-950 font-bold">{formatMoney(row.balance)}</td>
-                                <td className="px-5 py-4">
+                                <td className="px-4 py-3 text-right font-mono text-emerald-700 font-bold">{row.isOpening ? "-" : row.debit > 0 ? formatMoney(row.debit) : "-"}</td>
+                                <td className="px-4 py-3 text-right font-mono text-rose-700 font-bold">{row.isOpening ? "-" : row.credit > 0 ? formatMoney(row.credit) : "-"}</td>
+                                <td className="px-4 py-3 text-right font-mono text-slate-950 font-bold">{formatMoney(row.balance)}</td>
+                                <td className="px-4 py-3">
                                   {row.isOpening ? (
                                     <div className="text-center text-slate-300">—</div>
                                   ) : (
                                     <div className={`flex items-center justify-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                                      <button onClick={() => openEditLedgerForm(row)} disabled={editDisabled} className={`w-9 h-9 rounded-xl transition flex items-center justify-center ${editDisabled ? "bg-slate-100 text-slate-300 cursor-not-allowed" : "bg-sky-100 text-sky-700 hover:bg-sky-200"}`} title={editDisabled ? t.editNotAllowed : t.edit}>
+                                      <button onClick={() => openEditLedgerForm(row)} disabled={editDisabled} className={`w-9 h-9 rounded-lg transition flex items-center justify-center ${editDisabled ? "bg-slate-100 text-slate-300 cursor-not-allowed" : "bg-indigo-50 text-indigo-700 hover:bg-sky-200"}`} title={editDisabled ? t.editNotAllowed : t.edit}>
                                         <i className="bi bi-pencil-square"></i>
                                       </button>
-                                      <button onClick={() => handleLedgerDelete(row)} disabled={deleteDisabled} className={`w-9 h-9 rounded-xl transition flex items-center justify-center ${deleteDisabled ? "bg-slate-100 text-slate-300 cursor-not-allowed" : "bg-rose-100 text-rose-700 hover:bg-rose-200"}`} title={deleteDisabled ? t.deleteNotAllowed : t.delete}>
+                                      <button onClick={() => handleLedgerDelete(row)} disabled={deleteDisabled} className={`w-9 h-9 rounded-lg transition flex items-center justify-center ${deleteDisabled ? "bg-slate-100 text-slate-300 cursor-not-allowed" : "bg-rose-100 text-rose-700 hover:bg-rose-200"}`} title={deleteDisabled ? t.deleteNotAllowed : t.delete}>
                                         <i className="bi bi-trash3-fill"></i>
                                       </button>
                                     </div>
@@ -1285,8 +1307,8 @@ const CustomerPage = () => {
                 </div>
               </div>
 
-              <div className={`px-6 py-4 border-t border-sky-100 bg-sky-50/80 flex ${isUrdu ? "justify-start" : "justify-end"}`}>
-                <button onClick={closeLedger} className="px-5 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition">
+              <div className={`px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex ${isUrdu ? "justify-start" : "justify-end"}`}>
+                <button onClick={closeLedger} className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">
                   {t.close}
                 </button>
               </div>
