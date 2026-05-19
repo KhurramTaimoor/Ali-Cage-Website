@@ -1166,216 +1166,425 @@ const SaleOrderPage = () => {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 p-2 overflow-y-auto">
-            <div className="max-w-[1200px] mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden mt-3" dir={dir}>
-              <div className={`px-5 sm:px-6 py-4 border-b border-sky-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                    <i className="bi bi-receipt text-sky-700 text-xl"></i>
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto">
+            <div className="mx-auto max-w-[1280px] min-h-[calc(100vh-32px)] bg-slate-50 rounded-[28px] shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
+              <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 sm:px-7 py-4 flex items-center justify-between gap-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
+                    <i className="bi bi-clipboard2-check-fill text-xl"></i>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-extrabold text-slate-900">{editingId ? t.edit : t.addBtn}</h2>
-                    <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
+                  <div className="min-w-0">
+                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight m-0">
+                        {editingId ? t.edit : t.addBtn}
+                      </h2>
+                      <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-extrabold uppercase tracking-wide">
+                        {form.order_no || t.orderNo}
+                      </span>
+                    </div>
+                    <p className="text-[13px] text-slate-500 mt-1 m-0">{t.subtitle}</p>
                   </div>
                 </div>
-                <button onClick={() => setShowForm(false)} className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500">
+
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
+                  aria-label="Close"
+                >
                   <i className="bi bi-x-lg"></i>
                 </button>
               </div>
 
-              <div className="p-3 sm:p-5 space-y-4">
-                <div className="rounded-3xl border border-sky-100 bg-sky-50/60 p-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-                    <div>
-                      <label className={labelClass}>{t.orderNo} *</label>
-                      <input type="text" value={form.order_no} onChange={(e) => setForm((f) => ({ ...f, order_no: e.target.value }))} placeholder={t.orderNoPlaceholder} className={inputClass} />
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                        <i className="bi bi-file-earmark-text-fill"></i>
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-950 m-0">Order Information</h3>
+                        <p className="text-xs text-slate-500 mt-0.5 m-0">Select party, dates, reference and shipment details</p>
+                      </div>
                     </div>
-
-                    <div>
-                      <label className={labelClass}>{t.referenceNo}</label>
-                      <input type="text" value={form.reference_no} onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))} className={inputClass} />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>{t.partyType} *</label>
-                      <select value={form.party_type} onChange={(e) => handlePartyTypeChange(e.target.value)} className={inputClass}>
-                        <option value="">{t.selectPartyType}</option>
-                        {PARTY_TYPES.map((p) => (
-                          <option key={p.value} value={p.value}>{t[p.labelKey]}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>{t.partyName} *</label>
-                      <select value={form.party_id} onChange={(e) => handlePartyIdChange(e.target.value)} disabled={!form.party_type} className={inputClass}>
-                        <option value="">{t.selectPartyName}</option>
-                        {selectedPartyData.list.map((item) => {
-                          const id = getRecordId(item);
-                          const name = getPartyEntityName(form.party_type, item) || `#${id}`;
-                          return <option key={id} value={id}>{name}</option>;
-                        })}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>{t.orderDate}</label>
-                      <input type="date" value={form.order_date} onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))} className={inputClass} />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>{t.deliveryDate}</label>
-                      <input type="date" value={form.delivery_date} onChange={(e) => setForm((f) => ({ ...f, delivery_date: e.target.value }))} className={inputClass} />
-                    </div>
-
-                    <div className="sm:col-span-2 lg:col-span-3">
-                      <label className={labelClass}>{t.shipmentTo}</label>
-                      <input type="text" value={form.shipment_to} onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))} placeholder={t.shipmentPlaceholder} className={inputClass} />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>{t.previousBalance}</label>
-                      <input type="number" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} className={`${inputClass} font-mono`} />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>{t.discount}</label>
-                      <input type="number" value={form.discount} onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))} className={`${inputClass} font-mono`} />
-                    </div>
-
-                    <div>
-                      {showDeliveryCharges ? (
-                        <>
-                          <div className="flex items-center justify-between gap-2">
-                            <label className={labelClass}>{t.deliveryCharges}</label>
-                            <button type="button" onClick={() => { setShowDeliveryCharges(false); setForm((f) => ({ ...f, delivery_charges: "0" })); }} className="text-[11px] text-rose-600 font-bold">{t.removeDeliveryCharges}</button>
-                          </div>
-                          <input type="number" value={form.delivery_charges} onChange={(e) => setForm((f) => ({ ...f, delivery_charges: e.target.value }))} className={`${inputClass} font-mono`} />
-                        </>
-                      ) : (
-                        <button type="button" onClick={() => setShowDeliveryCharges(true)} className="w-full h-[62px] border-2 border-dashed border-sky-300 text-sky-700 rounded-xl text-xs font-bold hover:bg-sky-50 transition flex items-center justify-center gap-2">
-                          <i className="bi bi-plus-circle"></i>
-                          {t.addDeliveryCharges}
-                        </button>
-                      )}
-                    </div>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5">
+                      <i className="bi bi-asterisk text-rose-500"></i>
+                      Required fields
+                    </span>
                   </div>
-                </div>
 
-                <div className="space-y-4">
-                  {form.order_items.map((item, index) => {
-                    const lineTotal = calcLineTotal(item);
-
-                    return (
-                      <div key={index} className="border border-sky-100 rounded-2xl p-4 bg-sky-50/40 space-y-4">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <h3 className="text-sm font-bold text-slate-800">{t.itemGroup} {index + 1}</h3>
-                          {form.order_items.length > 1 && (
-                            <button type="button" onClick={() => removeItemRow(index)} className="text-xs px-3 py-2 rounded-xl bg-rose-100 text-rose-600 hover:bg-rose-200 font-semibold">
-                              {t.removeProductRow}
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div>
-                            <label className={labelClass}>{t.productType}</label>
-                            <select value={item.product_type_id} onChange={(e) => updateItemRow(index, "product_type_id", e.target.value)} className={inputClass}>
-                              <option value="">{t.selectType}</option>
-                              {types.map((x) => <option key={x.id} value={x.id}>{getTypeName(x)}</option>)}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.category}</label>
-                            <select value={item.category_id} onChange={(e) => updateItemRow(index, "category_id", e.target.value)} className={inputClass}>
-                              <option value="">{t.selectCategory}</option>
-                              {categories.map((c) => <option key={c.id} value={c.id}>{getCategoryName(c)}</option>)}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.product} *</label>
-                            <select value={item.product_id} onChange={(e) => updateItemRow(index, "product_id", e.target.value)} className={inputClass}>
-                              <option value="">{t.selectProduct}</option>
-                              {products.map((p) => <option key={p.id} value={p.id}>{getProductName(p)}</option>)}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.unit}</label>
-                            <select value={item.unit_id} onChange={(e) => updateItemRow(index, "unit_id", e.target.value)} className={inputClass}>
-                              <option value="">{t.selectUnit}</option>
-                              {units.map((u) => <option key={u.id} value={u.id}>{getUnitName(u)}</option>)}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.orderQty}</label>
-                            <input type="number" value={item.order_qty} onChange={(e) => updateItemRow(index, "order_qty", e.target.value)} className={`${inputClass} font-mono`} />
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.rate}</label>
-                            <input type="number" value={item.rate} onChange={(e) => updateItemRow(index, "rate", e.target.value)} className={`${inputClass} font-mono`} />
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.debit}</label>
-                            <input type="number" value={item.debit} onChange={(e) => updateItemRow(index, "debit", e.target.value)} className={`${inputClass} font-mono`} />
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>{t.credit}</label>
-                            <input type="number" value={item.credit} onChange={(e) => updateItemRow(index, "credit", e.target.value)} className={`${inputClass} font-mono`} />
-                          </div>
-
-                          <div className="lg:col-span-4 bg-white p-4 rounded-2xl border border-sky-100">
-                            <label className="block text-xs font-bold text-sky-700 mb-1.5">{t.lineTotal}<span className={`${isUrdu ? "mr-2" : "ml-2"} text-sky-500 font-normal text-xs`}>⚡ {t.autoCalcNote}</span></label>
-                            <input type="text" value={fmt(lineTotal)} readOnly className={readonlyClass} />
-                          </div>
+                  <div className="p-5 bg-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4">
+                      <div className="xl:col-span-2">
+                        <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
+                          {t.orderNo}<span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <i className={`bi bi-hash absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                          <input
+                            type="text"
+                            value={form.order_no}
+                            onChange={(e) => setForm((f) => ({ ...f, order_no: e.target.value }))}
+                            placeholder={t.orderNoPlaceholder}
+                            className={`w-full h-12 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"}`}
+                          />
                         </div>
                       </div>
-                    );
-                  })}
 
-                  <button type="button" onClick={addItemRow} className="w-full border border-dashed border-sky-300 text-sky-700 py-3 rounded-2xl text-sm font-semibold hover:bg-sky-50 transition">
-                    <i className="bi bi-plus-circle me-2"></i>
-                    {t.addProductRow}
-                  </button>
-                </div>
+                      <div className="xl:col-span-2">
+                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.referenceNo}</label>
+                        <input
+                          type="text"
+                          value={form.reference_no}
+                          onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))}
+                          className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                        />
+                      </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-sky-50/70 p-4 rounded-2xl border border-sky-100">
-                    <label className="block text-xs font-bold text-sky-700 mb-1.5">{t.totalAmount}<span className={`${isUrdu ? "mr-2" : "ml-2"} text-sky-500 font-normal text-xs`}>⚡ {t.autoCalcNote}</span></label>
-                    <input type="text" value={fmt(formTotal)} readOnly className={readonlyClass} />
+                      <div className="xl:col-span-2">
+                        <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
+                          {t.partyType}<span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={form.party_type}
+                          onChange={(e) => handlePartyTypeChange(e.target.value)}
+                          className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                        >
+                          <option value="">{t.selectPartyType}</option>
+                          {PARTY_TYPES.map((p) => (
+                            <option key={p.value} value={p.value}>{t[p.labelKey]}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="xl:col-span-3">
+                        <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
+                          {t.partyName}<span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={form.party_id}
+                          onChange={(e) => handlePartyIdChange(e.target.value)}
+                          disabled={!form.party_type}
+                          className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed ${isUrdu ? "text-right" : ""}`}
+                        >
+                          <option value="">{t.selectPartyName}</option>
+                          {selectedPartyData.list.map((item) => {
+                            const id = getRecordId(item);
+                            const name = getPartyEntityName(form.party_type, item) || `#${id}`;
+                            return <option key={id} value={id}>{name}</option>;
+                          })}
+                        </select>
+                      </div>
+
+                      <div className="xl:col-span-1">
+                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.orderDate}</label>
+                        <input
+                          type="date"
+                          value={form.order_date}
+                          onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))}
+                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        />
+                      </div>
+
+                      <div className="xl:col-span-2">
+                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.deliveryDate}</label>
+                        <input
+                          type="date"
+                          value={form.delivery_date}
+                          onChange={(e) => setForm((f) => ({ ...f, delivery_date: e.target.value }))}
+                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 xl:col-span-6">
+                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.shipmentTo}</label>
+                        <div className="relative">
+                          <i className={`bi bi-geo-alt-fill absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
+                          <input
+                            type="text"
+                            value={form.shipment_to}
+                            onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))}
+                            placeholder={t.shipmentPlaceholder}
+                            className={`w-full h-12 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"}`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="xl:col-span-2">
+                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.previousBalance}</label>
+                        <input
+                          type="number"
+                          value={form.previous_balance}
+                          onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))}
+                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                        />
+                      </div>
+
+                      <div className="xl:col-span-2">
+                        <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.discount}</label>
+                        <input
+                          type="number"
+                          value={form.discount}
+                          onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                        />
+                      </div>
+
+                      <div className="xl:col-span-2">
+                        {showDeliveryCharges ? (
+                          <>
+                            <div className={`flex items-center justify-between gap-2 mb-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500">{t.deliveryCharges}</label>
+                              <button
+                                type="button"
+                                onClick={() => { setShowDeliveryCharges(false); setForm((f) => ({ ...f, delivery_charges: "0" })); }}
+                                className="text-[11px] text-rose-600 font-black hover:underline"
+                              >
+                                {t.removeDeliveryCharges}
+                              </button>
+                            </div>
+                            <input
+                              type="number"
+                              value={form.delivery_charges}
+                              onChange={(e) => setForm((f) => ({ ...f, delivery_charges: e.target.value }))}
+                              className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                            />
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowDeliveryCharges(true)}
+                            className="w-full h-[68px] rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-700 text-xs font-black hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition flex items-center justify-center gap-2"
+                          >
+                            <i className="bi bi-plus-circle-fill"></i>
+                            {t.addDeliveryCharges}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-700 flex items-center justify-center">
+                        <i className="bi bi-box-seam-fill"></i>
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-950 m-0">Line Items</h3>
+                        <p className="text-xs text-slate-500 mt-0.5 m-0">Select product details, quantity, rate, debit and credit</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addItemRow}
+                      className="h-10 px-4 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-blue-700 transition shadow-lg shadow-slate-200 flex items-center gap-2"
+                    >
+                      <i className="bi bi-plus-lg"></i>
+                      {t.addProductRow}
+                    </button>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                    <label className="block text-xs font-bold text-blue-700 mb-1.5">{t.grandTotal}<span className={`${isUrdu ? "mr-2" : "ml-2"} text-blue-500 font-normal text-xs`}>⚡ {t.autoCalcNote}</span></label>
-                    <input type="text" value={fmt(formGrandTotal)} readOnly className={readonlyClass} />
+                  <div className="p-5 space-y-4">
+                    {form.order_items.map((item, index) => {
+                      const lineTotal = calcLineTotal(item);
+
+                      return (
+                        <div key={index} className="rounded-3xl border border-slate-200 bg-slate-50/70 overflow-hidden">
+                          <div className={`px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                              <span className="w-9 h-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-sm font-black shadow-sm">
+                                {index + 1}
+                              </span>
+                              <div>
+                                <h4 className="text-sm font-black text-slate-950 m-0">{t.itemGroup} {index + 1}</h4>
+                                <p className="text-[11px] text-slate-500 m-0">Product, quantity and amount in one clean row</p>
+                              </div>
+                            </div>
+                            <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                              <span className="min-w-[96px] h-9 px-3 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-end text-xs font-mono font-black">
+                                {fmt(lineTotal)}
+                              </span>
+                              {form.order_items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeItemRow(index)}
+                                  className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition flex items-center justify-center"
+                                  title={t.removeProductRow}
+                                >
+                                  <i className="bi bi-trash3-fill text-sm"></i>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4">
+                            <div className="xl:col-span-2">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.productType}</label>
+                              <select
+                                value={item.product_type_id}
+                                onChange={(e) => updateItemRow(index, "product_type_id", e.target.value)}
+                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                              >
+                                <option value="">{t.selectType}</option>
+                                {types.map((x) => <option key={x.id} value={x.id}>{getTypeName(x)}</option>)}
+                              </select>
+                            </div>
+
+                            <div className="xl:col-span-2">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.category}</label>
+                              <select
+                                value={item.category_id}
+                                onChange={(e) => updateItemRow(index, "category_id", e.target.value)}
+                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                              >
+                                <option value="">{t.selectCategory}</option>
+                                {categories.map((c) => <option key={c.id} value={c.id}>{getCategoryName(c)}</option>)}
+                              </select>
+                            </div>
+
+                            <div className="xl:col-span-3">
+                              <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
+                                {t.product}<span className="text-rose-500">*</span>
+                              </label>
+                              <select
+                                value={item.product_id}
+                                onChange={(e) => updateItemRow(index, "product_id", e.target.value)}
+                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                              >
+                                <option value="">{t.selectProduct}</option>
+                                {products.map((p) => <option key={p.id} value={p.id}>{getProductName(p)}</option>)}
+                              </select>
+                            </div>
+
+                            <div className="xl:col-span-2">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.unit}</label>
+                              <select
+                                value={item.unit_id}
+                                onChange={(e) => updateItemRow(index, "unit_id", e.target.value)}
+                                className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                              >
+                                <option value="">{t.selectUnit}</option>
+                                {units.map((u) => <option key={u.id} value={u.id}>{getUnitName(u)}</option>)}
+                              </select>
+                            </div>
+
+                            <div className="xl:col-span-1">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.orderQty}</label>
+                              <input
+                                type="number"
+                                value={item.order_qty}
+                                onChange={(e) => updateItemRow(index, "order_qty", e.target.value)}
+                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                              />
+                            </div>
+
+                            <div className="xl:col-span-1">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.rate}</label>
+                              <input
+                                type="number"
+                                value={item.rate}
+                                onChange={(e) => updateItemRow(index, "rate", e.target.value)}
+                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                              />
+                            </div>
+
+                            <div className="xl:col-span-1">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.debit}</label>
+                              <input
+                                type="number"
+                                value={item.debit}
+                                onChange={(e) => updateItemRow(index, "debit", e.target.value)}
+                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                              />
+                            </div>
+
+                            <div className="xl:col-span-1">
+                              <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.credit}</label>
+                              <input
+                                type="number"
+                                value={item.credit}
+                                onChange={(e) => updateItemRow(index, "credit", e.target.value)}
+                                className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-mono font-bold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-right"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+                </section>
+
+                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-5 py-4 border-b border-slate-100 flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <i className="bi bi-calculator-fill"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-950 m-0">Invoice Totals</h3>
+                      <p className="text-xs text-slate-500 mt-0.5 m-0">Grand total updates automatically when quantity, delivery or discount changes</p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">
+                        {t.totalAmount}<span className="text-blue-500 font-bold normal-case tracking-normal">⚡ {t.autoCalcNote}</span>
+                      </label>
+                      <input type="text" value={fmt(formTotal)} readOnly className="w-full h-12 rounded-2xl border border-slate-200 bg-white px-3 text-right text-base font-mono font-black text-slate-950 shadow-sm" />
+                    </div>
+
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block text-[11px] font-black uppercase tracking-wide text-slate-500 mb-2">{t.status}</label>
+                      <select
+                        value={form.status}
+                        onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                        className={`w-full h-12 rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${isUrdu ? "text-right" : ""}`}
+                      >
+                        <option value="Pending">{t.pending}</option>
+                        <option value="Completed">{t.completed}</option>
+                        <option value="Cancelled">{t.cancelled}</option>
+                      </select>
+                    </div>
+
+                    <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+                      <label className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-blue-700 mb-2">
+                        {t.grandTotal}<span className="text-blue-500 font-bold normal-case tracking-normal">⚡ {t.autoCalcNote}</span>
+                      </label>
+                      <input type="text" value={fmt(formGrandTotal)} readOnly className="w-full h-12 rounded-2xl border border-blue-200 bg-white px-3 text-right text-lg font-mono font-black text-blue-700 shadow-sm" />
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-5 sm:px-7 py-4 flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`hidden md:flex items-center gap-2 text-xs font-bold text-slate-500 flex-1 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                  <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                    <i className="bi bi-shield-check"></i>
+                  </span>
+                  Ready to save sale order
                 </div>
 
-                <div>
-                  <label className={labelClass}>{t.status}</label>
-                  <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={inputClass}>
-                    <option value="Pending">{t.pending}</option>
-                    <option value="Completed">{t.completed}</option>
-                    <option value="Cancelled">{t.cancelled}</option>
-                  </select>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  disabled={submitting}
+                  className="h-12 px-8 min-w-[150px] rounded-2xl bg-white border border-slate-300 text-slate-700 text-sm font-black hover:bg-slate-50 transition disabled:opacity-60"
+                >
+                  {t.cancel}
+                </button>
 
-                <div className={`flex gap-3 pt-4 border-t border-sky-100 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <button onClick={handleSave} disabled={submitting} className="flex-1 bg-sky-600 text-white py-3 rounded-2xl font-semibold text-sm hover:bg-sky-700 transition shadow-lg shadow-sky-200 flex justify-center items-center gap-2 disabled:opacity-60">
-                    <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save"}`}></i>
-                    {submitting ? t.saving : t.save}
-                  </button>
-
-                  <button onClick={() => setShowForm(false)} disabled={submitting} className="flex-1 bg-white border border-sky-200 text-sky-700 py-3 rounded-2xl font-semibold text-sm hover:bg-sky-50 transition disabled:opacity-60">
-                    {t.cancel}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={submitting}
+                  className="h-12 px-8 min-w-[170px] rounded-2xl bg-blue-700 text-white text-sm font-black hover:bg-blue-800 transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
+                  {submitting ? t.saving : t.save}
+                </button>
               </div>
             </div>
           </div>
