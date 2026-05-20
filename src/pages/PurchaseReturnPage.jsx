@@ -1114,7 +1114,7 @@ const PurchaseReturnPage = () => {
     <div
       dir={dir}
       style={{ fontFamily: baseFont }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4 sm:p-6 pb-20"
+      className="min-h-screen bg-slate-100 pb-16"
     >
       <link
         rel="stylesheet"
@@ -1150,17 +1150,17 @@ const PurchaseReturnPage = () => {
       )}
 
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5 mb-6">
+        <div className="bg-white border border-slate-200 shadow-sm rounded-b-2xl px-5 sm:px-6 py-5 mb-5">
           <div className={`flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
             <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-black">{t.title}</h1>
-              <p className="text-base text-slate-500 mt-1">{t.subtitle}</p>
+              <h1 className="text-[26px] sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight m-0">{t.title}</h1>
+              <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.subtitle}</p>
             </div>
 
             <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
               <button
                 onClick={handleLangToggle}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-sky-200 text-sky-700 text-base font-semibold hover:bg-sky-50 transition shadow-sm"
+                className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-bold transition shadow-sm flex items-center gap-2"
               >
                 <i className="bi bi-translate"></i>
                 {t.toggleLang}
@@ -1168,7 +1168,7 @@ const PurchaseReturnPage = () => {
 
               <button
                 onClick={openAdd}
-                className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl shadow-lg shadow-sky-200 font-semibold text-base flex items-center gap-2"
+                className="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center gap-2"
               >
                 <i className="bi bi-arrow-return-left"></i>
                 {t.addBtn}
@@ -1188,23 +1188,23 @@ const PurchaseReturnPage = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className={`w-full rounded-2xl border border-sky-100 bg-white ${
-                isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
-              } py-3.5 text-base text-black focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm`}
+              className={`w-full h-9 rounded-lg border border-slate-300 bg-white text-[13px] text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 shadow-sm ${
+                isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"
+              }`}
             />
           </div>
 
           <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
             <button
               onClick={() => generatePrintDocument(false)}
-              className="flex items-center gap-2 bg-white border border-sky-200 text-sky-700 hover:bg-sky-50 px-4 py-3 rounded-xl font-semibold text-base transition shadow-sm"
+              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
             >
               <i className="bi bi-printer text-blue-600"></i>
               {t.printBtn}
             </button>
             <button
               onClick={() => generatePrintDocument(true)}
-              className="flex items-center gap-2 bg-white border border-sky-200 text-sky-700 hover:bg-sky-50 px-4 py-3 rounded-xl font-semibold text-base transition shadow-sm"
+              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
             >
               <i className="bi bi-file-earmark-pdf text-red-600"></i>
               {t.pdfBtn}
@@ -1212,21 +1212,21 @@ const PurchaseReturnPage = () => {
           </div>
         </div>
 
-        <div className="bg-white border border-sky-100 rounded-3xl overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-sky-100 bg-sky-50 flex items-center gap-2">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-2">
             <i className="bi bi-table text-slate-400"></i>
             <h3 className="font-bold text-slate-700 text-sm">
               {t.records}
-              <span className="mx-2 bg-sky-100 text-sky-700 text-xs px-2.5 py-0.5 rounded-full font-mono">
+              <span className="mx-2 bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs px-2.5 py-0.5 rounded-full font-mono">
                 {filtered.length}
               </span>
             </h3>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600 min-w-[1500px]">
-              <thead className="bg-sky-50 border-b border-sky-100">
-                <tr className="text-slate-600 text-sm font-bold">
+            <table className="w-full text-[13px] text-slate-700 min-w-[1500px]">
+              <thead className="bg-slate-950">
+                <tr className="text-white text-[11px] font-black uppercase tracking-wide">
                   <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>#</th>
                   <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.invoiceNo}</th>
                   <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.supplier}</th>
@@ -1330,14 +1330,14 @@ const PurchaseReturnPage = () => {
                               <div className="flex justify-center gap-2 flex-wrap">
                                 <button
                                   onClick={() => openEdit(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-100 text-sky-700 text-xs font-semibold hover:bg-sky-200 transition"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 border border-indigo-100 transition"
                                 >
                                   <i className="bi bi-pencil-square"></i>
                                   {t.editBtn}
                                 </button>
                                 <button
                                   onClick={() => handleDelete(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-100 text-rose-600 text-xs font-semibold hover:bg-rose-200 transition"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 border border-rose-100 transition"
                                 >
                                   <i className="bi bi-trash3"></i>
                                   {t.delete}
@@ -1356,22 +1356,22 @@ const PurchaseReturnPage = () => {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 p-3 overflow-y-auto">
-            <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden mt-6">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 p-3 sm:p-4 overflow-y-auto">
+            <div className="mx-auto max-w-[1280px] max-h-[calc(100vh-32px)] bg-slate-50 rounded-2xl shadow-2xl border border-white/70 overflow-hidden flex flex-col">
               <div
-                className={`px-5 sm:px-6 py-4 border-b border-sky-100 flex items-center justify-between gap-3 ${
+                className={`sticky top-0 z-20 bg-white px-5 py-3 border-b border-slate-200 flex items-center justify-between gap-3 ${
                   isUrdu ? "flex-row-reverse" : ""
                 }`}
               >
                 <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                    <i className="bi bi-arrow-return-left text-sky-700 text-xl"></i>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <i className="bi bi-arrow-return-left text-lg"></i>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-extrabold text-black">
+                    <h2 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight m-0">
                       {editingId ? t.editEntry : t.newEntry}
                     </h2>
-                    <p className="text-base text-slate-500 mt-1">{t.subtitle}</p>
+                    <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.subtitle}</p>
                   </div>
                 </div>
 
@@ -1380,13 +1380,13 @@ const PurchaseReturnPage = () => {
                     setShowForm(false);
                     resetForm();
                   }}
-                  className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500"
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center"
                 >
                   <i className="bi bi-x-lg"></i>
                 </button>
               </div>
 
-              <div className="p-5 sm:p-6 space-y-5">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {message.text && (
                   <div
                     className={`mb-5 text-sm font-bold px-4 py-3 rounded-2xl flex items-center gap-2 border ${
@@ -1404,17 +1404,17 @@ const PurchaseReturnPage = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
                       {t.invoice}
                     </label>
                     <select
                       name="invoice_id"
                       value={form.invoice_id}
                       onChange={handleChange}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 appearance-none ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 appearance-none ${
+                        isUrdu ? "text-right" : ""
                       }`}
                     >
                       <option value="">{t.selectInvoice}</option>
@@ -1427,33 +1427,33 @@ const PurchaseReturnPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
                       {t.invoiceNo}
                     </label>
                     <input
                       value={form.invoice_no}
                       readOnly
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-sky-50 text-slate-600 ${
-                        isUrdu ? "px-4 text-right" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-mono font-black text-indigo-700 ${
+                        isUrdu ? "text-right" : ""
                       }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
                       {t.supplier}
                     </label>
                     <input
                       value={tr("supplier", form.supplier_name)}
                       readOnly
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-sky-50 text-slate-600 ${
-                        isUrdu ? "px-4 text-right" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-mono font-black text-indigo-700 ${
+                        isUrdu ? "text-right" : ""
                       }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-500 mb-1.5">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
                       {t.returnDate}
                     </label>
                     <input
@@ -1461,20 +1461,20 @@ const PurchaseReturnPage = () => {
                       name="return_date"
                       value={form.return_date}
                       onChange={handleChange}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base text-black bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                        isUrdu ? "px-4" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
+                        isUrdu ? "text-right" : ""
                       }`}
                     />
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-700 font-semibold">
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-[12px] text-indigo-700 font-bold">
                   <i className="bi bi-info-circle me-2"></i>
                   {t.autoFilled}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
                     <label className="block text-sm font-semibold text-slate-600 mb-1.5">
                       {t.debit}
                     </label>
@@ -1485,13 +1485,13 @@ const PurchaseReturnPage = () => {
                       value={form.debit}
                       onChange={handleChange}
                       placeholder={t.debitPlaceholder}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 font-mono text-slate-950 ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
+                        isUrdu ? "text-right" : "text-right"
                       }`}
                     />
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
+                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
                     <label className="block text-sm font-semibold text-slate-600 mb-1.5">
                       {t.credit}
                     </label>
@@ -1502,13 +1502,13 @@ const PurchaseReturnPage = () => {
                       value={form.credit}
                       onChange={handleChange}
                       placeholder={t.creditPlaceholder}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 font-mono text-slate-950 ${
-                        isUrdu ? "pr-4 pl-4 text-right" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
+                        isUrdu ? "text-right" : "text-right"
                       }`}
                     />
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
+                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
                     <label className="block text-sm font-semibold text-slate-600 mb-1.5">
                       {t.reason}
                     </label>
@@ -1517,8 +1517,8 @@ const PurchaseReturnPage = () => {
                       value={form.reason}
                       onChange={handleChange}
                       placeholder={t.reason}
-                      className={`w-full border border-sky-100 rounded-2xl py-3.5 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                        isUrdu ? "px-4 text-right" : "px-4"
+                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
+                        isUrdu ? "text-right" : ""
                       }`}
                     />
                   </div>
@@ -1527,24 +1527,24 @@ const PurchaseReturnPage = () => {
                 <div>
                   <div className={`flex items-center justify-between gap-3 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
                     <div>
-                      <h3 className="text-xl font-extrabold text-black">{t.items}</h3>
+                      <h3 className="text-sm font-black text-slate-950 m-0">{t.items}</h3>
                     </div>
 
                     <button
                       onClick={addItem}
                       type="button"
-                      className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-xl text-base font-semibold flex items-center gap-2 shadow-sm"
+                      className="h-9 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 text-white text-[12px] font-black transition shadow-sm flex items-center gap-2"
                     >
                       <i className="bi bi-plus-lg"></i>
                       {t.addItem}
                     </button>
                   </div>
 
-                  <div className="rounded-3xl border border-sky-100 overflow-hidden bg-white mt-4">
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mt-3 shadow-sm">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1500px] text-sm text-slate-600">
-                        <thead className="bg-sky-50">
-                          <tr className="text-slate-600 text-sm font-bold border-b border-sky-100">
+                      <table className="w-full min-w-[1500px] text-[13px] text-slate-700">
+                        <thead className="bg-slate-950">
+                          <tr className="text-white text-[11px] font-black uppercase tracking-wide border-b border-slate-800">
                             <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
                             <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
                             <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
@@ -1566,7 +1566,7 @@ const PurchaseReturnPage = () => {
                                 <input
                                   value={tr("product", item.product_name)}
                                   readOnly
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-sky-50 ${
+                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
                                     isUrdu ? "text-right" : "text-left"
                                   }`}
                                 />
@@ -1575,7 +1575,7 @@ const PurchaseReturnPage = () => {
                                 <input
                                   value={tr("unit", item.unit_name)}
                                   readOnly
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-sky-50 ${
+                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
                                     isUrdu ? "text-right" : "text-left"
                                   }`}
                                 />
@@ -1584,7 +1584,7 @@ const PurchaseReturnPage = () => {
                                 <input
                                   value={tr("category", item.category_name)}
                                   readOnly
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-sky-50 ${
+                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
                                     isUrdu ? "text-right" : "text-left"
                                   }`}
                                 />
@@ -1593,7 +1593,7 @@ const PurchaseReturnPage = () => {
                                 <input
                                   value={tr("type", item.type_name)}
                                   readOnly
-                                  className={`w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-sky-50 ${
+                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
                                     isUrdu ? "text-right" : "text-left"
                                   }`}
                                 />
@@ -1613,7 +1613,7 @@ const PurchaseReturnPage = () => {
                                   name="quantity"
                                   value={item.quantity}
                                   onChange={(e) => handleItemChange(index, e)}
-                                  className="w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 text-center font-mono"
+                                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-center text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
                                   placeholder="0"
                                   min="0"
                                   max={item.remaining_qty || 0}
@@ -1625,7 +1625,7 @@ const PurchaseReturnPage = () => {
                                   name="rate"
                                   value={item.rate}
                                   onChange={(e) => handleItemChange(index, e)}
-                                  className="w-full border border-sky-100 rounded-2xl py-3 px-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-sky-100 text-right font-mono"
+                                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-right text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
                                   placeholder="0.00"
                                   min="0"
                                   step="0.01"
@@ -1654,40 +1654,40 @@ const PurchaseReturnPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="rounded-2xl bg-sky-50 border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.totalAmount}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">
+                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.totalAmount}</p>
+                    <div className="text-xl font-black text-slate-950 font-mono mt-1">
                       ₨ {fmt(form.total_amount)}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.debit}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">
+                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.debit}</p>
+                    <div className="text-xl font-black text-slate-950 font-mono mt-1">
                       ₨ {fmt(form.debit)}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-sky-100 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.credit}</p>
-                    <div className="text-2xl font-extrabold text-slate-950 font-mono">
+                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.credit}</p>
+                    <div className="text-xl font-black text-slate-950 font-mono mt-1">
                       ₨ {fmt(form.credit)}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-sky-100 border border-sky-200 p-4">
-                    <p className="text-sm text-slate-500 mb-1">{t.balance}</p>
-                    <div className="text-3xl font-extrabold text-slate-950 font-mono">
+                  <div className="rounded-xl bg-indigo-50 border border-indigo-200 p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.balance}</p>
+                    <div className="text-2xl font-black text-indigo-700 font-mono mt-1">
                       ₨ {fmt(Math.abs((Number(form.debit) || 0) - (Number(form.credit) || 0)))}
                     </div>
                   </div>
                 </div>
 
-                <div className={`flex gap-3 pt-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 -mx-4 -mb-4 px-5 py-3 flex gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
                   <button
                     onClick={handleSave}
                     disabled={submitting}
-                    className="flex-1 bg-sky-600 hover:bg-sky-700 disabled:opacity-60 text-white rounded-2xl py-3.5 font-semibold text-base shadow-lg shadow-sky-200"
+                    className="flex-1 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black transition shadow-lg shadow-indigo-200"
                   >
                     {submitting ? t.saving : editingId ? t.update : t.save}
                   </button>
@@ -1698,7 +1698,7 @@ const PurchaseReturnPage = () => {
                       resetForm();
                     }}
                     disabled={submitting}
-                    className="flex-1 border border-sky-200 bg-white hover:bg-sky-50 text-sky-700 rounded-2xl py-3.5 font-semibold text-base disabled:opacity-60"
+                    className="flex-1 h-10 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black transition disabled:opacity-60"
                   >
                     {t.cancel}
                   </button>
