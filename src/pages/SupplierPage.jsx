@@ -64,6 +64,9 @@ const LANG = {
     supplierName: "Supplier Name",
     supplierNameLabel: "Supplier Name",
     phone: "Phone No",
+    openingBalance: "Opening Balance",
+    totalOpeningBalance: "Total Opening Balance",
+    balancePlaceholder: "0",
     save: "Save",
     saving: "Saving...",
     cancel: "Cancel",
@@ -90,7 +93,7 @@ const LANG = {
     printedOn: "Printed On",
     formTitleAdd: "New Supplier",
     formTitleEdit: "Edit Supplier",
-    formSubtitle: "Supplier name and phone information",
+    formSubtitle: "Supplier name, phone and opening balance information",
   },
   ur: {
     title: "سپلائر مینجمنٹ",
@@ -101,6 +104,9 @@ const LANG = {
     supplierName: "سپلائر کا نام",
     supplierNameLabel: "سپلائر کا نام",
     phone: "فون نمبر",
+    openingBalance: "اوپننگ بیلنس",
+    totalOpeningBalance: "کل اوپننگ بیلنس",
+    balancePlaceholder: "0",
     save: "محفوظ کریں",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
@@ -127,7 +133,7 @@ const LANG = {
     printedOn: "پرنٹ کی تاریخ",
     formTitleAdd: "نیا سپلائر",
     formTitleEdit: "سپلائر ترمیم",
-    formSubtitle: "سپلائر نام اور فون معلومات",
+    formSubtitle: "سپلائر نام، فون اور اوپننگ بیلنس معلومات",
   },
 };
 
@@ -136,6 +142,12 @@ const LANG = {
 // ═══════════════════════════════════════════════════════════════════════════════
 const getSupplierName = (s, isUrdu, cache) =>
   isUrdu ? cache[`name:${s.id}`] || s.supplier_name || "—" : s.supplier_name || "—";
+
+const formatMoney = (value) =>
+  Number(value || 0).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 
 // ── Print / PDF ───────────────────────────────────────────────────────────────
 function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
@@ -154,6 +166,7 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
         <td class="center">${i + 1}</td>
         <td class="strong">${nameDisplay}</td>
         <td class="mono">${s.phone || "—"}</td>
+        <td class="mono num">PKR ${formatMoney(s.opening_balance)}</td>
       </tr>`;
     })
     .join("");
@@ -178,7 +191,7 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
   .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:rgba(255,255,255,.88);line-height:1.8;}
   .content{padding:18px;display:flex;flex-direction:column;gap:14px;}
   .hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px;}
-  .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
   .card{border-radius:16px;padding:14px 16px;border:1px solid #dbeafe;background:#f8fafc;}
   .card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px;}
   .card .value{font-size:22px;font-weight:800;color:#0f172a;}
@@ -189,6 +202,7 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
   .center{text-align:center!important;}
   .strong{font-weight:800;color:#0f172a;}
   .mono{font-family:Inter,Arial,sans-serif;font-weight:700;}
+  .num{text-align:${isUrdu ? "left" : "right"}!important;}
   .footer{background:#0f172a;color:rgba(255,255,255,.8);padding:10px 16px;display:flex;justify-content:space-between;font-size:11px;}
   @media print{@page{size:A4;margin:10mm}body{background:white;padding:0}.page{padding:0;background:white}.sheet{box-shadow:none;border:none;border-radius:0;max-width:none}.hint{display:none}}
 </style>
@@ -208,6 +222,9 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
         <div class="meta">
           <div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
           <div>${t.totalSuppliers}: <strong style="color:white">${suppliers.length}</strong></div>
+          <div>${t.totalOpeningBalance}: <strong style="color:white">PKR ${formatMoney(
+            suppliers.reduce((sum, s) => sum + Number(s.opening_balance || 0), 0)
+          )}</strong></div>
         </div>
       </div>
     </div>
@@ -215,6 +232,9 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
       ${isPdf ? `<div class="hint">Choose <strong>Save as PDF</strong> in print dialog.</div>` : ""}
       <div class="summary">
         <div class="card"><small>${t.totalSuppliers}</small><div class="value">${suppliers.length}</div></div>
+        <div class="card"><small>${t.totalOpeningBalance}</small><div class="value">PKR ${formatMoney(
+          suppliers.reduce((sum, s) => sum + Number(s.opening_balance || 0), 0)
+        )}</div></div>
         <div class="card"><small>${t.reportHeader}</small><div class="value">${new Date().toLocaleDateString(isUrdu ? "ur-PK" : "en-PK")}</div></div>
       </div>
       <table>
@@ -223,13 +243,14 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
             <th class="center">#</th>
             <th>${t.supplierName}</th>
             <th>${t.phone}</th>
+            <th class="num">${t.openingBalance}</th>
           </tr>
         </thead>
         <tbody>
           ${
             suppliers.length > 0
               ? rowsHtml
-              : `<tr><td colspan="3" style="text-align:center;padding:30px;color:#94a3b8">${t.noRecords}</td></tr>`
+              : `<tr><td colspan="4" style="text-align:center;padding:30px;color:#94a3b8">${t.noRecords}</td></tr>`
           }
         </tbody>
       </table>
@@ -276,6 +297,7 @@ const SupplierPage = () => {
   const [form, setForm] = useState({
     supplier_name: "",
     phone: "",
+    opening_balance: "",
   });
 
   const pageFont = isUrdu
@@ -336,7 +358,7 @@ const SupplierPage = () => {
   };
 
   const openAdd = () => {
-    setForm({ supplier_name: "", phone: "" });
+    setForm({ supplier_name: "", phone: "", opening_balance: "" });
     setEditingId(null);
     setShowForm(true);
   };
@@ -345,6 +367,10 @@ const SupplierPage = () => {
     setForm({
       supplier_name: s.supplier_name || "",
       phone: s.phone || "",
+      opening_balance:
+        s.opening_balance !== undefined && s.opening_balance !== null
+          ? String(s.opening_balance)
+          : "",
     });
     setEditingId(s.id);
     setShowForm(true);
@@ -359,6 +385,7 @@ const SupplierPage = () => {
     const payload = {
       supplier_name: form.supplier_name.trim(),
       phone: form.phone.trim(),
+      opening_balance: Number(form.opening_balance || 0),
     };
 
     try {
@@ -384,7 +411,7 @@ const SupplierPage = () => {
       showToast("success", t.successSave);
       setShowForm(false);
       setEditingId(null);
-      setForm({ supplier_name: "", phone: "" });
+      setForm({ supplier_name: "", phone: "", opening_balance: "" });
     } catch (err) {
       showToast("error", err.message || t.saveError);
     } finally {
@@ -419,6 +446,7 @@ const SupplierPage = () => {
       (s) =>
         (s.supplier_name || "").toLowerCase().includes(q) ||
         (s.phone || "").toLowerCase().includes(q) ||
+        String(s.opening_balance || "").toLowerCase().includes(q) ||
         (urduCache[`name:${s.id}`] || "").toLowerCase().includes(q)
     );
   }, [suppliers, search, urduCache]);
@@ -427,6 +455,10 @@ const SupplierPage = () => {
     () => ({
       totalSuppliers: suppliers.length,
       visibleSuppliers: filtered.length,
+      totalOpeningBalance: filtered.reduce(
+        (sum, s) => sum + Number(s.opening_balance || 0),
+        0
+      ),
     }),
     [suppliers, filtered]
   );
@@ -541,7 +573,7 @@ const SupplierPage = () => {
           </div>
 
           {showSummary && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5 pt-5 border-t border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-slate-200">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="w-10 h-10 rounded-xl bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
                   <i className="bi bi-people-fill"></i>
@@ -559,6 +591,16 @@ const SupplierPage = () => {
                 <p className="text-xs text-slate-500 mb-1">Visible Records</p>
                 <p className="text-3xl font-extrabold text-slate-950">
                   {summary.visibleSuppliers}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="w-10 h-10 rounded-xl bg-white text-amber-600 flex items-center justify-center shadow-sm mb-3">
+                  <i className="bi bi-wallet2"></i>
+                </div>
+                <p className="text-xs text-slate-500 mb-1">{t.totalOpeningBalance}</p>
+                <p className="text-2xl font-extrabold text-slate-950 font-mono">
+                  {formatMoney(summary.totalOpeningBalance)}
                 </p>
               </div>
             </div>
@@ -686,6 +728,30 @@ const SupplierPage = () => {
                         />
                       </div>
                     </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-black uppercase tracking-wide text-indigo-700 mb-2 whitespace-nowrap">
+                        {t.openingBalance}
+                      </label>
+                      <div className="relative">
+                        <i
+                          className={`bi bi-wallet2 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                            isUrdu ? "right-3" : "left-3"
+                          }`}
+                        ></i>
+                        <input
+                          type="number"
+                          value={form.opening_balance}
+                          onChange={(e) =>
+                            setForm((prev) => ({ ...prev, opening_balance: e.target.value }))
+                          }
+                          placeholder={t.balancePlaceholder}
+                          className={`w-full h-10 border border-slate-300 rounded-xl bg-white text-sm font-mono font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm ${
+                            isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
+                          }`}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -719,7 +785,7 @@ const SupplierPage = () => {
         {/* Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm text-slate-600">
+            <table className="w-full min-w-[860px] text-sm text-slate-600">
               <thead>
                 <tr className="bg-slate-950 text-white text-[11px] font-bold uppercase tracking-wide whitespace-nowrap">
                   <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>
@@ -731,6 +797,9 @@ const SupplierPage = () => {
                   <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.phone}
                   </th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-left" : "text-right"}`}>
+                    {t.openingBalance}
+                  </th>
                   <th className="px-4 py-3 text-center">{t.actions}</th>
                 </tr>
               </thead>
@@ -738,14 +807,14 @@ const SupplierPage = () => {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
@@ -775,6 +844,10 @@ const SupplierPage = () => {
 
                       <td className="px-4 py-3 font-mono text-xs text-slate-700 font-semibold">
                         {s.phone || "—"}
+                      </td>
+
+                      <td className={`px-4 py-3 font-mono text-sm text-indigo-700 font-bold ${isUrdu ? "text-left" : "text-right"}`}>
+                        {formatMoney(s.opening_balance)}
                       </td>
 
                       <td className="px-4 py-3">
