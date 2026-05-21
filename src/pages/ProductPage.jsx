@@ -31,6 +31,13 @@ const LANG = {
     title: "Product Management",
     subtitle: "Manage your products",
     addBtn: "Add Product",
+    summaryBtn: "View Summary",
+    summaryTitle: "Products Summary",
+    summarySubtitle: "Overview of visible product records",
+    totalProducts: "Total Products",
+    singleProducts: "Single Products",
+    cartonProducts: "Carton Products",
+    totalRateValue: "Total Rate Value",
     searchPlaceholder: "Search by product name…",
     productName: "Product Name",
     saleUnit: "Sale Unit",
@@ -45,6 +52,7 @@ const LANG = {
     delete: "Delete",
     actions: "Actions",
     noRecords: "No products found.",
+    loading: "Loading products...",
     toggleLang: "اردو",
     translating: "Translating to Urdu…",
     printBtn: "Print",
@@ -63,15 +71,24 @@ const LANG = {
     unitPlaceholder: "Select unit",
     piecesPlaceholder: "e.g. 20",
     ratePlaceholder: "e.g. 15",
-    totalProducts: "Total Products",
     records: "Records",
     required: "Required",
-    formSubtitle: "Product name, sale unit and rate details",
+    formSubtitle: "Product name, sale unit, carton quantity and piece rate",
+    generated: "Generated",
+    companyName: "Ali Cages",
+    savePdfHint: 'Choose "Save as PDF" in print dialog',
   },
   ur: {
     title: "پروڈکٹ مینجمنٹ",
     subtitle: "اپنی مصنوعات کا انتظام کریں",
     addBtn: "نیا پروڈکٹ شامل کریں",
+    summaryBtn: "سمری دیکھیں",
+    summaryTitle: "پروڈکٹس سمری",
+    summarySubtitle: "نظر آنے والے پروڈکٹس کا خلاصہ",
+    totalProducts: "کل پروڈکٹس",
+    singleProducts: "سنگل پروڈکٹس",
+    cartonProducts: "کارٹن پروڈکٹس",
+    totalRateValue: "کل ریٹ ویلیو",
     searchPlaceholder: "پروڈکٹ نام سے تلاش کریں…",
     productName: "پروڈکٹ کا نام",
     saleUnit: "فروخت کی قسم",
@@ -86,6 +103,7 @@ const LANG = {
     delete: "حذف",
     actions: "اقدامات",
     noRecords: "کوئی پروڈکٹ نہیں ملا۔",
+    loading: "پروڈکٹس لوڈ ہو رہے ہیں...",
     toggleLang: "English",
     translating: "اردو میں ترجمہ ہو رہا ہے…",
     printBtn: "پرنٹ کریں",
@@ -104,24 +122,31 @@ const LANG = {
     unitPlaceholder: "قسم منتخب کریں",
     piecesPlaceholder: "مثلاً 20",
     ratePlaceholder: "مثلاً 15",
-    totalProducts: "کل پروڈکٹس",
     records: "ریکارڈز",
     required: "ضروری",
-    formSubtitle: "پروڈکٹ نام، سیل یونٹ اور ریٹ کی تفصیل",
+    formSubtitle: "پروڈکٹ نام، سیل یونٹ، کارٹن مقدار اور فی پیس ریٹ",
+    generated: "تیار کردہ",
+    companyName: "علی کیجز",
+    savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
   },
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-const fmt = (v) =>
-  Number(v || 0).toLocaleString("en-PK", {
+const defaultForm = {
+  product_name: "",
+  sale_unit: "single",
+  pieces_per_carton: "",
+  piece_rate: "",
+};
+
+function formatMoney(v) {
+  return Number(v || 0).toLocaleString("en-PK", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+}
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 const ProductPage = () => {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
@@ -135,18 +160,10 @@ const ProductPage = () => {
   const [urduCache, setUrduCache] = useState({});
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({
-    product_name: "",
-    sale_unit: "single",
-    pieces_per_carton: "",
-    piece_rate: "",
-  });
+  const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState({ type: "", text: "" });
-
-  const baseFont = isUrdu
-    ? "'Noto Nastaliq Urdu', serif"
-    : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
 
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
@@ -187,6 +204,7 @@ const ProductPage = () => {
           urdu: await translateText(r.product_name),
         }))
       );
+
       setUrduCache((prev) => {
         const next = { ...prev };
         results.forEach(({ id, urdu }) => {
@@ -212,12 +230,7 @@ const ProductPage = () => {
 
   // ── Form ──────────────────────────────────────────────────────────────────
   const openAdd = () => {
-    setForm({
-      product_name: "",
-      sale_unit: "single",
-      pieces_per_carton: "",
-      piece_rate: "",
-    });
+    setForm(defaultForm);
     setEditingId(null);
     setShowForm(true);
   };
@@ -231,7 +244,9 @@ const ProductPage = () => {
           ? String(r.pieces_per_carton)
           : "",
       piece_rate:
-        r.piece_rate !== null && r.piece_rate !== undefined ? String(r.piece_rate) : "",
+        r.piece_rate !== null && r.piece_rate !== undefined
+          ? String(r.piece_rate)
+          : "",
     });
     setEditingId(r.id);
     setShowForm(true);
@@ -254,7 +269,10 @@ const ProductPage = () => {
     const payload = {
       product_name: form.product_name.trim(),
       sale_unit: form.sale_unit,
-      pieces_per_carton: form.sale_unit === "carton" ? Number(form.pieces_per_carton || 0) : 0,
+      pieces_per_carton:
+        form.sale_unit === "carton"
+          ? Number(form.pieces_per_carton || 0)
+          : 0,
       piece_rate: Number(form.piece_rate || 0),
     };
 
@@ -275,6 +293,7 @@ const ProductPage = () => {
       showToast("success", t.successSave);
       setShowForm(false);
       setEditingId(null);
+      setForm(defaultForm);
       fetchData();
     } catch {
       showToast("error", t.saveError);
@@ -303,6 +322,7 @@ const ProductPage = () => {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return records;
+
     return records.filter((r) =>
       [
         r.product_name,
@@ -319,16 +339,19 @@ const ProductPage = () => {
 
   const summary = useMemo(
     () => ({
-      totalProducts: records.length,
-      cartonProducts: records.filter((r) => (r.sale_unit || "single") === "carton").length,
-      singleProducts: records.filter((r) => (r.sale_unit || "single") !== "carton").length,
+      totalProducts: filtered.length,
+      singleProducts: filtered.filter((r) => (r.sale_unit || "single") !== "carton").length,
+      cartonProducts: filtered.filter((r) => (r.sale_unit || "single") === "carton").length,
+      totalRateValue: filtered.reduce((s, r) => s + Number(r.piece_rate || 0), 0),
     }),
-    [records]
+    [filtered]
   );
 
   // ── Print / PDF ───────────────────────────────────────────────────────────
   const generatePrint = (isPdf = false) => {
-    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Inter', Arial, sans-serif";
+    const font = isUrdu
+      ? "'Noto Nastaliq Urdu', serif"
+      : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
 
     const rows = filtered
       .map(
@@ -338,7 +361,7 @@ const ProductPage = () => {
         <td><strong>${getProductName(r)}</strong></td>
         <td><span class="badge ${r.sale_unit === "carton" ? "amber" : "green"}">${getSaleUnitText(r)}</span></td>
         <td class="center">${r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"}</td>
-        <td class="num">${fmt(r.piece_rate)}</td>
+        <td class="num">${formatMoney(r.piece_rate)}</td>
       </tr>`
       )
       .join("");
@@ -348,20 +371,20 @@ const ProductPage = () => {
 <head>
   <meta charset="UTF-8"/>
   <title>${t.title}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:22px;}
-  .sheet{max-width:1200px;margin:0 auto;background:white;border-radius:20px;overflow:hidden;box-shadow:0 20px 55px rgba(15,23,42,.10);border:1px solid #e2e8f0;}
-  .header{background:#0f172a;color:white;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
-  .brand{font-size:28px;font-weight:800;letter-spacing:-.4px;}
+  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:24px;}
+  .sheet{max-width:1150px;margin:0 auto;background:white;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 14px 40px rgba(15,23,42,.10);}
+  .header{background:#111827;color:#fff;padding:22px 26px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;}
+  .brand{font-size:26px;font-weight:800;letter-spacing:-.3px;}
   .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
-  .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;line-height:1.8;}
+  .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;}
   .content{padding:18px;}
   .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
-  table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;overflow:hidden;}
-  th{background:#0f172a;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px 10px;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
-  td{border-bottom:1px solid #f1f5f9;padding:11px 10px;color:#334155;vertical-align:middle;}
+  table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
+  th{background:#111827;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  td{border-bottom:1px solid #f1f5f9;padding:11px 12px;color:#334155;}
   tr:nth-child(even) td{background:#f8fafc;}
   .center{text-align:center!important;}
   .num{text-align:${isUrdu ? "left" : "right"}!important;font-family:monospace;font-weight:800;color:#0f172a;}
@@ -375,13 +398,15 @@ const ProductPage = () => {
   <div class="sheet">
     <div class="header">
       <div>
-        <div class="brand">Ali Cages</div>
+        <div class="brand">${t.companyName}</div>
         <div class="report-title">${t.reportHeader}</div>
       </div>
-      <div class="meta">${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
+      <div class="meta">${t.printedOn}: ${new Date().toLocaleString(
+        isUrdu ? "ur-PK" : "en-PK"
+      )}</div>
     </div>
     <div class="content">
-      ${isPdf ? `<div class="print-inst">Please select <strong>"Save as PDF"</strong> to download.</div>` : ""}
+      ${isPdf ? `<div class="print-inst">${t.savePdfHint}</div>` : ""}
       <table>
         <thead>
           <tr>
@@ -393,7 +418,11 @@ const ProductPage = () => {
           </tr>
         </thead>
         <tbody>
-          ${filtered.length ? rows : `<tr><td colspan="5" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`}
+          ${
+            filtered.length
+              ? rows
+              : `<tr><td colspan="5" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
+          }
         </tbody>
       </table>
     </div>
@@ -416,13 +445,16 @@ const ProductPage = () => {
     w.document.close();
   };
 
-  const fieldLabel = "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5";
-  const fieldInput = `w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "text-right" : ""}`;
-  const moneyInput = `w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "text-right" : "text-right"}`;
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div dir={dir} style={{ fontFamily: baseFont }} className="min-h-screen bg-slate-100 pb-16">
+    <div
+      dir={dir}
+      style={{
+        fontFamily: isUrdu
+          ? "'Noto Nastaliq Urdu', serif"
+          : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
+      }}
+      className="min-h-screen bg-[#f8fafc] p-3 sm:p-4 pb-16"
+    >
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
@@ -433,204 +465,381 @@ const ProductPage = () => {
       />
 
       <style>{`
-        @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .pm-modal-in { animation: modalIn .22s ease-out both; }
-        .pm-toast-in { animation: toastIn .18s ease-out both; }
-        .pm-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
-        .pm-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
-        .pm-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        * { box-sizing: border-box; }
+
+        .same-page-card {
+          background:#fff;
+          border:1px solid #e2e8f0;
+          box-shadow:0 1px 4px rgba(15,23,42,.06);
+        }
+
+        .same-btn {
+          transition: all .15s ease;
+        }
+
+        .same-btn:hover {
+          transform: translateY(-1px);
+        }
+
+        .same-field {
+          width:100%;
+          height:38px;
+          border:1.5px solid #dbe3ef;
+          border-radius:10px;
+          background:#fff;
+          padding:0 12px;
+          font-size:13px;
+          color:#0f172a;
+          outline:none;
+          transition:border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .same-field:focus {
+          border-color:#6366f1;
+          box-shadow:0 0 0 3px rgba(99,102,241,.12);
+        }
+
+        .same-field-icon-left {
+          padding-left:34px;
+        }
+
+        .same-field-icon-right {
+          padding-right:34px;
+        }
+
+        .same-label {
+          display:block;
+          font-size:10.5px;
+          line-height:1;
+          font-weight:800;
+          text-transform:uppercase;
+          letter-spacing:.06em;
+          color:#64748b;
+          margin-bottom:7px;
+        }
+
+        .same-section {
+          background:#fff;
+          border:1px solid #e2e8f0;
+          border-radius:18px;
+          overflow:hidden;
+          box-shadow:0 1px 3px rgba(15,23,42,.05);
+        }
+
+        .same-section-head {
+          padding:13px 16px;
+          border-bottom:1px solid #eef2f7;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:12px;
+          background:#fff;
+        }
+
+        .same-section-icon {
+          width:36px;
+          height:36px;
+          border-radius:12px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#eef2ff;
+          color:#4f46e5;
+        }
+
+        .same-dark-table th {
+          background:#111827!important;
+          color:#fff!important;
+          font-size:11px!important;
+          text-transform:uppercase;
+          letter-spacing:.04em;
+          padding:11px 14px!important;
+          white-space:nowrap;
+        }
+
+        .same-dark-table td {
+          padding:12px 14px!important;
+          border-bottom:1px solid #f1f5f9!important;
+        }
+
+        .same-scroll::-webkit-scrollbar {
+          width:7px;
+          height:7px;
+        }
+
+        .same-scroll::-webkit-scrollbar-track {
+          background:#f1f5f9;
+        }
+
+        .same-scroll::-webkit-scrollbar-thumb {
+          background:#cbd5e1;
+          border-radius:999px;
+        }
       `}</style>
 
       {/* Toast */}
       {message.text && (
         <div
-          className={`pm-toast-in fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[70] px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-bold flex items-center gap-2 ${
+          className={`fixed bottom-6 ${
+            isUrdu ? "left-6" : "right-6"
+          } z-50 px-5 py-2.5 rounded-lg shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${
             message.type === "error" ? "bg-rose-600" : "bg-emerald-600"
           }`}
         >
-          <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
+          <i
+            className={`bi ${
+              message.type === "error"
+                ? "bi-exclamation-triangle-fill"
+                : "bi-check-circle-fill"
+            }`}
+          ></i>
           {message.text}
         </div>
       )}
 
+      {/* Translating indicator */}
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] px-4 py-3 rounded-xl shadow-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-lg shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className={`bg-white border border-slate-200 shadow-sm rounded-b-2xl px-5 sm:px-6 py-5 mb-5 flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-          <div>
-            <h1 className="text-[26px] sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight m-0">
-              {t.title}
-            </h1>
-            <p className="text-[13px] text-slate-500 mt-1 m-0">{t.subtitle}</p>
-          </div>
-
-          <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button
-              onClick={handleLangToggle}
-              disabled={translating}
-              className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-bold transition shadow-sm flex items-center gap-2 disabled:opacity-60"
-            >
-              <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
-              {t.toggleLang}
-            </button>
-
-            <button
-              onClick={openAdd}
-              className="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center gap-2"
-            >
-              <i className="bi bi-plus-circle-fill"></i>
-              {t.addBtn}
-            </button>
-          </div>
-        </div>
-
-        {/* Summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-          {[
-            { label: t.totalProducts, value: summary.totalProducts, icon: "bi-box-seam-fill", tone: "bg-indigo-50 text-indigo-700 border-indigo-100" },
-            { label: t.single, value: summary.singleProducts, icon: "bi-box", tone: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-            { label: t.carton, value: summary.cartonProducts, icon: "bi-boxes", tone: "bg-amber-50 text-amber-700 border-amber-100" },
-          ].map((card) => (
-            <div key={card.label} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-3 ${card.tone}`}>
-                <i className={`bi ${card.icon}`}></i>
-              </div>
-              <p className="text-xs font-bold text-slate-500 m-0">{card.label}</p>
-              <p className="text-2xl font-black text-slate-900 mt-1 m-0">{card.value}</p>
+      {/* Header */}
+      <div className="max-w-7xl mx-auto mb-4">
+        <div className="bg-white rounded-[22px] border border-slate-200 shadow-sm px-4 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h1 className="text-[26px] font-extrabold tracking-tight text-slate-950">
+                {t.title}
+              </h1>
+              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
             </div>
-          ))}
+
+            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+              <button
+                onClick={handleLangToggle}
+                disabled={translating}
+                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <i
+                  className={`bi ${
+                    translating ? "bi-arrow-repeat animate-spin" : "bi-translate"
+                  }`}
+                ></i>
+                {t.toggleLang}
+              </button>
+
+              <button
+                onClick={() => setShowSummary((v) => !v)}
+                className={`same-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm ${
+                  showSummary
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-indigo-50 text-indigo-700 hover:bg-sky-200"
+                }`}
+              >
+                <i className="bi bi-bar-chart-line-fill"></i>
+                {t.summaryBtn}
+                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
+              </button>
+
+              <button
+                onClick={() => generatePrint(false)}
+                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
+              >
+                <i className="bi bi-printer-fill"></i>
+                {t.printBtn}
+              </button>
+
+              <button
+                onClick={() => generatePrint(true)}
+                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
+              >
+                <i className="bi bi-file-earmark-pdf-fill"></i>
+                {t.pdfBtn}
+              </button>
+
+              <button
+                onClick={openAdd}
+                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+              >
+                <i className="bi bi-plus-circle-fill"></i>
+                {t.addBtn}
+              </button>
+            </div>
+          </div>
+
+          {showSummary && (
+            <div className="mt-5 pt-5 border-t border-slate-200">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-slate-950">{t.summaryTitle}</h3>
+                <p className="text-sm text-slate-500">{t.summarySubtitle}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
+                    <i className="bi bi-box-seam-fill"></i>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">{t.totalProducts}</p>
+                  <p className="text-3xl font-extrabold text-slate-950">
+                    {summary.totalProducts}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-emerald-600 flex items-center justify-center shadow-sm mb-3">
+                    <i className="bi bi-box"></i>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">{t.singleProducts}</p>
+                  <p className="text-3xl font-extrabold text-slate-950">
+                    {summary.singleProducts}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-amber-600 flex items-center justify-center shadow-sm mb-3">
+                    <i className="bi bi-boxes"></i>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">{t.cartonProducts}</p>
+                  <p className="text-3xl font-extrabold text-slate-950">
+                    {summary.cartonProducts}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
+                    <i className="bi bi-cash-stack"></i>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">{t.totalRateValue}</p>
+                  <p className="text-2xl font-extrabold text-slate-950">
+                    {formatMoney(summary.totalRateValue)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Search + print */}
-        <div className={`flex flex-wrap items-center justify-between gap-3 mb-5 ${isUrdu ? "flex-row-reverse" : ""}`}>
-          <div className="relative w-full sm:w-[376px]">
-            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t.searchPlaceholder}
-              className={`w-full h-9 rounded-lg border border-slate-300 bg-white text-[13px] text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`}
-            />
-          </div>
-
-          <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button
-              onClick={() => generatePrint(false)}
-              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
-            >
-              <i className="bi bi-printer text-indigo-600"></i>
-              {t.printBtn}
-            </button>
-
-            <button
-              onClick={() => generatePrint(true)}
-              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
-            >
-              <i className="bi bi-file-earmark-pdf text-rose-600"></i>
-              {t.pdfBtn}
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto">
+        {/* Search */}
+        <div className="relative mb-4 max-w-md">
+          <i
+            className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+              isUrdu ? "right-4" : "left-4"
+            }`}
+          ></i>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm ${
+              isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
+            }`}
+          />
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className={`px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-            <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center">
-                <i className="bi bi-table"></i>
-              </span>
-              <div>
-                <h3 className="text-sm font-black text-slate-900 m-0">{t.records}</h3>
-                <p className="text-[11px] text-slate-500 m-0">{filtered.length} records found</p>
-              </div>
-            </div>
-          </div>
-
+        <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
+            <table className="same-dark-table w-full text-sm text-slate-600">
               <thead>
-                <tr className="bg-slate-950 text-white text-[11px] font-black uppercase tracking-wide whitespace-nowrap">
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.productName}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.saleUnit}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.piecesPerCarton}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.pieceRate}</th>
-                  <th className="px-4 py-3 text-center w-32">{t.actions}</th>
+                <tr>
+                  <th className={`${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
+                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
+                    {t.productName}
+                  </th>
+                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
+                    {t.saleUnit}
+                  </th>
+                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
+                    {t.piecesPerCarton}
+                  </th>
+                  <th className={`${isUrdu ? "text-left" : "text-right"}`}>
+                    {t.pieceRate}
+                  </th>
+                  <th className="text-center">{t.actions}</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                      <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
                 ) : (
                   filtered.map((r, i) => {
                     const isCarton = (r.sale_unit || "single") === "carton";
-                    return (
-                      <tr key={r.id} className="hover:bg-slate-50 transition align-middle">
-                        <td className="px-4 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
 
-                        <td className={`px-4 py-3 font-black text-slate-900 ${isUrdu ? "text-right" : ""}`}>
-                          <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 flex-shrink-0">
-                              <i className="bi bi-box-seam-fill text-sm"></i>
+                    return (
+                      <tr key={r.id} className="hover:bg-slate-50/70 transition">
+                        <td className="text-slate-400 font-mono text-xs">{i + 1}</td>
+
+                        <td className={`font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                          <div
+                            className={`flex items-center gap-3 ${
+                              isUrdu ? "flex-row-reverse" : ""
+                            }`}
+                          >
+                            <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+                              <i className="bi bi-box-seam-fill"></i>
                             </div>
-                            <span className={translating ? "opacity-40" : ""}>{getProductName(r)}</span>
+                            <span className={translating ? "opacity-40" : ""}>
+                              {getProductName(r)}
+                            </span>
                           </div>
                         </td>
 
-                        <td className={`px-4 py-3 font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
+                        <td className={`font-semibold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
                           <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black border ${
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
                               isCarton
-                                ? "bg-amber-50 text-amber-700 border-amber-100"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-emerald-100 text-emerald-700"
                             }`}
                           >
                             {getSaleUnitText(r)}
                           </span>
                         </td>
 
-                        <td className={`px-4 py-3 font-mono font-bold text-slate-900 ${isUrdu ? "text-right" : ""}`}>
+                        <td className={`font-mono font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
                           {isCarton ? r.pieces_per_carton || 0 : "-"}
                         </td>
 
-                        <td className={`px-4 py-3 font-mono font-bold text-slate-900 ${isUrdu ? "text-right" : ""}`}>
-                          {fmt(r.piece_rate)}
+                        <td className={`font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>
+                          {formatMoney(r.piece_rate)}
                         </td>
 
-                        <td className="px-4 py-3">
-                          <div className={`flex items-center justify-center gap-1.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                        <td>
+                          <div
+                            className={`flex items-center justify-center gap-2 flex-wrap ${
+                              isUrdu ? "flex-row-reverse" : ""
+                            }`}
+                          >
                             <button
                               onClick={() => openEdit(r)}
-                              className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition flex items-center justify-center"
+                              className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-sky-200 transition flex items-center justify-center"
                               title={t.edit}
                             >
-                              <i className="bi bi-pencil-square text-sm"></i>
+                              <i className="bi bi-pencil-square"></i>
                             </button>
 
                             <button
                               onClick={() => handleDelete(r.id)}
-                              className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition flex items-center justify-center"
+                              className="w-9 h-9 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center"
                               title={t.delete}
                             >
-                              <i className="bi bi-trash3-fill text-sm"></i>
+                              <i className="bi bi-trash3-fill"></i>
                             </button>
                           </div>
                         </td>
@@ -645,159 +854,176 @@ const ProductPage = () => {
 
         {/* Modal Form */}
         {showForm && (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto pm-scroll">
-            <div className="pm-modal-in mx-auto max-w-[760px] max-h-[calc(100vh-32px)] bg-slate-50 rounded-2xl shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
-              <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
-                    <i className="bi bi-box-seam-fill text-lg"></i>
+          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div
+              className="bg-white rounded-[22px] shadow-2xl w-full max-w-2xl p-4 flex flex-col"
+              dir={dir}
+            >
+              <div className="flex items-center justify-between gap-3 mb-4 border-b border-slate-200 pb-4">
+                <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <div className="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <i className="bi bi-box-seam-fill text-indigo-700 text-lg"></i>
                   </div>
-                  <div className="min-w-0">
-                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                      <h2 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight m-0">
-                        {editingId ? t.edit : t.addBtn}
-                      </h2>
-                      <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase tracking-wide">
-                        {form.sale_unit === "carton" ? t.carton : t.single}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.formSubtitle}</p>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-slate-950">
+                      {editingId ? t.edit : t.addBtn}
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-0.5">{t.formSubtitle}</p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
+                  className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition flex items-center justify-center"
                 >
                   <i className="bi bi-x-lg text-sm"></i>
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 pm-scroll">
-                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                        <i className="bi bi-card-checklist"></i>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-slate-950 m-0">Product Information</h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5 m-0">Name, sale unit and pricing</p>
-                      </div>
+              <div className="same-section mb-4">
+                <div className="same-section-head">
+                  <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                    <div className="same-section-icon">
+                      <i className="bi bi-card-checklist"></i>
                     </div>
-                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
-                      <i className="bi bi-asterisk text-rose-500"></i>
-                      {t.required}
-                    </span>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-950 m-0">
+                        Product Information
+                      </h3>
+                      <p className="text-xs text-slate-500 m-0">{t.formSubtitle}</p>
+                    </div>
                   </div>
 
-                  <div className="p-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                    <div className="sm:col-span-7">
-                      <label className={fieldLabel}>
-                        {t.productName}<span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <i className={`bi bi-box-seam absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
-                        <input
-                          type="text"
-                          value={form.product_name}
-                          onChange={(e) => setForm({ ...form, product_name: e.target.value })}
-                          placeholder={t.namePlaceholder}
-                          autoFocus
-                          className={`${fieldInput} ${isUrdu ? "pr-8" : "pl-8"}`}
-                        />
-                      </div>
-                    </div>
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                    <i className="bi bi-asterisk text-rose-500"></i>
+                    {t.required}
+                  </span>
+                </div>
 
-                    <div className="sm:col-span-5">
-                      <label className={fieldLabel}>
-                        {t.saleUnit}<span className="text-rose-500">*</span>
-                      </label>
-                      <select
-                        value={form.sale_unit}
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2">
+                    <label className="same-label">
+                      {t.productName} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <i
+                        className={`bi bi-box-seam absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                          isUrdu ? "right-3" : "left-3"
+                        }`}
+                      ></i>
+                      <input
+                        type="text"
+                        value={form.product_name}
                         onChange={(e) =>
-                          setForm({
-                            ...form,
-                            sale_unit: e.target.value,
-                            pieces_per_carton: e.target.value === "single" ? "" : form.pieces_per_carton,
-                          })
+                          setForm({ ...form, product_name: e.target.value })
                         }
-                        className={fieldInput}
-                      >
-                        <option value="single">{t.single}</option>
-                        <option value="carton">{t.carton}</option>
-                      </select>
+                        placeholder={t.namePlaceholder}
+                        autoFocus
+                        className={`same-field ${
+                          isUrdu ? "same-field-icon-right text-right" : "same-field-icon-left"
+                        }`}
+                      />
                     </div>
+                  </div>
 
-                    {form.sale_unit === "carton" && (
-                      <div className="sm:col-span-6">
-                        <label className={fieldLabel}>
-                          {t.piecesPerCarton}<span className="text-rose-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <i className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
-                          <input
-                            type="number"
-                            min="1"
-                            value={form.pieces_per_carton}
-                            onChange={(e) => setForm({ ...form, pieces_per_carton: e.target.value })}
-                            placeholder={t.piecesPlaceholder}
-                            className={`${moneyInput} ${isUrdu ? "pr-8" : "pl-8"}`}
-                          />
-                        </div>
-                      </div>
-                    )}
+                  <div>
+                    <label className="same-label">
+                      {t.saleUnit} <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={form.sale_unit}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          sale_unit: e.target.value,
+                          pieces_per_carton:
+                            e.target.value === "single" ? "" : form.pieces_per_carton,
+                        })
+                      }
+                      className={`same-field ${isUrdu ? "text-right" : ""}`}
+                    >
+                      <option value="single">{t.single}</option>
+                      <option value="carton">{t.carton}</option>
+                    </select>
+                  </div>
 
-                    <div className={form.sale_unit === "carton" ? "sm:col-span-6" : "sm:col-span-12"}>
-                      <label className={fieldLabel}>
-                        {t.pieceRate}<span className="text-rose-500">*</span>
+                  <div>
+                    <label className="same-label">
+                      {t.pieceRate} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <i
+                        className={`bi bi-cash-stack absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                          isUrdu ? "right-3" : "left-3"
+                        }`}
+                      ></i>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.piece_rate}
+                        onChange={(e) =>
+                          setForm({ ...form, piece_rate: e.target.value })
+                        }
+                        placeholder={t.ratePlaceholder}
+                        className={`same-field font-mono font-bold ${
+                          isUrdu ? "same-field-icon-right text-right" : "same-field-icon-left text-right"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {form.sale_unit === "carton" && (
+                    <div className="md:col-span-2">
+                      <label className="same-label">
+                        {t.piecesPerCarton} <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
-                        <i className={`bi bi-cash-stack absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
+                        <i
+                          className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                            isUrdu ? "right-3" : "left-3"
+                          }`}
+                        ></i>
                         <input
                           type="number"
-                          min="0"
-                          step="0.01"
-                          value={form.piece_rate}
-                          onChange={(e) => setForm({ ...form, piece_rate: e.target.value })}
-                          placeholder={t.ratePlaceholder}
-                          className={`${moneyInput} ${isUrdu ? "pr-8" : "pl-8"}`}
+                          min="1"
+                          value={form.pieces_per_carton}
+                          onChange={(e) =>
+                            setForm({ ...form, pieces_per_carton: e.target.value })
+                          }
+                          placeholder={t.piecesPlaceholder}
+                          className={`same-field font-mono font-bold ${
+                            isUrdu ? "same-field-icon-right text-right" : "same-field-icon-left text-right"
+                          }`}
                         />
                       </div>
                     </div>
-                  </div>
-                </section>
+                  )}
+                </div>
               </div>
 
-              <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                <div className={`hidden sm:flex items-center gap-2 text-[12px] font-bold text-slate-500 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center">
-                    <i className="bi bi-shield-check"></i>
-                  </span>
-                  Ready to save product
-                </div>
+              <div className={`flex gap-3 pt-4 border-t border-slate-200 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <button
+                  onClick={handleSave}
+                  disabled={submitting}
+                  className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <i
+                    className={`bi ${
+                      submitting ? "bi-arrow-repeat animate-spin" : "bi-save"
+                    }`}
+                  ></i>
+                  {submitting ? t.saving : t.save}
+                </button>
 
-                <div className={`flex items-center gap-2 flex-1 sm:flex-none ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    disabled={submitting}
-                    className="h-10 w-full sm:w-36 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black transition disabled:opacity-60"
-                  >
-                    {t.cancel}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={submitting}
-                    className="h-10 w-full sm:w-40 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
-                  >
-                    <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
-                    {submitting ? t.saving : t.save}
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowForm(false)}
+                  disabled={submitting}
+                  className="flex-1 bg-white border border-slate-300 text-indigo-700 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-60"
+                >
+                  {t.cancel}
+                </button>
               </div>
             </div>
           </div>
