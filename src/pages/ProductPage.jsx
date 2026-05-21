@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -14,11 +14,9 @@ async function translateText(text) {
     if (!res.ok) return text;
     const data = await res.json();
     const translated = data?.responseData?.translatedText;
-    if (
-      !translated ||
-      translated.toLowerCase() === text.trim().toLowerCase()
-    )
+    if (!translated || translated.toLowerCase() === text.trim().toLowerCase()) {
       return text;
+    }
     return translated;
   } catch {
     return text;
@@ -65,6 +63,10 @@ const LANG = {
     unitPlaceholder: "Select unit",
     piecesPlaceholder: "e.g. 20",
     ratePlaceholder: "e.g. 15",
+    totalProducts: "Total Products",
+    records: "Records",
+    required: "Required",
+    formSubtitle: "Product name, sale unit and rate details",
   },
   ur: {
     title: "پروڈکٹ مینجمنٹ",
@@ -102,11 +104,23 @@ const LANG = {
     unitPlaceholder: "قسم منتخب کریں",
     piecesPlaceholder: "مثلاً 20",
     ratePlaceholder: "مثلاً 15",
+    totalProducts: "کل پروڈکٹس",
+    records: "ریکارڈز",
+    required: "ضروری",
+    formSubtitle: "پروڈکٹ نام، سیل یونٹ اور ریٹ کی تفصیل",
   },
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
+const fmt = (v) =>
+  Number(v || 0).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 const ProductPage = () => {
   const [lang, setLang] = useState("en");
@@ -130,6 +144,10 @@ const ProductPage = () => {
   });
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  const baseFont = isUrdu
+    ? "'Noto Nastaliq Urdu', serif"
+    : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
+
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
@@ -152,7 +170,7 @@ const ProductPage = () => {
     fetchData();
   }, [fetchData]);
 
-  // ── Language toggle — MyMemory ────────────────────────────────────────────
+  // ── Language toggle ───────────────────────────────────────────────────────
   const handleLangToggle = async () => {
     const newLang = lang === "en" ? "ur" : "en";
     setLang(newLang);
@@ -184,9 +202,7 @@ const ProductPage = () => {
   };
 
   const getProductName = (r) =>
-    isUrdu
-      ? urduCache[`prod:${r.id}`] || r.product_name || "-"
-      : r.product_name || "-";
+    isUrdu ? urduCache[`prod:${r.id}`] || r.product_name || "-" : r.product_name || "-";
 
   const getSaleUnitText = (r) => {
     const unit = (r.sale_unit || "single").toLowerCase();
@@ -215,9 +231,7 @@ const ProductPage = () => {
           ? String(r.pieces_per_carton)
           : "",
       piece_rate:
-        r.piece_rate !== null && r.piece_rate !== undefined
-          ? String(r.piece_rate)
-          : "",
+        r.piece_rate !== null && r.piece_rate !== undefined ? String(r.piece_rate) : "",
     });
     setEditingId(r.id);
     setShowForm(true);
@@ -240,10 +254,7 @@ const ProductPage = () => {
     const payload = {
       product_name: form.product_name.trim(),
       sale_unit: form.sale_unit,
-      pieces_per_carton:
-        form.sale_unit === "carton"
-          ? Number(form.pieces_per_carton || 0)
-          : 0,
+      pieces_per_carton: form.sale_unit === "carton" ? Number(form.pieces_per_carton || 0) : 0,
       piece_rate: Number(form.piece_rate || 0),
     };
 
@@ -289,32 +300,45 @@ const ProductPage = () => {
   };
 
   // ── Search ────────────────────────────────────────────────────────────────
-  const filtered = records.filter((r) =>
-    [
-      r.product_name,
-      urduCache[`prod:${r.id}`] || "",
-      r.sale_unit || "",
-      String(r.pieces_per_carton || ""),
-      String(r.piece_rate || ""),
-    ]
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase())
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return records;
+    return records.filter((r) =>
+      [
+        r.product_name,
+        urduCache[`prod:${r.id}`] || "",
+        r.sale_unit || "",
+        String(r.pieces_per_carton || ""),
+        String(r.piece_rate || ""),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [records, search, urduCache]);
+
+  const summary = useMemo(
+    () => ({
+      totalProducts: records.length,
+      cartonProducts: records.filter((r) => (r.sale_unit || "single") === "carton").length,
+      singleProducts: records.filter((r) => (r.sale_unit || "single") !== "carton").length,
+    }),
+    [records]
   );
 
   // ── Print / PDF ───────────────────────────────────────────────────────────
   const generatePrint = (isPdf = false) => {
-    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
+    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Inter', Arial, sans-serif";
 
     const rows = filtered
       .map(
         (r, i) => `
       <tr>
-        <td>${i + 1}</td>
+        <td class="center">${i + 1}</td>
         <td><strong>${getProductName(r)}</strong></td>
-        <td>${getSaleUnitText(r)}</td>
-        <td>${r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"}</td>
-        <td>${Number(r.piece_rate || 0).toFixed(2)}</td>
+        <td><span class="badge ${r.sale_unit === "carton" ? "amber" : "green"}">${getSaleUnitText(r)}</span></td>
+        <td class="center">${r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"}</td>
+        <td class="num">${fmt(r.piece_rate)}</td>
       </tr>`
       )
       .join("");
@@ -324,60 +348,56 @@ const ProductPage = () => {
 <head>
   <meta charset="UTF-8"/>
   <title>${t.title}</title>
-  ${
-    isUrdu
-      ? `<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">`
-      : ""
-  }
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:${font};background:#fff;color:#0f172a;padding:40px;}
-  .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0284c7;padding-bottom:20px;margin-bottom:30px;}
-  .brand{font-size:28px;font-weight:bold;color:#0284c7;text-transform:uppercase;}
-  .report-title{font-size:18px;color:#64748b;margin-top:5px;}
-  .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#64748b;}
-  table{width:100%;border-collapse:collapse;font-size:14px;}
-  th{background:#0284c7;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px;}
-  td{border-bottom:1px solid #e2e8f0;padding:12px;color:#334155;}
+  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:22px;}
+  .sheet{max-width:1200px;margin:0 auto;background:white;border-radius:20px;overflow:hidden;box-shadow:0 20px 55px rgba(15,23,42,.10);border:1px solid #e2e8f0;}
+  .header{background:#0f172a;color:white;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
+  .brand{font-size:28px;font-weight:800;letter-spacing:-.4px;}
+  .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
+  .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;line-height:1.8;}
+  .content{padding:18px;}
+  .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
+  table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;overflow:hidden;}
+  th{background:#0f172a;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px 10px;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  td{border-bottom:1px solid #f1f5f9;padding:11px 10px;color:#334155;vertical-align:middle;}
   tr:nth-child(even) td{background:#f8fafc;}
-  .print-inst{background:#eff6ff;color:#1d4ed8;padding:15px;text-align:center;border-radius:8px;margin-bottom:20px;border:1px solid #bfdbfe;}
-  @media print{body{padding:0;}.print-inst{display:none;}}
+  .center{text-align:center!important;}
+  .num{text-align:${isUrdu ? "left" : "right"}!important;font-family:monospace;font-weight:800;color:#0f172a;}
+  .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;}
+  .green{background:#dcfce7;color:#166534;}
+  .amber{background:#fef3c7;color:#92400e;}
+  @media print{body{padding:0;background:white}.sheet{box-shadow:none;border-radius:0;border:0}.print-inst{display:none}}
 </style>
 </head>
 <body>
-  ${
-    isPdf
-      ? `<div class="print-inst">Please select <strong>"Save as PDF"</strong> to download.</div>`
-      : ""
-  }
-  <div class="header">
-    <div>
-      <div class="brand">Ali Cages</div>
-      <div class="report-title">${t.reportHeader}</div>
+  <div class="sheet">
+    <div class="header">
+      <div>
+        <div class="brand">Ali Cages</div>
+        <div class="report-title">${t.reportHeader}</div>
+      </div>
+      <div class="meta">${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
     </div>
-    <div class="meta">${t.printedOn}: ${new Date().toLocaleString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}</div>
+    <div class="content">
+      ${isPdf ? `<div class="print-inst">Please select <strong>"Save as PDF"</strong> to download.</div>` : ""}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px" class="center">#</th>
+            <th>${t.productName}</th>
+            <th>${t.saleUnit}</th>
+            <th class="center">${t.piecesPerCarton}</th>
+            <th class="num">${t.pieceRate}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.length ? rows : `<tr><td colspan="5" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`}
+        </tbody>
+      </table>
+    </div>
   </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width:50px">#</th>
-        <th>${t.productName}</th>
-        <th>${t.saleUnit}</th>
-        <th>${t.piecesPerCarton}</th>
-        <th>${t.pieceRate}</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${
-        filtered.length
-          ? rows
-          : `<tr><td colspan="5" style="text-align:center">${t.noRecords}</td></tr>`
-      }
-    </tbody>
-  </table>
 
   <script>
     window.onload=()=>{
@@ -391,21 +411,18 @@ const ProductPage = () => {
 </html>`;
 
     const w = window.open("", "_blank");
+    if (!w) return;
     w.document.write(html);
     w.document.close();
   };
 
+  const fieldLabel = "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5";
+  const fieldInput = `w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "text-right" : ""}`;
+  const moneyInput = `w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "text-right" : "text-right"}`;
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div
-      dir={dir}
-      style={{
-        fontFamily: isUrdu
-          ? "'Noto Nastaliq Urdu', serif"
-          : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
-      }}
-      className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 p-6 pb-20"
-    >
+    <div dir={dir} style={{ fontFamily: baseFont }} className="min-h-screen bg-slate-100 pb-16">
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
@@ -415,110 +432,106 @@ const ProductPage = () => {
         rel="stylesheet"
       />
 
+      <style>{`
+        @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .pm-modal-in { animation: modalIn .22s ease-out both; }
+        .pm-toast-in { animation: toastIn .18s ease-out both; }
+        .pm-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+        .pm-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .pm-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+      `}</style>
+
       {/* Toast */}
       {message.text && (
         <div
-          className={`fixed bottom-6 ${
-            isUrdu ? "left-6" : "right-6"
-          } z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${
+          className={`pm-toast-in fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[70] px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-bold flex items-center gap-2 ${
             message.type === "error" ? "bg-rose-600" : "bg-emerald-600"
           }`}
         >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
+          <i className={`bi ${message.type === "error" ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill"}`}></i>
           {message.text}
         </div>
       )}
 
-      {/* Translating indicator */}
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] px-4 py-3 rounded-xl shadow-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
           {t.translating}
         </div>
       )}
 
-      {/* Header */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="bg-white/90 backdrop-blur rounded-3xl border border-sky-100 shadow-sm px-6 py-5">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">
-                {t.title}
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
-            </div>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className={`bg-white border border-slate-200 shadow-sm rounded-b-2xl px-5 sm:px-6 py-5 mb-5 flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+          <div>
+            <h1 className="text-[26px] sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight m-0">
+              {t.title}
+            </h1>
+            <p className="text-[13px] text-slate-500 mt-1 m-0">{t.subtitle}</p>
+          </div>
 
-            <div
-              className={`flex gap-2 flex-wrap ${
-                isUrdu ? "flex-row-reverse" : ""
-              }`}
+          <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <button
+              onClick={handleLangToggle}
+              disabled={translating}
+              className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-bold transition shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
-              <button
-                onClick={handleLangToggle}
-                disabled={translating}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <i
-                  className={`bi ${
-                    translating ? "bi-arrow-repeat animate-spin" : "bi-translate"
-                  }`}
-                ></i>
-                {t.toggleLang}
-              </button>
+              <i className={`bi ${translating ? "bi-arrow-repeat animate-spin" : "bi-translate"}`}></i>
+              {t.toggleLang}
+            </button>
 
-              <button
-                onClick={openAdd}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 transition shadow-lg shadow-sky-200"
-              >
-                <i className="bi bi-plus-lg"></i>
-                {t.addBtn}
-              </button>
-            </div>
+            <button
+              onClick={openAdd}
+              className="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center gap-2"
+            >
+              <i className="bi bi-plus-circle-fill"></i>
+              {t.addBtn}
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto">
-        {/* Search + Print */}
-        <div
-          className={`flex items-center justify-between flex-wrap gap-3 mb-6 ${
-            isUrdu ? "flex-row-reverse" : ""
-          }`}
-        >
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                isUrdu ? "right-4" : "left-4"
-              }`}
-            ></i>
+        {/* Summary cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          {[
+            { label: t.totalProducts, value: summary.totalProducts, icon: "bi-box-seam-fill", tone: "bg-indigo-50 text-indigo-700 border-indigo-100" },
+            { label: t.single, value: summary.singleProducts, icon: "bi-box", tone: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+            { label: t.carton, value: summary.cartonProducts, icon: "bi-boxes", tone: "bg-amber-50 text-amber-700 border-amber-100" },
+          ].map((card) => (
+            <div key={card.label} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-3 ${card.tone}`}>
+                <i className={`bi ${card.icon}`}></i>
+              </div>
+              <p className="text-xs font-bold text-slate-500 m-0">{card.label}</p>
+              <p className="text-2xl font-black text-slate-900 mt-1 m-0">{card.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Search + print */}
+        <div className={`flex flex-wrap items-center justify-between gap-3 mb-5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <div className="relative w-full sm:w-[376px]">
+            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className={`w-full border border-sky-100 rounded-2xl py-3 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-sky-100 shadow-sm ${
-                isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
-              }`}
+              className={`w-full h-9 rounded-lg border border-slate-300 bg-white text-[13px] text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`}
             />
           </div>
 
-          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
             <button
               onClick={() => generatePrint(false)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm"
+              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
             >
-              <i className="bi bi-printer text-sky-600"></i>
+              <i className="bi bi-printer text-indigo-600"></i>
               {t.printBtn}
             </button>
 
             <button
               onClick={() => generatePrint(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-sm font-semibold hover:bg-sky-50 transition shadow-sm"
+              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
             >
               <i className="bi bi-file-earmark-pdf text-rose-600"></i>
               {t.pdfBtn}
@@ -527,39 +540,33 @@ const ProductPage = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className={`px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+            <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
+              <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center">
+                <i className="bi bi-table"></i>
+              </span>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 m-0">{t.records}</h3>
+                <p className="text-[11px] text-slate-500 m-0">{filtered.length} records found</p>
+              </div>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-slate-600">
               <thead>
-                <tr className="bg-sky-50 text-slate-600 text-xs font-bold border-b border-sky-100">
-                  <th
-                    className={`px-5 py-4 ${
-                      isUrdu ? "text-right" : "text-left"
-                    } w-12`}
-                  >
-                    #
-                  </th>
-                  <th
-                    className={`px-5 py-4 ${
-                      isUrdu ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {t.productName}
-                  </th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.saleUnit}
-                  </th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.piecesPerCarton}
-                  </th>
-                  <th className={`px-5 py-4 ${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.pieceRate}
-                  </th>
-                  <th className="px-5 py-4 text-center w-40">{t.actions}</th>
+                <tr className="bg-slate-950 text-white text-[11px] font-black uppercase tracking-wide whitespace-nowrap">
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.productName}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.saleUnit}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.piecesPerCarton}</th>
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.pieceRate}</th>
+                  <th className="px-4 py-3 text-center w-32">{t.actions}</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-sky-50">
+              <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
@@ -573,78 +580,63 @@ const ProductPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((r, i) => (
-                    <tr key={r.id} className="hover:bg-sky-50/70 transition">
-                      <td className="px-5 py-4 text-slate-400 font-mono text-xs">
-                        {i + 1}
-                      </td>
+                  filtered.map((r, i) => {
+                    const isCarton = (r.sale_unit || "single") === "carton";
+                    return (
+                      <tr key={r.id} className="hover:bg-slate-50 transition align-middle">
+                        <td className="px-4 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
 
-                      <td
-                        className={`px-5 py-4 font-bold text-slate-800 ${
-                          isUrdu ? "text-right" : ""
-                        }`}
-                      >
-                        <div
-                          className={`flex items-center gap-3 ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
-                        >
-                          <div className="w-8 h-8 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0">
-                            <i className="bi bi-box-seam text-xs"></i>
+                        <td className={`px-4 py-3 font-black text-slate-900 ${isUrdu ? "text-right" : ""}`}>
+                          <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 flex-shrink-0">
+                              <i className="bi bi-box-seam-fill text-sm"></i>
+                            </div>
+                            <span className={translating ? "opacity-40" : ""}>{getProductName(r)}</span>
                           </div>
-                          <span className={translating ? "opacity-40" : ""}>
-                            {getProductName(r)}
+                        </td>
+
+                        <td className={`px-4 py-3 font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black border ${
+                              isCarton
+                                ? "bg-amber-50 text-amber-700 border-amber-100"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                            }`}
+                          >
+                            {getSaleUnitText(r)}
                           </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className={`px-5 py-4 font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                            (r.sale_unit || "single") === "carton"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-emerald-100 text-emerald-700"
-                          }`}
-                        >
-                          {getSaleUnitText(r)}
-                        </span>
-                      </td>
+                        <td className={`px-4 py-3 font-mono font-bold text-slate-900 ${isUrdu ? "text-right" : ""}`}>
+                          {isCarton ? r.pieces_per_carton || 0 : "-"}
+                        </td>
 
-                      <td className={`px-5 py-4 font-bold text-slate-800 ${isUrdu ? "text-right" : ""}`}>
-                        {(r.sale_unit || "single") === "carton"
-                          ? r.pieces_per_carton || 0
-                          : "-"}
-                      </td>
+                        <td className={`px-4 py-3 font-mono font-bold text-slate-900 ${isUrdu ? "text-right" : ""}`}>
+                          {fmt(r.piece_rate)}
+                        </td>
 
-                      <td className={`px-5 py-4 font-bold text-slate-800 ${isUrdu ? "text-right" : ""}`}>
-                        {Number(r.piece_rate || 0).toFixed(2)}
-                      </td>
+                        <td className="px-4 py-3">
+                          <div className={`flex items-center justify-center gap-1.5 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                            <button
+                              onClick={() => openEdit(r)}
+                              className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition flex items-center justify-center"
+                              title={t.edit}
+                            >
+                              <i className="bi bi-pencil-square text-sm"></i>
+                            </button>
 
-                      <td className="px-5 py-4">
-                        <div
-                          className={`flex items-center justify-center gap-2 ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
-                        >
-                          <button
-                            onClick={() => openEdit(r)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-100 text-sky-700 text-xs font-semibold hover:bg-sky-200 transition"
-                          >
-                            <i className="bi bi-pencil-square"></i>
-                            {t.edit}
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(r.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-100 text-rose-600 text-xs font-semibold hover:bg-rose-200 transition"
-                          >
-                            <i className="bi bi-trash3-fill"></i>
-                            {t.delete}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            <button
+                              onClick={() => handleDelete(r.id)}
+                              className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition flex items-center justify-center"
+                              title={t.delete}
+                            >
+                              <i className="bi bi-trash3-fill text-sm"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -653,152 +645,159 @@ const ProductPage = () => {
 
         {/* Modal Form */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6" dir={dir}>
-              <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
-                <div className="w-11 h-11 rounded-2xl bg-sky-100 flex items-center justify-center">
-                  <i className="bi bi-box-seam text-sky-700 text-lg"></i>
-                </div>
-                <h2 className="text-xl font-extrabold text-slate-800">
-                  {editingId ? t.edit : t.addBtn}
-                </h2>
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                    {t.productName} *
-                  </label>
-                  <div className="relative">
-                    <i
-                      className={`bi bi-box-seam absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                        isUrdu ? "right-3" : "left-3"
-                      }`}
-                    ></i>
-                    <input
-                      type="text"
-                      value={form.product_name}
-                      onChange={(e) =>
-                        setForm({ ...form, product_name: e.target.value })
-                      }
-                      placeholder={t.namePlaceholder}
-                      autoFocus
-                      className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                        isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"
-                      }`}
-                    />
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto pm-scroll">
+            <div className="pm-modal-in mx-auto max-w-[760px] max-h-[calc(100vh-32px)] bg-slate-50 rounded-2xl shadow-2xl border border-white/70 overflow-hidden flex flex-col" dir={dir}>
+              <div className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
+                    <i className="bi bi-box-seam-fill text-lg"></i>
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`flex items-center gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <h2 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight m-0">
+                        {editingId ? t.edit : t.addBtn}
+                      </h2>
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase tracking-wide">
+                        {form.sale_unit === "carton" ? t.carton : t.single}
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.formSubtitle}</p>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                    {t.saleUnit} *
-                  </label>
-                  <select
-                    value={form.sale_unit}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        sale_unit: e.target.value,
-                        pieces_per_carton:
-                          e.target.value === "single"
-                            ? ""
-                            : form.pieces_per_carton,
-                      })
-                    }
-                    className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                      isUrdu ? "px-4 text-right" : "px-4"
-                    }`}
-                  >
-                    <option value="single">{t.single}</option>
-                    <option value="carton">{t.carton}</option>
-                  </select>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
+                >
+                  <i className="bi bi-x-lg text-sm"></i>
+                </button>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {form.sale_unit === "carton" && (
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                        {t.piecesPerCarton} *
+              <div className="flex-1 overflow-y-auto p-4 pm-scroll">
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
+                    <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                        <i className="bi bi-card-checklist"></i>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-950 m-0">Product Information</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5 m-0">Name, sale unit and pricing</p>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                      <i className="bi bi-asterisk text-rose-500"></i>
+                      {t.required}
+                    </span>
+                  </div>
+
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div className="sm:col-span-7">
+                      <label className={fieldLabel}>
+                        {t.productName}<span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
-                        <i
-                          className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                            isUrdu ? "right-3" : "left-3"
-                          }`}
-                        ></i>
+                        <i className={`bi bi-box-seam absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
                         <input
-                          type="number"
-                          min="1"
-                          value={form.pieces_per_carton}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              pieces_per_carton: e.target.value,
-                            })
-                          }
-                          placeholder={t.piecesPlaceholder}
-                          className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                            isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"
-                          }`}
+                          type="text"
+                          value={form.product_name}
+                          onChange={(e) => setForm({ ...form, product_name: e.target.value })}
+                          placeholder={t.namePlaceholder}
+                          autoFocus
+                          className={`${fieldInput} ${isUrdu ? "pr-8" : "pl-8"}`}
                         />
                       </div>
                     </div>
-                  )}
 
-                  <div className={form.sale_unit === "carton" ? "" : "md:col-span-2"}>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                      {t.pieceRate} *
-                    </label>
-                    <div className="relative">
-                      <i
-                        className={`bi bi-cash-stack absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                          isUrdu ? "right-3" : "left-3"
-                        }`}
-                      ></i>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={form.piece_rate}
+                    <div className="sm:col-span-5">
+                      <label className={fieldLabel}>
+                        {t.saleUnit}<span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={form.sale_unit}
                         onChange={(e) =>
-                          setForm({ ...form, piece_rate: e.target.value })
+                          setForm({
+                            ...form,
+                            sale_unit: e.target.value,
+                            pieces_per_carton: e.target.value === "single" ? "" : form.pieces_per_carton,
+                          })
                         }
-                        placeholder={t.ratePlaceholder}
-                        className={`w-full border border-sky-100 rounded-2xl py-3 text-sm text-slate-700 bg-sky-50/50 focus:outline-none focus:ring-4 focus:ring-sky-100 ${
-                          isUrdu ? "pr-10 pl-4 text-right" : "pl-10 pr-4"
-                        }`}
-                      />
+                        className={fieldInput}
+                      >
+                        <option value="single">{t.single}</option>
+                        <option value="carton">{t.carton}</option>
+                      </select>
+                    </div>
+
+                    {form.sale_unit === "carton" && (
+                      <div className="sm:col-span-6">
+                        <label className={fieldLabel}>
+                          {t.piecesPerCarton}<span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <i className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
+                          <input
+                            type="number"
+                            min="1"
+                            value={form.pieces_per_carton}
+                            onChange={(e) => setForm({ ...form, pieces_per_carton: e.target.value })}
+                            placeholder={t.piecesPlaceholder}
+                            className={`${moneyInput} ${isUrdu ? "pr-8" : "pl-8"}`}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={form.sale_unit === "carton" ? "sm:col-span-6" : "sm:col-span-12"}>
+                      <label className={fieldLabel}>
+                        {t.pieceRate}<span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <i className={`bi bi-cash-stack absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-2.5" : "left-2.5"}`}></i>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.piece_rate}
+                          onChange={(e) => setForm({ ...form, piece_rate: e.target.value })}
+                          placeholder={t.ratePlaceholder}
+                          className={`${moneyInput} ${isUrdu ? "pr-8" : "pl-8"}`}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                </section>
               </div>
 
-              <div
-                className={`flex gap-3 pt-4 mt-6 border-t border-sky-100 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <button
-                  onClick={handleSave}
-                  disabled={submitting}
-                  className="flex-1 bg-sky-600 text-white py-3 rounded-2xl font-semibold text-sm hover:bg-sky-700 transition shadow-lg shadow-sky-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <i
-                    className={`bi ${
-                      submitting ? "bi-arrow-repeat animate-spin" : "bi-save"
-                    }`}
-                  ></i>
-                  {submitting ? t.saving : t.save}
-                </button>
+              <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-between gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div className={`hidden sm:flex items-center gap-2 text-[12px] font-bold text-slate-500 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center">
+                    <i className="bi bi-shield-check"></i>
+                  </span>
+                  Ready to save product
+                </div>
 
-                <button
-                  onClick={() => setShowForm(false)}
-                  disabled={submitting}
-                  className="flex-1 bg-white border border-sky-200 text-sky-700 py-3 rounded-2xl font-semibold text-sm hover:bg-sky-50 transition disabled:opacity-60"
-                >
-                  {t.cancel}
-                </button>
+                <div className={`flex items-center gap-2 flex-1 sm:flex-none ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    disabled={submitting}
+                    className="h-10 w-full sm:w-36 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black transition disabled:opacity-60"
+                  >
+                    {t.cancel}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={submitting}
+                    className="h-10 w-full sm:w-40 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+                  >
+                    <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
+                    {submitting ? t.saving : t.save}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
