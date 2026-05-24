@@ -38,6 +38,11 @@ const LANG = {
     singleProducts: "Single Products",
     cartonProducts: "Carton Products",
     totalRateValue: "Total Rate Value",
+    activeProducts: "Active Products",
+    inactiveProducts: "Inactive Products",
+    status: "Status",
+    active: "Active",
+    inactive: "Inactive",
     searchPlaceholder: "Search by product name…",
     productName: "Product Name",
     saleUnit: "Sale Unit",
@@ -45,6 +50,7 @@ const LANG = {
     carton: "Carton",
     piecesPerCarton: "Pieces Per Carton",
     pieceRate: "Piece Rate",
+    activeInactive: "Active / Inactive",
     save: "Save",
     saving: "Saving…",
     cancel: "Cancel",
@@ -73,7 +79,7 @@ const LANG = {
     ratePlaceholder: "e.g. 15",
     records: "Records",
     required: "Required",
-    formSubtitle: "Product name, sale unit, carton quantity and piece rate",
+    formSubtitle: "Product name, sale unit, carton quantity, piece rate and status",
     generated: "Generated",
     companyName: "Ali Cages",
     savePdfHint: 'Choose "Save as PDF" in print dialog',
@@ -89,6 +95,11 @@ const LANG = {
     singleProducts: "سنگل پروڈکٹس",
     cartonProducts: "کارٹن پروڈکٹس",
     totalRateValue: "کل ریٹ ویلیو",
+    activeProducts: "ایکٹو پروڈکٹس",
+    inactiveProducts: "ان ایکٹو پروڈکٹس",
+    status: "اسٹیٹس",
+    active: "ایکٹو",
+    inactive: "ان ایکٹو",
     searchPlaceholder: "پروڈکٹ نام سے تلاش کریں…",
     productName: "پروڈکٹ کا نام",
     saleUnit: "فروخت کی قسم",
@@ -96,6 +107,7 @@ const LANG = {
     carton: "کارٹن",
     piecesPerCarton: "فی کارٹن پیسز",
     pieceRate: "فی پیس ریٹ",
+    activeInactive: "ایکٹو / ان ایکٹو",
     save: "محفوظ کریں",
     saving: "محفوظ ہو رہا ہے…",
     cancel: "منسوخ",
@@ -124,7 +136,7 @@ const LANG = {
     ratePlaceholder: "مثلاً 15",
     records: "ریکارڈز",
     required: "ضروری",
-    formSubtitle: "پروڈکٹ نام، سیل یونٹ، کارٹن مقدار اور فی پیس ریٹ",
+    formSubtitle: "پروڈکٹ نام، سیل یونٹ، کارٹن مقدار، فی پیس ریٹ اور اسٹیٹس",
     generated: "تیار کردہ",
     companyName: "علی کیجز",
     savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
@@ -138,6 +150,7 @@ const defaultForm = {
   sale_unit: "single",
   pieces_per_carton: "",
   piece_rate: "",
+  is_active: "1",
 };
 
 function formatMoney(v) {
@@ -145,6 +158,18 @@ function formatMoney(v) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+}
+
+function isRecordActive(record) {
+  const value = record?.is_active ?? record?.active ?? record?.status;
+
+  if (value === undefined || value === null || value === "") return true;
+
+  if (typeof value === "boolean") return value;
+
+  const text = String(value).trim().toLowerCase();
+
+  return !["0", "false", "inactive", "in-active", "disabled", "no"].includes(text);
 }
 
 const ProductPage = () => {
@@ -247,6 +272,7 @@ const ProductPage = () => {
         r.piece_rate !== null && r.piece_rate !== undefined
           ? String(r.piece_rate)
           : "",
+      is_active: isRecordActive(r) ? "1" : "0",
     });
     setEditingId(r.id);
     setShowForm(true);
@@ -274,6 +300,7 @@ const ProductPage = () => {
           ? Number(form.pieces_per_carton || 0)
           : 0,
       piece_rate: Number(form.piece_rate || 0),
+      is_active: Number(form.is_active),
     };
 
     try {
@@ -330,6 +357,7 @@ const ProductPage = () => {
         r.sale_unit || "",
         String(r.pieces_per_carton || ""),
         String(r.piece_rate || ""),
+        isRecordActive(r) ? "active" : "inactive",
       ]
         .join(" ")
         .toLowerCase()
@@ -342,6 +370,8 @@ const ProductPage = () => {
       totalProducts: filtered.length,
       singleProducts: filtered.filter((r) => (r.sale_unit || "single") !== "carton").length,
       cartonProducts: filtered.filter((r) => (r.sale_unit || "single") === "carton").length,
+      activeProducts: filtered.filter((r) => isRecordActive(r)).length,
+      inactiveProducts: filtered.filter((r) => !isRecordActive(r)).length,
       totalRateValue: filtered.reduce((s, r) => s + Number(r.piece_rate || 0), 0),
     }),
     [filtered]
@@ -362,6 +392,7 @@ const ProductPage = () => {
         <td><span class="badge ${r.sale_unit === "carton" ? "amber" : "green"}">${getSaleUnitText(r)}</span></td>
         <td class="center">${r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"}</td>
         <td class="num">${formatMoney(r.piece_rate)}</td>
+        <td class="center"><span class="badge ${isRecordActive(r) ? "green" : "rose"}">${isRecordActive(r) ? t.active : t.inactive}</span></td>
       </tr>`
       )
       .join("");
@@ -391,6 +422,7 @@ const ProductPage = () => {
   .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;}
   .green{background:#dcfce7;color:#166534;}
   .amber{background:#fef3c7;color:#92400e;}
+  .rose{background:#ffe4e6;color:#be123c;}
   @media print{body{padding:0;background:white}.sheet{box-shadow:none;border-radius:0;border:0}.print-inst{display:none}}
 </style>
 </head>
@@ -415,13 +447,14 @@ const ProductPage = () => {
             <th>${t.saleUnit}</th>
             <th class="center">${t.piecesPerCarton}</th>
             <th class="num">${t.pieceRate}</th>
+            <th class="center">${t.status}</th>
           </tr>
         </thead>
         <tbody>
           ${
             filtered.length
               ? rows
-              : `<tr><td colspan="5" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
+              : `<tr><td colspan="6" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
           }
         </tbody>
       </table>
@@ -676,7 +709,7 @@ const ProductPage = () => {
                 <p className="text-sm text-slate-500">{t.summarySubtitle}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
                   <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
                     <i className="bi bi-box-seam-fill"></i>
@@ -704,6 +737,26 @@ const ProductPage = () => {
                   <p className="text-xs text-slate-500 mb-1">{t.cartonProducts}</p>
                   <p className="text-3xl font-extrabold text-slate-950">
                     {summary.cartonProducts}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-emerald-600 flex items-center justify-center shadow-sm mb-3">
+                    <i className="bi bi-check-circle-fill"></i>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">{t.activeProducts}</p>
+                  <p className="text-3xl font-extrabold text-slate-950">
+                    {summary.activeProducts}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                  <div className="w-10 h-10 rounded-lg bg-white text-rose-600 flex items-center justify-center shadow-sm mb-3">
+                    <i className="bi bi-x-circle-fill"></i>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">{t.inactiveProducts}</p>
+                  <p className="text-3xl font-extrabold text-slate-950">
+                    {summary.inactiveProducts}
                   </p>
                 </div>
 
@@ -759,6 +812,7 @@ const ProductPage = () => {
                   <th className={`${isUrdu ? "text-left" : "text-right"}`}>
                     {t.pieceRate}
                   </th>
+                  <th className="text-center">{t.status}</th>
                   <th className="text-center">{t.actions}</th>
                 </tr>
               </thead>
@@ -766,14 +820,14 @@ const ProductPage = () => {
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
@@ -818,6 +872,18 @@ const ProductPage = () => {
 
                         <td className={`font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>
                           {formatMoney(r.piece_rate)}
+                        </td>
+
+                        <td className="text-center">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              isRecordActive(r)
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-rose-100 text-rose-700"
+                            }`}
+                          >
+                            {isRecordActive(r) ? t.active : t.inactive}
+                          </span>
                         </td>
 
                         <td>
@@ -972,6 +1038,22 @@ const ProductPage = () => {
                         }`}
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="same-label">
+                      {t.activeInactive} <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={form.is_active}
+                      onChange={(e) =>
+                        setForm({ ...form, is_active: e.target.value })
+                      }
+                      className={`same-field ${isUrdu ? "text-right" : ""}`}
+                    >
+                      <option value="1">{t.active}</option>
+                      <option value="0">{t.inactive}</option>
+                    </select>
                   </div>
 
                   {form.sale_unit === "carton" && (
