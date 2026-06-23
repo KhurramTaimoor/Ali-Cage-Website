@@ -344,6 +344,53 @@ const getEmployeeName = (row) => firstText(row, ["employee_name", "employee_name
 const getSupplierName = (row) => firstText(row, ["supplier_name", "supplier_name_en", "vendor_name", "name", "name_en", "title"]);
 const getLedgerName = (row) => firstText(row, ["ledger_name", "account_title", "account_name", "name", "name_en", "title"]);
 
+const getPreviousBalance = (row) => {
+  if (!row) return 0;
+  const keys = [
+    "previous_balance",
+    "previousBalance",
+    "prev_balance",
+    "prevBalance",
+    "opening_balance",
+    "openingBalance",
+    "balance",
+    "current_balance",
+    "currentBalance",
+    "closing_balance",
+    "closingBalance",
+    "ledger_balance",
+    "ledgerBalance",
+    "account_balance",
+    "accountBalance",
+    "old_balance",
+    "oldBalance",
+    "remaining_balance",
+    "remainingBalance",
+    "due_balance",
+    "dueBalance",
+    "payable",
+    "receivable",
+  ];
+
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
+      return num(row[key]);
+    }
+  }
+
+  const debit = num(row.debit || row.total_debit || row.debit_amount || row.dr || row.total_dr);
+  const credit = num(row.credit || row.total_credit || row.credit_amount || row.cr || row.total_cr);
+  if (debit || credit) return debit - credit;
+
+  return 0;
+};
+
+const makePartyOption = (row, nameGetter) => ({
+  id: String(getId(row)),
+  name: nameGetter(row),
+  previous_balance: getPreviousBalance(row),
+});
+
 function normalizeItems(order) {
   let items = order?.order_items || [];
   if (typeof items === "string") {
@@ -473,10 +520,10 @@ export default function SaleOrderPage() {
   const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
 
   const partyOptions = useMemo(() => {
-    if (form.party_type === "employee") return employees.map((x) => ({ id: String(getId(x)), name: getEmployeeName(x) }));
-    if (form.party_type === "supplier") return suppliers.map((x) => ({ id: String(getId(x)), name: getSupplierName(x) }));
-    if (form.party_type === "general_ledger") return generalLedgers.map((x) => ({ id: String(getId(x)), name: getLedgerName(x) }));
-    return customers.map((x) => ({ id: String(getId(x)), name: getCustomerName(x) }));
+    if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
+    if (form.party_type === "supplier") return suppliers.map((x) => makePartyOption(x, getSupplierName));
+    if (form.party_type === "general_ledger") return generalLedgers.map((x) => makePartyOption(x, getLedgerName));
+    return customers.map((x) => makePartyOption(x, getCustomerName));
   }, [form.party_type, customers, employees, suppliers, generalLedgers]);
 
   const orderItems = form.order_items || [];
@@ -618,6 +665,7 @@ export default function SaleOrderPage() {
       employee_id: "",
       supplier_id: "",
       general_ledger_id: "",
+      previous_balance: "0",
     }));
   };
 
@@ -631,6 +679,7 @@ export default function SaleOrderPage() {
       employee_id: prev.party_type === "employee" ? id : "",
       supplier_id: prev.party_type === "supplier" ? id : "",
       general_ledger_id: prev.party_type === "general_ledger" ? id : "",
+      previous_balance: id ? String(selected?.previous_balance ?? 0) : "0",
     }));
   };
 
