@@ -57,6 +57,7 @@ const LANG = {
     productType: "Product Type",
     category: "Category",
     product: "Product",
+    productDescription: "Product Description",
     unit: "Unit",
     qty: "Qty",
     rate: "Rate",
@@ -155,6 +156,7 @@ const LANG = {
     productType: "پروڈکٹ ٹائپ",
     category: "کیٹیگری",
     product: "پروڈکٹ",
+    productDescription: "پروڈکٹ تفصیل",
     unit: "یونٹ",
     qty: "مقدار",
     rate: "ریٹ",
@@ -252,8 +254,9 @@ const PAYMENT_STATUSES = [
   { value: "Paid", labelKey: "paid" },
 ];
 
-const emptyItem = () => ({
-  product_type_id: "",
+const emptyItem = (defaultProductTypeId = "") => ({
+  product_description: "",
+  product_type_id: defaultProductTypeId,
   category_id: "",
   product_id: "",
   unit_id: "",
@@ -263,8 +266,8 @@ const emptyItem = () => ({
   credit: "0",
 });
 
-const defaultOrderItems = (count = 5) =>
-  Array.from({ length: count }, () => emptyItem());
+const defaultOrderItems = (count = 5, defaultProductTypeId = "") =>
+  Array.from({ length: count }, () => emptyItem(defaultProductTypeId));
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -344,6 +347,12 @@ const getEmployeeName = (row) => firstText(row, ["employee_name", "employee_name
 const getSupplierName = (row) => firstText(row, ["supplier_name", "supplier_name_en", "vendor_name", "name", "name_en", "title"]);
 const getLedgerName = (row) => firstText(row, ["ledger_name", "account_title", "account_name", "name", "name_en", "title"]);
 
+const getDefaultFmsTypeId = (list = []) => {
+  const found = list.find((row) => String(getTypeName(row)).trim().toLowerCase() === "fms") ||
+    list.find((row) => String(getTypeName(row)).trim().toLowerCase().includes("fms"));
+  return found ? String(getId(found)) : "";
+};
+
 const getPreviousBalance = (row) => {
   if (!row) return 0;
   const keys = [
@@ -402,6 +411,7 @@ function normalizeItems(order) {
   }
   if (!Array.isArray(items) || !items.length) return [];
   return items.map((item) => ({
+    product_description: String(item.product_description ?? item.description ?? ""),
     product_type_id: String(item.product_type_id ?? item.productTypeId ?? ""),
     category_id: String(item.category_id ?? item.categoryId ?? ""),
     product_id: String(item.product_id ?? item.productId ?? ""),
@@ -518,6 +528,7 @@ export default function SaleOrderPage() {
   const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
   const typeMap = useMemo(() => makeMap(types, getTypeName), [types]);
   const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
+  const defaultFmsTypeId = useMemo(() => getDefaultFmsTypeId(types), [types]);
 
   const partyOptions = useMemo(() => {
     if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
@@ -578,6 +589,16 @@ export default function SaleOrderPage() {
     loadAll();
   }, [loadAll]);
 
+  useEffect(() => {
+    if (!defaultFmsTypeId) return;
+    setForm((prev) => ({
+      ...prev,
+      order_items: (prev.order_items || []).map((item) =>
+        item.product_type_id ? item : { ...item, product_type_id: defaultFmsTypeId }
+      ),
+    }));
+  }, [defaultFmsTypeId]);
+
   const summary = useMemo(() => {
     return orders.reduce(
       (acc, order) => {
@@ -616,7 +637,7 @@ export default function SaleOrderPage() {
 
   const openAdd = () => {
     setEditingId(null);
-    setForm({ ...emptyForm(), order_no: generateOrderNo(orders) });
+    setForm({ ...emptyForm(), order_no: generateOrderNo(orders), order_items: defaultOrderItems(5, defaultFmsTypeId) });
     setShowForm(true);
   };
 
@@ -646,7 +667,7 @@ export default function SaleOrderPage() {
       payment_status: order.payment_status || paymentStatus(order.grand_total || 0, order.paid_amount || 0),
       payment_note: order.payment_note || "",
       status: order.status || "Pending",
-      order_items: normalizeItems(order).length ? normalizeItems(order) : defaultOrderItems(5),
+      order_items: normalizeItems(order).length ? normalizeItems(order).map((item) => ({ ...item, product_type_id: item.product_type_id || defaultFmsTypeId })) : defaultOrderItems(5, defaultFmsTypeId),
     });
     setDetailsOrder(null);
     setShowForm(true);
@@ -690,7 +711,7 @@ export default function SaleOrderPage() {
     }));
   };
 
-  const addItem = () => setForm((prev) => ({ ...prev, order_items: [...prev.order_items, emptyItem()] }));
+  const addItem = () => setForm((prev) => ({ ...prev, order_items: [...prev.order_items, emptyItem(defaultFmsTypeId)] }));
   const removeItem = (index) => {
     setForm((prev) => ({
       ...prev,
@@ -701,6 +722,8 @@ export default function SaleOrderPage() {
   const preparePayload = () => {
     const validItems = form.order_items
       .map((item) => ({
+        product_description: String(item.product_description || "").trim(),
+        description: String(item.product_description || "").trim(),
         product_type_id: Number(item.product_type_id) || 0,
         category_id: Number(item.category_id) || 0,
         product_id: Number(item.product_id) || 0,
@@ -799,7 +822,7 @@ export default function SaleOrderPage() {
         return `
         <tr>
           <td class="center">${idx + 1}</td>
-          <td>${productMap[item.product_id] || item.product_id}</td>
+          <td>${productMap[item.product_id] || item.product_id}${item.product_description ? `<div style="font-size:10px;color:#64748b;margin-top:3px">${item.product_description}</div>` : ""}</td>
           <td>${categoryMap[item.category_id] || item.category_id}</td>
           <td>${typeMap[item.product_type_id] || item.product_type_id}</td>
           <td>${unitMap[item.unit_id] || item.unit_id}</td>
@@ -875,6 +898,8 @@ export default function SaleOrderPage() {
         const rate = num(item.rate);
         return {
           sr: idx + 1,
+          product_description: String(item.product_description || "").trim(),
+          description: String(item.product_description || "").trim(),
           category_id: Number(item.category_id) || 0,
           product_id: Number(item.product_id) || 0,
           unit_id: Number(item.unit_id) || 0,
@@ -971,7 +996,7 @@ export default function SaleOrderPage() {
       <style>{`
         *{box-sizing:border-box}
         .sale-page{min-height:100vh;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', Arial, sans-serif" : "Inter, Arial, sans-serif"}}
-        @keyframes fadeSlideDown{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes softPulse{0%,100%{box-shadow:0 12px 25px rgba(79,70,229,.22)}50%{box-shadow:0 16px 32px rgba(79,70,229,.32)}}.page-wrap{max-width:1220px;margin:0 auto}.top-card{background:rgba(255,255,255,.92);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 50px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}.btn:hover{transform:translateY(-1px);filter:brightness(.98)}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.28);animation:softPulse 2.4s ease-in-out infinite}.btn-summary{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}.btn-summary-active{background:#4f46e5;color:white;border:1px solid #4f46e5;box-shadow:0 12px 25px rgba(79,70,229,.25)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-green{background:#dcfce7;color:#166534}.btn-red{background:#fee2e2;color:#991b1b}.btn-yellow{background:#fef9c3;color:#854d0e}.summary-panel{animation:fadeSlideDown .28s ease-out both}.summary-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin:14px 0}.summary-card{animation:popIn .24s ease-out both;transition:.18s}.summary-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10)}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.summary-card small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px}.summary-card b{display:block;margin-top:7px;font-size:19px;font-weight:950;color:#0f172a;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(440px,100%);height:42px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.orders{width:100%;border-collapse:collapse;table-layout:fixed}table.orders th{background:#0f172a;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.orders td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.orders tr:hover td{background:#f8fafc}.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.formTopLine{display:grid;grid-template-columns:160px 260px 140px 120px 140px 140px;gap:10px;align-items:end;margin-bottom:10px}.formSecondLine{display:grid;grid-template-columns:160px 150px;gap:10px;align-items:end;margin-bottom:14px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen{background:#dcfce7;border-color:#86efac;color:#166534}.basicBtnRed{background:#fee2e2;border-color:#fecaca;color:#991b1b}.basicProductTable{width:100%;border-collapse:collapse;background:white}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px}.paymentTopGrid{display:grid;grid-template-columns:130px 1fr 130px 1fr;gap:9px 10px;align-items:center}.paymentTopGrid label{font-size:12px;color:#334155;font-weight:850}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.remainingBox{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.toast{position:fixed;right:18px;bottom:18px;z-index:90;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.detail-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px}.detail-box small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase}.detail-box b{display:block;margin-top:7px}.printOptionGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.printOptionBtn{border:1px solid #dbe3ee;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:16px;padding:13px 12px;cursor:pointer;text-align:${isUrdu ? "right" : "left"};box-shadow:0 8px 18px rgba(15,23,42,.045);transition:.16s;display:flex;align-items:center;gap:10px;min-height:76px}.printOptionBtn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10);border-color:#c7d2fe}.printOptionBtn.yellow{background:linear-gradient(180deg,#fffbea,#fff7c2);border-color:#fde68a;color:#78350f}.printIcon{width:38px;height:38px;border-radius:13px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:950;flex:0 0 auto}.printOptionBtn.yellow .printIcon{background:#fef3c7;color:#92400e}.printText b{display:block;font-size:13px;font-weight:950;margin-bottom:3px}.printText small{display:block;font-size:10.5px;color:#64748b;font-weight:800}.convertAction{background:linear-gradient(135deg,#4f46e5,#2563eb)!important;color:white!important;border:none!important;box-shadow:0 12px 25px rgba(37,99,235,.28)!important}.convertAction:hover{filter:brightness(1.02)!important}.headerPrintBtn{background:#0f172a!important;color:white!important;border:1px solid #0f172a!important;box-shadow:0 10px 22px rgba(15,23,42,.18)!important}@media(max-width:1100px){.printOptionGrid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:1fr 1fr}.formSecondLine{grid-template-columns:1fr 1fr}.paymentTopGrid{grid-template-columns:130px 1fr}.finalTotalBar{grid-template-columns:repeat(2,1fr)}table.orders{min-width:860px}}@media(max-width:600px){.printOptionGrid,.summary-grid,.finalTotalBar{grid-template-columns:1fr}.formTopLine,.formSecondLine{grid-template-columns:1fr}.top-card{align-items:flex-start}.title{font-size:24px}}
+        @keyframes fadeSlideDown{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes softPulse{0%,100%{box-shadow:0 12px 25px rgba(79,70,229,.22)}50%{box-shadow:0 16px 32px rgba(79,70,229,.32)}}.page-wrap{max-width:1220px;margin:0 auto}.top-card{background:rgba(255,255,255,.92);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 50px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}.btn:hover{transform:translateY(-1px);filter:brightness(.98)}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.28);animation:softPulse 2.4s ease-in-out infinite}.btn-summary{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}.btn-summary-active{background:#4f46e5;color:white;border:1px solid #4f46e5;box-shadow:0 12px 25px rgba(79,70,229,.25)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-green{background:#dcfce7;color:#166534}.btn-red{background:#fee2e2;color:#991b1b}.btn-yellow{background:#fef9c3;color:#854d0e}.summary-panel{animation:fadeSlideDown .28s ease-out both}.summary-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin:14px 0}.summary-card{animation:popIn .24s ease-out both;transition:.18s}.summary-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10)}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.summary-card small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px}.summary-card b{display:block;margin-top:7px;font-size:19px;font-weight:950;color:#0f172a;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(440px,100%);height:42px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.orders{width:100%;border-collapse:collapse;table-layout:fixed}table.orders th{background:#0f172a;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.orders td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.orders tr:hover td{background:#f8fafc}.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.formTopLine{display:grid;grid-template-columns:160px 260px 140px 120px 140px 140px;gap:10px;align-items:end;margin-bottom:10px}.formSecondLine{display:grid;grid-template-columns:160px 150px;gap:10px;align-items:end;margin-bottom:14px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen{background:#dcfce7;border-color:#86efac;color:#166534}.basicBtnRed{background:#fee2e2;border-color:#fecaca;color:#991b1b}.basicProductTable{width:100%;border-collapse:collapse;background:white}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px}.paymentTopGrid{display:grid;grid-template-columns:130px 1fr 130px 1fr;gap:9px 10px;align-items:center}.paymentTopGrid label{font-size:12px;color:#334155;font-weight:850}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.remainingBox{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.toast{position:fixed;right:18px;bottom:18px;z-index:90;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.detail-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px}.detail-box small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase}.detail-box b{display:block;margin-top:7px}.printOptionGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.printOptionBtn{border:1px solid #dbe3ee;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:16px;padding:13px 12px;cursor:pointer;text-align:${isUrdu ? "right" : "left"};box-shadow:0 8px 18px rgba(15,23,42,.045);transition:.16s;display:flex;align-items:center;gap:10px;min-height:76px}.printOptionBtn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10);border-color:#c7d2fe}.printOptionBtn.yellow{background:linear-gradient(180deg,#fffbea,#fff7c2);border-color:#fde68a;color:#78350f}.printIcon{width:38px;height:38px;border-radius:13px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:950;flex:0 0 auto}.printOptionBtn.yellow .printIcon{background:#fef3c7;color:#92400e}.printText b{display:block;font-size:13px;font-weight:950;margin-bottom:3px}.printText small{display:block;font-size:10.5px;color:#64748b;font-weight:800}.convertAction{background:linear-gradient(135deg,#4f46e5,#2563eb)!important;color:white!important;border:none!important;box-shadow:0 12px 25px rgba(37,99,235,.28)!important}.convertAction:hover{filter:brightness(1.02)!important}.headerPrintBtn{background:#0f172a!important;color:white!important;border:1px solid #0f172a!important;box-shadow:0 10px 22px rgba(15,23,42,.18)!important}.formPageWrap{margin-top:16px}.formPageBox{width:100%!important;max-width:1220px!important;margin:0 auto;box-shadow:0 18px 50px rgba(15,23,42,.08)!important}.basicProductTable{min-width:980px}.basicProductTable th:nth-child(2),.basicProductTable td:nth-child(2){min-width:150px}.formPageBox .inputModalTitle .closeBtn{width:auto;padding:0 12px;font-size:13px;font-weight:900}.formPageBox .inputModalTitle .closeBtn::after{content:" Back"}@media(max-width:1100px){.printOptionGrid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:1fr 1fr}.formSecondLine{grid-template-columns:1fr 1fr}.paymentTopGrid{grid-template-columns:130px 1fr}.finalTotalBar{grid-template-columns:repeat(2,1fr)}table.orders{min-width:860px}}@media(max-width:600px){.printOptionGrid,.summary-grid,.finalTotalBar{grid-template-columns:1fr}.formTopLine,.formSecondLine{grid-template-columns:1fr}.top-card{align-items:flex-start}.title{font-size:24px}}
       `}</style>
 
       {message.text && <div className="toast" style={{ background: message.type === "error" ? "#dc2626" : "#16a34a" }}>{message.text}</div>}
@@ -996,7 +1021,7 @@ export default function SaleOrderPage() {
           </div>
         </div>
 
-        {showSummary && (
+        {!showForm && showSummary && (
           <div className="summary-panel">
             <div className="summary-grid">
               {[
@@ -1017,11 +1042,14 @@ export default function SaleOrderPage() {
           </div>
         )}
 
-        <div className="toolbar">
-          <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search} />
-        </div>
+        {!showForm && (
+          <div className="toolbar">
+            <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search} />
+          </div>
+        )}
 
-        <div className="card table-wrap">
+        {!showForm && (
+          <div className="card table-wrap">
           <table className="orders">
             <thead>
               <tr>
@@ -1061,12 +1089,13 @@ export default function SaleOrderPage() {
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        )}
       </div>
 
       {showForm && (
-        <div className="modal-bg">
-          <div className="inputModalBox">
+        <div className="page-wrap formPageWrap">
+          <div className="inputModalBox formPageBox">
             <div className="inputModalTitle">
               <span>{editingId ? t.update : t.newOrder}</span>
               <button className="closeBtn" onClick={() => setShowForm(false)}>×</button>
@@ -1088,8 +1117,8 @@ export default function SaleOrderPage() {
               <div className="sectionHead"><span>{t.products}</span><button className="basicBtn" onClick={addItem}>{t.addRow}</button></div>
               <div style={{ overflowX: "auto" }}>
                 <table className="basicProductTable">
-                  <thead><tr><th style={{ width: 35 }}>#</th><th>{t.productType}</th><th>{t.category}</th><th>{t.product} *</th><th>{t.unit}</th><th style={{ width: 70 }}>{t.qty} *</th><th style={{ width: 90 }}>{t.rate}</th><th style={{ width: 90 }}>{t.amount}</th><th style={{ width: 35 }}></th></tr></thead>
-                  <tbody>{form.order_items.map((item, index) => <tr key={index}><td style={{ textAlign: "center" }}>{index + 1}</td><td><select className="productInput" value={item.product_type_id} onChange={(e) => updateItem(index, "product_type_id", e.target.value)}><option value="">{t.select}</option>{types.map((x) => <option key={getId(x)} value={getId(x)}>{getTypeName(x)}</option>)}</select></td><td><select className="productInput" value={item.category_id} onChange={(e) => updateItem(index, "category_id", e.target.value)}><option value="">{t.select}</option>{categories.map((x) => <option key={getId(x)} value={getId(x)}>{getCategoryName(x)}</option>)}</select></td><td><select className="productInput" value={item.product_id} onChange={(e) => updateItem(index, "product_id", e.target.value)}><option value="">{t.select}</option>{products.map((x) => <option key={getId(x)} value={getId(x)}>{getProductName(x)}</option>)}</select></td><td><select className="productInput" value={item.unit_id} onChange={(e) => updateItem(index, "unit_id", e.target.value)}><option value="">{t.select}</option>{units.map((x) => <option key={getId(x)} value={getId(x)}>{getUnitName(x)}</option>)}</select></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.order_qty} onChange={(e) => updateItem(index, "order_qty", e.target.value)} /></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.rate} onChange={(e) => updateItem(index, "rate", e.target.value)} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#eee", fontWeight: 600 }} value={fmt(lineTotal(item))} /></td><td style={{ textAlign: "center" }}><button className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeItem(index)}>x</button></td></tr>)}</tbody>
+                  <thead><tr><th style={{ width: 35 }}>#</th><th style={{ minWidth: 150 }}>{t.productDescription}</th><th>{t.productType}</th><th>{t.category}</th><th>{t.product} *</th><th>{t.unit}</th><th style={{ width: 70 }}>{t.qty} *</th><th style={{ width: 90 }}>{t.rate}</th><th style={{ width: 90 }}>{t.amount}</th><th style={{ width: 35 }}></th></tr></thead>
+                  <tbody>{form.order_items.map((item, index) => <tr key={index}><td style={{ textAlign: "center" }}>{index + 1}</td><td><input className="productInput" value={item.product_description || ""} onChange={(e) => updateItem(index, "product_description", e.target.value)} /></td><td><select className="productInput" value={item.product_type_id} onChange={(e) => updateItem(index, "product_type_id", e.target.value)}><option value="">{t.select}</option>{types.map((x) => <option key={getId(x)} value={getId(x)}>{getTypeName(x)}</option>)}</select></td><td><select className="productInput" value={item.category_id} onChange={(e) => updateItem(index, "category_id", e.target.value)}><option value="">{t.select}</option>{categories.map((x) => <option key={getId(x)} value={getId(x)}>{getCategoryName(x)}</option>)}</select></td><td><select className="productInput" value={item.product_id} onChange={(e) => updateItem(index, "product_id", e.target.value)}><option value="">{t.select}</option>{products.map((x) => <option key={getId(x)} value={getId(x)}>{getProductName(x)}</option>)}</select></td><td><select className="productInput" value={item.unit_id} onChange={(e) => updateItem(index, "unit_id", e.target.value)}><option value="">{t.select}</option>{units.map((x) => <option key={getId(x)} value={getId(x)}>{getUnitName(x)}</option>)}</select></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.order_qty} onChange={(e) => updateItem(index, "order_qty", e.target.value)} /></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.rate} onChange={(e) => updateItem(index, "rate", e.target.value)} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#eee", fontWeight: 600 }} value={fmt(lineTotal(item))} /></td><td style={{ textAlign: "center" }}><button className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeItem(index)}>x</button></td></tr>)}</tbody>
                 </table>
               </div>
 
@@ -1170,6 +1199,7 @@ export default function SaleOrderPage() {
                     <thead>
                       <tr>
                         <th>#</th>
+                        <th>{t.productDescription}</th>
                         <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.product}</th>
                         <th>{t.category}</th>
                         <th>{t.productType}</th>
@@ -1183,6 +1213,7 @@ export default function SaleOrderPage() {
                       {items.map((item, idx) => (
                         <tr key={idx}>
                           <td style={{ textAlign: "center" }}>{idx + 1}</td>
+                          <td>{item.product_description || "-"}</td>
                           <td>{productMap[item.product_id] || item.product_id}</td>
                           <td style={{ textAlign: "center" }}>{categoryMap[item.category_id] || item.category_id}</td>
                           <td style={{ textAlign: "center" }}>{typeMap[item.product_type_id] || item.product_type_id}</td>
