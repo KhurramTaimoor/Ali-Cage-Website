@@ -116,6 +116,9 @@ const LANG = {
     withAmount: "With Amount",
     withoutAmount: "Without Amount",
     convertToInvoice: "Make Sales Invoice",
+    printAll: "Print All Orders",
+    allSaleOrders: "All Sale Orders",
+    noOrdersToPrint: "No orders available to print",
     invoiceCreated: "Sales invoice created successfully",
     invoiceCreateError: "Sales invoice could not be created",
     alreadyInvoice: "Invoice already created for this order",
@@ -211,6 +214,9 @@ const LANG = {
     withAmount: "رقم کے ساتھ",
     withoutAmount: "رقم کے بغیر",
     convertToInvoice: "سیلز انوائس بنائیں",
+    printAll: "تمام آرڈرز پرنٹ",
+    allSaleOrders: "تمام سیل آرڈرز",
+    noOrdersToPrint: "پرنٹ کے لیے کوئی آرڈر موجود نہیں",
     invoiceCreated: "سیلز انوائس کامیابی سے بن گئی",
     invoiceCreateError: "سیلز انوائس نہیں بن سکی",
     alreadyInvoice: "اس آرڈر کی انوائس پہلے بن چکی ہے",
@@ -257,6 +263,9 @@ const emptyItem = () => ({
   credit: "0",
 });
 
+const defaultOrderItems = (count = 5) =>
+  Array.from({ length: count }, () => emptyItem());
+
 const today = () => new Date().toISOString().slice(0, 10);
 
 const emptyForm = () => ({
@@ -281,7 +290,7 @@ const emptyForm = () => ({
   payment_status: "Unpaid",
   payment_note: "",
   status: "Pending",
-  order_items: [emptyItem()],
+  order_items: defaultOrderItems(5),
 });
 
 const num = (value) => {
@@ -590,7 +599,7 @@ export default function SaleOrderPage() {
       payment_status: order.payment_status || paymentStatus(order.grand_total || 0, order.paid_amount || 0),
       payment_note: order.payment_note || "",
       status: order.status || "Pending",
-      order_items: normalizeItems(order).length ? normalizeItems(order) : [emptyItem()],
+      order_items: normalizeItems(order).length ? normalizeItems(order) : defaultOrderItems(5),
     });
     setDetailsOrder(null);
     setShowForm(true);
@@ -858,12 +867,62 @@ export default function SaleOrderPage() {
     }
   };
 
+  const printAllSaleOrders = () => {
+    if (!orders.length) {
+      showToast("error", t.noOrdersToPrint);
+      return;
+    }
+
+    const totalValue = orders.reduce((sum, order) => {
+      const items = normalizeItems(order);
+      const total = num(order.total_amount) || orderTotal(items);
+      const grand = num(order.grand_total) || total + num(order.previous_balance) + num(order.delivery_charges) - num(order.discount);
+      return sum + grand;
+    }, 0);
+
+    const rows = orders.map((order, idx) => {
+      const items = normalizeItems(order);
+      const total = num(order.total_amount) || orderTotal(items);
+      const grand = num(order.grand_total) || total + num(order.previous_balance) + num(order.delivery_charges) - num(order.discount);
+      const paid = num(order.paid_amount);
+      const pStatus = order.payment_status || paymentStatus(grand, paid);
+      return `<tr>
+        <td class="center">${idx + 1}</td>
+        <td>${order.order_no || "-"}</td>
+        <td>${getOrderPartyName(order) || "-"}</td>
+        <td>${order.order_date || "-"}</td>
+        <td class="center">${items.length}</td>
+        <td class="num">${fmt(grand)}</td>
+        <td>${t[PAYMENT_STATUSES.find((x) => x.value === pStatus)?.labelKey || "unpaid"]}</td>
+        <td>${t[ORDER_STATUSES.find((x) => x.value === (order.status || "Pending"))?.labelKey || "pending"]}</td>
+      </tr>`;
+    }).join("");
+
+    const html = `<!doctype html>
+<html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
+<head>
+<title>${t.allSaleOrders}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial,sans-serif"};margin:0;background:#f8fafc;color:#111827}.page{padding:18px}.sheet{background:#fff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08)}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.head h1{margin:0;font-size:24px;font-weight:900}.head p{margin:5px 0 0;color:rgba(255,255,255,.75);font-size:12px}.meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;line-height:1.8}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px;background:#f8fafc;border-bottom:1px solid #e2e8f0}.box{border:1px solid #dbe3ee;border-radius:10px;padding:9px;background:#fff}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:10px;font-weight:900;text-transform:uppercase}.box b{font-size:13px;font-weight:900}table{width:100%;border-collapse:collapse}th{background:#1f2937;color:white;text-align:${isUrdu ? "right" : "left"};font-size:11px;text-transform:uppercase}th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:${isUrdu ? "left" : "right"};font-family:monospace;white-space:nowrap;font-weight:900}.body{padding:14px}.footer{padding:10px 16px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#64748b}@media print{@page{size:A4 landscape;margin:8mm}body{background:white}.page{padding:0}.sheet{border:none;border-radius:0;box-shadow:none}}
+</style>
+</head>
+<body><div class="page"><div class="sheet"><div class="head"><div><h1>Ali Cages</h1><p>${t.allSaleOrders}</p></div><div class="meta"><div>${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div><div>${t.totalOrders}: <b>${orders.length}</b></div></div></div><div class="summary"><div class="box"><small>${t.totalOrders}</small><b>${orders.length}</b></div><div class="box"><small>${t.totalValue}</small><b>${fmt(totalValue)}</b></div><div class="box"><small>${t.totalPaid}</small><b>${fmt(summary.paid)}</b></div><div class="box"><small>${t.totalRemaining}</small><b>${fmt(summary.remaining)}</b></div></div><div class="body"><table><thead><tr><th class="center">#</th><th>${t.invoiceNo}</th><th>${t.name}</th><th>${t.date}</th><th>${t.products}</th><th>${t.grandTotal}</th><th>${t.paymentStatus}</th><th>${t.orderStatus}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="footer"><span>${t.allSaleOrders}</span><span>Ali Cages</span></div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+
+    const w = window.open("", "_blank", "width=1200,height=850");
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
+
+
   return (
     <div className="sale-page" dir={isUrdu ? "rtl" : "ltr"}>
       <style>{`
         *{box-sizing:border-box}
         .sale-page{min-height:100vh;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', Arial, sans-serif" : "Inter, Arial, sans-serif"}}
-        @keyframes fadeSlideDown{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes softPulse{0%,100%{box-shadow:0 12px 25px rgba(79,70,229,.22)}50%{box-shadow:0 16px 32px rgba(79,70,229,.32)}}.page-wrap{max-width:1220px;margin:0 auto}.top-card{background:rgba(255,255,255,.92);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 50px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}.btn:hover{transform:translateY(-1px);filter:brightness(.98)}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.28);animation:softPulse 2.4s ease-in-out infinite}.btn-summary{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}.btn-summary-active{background:#4f46e5;color:white;border:1px solid #4f46e5;box-shadow:0 12px 25px rgba(79,70,229,.25)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-green{background:#dcfce7;color:#166534}.btn-red{background:#fee2e2;color:#991b1b}.btn-yellow{background:#fef9c3;color:#854d0e}.summary-panel{animation:fadeSlideDown .28s ease-out both}.summary-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin:14px 0}.summary-card{animation:popIn .24s ease-out both;transition:.18s}.summary-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10)}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.summary-card small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px}.summary-card b{display:block;margin-top:7px;font-size:19px;font-weight:950;color:#0f172a;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(440px,100%);height:42px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.orders{width:100%;border-collapse:collapse;table-layout:fixed}table.orders th{background:#0f172a;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.orders td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.orders tr:hover td{background:#f8fafc}.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.formTopLine{display:grid;grid-template-columns:160px 260px 140px 120px 140px 140px;gap:10px;align-items:end;margin-bottom:10px}.formSecondLine{display:grid;grid-template-columns:160px 150px;gap:10px;align-items:end;margin-bottom:14px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen{background:#dcfce7;border-color:#86efac;color:#166534}.basicBtnRed{background:#fee2e2;border-color:#fecaca;color:#991b1b}.basicProductTable{width:100%;border-collapse:collapse;background:white}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px}.paymentTopGrid{display:grid;grid-template-columns:130px 1fr 130px 1fr;gap:9px 10px;align-items:center}.paymentTopGrid label{font-size:12px;color:#334155;font-weight:850}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.remainingBox{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.toast{position:fixed;right:18px;bottom:18px;z-index:90;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.detail-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px}.detail-box small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase}.detail-box b{display:block;margin-top:7px}@media(max-width:1100px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:1fr 1fr}.formSecondLine{grid-template-columns:1fr 1fr}.paymentTopGrid{grid-template-columns:130px 1fr}.finalTotalBar{grid-template-columns:repeat(2,1fr)}table.orders{min-width:860px}}@media(max-width:600px){.summary-grid,.finalTotalBar{grid-template-columns:1fr}.formTopLine,.formSecondLine{grid-template-columns:1fr}.top-card{align-items:flex-start}.title{font-size:24px}}
+        @keyframes fadeSlideDown{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes softPulse{0%,100%{box-shadow:0 12px 25px rgba(79,70,229,.22)}50%{box-shadow:0 16px 32px rgba(79,70,229,.32)}}.page-wrap{max-width:1220px;margin:0 auto}.top-card{background:rgba(255,255,255,.92);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 50px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}.btn:hover{transform:translateY(-1px);filter:brightness(.98)}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.28);animation:softPulse 2.4s ease-in-out infinite}.btn-summary{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}.btn-summary-active{background:#4f46e5;color:white;border:1px solid #4f46e5;box-shadow:0 12px 25px rgba(79,70,229,.25)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-green{background:#dcfce7;color:#166534}.btn-red{background:#fee2e2;color:#991b1b}.btn-yellow{background:#fef9c3;color:#854d0e}.summary-panel{animation:fadeSlideDown .28s ease-out both}.summary-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin:14px 0}.summary-card{animation:popIn .24s ease-out both;transition:.18s}.summary-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10)}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.summary-card small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px}.summary-card b{display:block;margin-top:7px;font-size:19px;font-weight:950;color:#0f172a;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(440px,100%);height:42px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.orders{width:100%;border-collapse:collapse;table-layout:fixed}table.orders th{background:#0f172a;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.orders td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.orders tr:hover td{background:#f8fafc}.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.formTopLine{display:grid;grid-template-columns:160px 260px 140px 120px 140px 140px;gap:10px;align-items:end;margin-bottom:10px}.formSecondLine{display:grid;grid-template-columns:160px 150px;gap:10px;align-items:end;margin-bottom:14px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen{background:#dcfce7;border-color:#86efac;color:#166534}.basicBtnRed{background:#fee2e2;border-color:#fecaca;color:#991b1b}.basicProductTable{width:100%;border-collapse:collapse;background:white}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px}.paymentTopGrid{display:grid;grid-template-columns:130px 1fr 130px 1fr;gap:9px 10px;align-items:center}.paymentTopGrid label{font-size:12px;color:#334155;font-weight:850}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.remainingBox{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.toast{position:fixed;right:18px;bottom:18px;z-index:90;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.detail-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px}.detail-box small{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase}.detail-box b{display:block;margin-top:7px}.printOptionGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.printOptionBtn{border:1px solid #dbe3ee;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:16px;padding:13px 12px;cursor:pointer;text-align:${isUrdu ? "right" : "left"};box-shadow:0 8px 18px rgba(15,23,42,.045);transition:.16s;display:flex;align-items:center;gap:10px;min-height:76px}.printOptionBtn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(15,23,42,.10);border-color:#c7d2fe}.printOptionBtn.yellow{background:linear-gradient(180deg,#fffbea,#fff7c2);border-color:#fde68a;color:#78350f}.printIcon{width:38px;height:38px;border-radius:13px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:950;flex:0 0 auto}.printOptionBtn.yellow .printIcon{background:#fef3c7;color:#92400e}.printText b{display:block;font-size:13px;font-weight:950;margin-bottom:3px}.printText small{display:block;font-size:10.5px;color:#64748b;font-weight:800}.convertAction{background:linear-gradient(135deg,#4f46e5,#2563eb)!important;color:white!important;border:none!important;box-shadow:0 12px 25px rgba(37,99,235,.28)!important}.convertAction:hover{filter:brightness(1.02)!important}.headerPrintBtn{background:#0f172a!important;color:white!important;border:1px solid #0f172a!important;box-shadow:0 10px 22px rgba(15,23,42,.18)!important}@media(max-width:1100px){.printOptionGrid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:1fr 1fr}.formSecondLine{grid-template-columns:1fr 1fr}.paymentTopGrid{grid-template-columns:130px 1fr}.finalTotalBar{grid-template-columns:repeat(2,1fr)}table.orders{min-width:860px}}@media(max-width:600px){.printOptionGrid,.summary-grid,.finalTotalBar{grid-template-columns:1fr}.formTopLine,.formSecondLine{grid-template-columns:1fr}.top-card{align-items:flex-start}.title{font-size:24px}}
       `}</style>
 
       {message.text && <div className="toast" style={{ background: message.type === "error" ? "#dc2626" : "#16a34a" }}>{message.text}</div>}
@@ -882,6 +941,7 @@ export default function SaleOrderPage() {
             >
               {showSummary ? t.hideSummary : t.viewSummary}
             </button>
+            <button className="btn headerPrintBtn" onClick={printAllSaleOrders}>{t.printAll}</button>
             <button className="btn btn-soft" onClick={loadAll}>{loading ? t.loading : t.refresh}</button>
             <button className="btn btn-primary" onClick={openAdd}>+ {t.newOrder}</button>
           </div>
@@ -1040,11 +1100,19 @@ export default function SaleOrderPage() {
 
                 <div className="sectionHead"><span>{t.printOptions}</span></div>
                 <div className="paymentPanel" style={{ marginBottom: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 }}>
-                    <button className="btn btn-soft" onClick={() => printOrderDocument(detailsOrder, "sale_order", true)}>{t.saleOrderPrint} - {t.withAmount}</button>
-                    <button className="btn btn-soft" onClick={() => printOrderDocument(detailsOrder, "sale_order", false)}>{t.saleOrderPrint} - {t.withoutAmount}</button>
-                    <button className="btn btn-yellow" onClick={() => printOrderDocument(detailsOrder, "order_invoice", true)}>{t.orderInvoicePrint} - {t.withAmount}</button>
-                    <button className="btn btn-yellow" onClick={() => printOrderDocument(detailsOrder, "order_invoice", false)}>{t.orderInvoicePrint} - {t.withoutAmount}</button>
+                  <div className="printOptionGrid">
+                    <button className="printOptionBtn" onClick={() => printOrderDocument(detailsOrder, "sale_order", true)}>
+                      <span className="printIcon">₹</span><span className="printText"><b>{t.saleOrderPrint}</b><small>{t.withAmount}</small></span>
+                    </button>
+                    <button className="printOptionBtn" onClick={() => printOrderDocument(detailsOrder, "sale_order", false)}>
+                      <span className="printIcon">∅</span><span className="printText"><b>{t.saleOrderPrint}</b><small>{t.withoutAmount}</small></span>
+                    </button>
+                    <button className="printOptionBtn yellow" onClick={() => printOrderDocument(detailsOrder, "order_invoice", true)}>
+                      <span className="printIcon">₹</span><span className="printText"><b>{t.orderInvoicePrint}</b><small>{t.withAmount}</small></span>
+                    </button>
+                    <button className="printOptionBtn yellow" onClick={() => printOrderDocument(detailsOrder, "order_invoice", false)}>
+                      <span className="printIcon">∅</span><span className="printText"><b>{t.orderInvoicePrint}</b><small>{t.withoutAmount}</small></span>
+                    </button>
                   </div>
                 </div>
 
@@ -1083,7 +1151,7 @@ export default function SaleOrderPage() {
                 <button className="btn btn-soft" onClick={() => setDetailsOrder(null)}>{t.close}</button>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button className="btn btn-green" onClick={() => openEdit(detailsOrder)}>{t.edit}</button>
-                  <button className="btn btn-primary" onClick={() => handleConvertToInvoice(detailsOrder)}>{t.convertToInvoice}</button>
+                  <button className="btn convertAction" onClick={() => handleConvertToInvoice(detailsOrder)}>{t.convertToInvoice}</button>
                   <button className="btn btn-red" onClick={() => handleDelete(detailsOrder.id)}>{t.delete}</button>
                 </div>
               </div>
