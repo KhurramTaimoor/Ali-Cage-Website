@@ -343,6 +343,27 @@ const firstText = (row, keys, fallback = "") => {
 };
 
 const getProductName = (row) => firstText(row, ["product_name", "product_name_en", "product_item_en", "item_name", "name", "name_en", "title"]);
+const getProductDescription = (row) =>
+  firstText(row, ["product_description", "product_description_en", "description", "details", "product_details", "remarks"], "");
+const getProductRate = (row) =>
+  num(
+    row?.sale_rate ??
+      row?.saleRate ??
+      row?.rate ??
+      row?.price ??
+      row?.sale_price ??
+      row?.retail_price ??
+      row?.product_rate ??
+      row?.productRate ??
+      row?.unit_price ??
+      0
+  );
+const getProductCategoryId = (row) =>
+  row?.category_id ?? row?.categoryId ?? row?.cat_id ?? row?.product_category_id ?? row?.category?.id ?? row?.category ?? "";
+const getProductTypeId = (row) =>
+  row?.product_type_id ?? row?.productTypeId ?? row?.type_id ?? row?.typeId ?? row?.product_type?.id ?? row?.type ?? "";
+const getProductUnitId = (row) =>
+  row?.unit_id ?? row?.unitId ?? row?.unit?.id ?? row?.unit ?? "";
 const getCategoryName = (row) => firstText(row, ["category_name", "category_name_en", "name", "name_en", "title"]);
 const getUnitName = (row) => firstText(row, ["unit_name", "unit_name_en", "name", "name_en", "symbol", "title"]);
 const getTypeName = (row) => firstText(row, ["product_type_en", "product_type", "type_name", "name", "name_en", "title"]);
@@ -711,7 +732,24 @@ export default function SaleOrderPage() {
   const updateItem = (index, key, value) => {
     setForm((prev) => ({
       ...prev,
-      order_items: prev.order_items.map((item, i) => (i === index ? { ...item, [key]: value } : item)),
+      order_items: prev.order_items.map((item, i) => {
+        if (i !== index) return item;
+
+        if (key === "product_id") {
+          const selectedProduct = products.find((p) => String(getId(p)) === String(value));
+          return {
+            ...item,
+            product_id: value,
+            product_description: getProductDescription(selectedProduct) || item.product_description || "",
+            product_type_id: String(getProductTypeId(selectedProduct) || item.product_type_id || defaultFmsTypeId || ""),
+            category_id: String(getProductCategoryId(selectedProduct) || item.category_id || ""),
+            unit_id: String(getProductUnitId(selectedProduct) || item.unit_id || ""),
+            rate: String(getProductRate(selectedProduct) || item.rate || ""),
+          };
+        }
+
+        return { ...item, [key]: value };
+      }),
     }));
   };
 
@@ -726,7 +764,7 @@ export default function SaleOrderPage() {
   const stepDeliveryCharges = (delta) => {
     setForm((prev) => ({
       ...prev,
-      delivery_charges: String(Math.max(0, num(prev.delivery_charges) + delta)),
+      delivery_charges: String(num(prev.delivery_charges) + delta),
     }));
   };
 
@@ -1128,8 +1166,8 @@ export default function SaleOrderPage() {
               <div className="sectionHead"><span>{t.products}</span><button className="basicBtn" onClick={addItem}>{t.addRow}</button></div>
               <div style={{ overflowX: "auto" }}>
                 <table className="basicProductTable">
-                  <thead><tr><th style={{ width: 35 }}>#</th><th style={{ minWidth: 150 }}>{t.productDescription}</th><th>{t.productType}</th><th>{t.category}</th><th>{t.product} *</th><th>{t.unit}</th><th style={{ width: 70 }}>{t.qty} *</th><th style={{ width: 90 }}>{t.rate}</th><th style={{ width: 90 }}>{t.amount}</th><th style={{ width: 35 }}></th></tr></thead>
-                  <tbody>{form.order_items.map((item, index) => <tr key={index}><td style={{ textAlign: "center" }}>{index + 1}</td><td><input className="productInput" value={item.product_description || ""} onChange={(e) => updateItem(index, "product_description", e.target.value)} /></td><td><select className="productInput" value={item.product_type_id} onChange={(e) => updateItem(index, "product_type_id", e.target.value)}><option value="">{t.select}</option>{types.map((x) => <option key={getId(x)} value={getId(x)}>{getTypeName(x)}</option>)}</select></td><td><select className="productInput" value={item.category_id} onChange={(e) => updateItem(index, "category_id", e.target.value)}><option value="">{t.select}</option>{categories.map((x) => <option key={getId(x)} value={getId(x)}>{getCategoryName(x)}</option>)}</select></td><td><select className="productInput" value={item.product_id} onChange={(e) => updateItem(index, "product_id", e.target.value)}><option value="">{t.select}</option>{products.map((x) => <option key={getId(x)} value={getId(x)}>{getProductName(x)}</option>)}</select></td><td><select className="productInput" value={item.unit_id} onChange={(e) => updateItem(index, "unit_id", e.target.value)}><option value="">{t.select}</option>{units.map((x) => <option key={getId(x)} value={getId(x)}>{getUnitName(x)}</option>)}</select></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.order_qty} onChange={(e) => updateItem(index, "order_qty", e.target.value)} /></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.rate} onChange={(e) => updateItem(index, "rate", e.target.value)} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#eee", fontWeight: 600 }} value={fmt(lineTotal(item))} /></td><td style={{ textAlign: "center" }}><button className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeItem(index)}>x</button></td></tr>)}</tbody>
+                  <thead><tr><th style={{ width: 35 }}>#</th><th style={{ minWidth: 210 }}>{t.product} *</th><th style={{ minWidth: 170 }}>{t.productDescription}</th><th style={{ minWidth: 110 }}>{t.productType}</th><th style={{ minWidth: 125 }}>{t.category}</th><th style={{ width: 90 }}>{t.qty} *</th><th style={{ width: 105 }}>{t.rate}</th><th style={{ width: 110 }}>{t.amount}</th><th style={{ width: 35 }}></th></tr></thead>
+                  <tbody>{form.order_items.map((item, index) => <tr key={index}><td style={{ textAlign: "center" }}>{index + 1}</td><td><select className="productInput" value={item.product_id} onChange={(e) => updateItem(index, "product_id", e.target.value)}><option value="">{t.select}</option>{products.map((x) => <option key={getId(x)} value={getId(x)}>{getProductName(x)}</option>)}</select></td><td><input className="productInput" value={item.product_description || ""} onChange={(e) => updateItem(index, "product_description", e.target.value)} /></td><td><select className="productInput" value={item.product_type_id} onChange={(e) => updateItem(index, "product_type_id", e.target.value)}><option value="">{t.select}</option>{types.map((x) => <option key={getId(x)} value={getId(x)}>{getTypeName(x)}</option>)}</select></td><td><select className="productInput" value={item.category_id} onChange={(e) => updateItem(index, "category_id", e.target.value)}><option value="">{t.select}</option>{categories.map((x) => <option key={getId(x)} value={getId(x)}>{getCategoryName(x)}</option>)}</select></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.order_qty} onChange={(e) => updateItem(index, "order_qty", e.target.value)} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f1f5f9", fontWeight: 800 }} value={item.rate} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#eee", fontWeight: 600 }} value={fmt(lineTotal(item))} /></td><td style={{ textAlign: "center" }}><button className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeItem(index)}>x</button></td></tr>)}</tbody>
                 </table>
               </div>
 
