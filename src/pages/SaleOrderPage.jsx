@@ -163,6 +163,33 @@ const LANG = {
     companyName: "Ali Cages",
     totalLabel: "Total",
     savePdfHint: 'Choose "Save as PDF" in print dialog',
+    lineItemsTitle: "Products / Line Items",
+    lineItemsSubtitle: "Add one or more products with category, unit, quantity and rate",
+    totalsTitle: "Order Totals",
+    totalsSubtitle: "Grand total updates automatically when quantity, delivery or discount changes",
+    paymentTitle: "Payment Details",
+    paymentSubtitle: "Enter payment method and paid amount; remaining balance is auto-calculated",
+    paymentMethod: "Payment Method",
+    selectPaymentMethod: "-- Select Payment Method --",
+    cash: "Cash",
+    bank: "Bank",
+    jazzCash: "JazzCash",
+    easypaisa: "EasyPaisa",
+    cheque: "Cheque",
+    otherPayment: "Other",
+    paidAmount: "Paid Amount",
+    remainingBalance: "Remaining Balance",
+    paymentStatus: "Payment Status",
+    paid: "Paid",
+    partial: "Partial",
+    unpaid: "Unpaid",
+    paymentNote: "Payment Note",
+    paymentNotePlaceholder: "Optional note / transaction no",
+    payment: "Payment",
+    slipPaymentMethod: "Payment Method",
+    slipPaidAmount: "Paid Amount",
+    slipRemainingBalance: "Remaining Balance",
+    slipPaymentStatus: "Payment Status",
   },
   ur: {
     title: "سیل آرڈر",
@@ -268,6 +295,33 @@ const LANG = {
     companyName: "علی کیجز",
     totalLabel: "کل",
     savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
+    lineItemsTitle: "پروڈکٹس / لائن آئٹمز",
+    lineItemsSubtitle: "ایک یا زیادہ پروڈکٹس کیٹیگری، یونٹ، مقدار اور ریٹ کے ساتھ شامل کریں",
+    totalsTitle: "آرڈر ٹوٹلز",
+    totalsSubtitle: "مقدار، ڈیلیوری یا ڈسکاؤنٹ بدلنے پر ٹوٹل خودکار اپڈیٹ ہو گا",
+    paymentTitle: "ادائیگی کی تفصیل",
+    paymentSubtitle: "پیمنٹ طریقہ اور ادا شدہ رقم درج کریں؛ بقایا رقم خودکار نکلے گی",
+    paymentMethod: "پیمنٹ طریقہ",
+    selectPaymentMethod: "-- پیمنٹ طریقہ منتخب کریں --",
+    cash: "کیش",
+    bank: "بینک",
+    jazzCash: "جاز کیش",
+    easypaisa: "ایزی پیسہ",
+    cheque: "چیک",
+    otherPayment: "دیگر",
+    paidAmount: "ادا شدہ رقم",
+    remainingBalance: "بقایا رقم",
+    paymentStatus: "پیمنٹ حالت",
+    paid: "مکمل ادا",
+    partial: "جزوی",
+    unpaid: "ادا نہیں",
+    paymentNote: "پیمنٹ نوٹ",
+    paymentNotePlaceholder: "اختیاری نوٹ / ٹرانزیکشن نمبر",
+    payment: "پیمنٹ",
+    slipPaymentMethod: "پیمنٹ طریقہ",
+    slipPaidAmount: "ادا شدہ رقم",
+    slipRemainingBalance: "بقایا رقم",
+    slipPaymentStatus: "پیمنٹ حالت",
   },
 };
 
@@ -276,6 +330,15 @@ const PARTY_TYPES = [
   { value: "employee", labelKey: "partyTypeEmployee", icon: "bi-person-badge-fill", color: "emerald" },
   { value: "general_ledger", labelKey: "partyTypeGeneralLedger", icon: "bi-journal-bookmark-fill", color: "violet" },
   { value: "supplier", labelKey: "partyTypeSupplier", icon: "bi-truck", color: "amber" },
+];
+
+const PAYMENT_METHODS = [
+  { value: "Cash", labelKey: "cash", icon: "bi-cash-stack" },
+  { value: "Bank", labelKey: "bank", icon: "bi-bank" },
+  { value: "JazzCash", labelKey: "jazzCash", icon: "bi-phone" },
+  { value: "EasyPaisa", labelKey: "easypaisa", icon: "bi-wallet2" },
+  { value: "Cheque", labelKey: "cheque", icon: "bi-credit-card-2-front" },
+  { value: "Other", labelKey: "otherPayment", icon: "bi-three-dots" },
 ];
 
 const emptyOrderItem = () => ({
@@ -304,6 +367,11 @@ const emptyForm = () => ({
   previous_balance: "0",
   delivery_charges: "0",
   discount: "0",
+  payment_method: "Cash",
+  paid_amount: "0",
+  remaining_balance: "0",
+  payment_status: "Unpaid",
+  payment_note: "",
   status: "Pending",
   order_items: [emptyOrderItem()],
 });
@@ -401,6 +469,23 @@ const normalizeOrderItems = (record) => {
 
 const calcLineTotal = (item) => num(item?.order_qty) * num(item?.rate);
 const calcOrderTotal = (items = []) => items.reduce((s, i) => s + calcLineTotal(i), 0);
+
+const calcRemainingBalance = (grandTotal, paidAmount) => Math.max(0, num(grandTotal) - num(paidAmount));
+
+function getPaymentStatusLabel(status, t) {
+  if (status === "Paid") return t.paid;
+  if (status === "Partial") return t.partial;
+  if (status === "Unpaid") return t.unpaid;
+  return status || t.unpaid;
+}
+
+function getAutoPaymentStatus(paidAmount, grandTotal) {
+  const paid = num(paidAmount);
+  const grand = num(grandTotal);
+  if (paid <= 0) return "Unpaid";
+  if (grand > 0 && paid >= grand) return "Paid";
+  return "Partial";
+}
 
 function getStatusLabel(status, t) {
   if (status === "Pending") return t.pending;
@@ -707,6 +792,12 @@ function generateSlipPrint(order, lang, maps, urduCache) {
   const deliveryCharges = num(order.delivery_charges);
   const discount = num(order.discount);
   const grandTotal = totalAmount + previousBalance + deliveryCharges - discount;
+  const paidAmount = num(order.paid_amount);
+  const remainingBalance = order.remaining_balance !== undefined && order.remaining_balance !== null
+    ? num(order.remaining_balance)
+    : calcRemainingBalance(grandTotal, paidAmount);
+  const paymentStatus = order.payment_status || getAutoPaymentStatus(paidAmount, grandTotal);
+  const paymentMethod = order.payment_method || "Cash";
 
   const grandDebit = items.reduce((s, i) => s + num(i.debit), 0);
   const grandCredit = items.reduce((s, i) => s + num(i.credit), 0);
@@ -761,7 +852,7 @@ function generateSlipPrint(order, lang, maps, urduCache) {
     .content{padding:18px;display:flex;flex-direction:column;gap:14px}.hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px;}
     .cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.card{border-radius:16px;padding:14px 16px;border:1px solid #dbeafe;background:#f8fafc}.card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px}.card .value{font-size:16px;font-weight:800;color:#0f172a;word-break:break-word;}
     table{width:100%;border-collapse:collapse} thead th{background:#0f4c97;color:white;font-size:12px;padding:12px 10px;border:1px solid #1d4ed8;text-align:${isUrdu ? "right" : "left"};white-space:nowrap} tbody td,tfoot td{border:1px solid #dbeafe;padding:10px;font-size:12px} tbody tr:nth-child(even) td{background:#f8fbff}.center{text-align:center!important}.num{text-align:${isUrdu ? "left" : "right"}!important;white-space:nowrap;font-weight:700;font-family:'Inter',Arial,sans-serif}.strong{font-weight:800}.violet{color:#7c3aed} tfoot td{background:#eaf3ff;font-weight:800;}
-    .totals{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.total-box{border-radius:16px;padding:16px 18px;border:1px solid #dbeafe;background:#f8fafc}.total-box.grand{background:#eff6ff;border-color:#bfdbfe}.total-box .label{display:block;font-size:12px;color:#64748b;margin-bottom:8px}.total-box .value{font-size:24px;font-weight:800;color:#0f172a;font-family:'Inter',Arial,sans-serif}.total-box.grand .value{color:#1d4ed8}
+    .totals{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}.total-box{border-radius:16px;padding:16px 18px;border:1px solid #dbeafe;background:#f8fafc}.total-box.grand{background:#eff6ff;border-color:#bfdbfe}.total-box .label{display:block;font-size:12px;color:#64748b;margin-bottom:8px}.total-box .value{font-size:24px;font-weight:800;color:#0f172a;font-family:'Inter',Arial,sans-serif}.total-box.grand .value{color:#1d4ed8}
     .footer{background:#0f4c97;color:rgba(255,255,255,.9);padding:10px 16px;display:flex;justify-content:space-between;font-size:11px}
     @media print{@page{size:A4 landscape;margin:10mm}body{background:white}.page{padding:0;background:white}.sheet{box-shadow:none;border:none;border-radius:0;max-width:none}.hint{display:none}}
   </style>
@@ -779,7 +870,13 @@ function generateSlipPrint(order, lang, maps, urduCache) {
         <div class="card"><small>${t.slipOrderDate}</small><div class="value">${order.order_date || "-"}</div></div>
         <div class="card"><small>${t.slipDeliveryDate}</small><div class="value">${order.delivery_date || "-"}</div></div>
       </div>
-      <div class="card"><small>${t.slipShipmentTo}</small><div class="value">${order.shipment_to || "-"}</div></div>
+      <div class="cards">
+        <div class="card"><small>${t.slipPaymentMethod}</small><div class="value">${paymentMethod}</div></div>
+        <div class="card"><small>${t.slipPaymentStatus}</small><div class="value">${getPaymentStatusLabel(paymentStatus, t)}</div></div>
+        <div class="card"><small>${t.slipPaidAmount}</small><div class="value">${fmt(paidAmount)}</div></div>
+        <div class="card"><small>${t.slipRemainingBalance}</small><div class="value">${fmt(remainingBalance)}</div></div>
+        <div class="card" style="grid-column:span 2"><small>${t.slipShipmentTo}</small><div class="value">${order.shipment_to || "-"}</div></div>
+      </div>
       <table><thead><tr><th class="center">#</th><th>${t.slipProduct}</th><th>${t.category}</th><th>${t.productType}</th><th class="center">${t.slipUnit}</th><th class="num">${t.slipQty}</th><th class="num">${t.slipRate}</th><th class="num">${t.slipLineTotal}</th><th class="num">${t.slipDebit}</th><th class="num">${t.slipCredit}</th></tr></thead><tbody>${rowsHtml}</tbody><tfoot><tr><td colspan="7"></td><td class="num">${fmt(totalAmount)}</td><td class="num">${fmt(grandDebit)}</td><td class="num">${fmt(grandCredit)}</td></tr></tfoot></table>
       <div class="totals">
         <div class="total-box"><span class="label">${t.totalAmount}</span><div class="value">${fmt(totalAmount)}</div></div>
@@ -787,6 +884,8 @@ function generateSlipPrint(order, lang, maps, urduCache) {
         <div class="total-box"><span class="label">${t.deliveryCharges}</span><div class="value">${fmt(deliveryCharges)}</div></div>
         <div class="total-box"><span class="label">${t.discount}</span><div class="value">${fmt(discount)}</div></div>
         <div class="total-box grand"><span class="label">${t.grandTotal}</span><div class="value">${fmt(grandTotal)}</div></div>
+        <div class="total-box"><span class="label">${t.paidAmount}</span><div class="value">${fmt(paidAmount)}</div></div>
+        <div class="total-box"><span class="label">${t.remainingBalance}</span><div class="value">${fmt(remainingBalance)}</div></div>
       </div>
     </div>
     <div class="footer"><span>${t.companyName} — ${t.slipThank}</span><span>Page 1 / 1</span></div>
@@ -1095,6 +1194,11 @@ const SaleOrderPage = () => {
       previous_balance: String(o.previous_balance || 0),
       delivery_charges: String(dc),
       discount: String(o.discount || 0),
+      payment_method: o.payment_method || "Cash",
+      paid_amount: String(o.paid_amount || 0),
+      remaining_balance: String(o.remaining_balance || 0),
+      payment_status: o.payment_status || getAutoPaymentStatus(o.paid_amount || 0, o.grand_total || 0),
+      payment_note: o.payment_note || "",
       status: o.status || "Pending",
       order_items: normalizeOrderItems(o),
     });
@@ -1129,6 +1233,10 @@ const SaleOrderPage = () => {
     () => formTotal + num(form.previous_balance) + activeDeliveryCharges - num(form.discount),
     [formTotal, form.previous_balance, activeDeliveryCharges, form.discount]
   );
+
+  const formPaidAmount = num(form.paid_amount);
+  const formRemainingBalance = calcRemainingBalance(formGrandTotal, formPaidAmount);
+  const formPaymentStatus = getAutoPaymentStatus(formPaidAmount, formGrandTotal);
 
   const handlePartyTypeChange = (type) => {
     setForm((f) => ({
@@ -1194,6 +1302,11 @@ const SaleOrderPage = () => {
       previous_balance: num(form.previous_balance),
       delivery_charges: dc,
       discount: num(form.discount),
+      payment_method: form.payment_method || "Cash",
+      paid_amount: formPaidAmount,
+      remaining_balance: formRemainingBalance,
+      payment_status: formPaymentStatus,
+      payment_note: form.payment_note || "",
       status: form.status || "Pending",
       total_amount: totalAmount,
       grand_total: totalAmount + num(form.previous_balance) + dc - num(form.discount),
@@ -1286,6 +1399,12 @@ const SaleOrderPage = () => {
       const dc = num(order.delivery_charges);
       const previousBalance = num(order.previous_balance);
       const discount = num(order.discount);
+      const invoiceGrandTotal = invoiceTotal + previousBalance + dc - discount;
+      const paidAmount = num(order.paid_amount);
+      const remainingBalance = order.remaining_balance !== undefined && order.remaining_balance !== null
+        ? num(order.remaining_balance)
+        : calcRemainingBalance(invoiceGrandTotal, paidAmount);
+      const paymentStatus = order.payment_status || getAutoPaymentStatus(paidAmount, invoiceGrandTotal);
 
       const payload = {
         invoice_no: generateInvoiceNoFromOrder(order),
@@ -1304,7 +1423,12 @@ const SaleOrderPage = () => {
         delivery_charges: dc,
         discount,
         invoice_total: invoiceTotal,
-        grand_total: invoiceTotal + previousBalance + dc - discount,
+        grand_total: invoiceGrandTotal,
+        payment_method: order.payment_method || "Cash",
+        paid_amount: paidAmount,
+        remaining_balance: remainingBalance,
+        payment_status: paymentStatus,
+        payment_note: order.payment_note || "",
         sale_order_id: order.id,
         items: invoiceItems,
       };
@@ -1333,7 +1457,7 @@ const SaleOrderPage = () => {
     return list.filter((o) => {
       const items = normalizeOrderItems(o);
       return (
-        [o.order_no, o.reference_no, getOrderPartyName(o), o.shipment_to, o.status].some((v) => String(v || "").toLowerCase().includes(q)) ||
+        [o.order_no, o.reference_no, getOrderPartyName(o), o.shipment_to, o.status, o.payment_method, o.payment_status, o.payment_note].some((v) => String(v || "").toLowerCase().includes(q)) ||
         items.some((item) =>
           [
             productMap[item.product_id],
@@ -1767,8 +1891,8 @@ const SaleOrderPage = () => {
                   icon="bi-box-seam-fill"
                   iconBg="#e0f2fe"
                   iconColor="#0284c7"
-                  title="Line Items"
-                  subtitle="Product type, category, product, unit and quantity per line"
+                  title={t.lineItemsTitle}
+                  subtitle={t.lineItemsSubtitle}
                   action={(
                     <button
                       type="button"
@@ -1991,8 +2115,8 @@ const SaleOrderPage = () => {
                   icon="bi-calculator-fill"
                   iconBg="#dcfce7"
                   iconColor="#16a34a"
-                  title="Order Totals"
-                  subtitle="Grand total updates automatically when quantity, delivery or discount changes"
+                  title={t.totalsTitle}
+                  subtitle={t.totalsSubtitle}
                 >
                   <div className="sales-totals-grid">
                     <AmountBox label={t.totalAmount} value={fmt(formTotal)} highlight />
@@ -2095,6 +2219,67 @@ const SaleOrderPage = () => {
                     </div>
                   </div>
                 </SectionCard>
+
+                <SectionCard
+                  isUrdu={isUrdu}
+                  icon="bi-wallet2"
+                  iconBg="#fef3c7"
+                  iconColor="#d97706"
+                  title={t.paymentTitle}
+                  subtitle={t.paymentSubtitle}
+                >
+                  <div className="sales-modal-grid-12">
+                    <FieldBox label={t.paymentMethod} icon="bi-credit-card-fill" span={3}>
+                      <StyledSelect
+                        isUrdu={isUrdu}
+                        value={form.payment_method}
+                        onChange={(e) => setForm((f) => ({ ...f, payment_method: e.target.value }))}
+                      >
+                        <option value="">{t.selectPaymentMethod}</option>
+                        {PAYMENT_METHODS.map((m) => (
+                          <option key={m.value} value={m.value}>{t[m.labelKey]}</option>
+                        ))}
+                      </StyledSelect>
+                    </FieldBox>
+
+                    <FieldBox label={t.paidAmount} icon="bi-cash-coin" span={3}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="number"
+                        value={form.paid_amount}
+                        onChange={(e) => setForm((f) => ({ ...f, paid_amount: e.target.value }))}
+                        style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={t.remainingBalance} icon="bi-hourglass-split" span={3} helper={t.autoCalcNote}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        readOnly
+                        value={fmt(formRemainingBalance)}
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={t.paymentStatus} icon="bi-patch-check-fill" span={3} helper={t.autoCalcNote}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        readOnly
+                        value={getPaymentStatusLabel(formPaymentStatus, t)}
+                        style={{ textAlign: isUrdu ? "right" : "left", fontFamily: "inherit", fontWeight: 900 }}
+                      />
+                    </FieldBox>
+
+                    <FieldBox label={t.paymentNote} icon="bi-card-text" span={12}>
+                      <StyledInput
+                        isUrdu={isUrdu}
+                        type="text"
+                        value={form.payment_note}
+                        onChange={(e) => setForm((f) => ({ ...f, payment_note: e.target.value }))}
+                        placeholder={t.paymentNotePlaceholder}
+                      />
+                    </FieldBox>
+                  </div>
+                </SectionCard>
               </div>
 
               {/* Footer */}
@@ -2181,7 +2366,7 @@ const SaleOrderPage = () => {
         {/* ── Table ── */}
         <div className="slide-up" style={{ background: "white", borderRadius: 10, border: "1.5px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", minWidth: 1120, borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", minWidth: 1260, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#0f172a" }}>
                   {[
@@ -2195,6 +2380,7 @@ const SaleOrderPage = () => {
                     { k: "items",  l: t.itemsLabel,   align: isUrdu ? "right" : "left" },
                     { k: "total",  l: t.totalAmount,  align: "right" },
                     { k: "grand",  l: t.grandTotal,   align: "right" },
+                    { k: "payment", l: t.payment,      align: "center" },
                     { k: "status", l: t.status,       align: "center" },
                     { k: "act",    l: t.actions,      align: "center" },
                   ].map(col => (
@@ -2211,12 +2397,12 @@ const SaleOrderPage = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={12} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                  <tr><td colSpan={13} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                     <i className="bi bi-arrow-repeat" style={{ fontSize: 24, display: "block", marginBottom: 8, animation: "spin 1s linear infinite" }}></i>
                     <span style={{ fontSize: 13 }}>{t.loadingOrders}</span>
                   </td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={12} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>{t.noRecords}</td></tr>
+                  <tr><td colSpan={13} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>{t.noRecords}</td></tr>
                 ) : (
                   filtered.map((o, i) => {
                     const items = normalizeOrderItems(o);
@@ -2224,6 +2410,14 @@ const SaleOrderPage = () => {
                     const partyTypeObj = PARTY_TYPES.find((p) => p.value === partyType);
                     const total = num(o.total_amount) || calcOrderTotal(items);
                     const grand = num(o.grand_total) || total + num(o.previous_balance) + num(o.delivery_charges) - num(o.discount);
+                    const paid = num(o.paid_amount);
+                    const remaining = o.remaining_balance !== undefined && o.remaining_balance !== null ? num(o.remaining_balance) : calcRemainingBalance(grand, paid);
+                    const payStatus = o.payment_status || getAutoPaymentStatus(paid, grand);
+                    const payTone = payStatus === "Paid"
+                      ? { background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }
+                      : payStatus === "Partial"
+                        ? { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }
+                        : { background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
                     const partyBadge = partyType === "employee"
                       ? { background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }
                       : partyType === "supplier"
@@ -2279,6 +2473,17 @@ const SaleOrderPage = () => {
                         </td>
                         <td style={{ padding: "10px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 700, color: "#475569", fontSize: 11.8, whiteSpace: "nowrap" }}>{fmt(total)}</td>
                         <td style={{ padding: "10px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 800, color: "#1e40af", fontSize: 13, whiteSpace: "nowrap" }}>{fmt(grand)}</td>
+                        <td style={{ padding: "10px", textAlign: "center", minWidth: 120 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "center" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: 20, fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap", ...payTone }}>
+                              {getPaymentStatusLabel(payStatus, t)}
+                            </span>
+                            <div style={{ fontFamily: "monospace", fontSize: 10.5, color: "#475569", fontWeight: 800, whiteSpace: "nowrap" }}>
+                              {fmt(paid)} / {fmt(remaining)}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>{o.payment_method || "Cash"}</div>
+                          </div>
+                        </td>
                         <td style={{ padding: "10px", textAlign: "center" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: 20, fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap", ...statusTone }}>
                             {getStatusLabel(o.status, t)}
