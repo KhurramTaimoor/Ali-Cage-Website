@@ -190,6 +190,12 @@ const LANG = {
     slipPaidAmount: "Paid Amount",
     slipRemainingBalance: "Remaining Balance",
     slipPaymentStatus: "Payment Status",
+    seeDetails: "See Details",
+    orderDetails: "Order Details",
+    close: "Close",
+    products: "Products",
+    basicInfo: "Basic Info",
+    compactListNote: "Click See Details to view full products and payment information",
   },
   ur: {
     title: "سیل آرڈر",
@@ -322,6 +328,12 @@ const LANG = {
     slipPaidAmount: "ادا شدہ رقم",
     slipRemainingBalance: "بقایا رقم",
     slipPaymentStatus: "پیمنٹ حالت",
+    seeDetails: "تفصیل دیکھیں",
+    orderDetails: "آرڈر کی تفصیل",
+    close: "بند کریں",
+    products: "پروڈکٹس",
+    basicInfo: "بنیادی معلومات",
+    compactListNote: "مکمل پروڈکٹس اور پیمنٹ دیکھنے کے لیے تفصیل دیکھیں پر کلک کریں",
   },
 };
 
@@ -931,6 +943,7 @@ const SaleOrderPage = () => {
   const [dateFilter, setDateFilter] = useState("24h");
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [detailsOrder, setDetailsOrder] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [showDeliveryCharges, setShowDeliveryCharges] = useState(false);
@@ -1356,6 +1369,7 @@ const SaleOrderPage = () => {
     try {
       await deleteOrder(id);
       setOrders((prev) => prev.filter((o) => o.id !== id));
+      setDetailsOrder((current) => (current?.id === id ? null : current));
       showToast("success", t.successDelete);
     } catch (err) {
       showToast("error", err.message || t.deleteError);
@@ -2363,46 +2377,269 @@ const SaleOrderPage = () => {
           </div>
         )}
 
-        {/* ── Table ── */}
-        <div className="slide-up" style={{ background: "white", borderRadius: 10, border: "1.5px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", minWidth: 1260, borderCollapse: "collapse" }}>
+        {detailsOrder && (() => {
+          const o = detailsOrder;
+          const items = normalizeOrderItems(o);
+          const partyType = getOrderPartyType(o);
+          const partyTypeObj = PARTY_TYPES.find((p) => p.value === partyType);
+          const total = num(o.total_amount) || calcOrderTotal(items);
+          const grand = num(o.grand_total) || total + num(o.previous_balance) + num(o.delivery_charges) - num(o.discount);
+          const paid = num(o.paid_amount);
+          const remaining = o.remaining_balance !== undefined && o.remaining_balance !== null ? num(o.remaining_balance) : calcRemainingBalance(grand, paid);
+          const payStatus = o.payment_status || getAutoPaymentStatus(paid, grand);
+
+          return (
+            <div className="fade-in" style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 80,
+              background: "rgba(15,23,42,0.42)",
+              backdropFilter: "blur(5px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 14,
+            }}>
+              <div style={{
+                width: "min(980px, 100%)",
+                maxHeight: "92vh",
+                overflow: "hidden",
+                background: "#ffffff",
+                borderRadius: 18,
+                border: "1px solid #dbe3ee",
+                boxShadow: "0 30px 80px rgba(15,23,42,0.25)",
+                display: "flex",
+                flexDirection: "column",
+              }}>
+                <div style={{
+                  padding: "14px 18px",
+                  borderBottom: "1px solid #e2e8f0",
+                  background: "linear-gradient(180deg,#ffffff,#f8fafc)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexDirection: isUrdu ? "row-reverse" : "row",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 13,
+                      background: "#eef2ff",
+                      color: "#4f46e5",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                      <i className="bi bi-receipt-cutoff"></i>
+                    </div>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 950, color: "#0f172a" }}>{t.orderDetails}</h2>
+                      <p style={{ margin: "3px 0 0", color: "#64748b", fontSize: 12, fontWeight: 700 }}>{o.order_no || "-"}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDetailsOrder(null)}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 12,
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: "#64748b",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <i className="bi bi-x-lg"></i>
+                  </button>
+                </div>
+
+                <div style={{ padding: 16, overflowY: "auto", background: "#f8fafc" }}>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+                    gap: 10,
+                    marginBottom: 12,
+                  }}>
+                    {[
+                      { label: t.orderNo, value: o.order_no || "-", icon: "bi-hash" },
+                      { label: t.referenceNo, value: o.reference_no || "-", icon: "bi-bookmark-check" },
+                      { label: t.partyType, value: partyTypeObj ? t[partyTypeObj.labelKey] : "-", icon: partyTypeObj?.icon || "bi-person-fill" },
+                      { label: t.partyName, value: getOrderPartyName(o), icon: "bi-person-check-fill" },
+                      { label: t.orderDate, value: o.order_date || "-", icon: "bi-calendar2-week" },
+                      { label: t.deliveryDate, value: o.delivery_date || "-", icon: "bi-calendar-check" },
+                    ].map((card) => (
+                      <div key={card.label} style={{
+                        background: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 12,
+                        padding: 11,
+                        minHeight: 78,
+                      }}>
+                        <div style={{ display: "flex", gap: 7, alignItems: "center", color: "#64748b", fontSize: 10, fontWeight: 900, textTransform: "uppercase", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                          <i className={`bi ${card.icon}`}></i>
+                          {card.label}
+                        </div>
+                        <div style={{ marginTop: 8, color: "#0f172a", fontSize: 13, fontWeight: 850, wordBreak: "break-word" }}>{card.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    marginBottom: 12,
+                  }}>
+                    <div style={{ padding: "11px 13px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 950, color: "#0f172a" }}>{t.products}</h3>
+                      <span style={{ fontSize: 11, fontWeight: 850, color: "#4f46e5", background: "#eef2ff", borderRadius: 999, padding: "3px 9px" }}>{items.length} {t.itemsLabel}</span>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
+                        <thead>
+                          <tr style={{ background: "#0f172a" }}>
+                            {["#", t.product, t.category, t.productType, t.unit, t.orderQty, t.rate, t.lineTotal].map((h, idx) => (
+                              <th key={idx} style={{
+                                padding: "10px 9px",
+                                color: "rgba(255,255,255,0.82)",
+                                fontSize: 10,
+                                fontWeight: 800,
+                                textAlign: idx === 0 ? "center" : (idx >= 5 ? "right" : (isUrdu ? "right" : "left")),
+                                whiteSpace: "nowrap",
+                              }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: 9, textAlign: "center", fontSize: 12, fontFamily: "monospace", color: "#64748b" }}>{idx + 1}</td>
+                              <td style={{ padding: 9, fontSize: 12, fontWeight: 850, color: "#0f172a" }}>{getTranslatedMapValue("product", item.product_id, productMap[item.product_id] || `#${item.product_id}`)}</td>
+                              <td style={{ padding: 9, fontSize: 11.5, color: "#475569" }}>{getTranslatedMapValue("category", item.category_id, categoryMap[item.category_id] || `#${item.category_id}`)}</td>
+                              <td style={{ padding: 9, fontSize: 11.5, color: "#475569" }}>{getTranslatedMapValue("product_type", item.product_type_id, typeMap[item.product_type_id] || `#${item.product_type_id}`)}</td>
+                              <td style={{ padding: 9, fontSize: 11.5, color: "#475569" }}>{getTranslatedMapValue("unit", item.unit_id, unitMap[item.unit_id] || `#${item.unit_id}`)}</td>
+                              <td style={{ padding: 9, textAlign: "right", fontFamily: "monospace", fontSize: 12, fontWeight: 800 }}>{fmt(item.order_qty || 0)}</td>
+                              <td style={{ padding: 9, textAlign: "right", fontFamily: "monospace", fontSize: 12, fontWeight: 800 }}>{fmt(item.rate || 0)}</td>
+                              <td style={{ padding: 9, textAlign: "right", fontFamily: "monospace", fontSize: 12, fontWeight: 900, color: "#1d4ed8" }}>{fmt(calcLineTotal(item))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+                    gap: 10,
+                  }}>
+                    {[
+                      { label: t.totalAmount, value: fmt(total), color: "#0f172a" },
+                      { label: t.previousBalance, value: fmt(o.previous_balance), color: "#0f172a" },
+                      { label: t.deliveryCharges, value: fmt(o.delivery_charges), color: "#0f172a" },
+                      { label: t.discount, value: fmt(o.discount), color: "#0f172a" },
+                      { label: t.grandTotal, value: fmt(grand), color: "#1d4ed8" },
+                      { label: t.paymentMethod, value: o.payment_method || "Cash", color: "#0f172a" },
+                      { label: t.paidAmount, value: fmt(paid), color: "#059669" },
+                      { label: t.remainingBalance, value: fmt(remaining), color: "#dc2626" },
+                      { label: t.paymentStatus, value: getPaymentStatusLabel(payStatus, t), color: "#7c3aed" },
+                    ].map((box) => (
+                      <div key={box.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+                        <div style={{ fontSize: 10, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>{box.label}</div>
+                        <div style={{ marginTop: 7, fontSize: 15, fontWeight: 950, color: box.color, fontFamily: box.label.includes("Amount") || box.label.includes("رقم") || box.label.includes("Total") ? "monospace" : "inherit" }}>{box.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {o.payment_note && (
+                    <div style={{ marginTop: 12, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.paymentNote}</div>
+                      <div style={{ marginTop: 7, fontSize: 13, fontWeight: 750, color: "#0f172a" }}>{o.payment_note}</div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{
+                  padding: "12px 16px",
+                  borderTop: "1px solid #e2e8f0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  background: "#ffffff",
+                  flexDirection: isUrdu ? "row-reverse" : "row",
+                }}>
+                  <button type="button" onClick={() => setDetailsOrder(null)} style={{ padding: "10px 16px", borderRadius: 10, border: "1.5px solid #cbd5e1", background: "#ffffff", color: "#334155", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{t.close}</button>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+                    <button type="button" onClick={() => { setDetailsOrder(null); openEdit(o); }} style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: "#eef2ff", color: "#4f46e5", fontSize: 12, fontWeight: 900, cursor: "pointer" }}><i className="bi bi-pencil-square"></i> {t.edit}</button>
+                    <button type="button" onClick={async () => {
+                      let cacheToUse = urduCache;
+                      if (lang === "ur") {
+                        setTranslating(true);
+                        try {
+                          const updatedCache = await ensureOrderPrintTranslations(o);
+                          if (updatedCache) cacheToUse = updatedCache;
+                        } finally { setTranslating(false); }
+                      }
+                      generateSlipPrint(o, lang, { productMap, categoryMap, typeMap, unitMap }, cacheToUse);
+                    }} style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: "#fefce8", color: "#ca8a04", fontSize: 12, fontWeight: 900, cursor: "pointer" }}><i className="bi bi-printer-fill"></i> {t.printSlip}</button>
+                    <button type="button" onClick={() => handleConvertToInvoice(o)} style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: "#ecfdf5", color: "#059669", fontSize: 12, fontWeight: 900, cursor: "pointer" }}><i className="bi bi-file-earmark-arrow-up-fill"></i> {t.changeToInvoice}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Compact Orders Table ── */}
+        <div className="slide-up" style={{ background: "white", borderRadius: 12, border: "1.5px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ padding: "10px 14px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 750 }}>{t.compactListNote}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 850 }}>{filtered.length} {t.itemsLabel}</div>
+          </div>
+          <div style={{ width: "100%", overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr style={{ background: "#0f172a" }}>
                   {[
-                    { k: "no",     l: "#",            align: "center", w: 40 },
-                    { k: "ord",    l: t.orderNo,      align: isUrdu ? "right" : "left" },
-                    { k: "ref",    l: t.referenceNo,  align: isUrdu ? "right" : "left" },
-                    { k: "type",   l: t.partyType,    align: "center" },
-                    { k: "name",   l: t.partyName,    align: isUrdu ? "right" : "left" },
-                    { k: "date",   l: t.orderDate,    align: "center" },
-                    { k: "delivery", l: t.deliveryDate, align: "center" },
-                    { k: "items",  l: t.itemsLabel,   align: isUrdu ? "right" : "left" },
-                    { k: "total",  l: t.totalAmount,  align: "right" },
-                    { k: "grand",  l: t.grandTotal,   align: "right" },
-                    { k: "payment", l: t.payment,      align: "center" },
-                    { k: "status", l: t.status,       align: "center" },
-                    { k: "act",    l: t.actions,      align: "center" },
-                  ].map(col => (
+                    { k: "no", l: "#", w: "44px", align: "center" },
+                    { k: "ord", l: t.orderNo, w: "110px", align: isUrdu ? "right" : "left" },
+                    { k: "name", l: t.partyName, w: "22%", align: isUrdu ? "right" : "left" },
+                    { k: "date", l: t.orderDate, w: "105px", align: "center" },
+                    { k: "grand", l: t.grandTotal, w: "115px", align: "right" },
+                    { k: "pay", l: t.payment, w: "135px", align: "center" },
+                    { k: "status", l: t.status, w: "105px", align: "center" },
+                    { k: "act", l: t.actions, w: "150px", align: "center" },
+                  ].map((col) => (
                     <th key={col.k} style={{
-                      padding: "11px 10px", textAlign: col.align, width: col.w,
-                      fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.75)",
-                      textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap",
-                      borderBottom: "none",
-                    }}>
-                      {col.l}
-                    </th>
+                      width: col.w,
+                      padding: "11px 8px",
+                      textAlign: col.align,
+                      fontSize: 9.5,
+                      fontWeight: 800,
+                      color: "rgba(255,255,255,0.76)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      whiteSpace: "nowrap",
+                    }}>{col.l}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={13} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                  <tr><td colSpan={8} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                     <i className="bi bi-arrow-repeat" style={{ fontSize: 24, display: "block", marginBottom: 8, animation: "spin 1s linear infinite" }}></i>
                     <span style={{ fontSize: 13 }}>{t.loadingOrders}</span>
                   </td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={13} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>{t.noRecords}</td></tr>
+                  <tr><td colSpan={8} style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>{t.noRecords}</td></tr>
                 ) : (
                   filtered.map((o, i) => {
                     const items = normalizeOrderItems(o);
@@ -2418,13 +2655,6 @@ const SaleOrderPage = () => {
                       : payStatus === "Partial"
                         ? { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }
                         : { background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
-                    const partyBadge = partyType === "employee"
-                      ? { background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }
-                      : partyType === "supplier"
-                        ? { background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }
-                        : partyType === "general_ledger"
-                          ? { background: "#ede9fe", color: "#5b21b6", border: "1px solid #c4b5fd" }
-                          : { background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" };
                     const statusTone = o.status === "Completed"
                       ? { background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }
                       : o.status === "Cancelled"
@@ -2432,95 +2662,51 @@ const SaleOrderPage = () => {
                         : { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" };
 
                     return (
-                      <tr key={o.id || i} className="tbl-row" style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.1s", verticalAlign: "top" }}>
-                        <td style={{ padding: "10px", textAlign: "center", color: "#94a3b8", fontFamily: "monospace", fontSize: 12 }}>{i + 1}</td>
-                        <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
-                          <div style={{ fontFamily: "monospace", fontWeight: 800, color: "#0f172a", fontSize: 11.8 }}>{o.order_no}</div>
-                          <div style={{ marginTop: 3, fontSize: 10.5, color: "#94a3b8", fontWeight: 600 }}>{items.length} {t.itemsLabel}</div>
+                      <tr key={o.id || i} className="tbl-row" style={{ borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" }}>
+                        <td style={{ padding: "11px 8px", textAlign: "center", color: "#94a3b8", fontFamily: "monospace", fontSize: 12 }}>{i + 1}</td>
+                        <td style={{ padding: "11px 8px", overflow: "hidden" }}>
+                          <div style={{ fontFamily: "monospace", fontWeight: 900, color: "#0f172a", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.order_no || "-"}</div>
+                          <div style={{ marginTop: 3, color: "#94a3b8", fontSize: 10.5, fontWeight: 750, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{items.length} {t.products}</div>
                         </td>
-                        <td style={{ padding: "10px", fontFamily: "monospace", color: "#64748b", fontSize: 12 }}>{o.reference_no || <span style={{ color: "#e2e8f0" }}>—</span>}</td>
-                        <td style={{ padding: "10px", textAlign: "center" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", ...partyBadge }}>
-                            <i className={`bi ${partyTypeObj?.icon || "bi-person-fill"}`}></i>{partyTypeObj ? t[partyTypeObj.labelKey] : "-"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "10px", fontWeight: 600, color: "#0f172a", fontSize: 13, minWidth: 130 }}>{getOrderPartyName(o)}</td>
-                        <td style={{ padding: "10px", textAlign: "center", fontFamily: "monospace", fontSize: 10.5, color: "#475569", whiteSpace: "nowrap" }}>{o.order_date || "—"}</td>
-                        <td style={{ padding: "10px", textAlign: "center", fontFamily: "monospace", fontSize: 10.5, color: "#475569", whiteSpace: "nowrap" }}>{o.delivery_date || "—"}</td>
-                        <td style={{ padding: "10px", minWidth: 280 }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            {items.slice(0, 2).map((item, idx) => (
-                              <div key={idx} style={{ border: "1px solid #e2e8f0", background: "#f8fafc", borderRadius: 9, padding: "6px 8px" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexDirection: isUrdu ? "row-reverse" : "row" }}>
-                                  <span style={{ color: "#0f172a", fontSize: 11.5, fontWeight: 800 }}>
-                                    {getTranslatedMapValue("product", item.product_id, productMap[item.product_id] || `#${item.product_id}`)}
-                                  </span>
-                                  <span style={{ color: "#1e40af", fontSize: 11, fontWeight: 800, fontFamily: "monospace", whiteSpace: "nowrap" }}>
-                                    {fmt(calcLineTotal(item))}
-                                  </span>
-                                </div>
-                                <div style={{ marginTop: 3, color: "#64748b", fontSize: 10.5, lineHeight: 1.5 }}>
-                                  {getTranslatedMapValue("category", item.category_id, categoryMap[item.category_id] || `#${item.category_id}`)} · {getTranslatedMapValue("product_type", item.product_type_id, typeMap[item.product_type_id] || `#${item.product_type_id}`)} · {getTranslatedMapValue("unit", item.unit_id, unitMap[item.unit_id] || `#${item.unit_id}`)} · {t.orderQty}: {item.order_qty || 0} · {t.rate}: {fmt(item.rate)}
-                                </div>
-                              </div>
-                            ))}
-                            {items.length > 2 && (
-                              <span style={{ display: "inline-block", alignSelf: isUrdu ? "flex-end" : "flex-start", padding: "3px 9px", borderRadius: 20, background: "#eef2ff", color: "#6366f1", fontSize: 10.5, fontWeight: 800, border: "1px solid #c7d2fe" }}>
-                                +{items.length - 2} {t.itemsLabel}
-                              </span>
-                            )}
+                        <td style={{ padding: "11px 8px", overflow: "hidden" }}>
+                          <div style={{ color: "#0f172a", fontSize: 13, fontWeight: 850, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getOrderPartyName(o)}</div>
+                          <div style={{ marginTop: 3, color: "#64748b", fontSize: 10.5, fontWeight: 750, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            <i className={`bi ${partyTypeObj?.icon || "bi-person-fill"}`}></i> {partyTypeObj ? t[partyTypeObj.labelKey] : "-"}
                           </div>
                         </td>
-                        <td style={{ padding: "10px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 700, color: "#475569", fontSize: 11.8, whiteSpace: "nowrap" }}>{fmt(total)}</td>
-                        <td style={{ padding: "10px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 800, color: "#1e40af", fontSize: 13, whiteSpace: "nowrap" }}>{fmt(grand)}</td>
-                        <td style={{ padding: "10px", textAlign: "center", minWidth: 120 }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "center" }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: 20, fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap", ...payTone }}>
-                              {getPaymentStatusLabel(payStatus, t)}
-                            </span>
-                            <div style={{ fontFamily: "monospace", fontSize: 10.5, color: "#475569", fontWeight: 800, whiteSpace: "nowrap" }}>
-                              {fmt(paid)} / {fmt(remaining)}
-                            </div>
-                            <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>{o.payment_method || "Cash"}</div>
+                        <td style={{ padding: "11px 8px", textAlign: "center", fontFamily: "monospace", fontSize: 11, color: "#475569", whiteSpace: "nowrap" }}>{o.order_date || "—"}</td>
+                        <td style={{ padding: "11px 8px", textAlign: isUrdu ? "left" : "right", fontFamily: "monospace", fontWeight: 900, color: "#1e40af", fontSize: 12.5, whiteSpace: "nowrap" }}>{fmt(grand)}</td>
+                        <td style={{ padding: "11px 8px", textAlign: "center" }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                            <span style={{ display: "inline-flex", justifyContent: "center", padding: "3px 9px", borderRadius: 20, fontSize: 10.5, fontWeight: 850, whiteSpace: "nowrap", ...payTone }}>{getPaymentStatusLabel(payStatus, t)}</span>
+                            <span style={{ fontFamily: "monospace", color: "#64748b", fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap" }}>{fmt(paid)} / {fmt(remaining)}</span>
                           </div>
                         </td>
-                        <td style={{ padding: "10px", textAlign: "center" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: 20, fontSize: 10.5, fontWeight: 800, whiteSpace: "nowrap", ...statusTone }}>
-                            {getStatusLabel(o.status, t)}
-                          </span>
+                        <td style={{ padding: "11px 8px", textAlign: "center" }}>
+                          <span style={{ display: "inline-flex", justifyContent: "center", padding: "3px 9px", borderRadius: 20, fontSize: 10.5, fontWeight: 850, whiteSpace: "nowrap", ...statusTone }}>{getStatusLabel(o.status, t)}</span>
                         </td>
-                        <td style={{ padding: "10px" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, flexDirection: isUrdu ? "row-reverse" : "row" }}>
-                            {[
-                              { icon: "bi-pencil-square", bg: "#eef2ff", color: "#6366f1", hbg: "#e0e7ff", title: t.edit, fn: () => openEdit(o) },
-                              { icon: "bi-trash3",        bg: "#fef2f2", color: "#ef4444", hbg: "#fee2e2", title: t.delete, fn: () => handleDelete(o.id) },
-                              { icon: "bi-printer-fill",  bg: "#fefce8", color: "#ca8a04", hbg: "#fef9c3", title: t.printSlip, fn: async () => {
-                                  let cacheToUse = urduCache;
-                                  if (lang === "ur") {
-                                    setTranslating(true);
-                                    try {
-                                      const updatedCache = await ensureOrderPrintTranslations(o);
-                                      if (updatedCache) cacheToUse = updatedCache;
-                                    } finally { setTranslating(false); }
-                                  }
-                                  generateSlipPrint(o, lang, { productMap, categoryMap, typeMap, unitMap }, cacheToUse);
-                                }
-                              },
-                              { icon: "bi-file-earmark-arrow-up-fill", bg: "#ecfdf5", color: "#059669", hbg: "#d1fae5", title: t.changeToInvoice, fn: () => handleConvertToInvoice(o) },
-                            ].map(btn => (
-                              <button key={btn.icon} onClick={btn.fn} title={btn.title} style={{
-                                width: 30, height: 30, borderRadius: 8, border: "none",
-                                background: btn.bg, color: btn.color, cursor: "pointer",
-                                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
-                                transition: "all 0.15s",
-                              }}
-                                onMouseEnter={e => e.currentTarget.style.background = btn.hbg}
-                                onMouseLeave={e => e.currentTarget.style.background = btn.bg}
-                              >
-                                <i className={`bi ${btn.icon}`}></i>
-                              </button>
-                            ))}
-                          </div>
+                        <td style={{ padding: "11px 8px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => setDetailsOrder(o)}
+                            style={{
+                              padding: "8px 11px",
+                              borderRadius: 10,
+                              border: "none",
+                              background: "#eef2ff",
+                              color: "#4f46e5",
+                              fontSize: 11.5,
+                              fontWeight: 900,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 6,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <i className="bi bi-eye-fill"></i>{t.seeDetails}
+                          </button>
                         </td>
                       </tr>
                     );
