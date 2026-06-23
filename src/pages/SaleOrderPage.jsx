@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const SALE_ORDER_API = "/api/sale-orders";
+const SALES_INVOICE_API = "/api/sales-invoices";
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_ROOT}${path}`, {
@@ -22,6 +23,7 @@ const getSaleOrderPageData = () => apiFetch(SALE_ORDER_API);
 const createSaleOrder = (data) => apiFetch(SALE_ORDER_API, { method: "POST", body: JSON.stringify(data) });
 const updateSaleOrder = (id, data) => apiFetch(`${SALE_ORDER_API}/${id}`, { method: "PUT", body: JSON.stringify(data) });
 const deleteSaleOrder = (id) => apiFetch(`${SALE_ORDER_API}/${id}`, { method: "DELETE" });
+const createSalesInvoice = (data) => apiFetch(SALES_INVOICE_API, { method: "POST", body: JSON.stringify(data) });
 
 const LANG = {
   en: {
@@ -107,6 +109,16 @@ const LANG = {
     saved: "Order saved",
     updated: "Order updated",
     deleted: "Order deleted",
+
+    printOptions: "Print Options",
+    saleOrderPrint: "Sales Order",
+    orderInvoicePrint: "Order Invoice",
+    withAmount: "With Amount",
+    withoutAmount: "Without Amount",
+    convertToInvoice: "Make Sales Invoice",
+    invoiceCreated: "Sales invoice created successfully",
+    invoiceCreateError: "Sales invoice could not be created",
+    alreadyInvoice: "Invoice already created for this order",
     deleteConfirm: "Delete this order?",
   },
   ur: {
@@ -192,6 +204,16 @@ const LANG = {
     saved: "آرڈر محفوظ ہو گیا",
     updated: "آرڈر اپڈیٹ ہو گیا",
     deleted: "آرڈر حذف ہو گیا",
+
+    printOptions: "پرنٹ آپشنز",
+    saleOrderPrint: "سیلز آرڈر",
+    orderInvoicePrint: "آرڈر انوائس",
+    withAmount: "رقم کے ساتھ",
+    withoutAmount: "رقم کے بغیر",
+    convertToInvoice: "سیلز انوائس بنائیں",
+    invoiceCreated: "سیلز انوائس کامیابی سے بن گئی",
+    invoiceCreateError: "سیلز انوائس نہیں بن سکی",
+    alreadyInvoice: "اس آرڈر کی انوائس پہلے بن چکی ہے",
     deleteConfirm: "کیا آپ یہ آرڈر حذف کرنا چاہتے ہیں؟",
   },
 };
@@ -363,6 +385,11 @@ function generateOrderNo(orders) {
     if (match) max = Math.max(max, Number(match[1]));
   });
   return `SO-${String(max + 1).padStart(3, "0")}`;
+}
+
+function generateInvoiceNoFromOrder(order) {
+  const base = String(order?.order_no || order?.id || Date.now()).replace(/\s+/g, "-");
+  return `SI-${base}`;
 }
 
 function pickOrderPartyType(order) {
@@ -695,36 +722,140 @@ export default function SaleOrderPage() {
     }
   };
 
-  const printOrder = (order) => {
+  const printOrderDocument = (order, documentType = "sale_order", showAmount = true) => {
     const items = normalizeItems(order);
     const total = num(order.total_amount) || orderTotal(items);
     const grand = num(order.grand_total) || total + num(order.previous_balance) + num(order.delivery_charges) - num(order.discount);
     const paid = num(order.paid_amount);
     const remain = order.remaining_balance !== undefined ? num(order.remaining_balance) : remainingAmount(grand, paid);
+
+    const documentTitle = documentType === "order_invoice" ? t.orderInvoicePrint : t.saleOrderPrint;
+    const amountHead = showAmount ? `<th>${t.rate}</th><th>${t.amount}</th>` : "";
+    const amountTotalCols = showAmount ? "7" : "5";
+
     const rows = items
-      .map(
-        (item, idx) => `
+      .map((item, idx) => {
+        const amountCells = showAmount
+          ? `<td class="num">${fmt(item.rate)}</td><td class="num strong">${fmt(lineTotal(item))}</td>`
+          : "";
+        return `
         <tr>
-          <td>${idx + 1}</td>
+          <td class="center">${idx + 1}</td>
           <td>${productMap[item.product_id] || item.product_id}</td>
           <td>${categoryMap[item.category_id] || item.category_id}</td>
           <td>${typeMap[item.product_type_id] || item.product_type_id}</td>
           <td>${unitMap[item.unit_id] || item.unit_id}</td>
           <td class="num">${fmt(item.order_qty)}</td>
-          <td class="num">${fmt(item.rate)}</td>
-          <td class="num">${fmt(lineTotal(item))}</td>
-        </tr>`
-      )
+          ${amountCells}
+        </tr>`;
+      })
       .join("");
 
-    const html = `<!doctype html><html><head><title>${order.order_no || "Sale Order"}</title><style>
-body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a}.page{padding:24px}.sheet{background:#fff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden}.head{background:#0f172a;color:#fff;padding:20px}.head h1{margin:0;font-size:24px}.body{padding:18px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.box{border:1px solid #e2e8f0;border-radius:12px;padding:10px}.box small{display:block;color:#64748b;margin-bottom:6px}.box b{font-size:15px}table{width:100%;border-collapse:collapse}th{background:#1e293b;color:white;text-align:left}th,td{border:1px solid #e2e8f0;padding:9px;font-size:12px}.num{text-align:right;font-family:monospace}.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
-</style></head><body><div class="page"><div class="sheet"><div class="head"><h1>Ali Cages - ${t.title}</h1><p>${order.order_no || ""}</p></div><div class="body"><div class="grid"><div class="box"><small>${t.name}</small><b>${getOrderPartyName(order) || "-"}</b></div><div class="box"><small>${t.date}</small><b>${order.order_date || "-"}</b></div><div class="box"><small>${t.deliveryDate}</small><b>${order.delivery_date || "-"}</b></div><div class="box"><small>${t.orderStatus}</small><b>${order.status || "-"}</b></div></div><table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.productType}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table><div class="totals"><div class="box"><small>${t.totalAmount}</small><b>${fmt(total)}</b></div><div class="box"><small>${t.grandTotal}</small><b>${fmt(grand)}</b></div><div class="box"><small>${t.paidAmount}</small><b>${fmt(paid)}</b></div><div class="box"><small>${t.remaining}</small><b>${fmt(remain)}</b></div></div></div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
-    const w = window.open("", "_blank", "width=1100,height=800");
+    const totalsHtml = showAmount
+      ? `<div class="totals">
+          <div class="box"><small>${t.totalAmount}</small><b>${fmt(total)}</b></div>
+          <div class="box"><small>${t.previousBalance}</small><b>${fmt(order.previous_balance)}</b></div>
+          <div class="box"><small>${t.deliveryCharges}</small><b>${fmt(order.delivery_charges)}</b></div>
+          <div class="box"><small>${t.discount}</small><b>${fmt(order.discount)}</b></div>
+          <div class="box grand"><small>${t.grandTotal}</small><b>${fmt(grand)}</b></div>
+          <div class="box"><small>${t.paidAmount}</small><b>${fmt(paid)}</b></div>
+          <div class="box"><small>${t.remaining}</small><b>${fmt(remain)}</b></div>
+        </div>`
+      : `<div class="note">${isUrdu ? "یہ پرنٹ رقم کے بغیر ہے۔" : "This print is without amount."}</div>`;
+
+    const html = `<!doctype html>
+<html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
+<head>
+<title>${documentTitle} - ${order.order_no || ""}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial,sans-serif"};margin:0;background:#f8fafc;color:#0f172a}.page{padding:18px}.sheet{background:#fff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08)}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.head h1{margin:0;font-size:24px;font-weight:900}.head p{margin:5px 0 0;color:rgba(255,255,255,.75);font-size:12px}.meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;line-height:1.9}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #dbe3ee;border-radius:10px;padding:9px;background:#fff}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:10px;font-weight:900;text-transform:uppercase}.box b{font-size:13px;font-weight:900}table{width:100%;border-collapse:collapse}th{background:#1f2937;color:white;text-align:${isUrdu ? "right" : "left"};font-size:11px;text-transform:uppercase}th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:${isUrdu ? "left" : "right"};font-family:monospace;white-space:nowrap}.strong{font-weight:900}.totals{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px}.totals .grand{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.note{margin-top:12px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc;color:#475569;font-weight:800}.footer{padding:10px 16px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#64748b}@media print{@page{size:A4 landscape;margin:8mm}body{background:white}.page{padding:0}.sheet{border:none;border-radius:0;box-shadow:none}.footer{position:fixed;bottom:0;left:0;right:0}}
+</style>
+</head>
+<body>
+<div class="page"><div class="sheet">
+  <div class="head">
+    <div><h1>Ali Cages</h1><p>${documentTitle}</p></div>
+    <div class="meta"><div>${t.invoiceNo}: <b>${order.order_no || "-"}</b></div><div>${t.date}: ${order.order_date || "-"}</div><div>${t.deliveryDate}: ${order.delivery_date || "-"}</div></div>
+  </div>
+  <div class="body">
+    <div class="grid">
+      <div class="box"><small>${t.name}</small><b>${getOrderPartyName(order) || "-"}</b></div>
+      <div class="box"><small>${t.customerType}</small><b>${t[PARTY_TYPES.find((x) => x.value === pickOrderPartyType(order))?.labelKey || "customer"]}</b></div>
+      <div class="box"><small>${t.referenceNo}</small><b>${order.reference_no || "-"}</b></div>
+      <div class="box"><small>${t.shipTo}</small><b>${order.shipment_to || "-"}</b></div>
+      <div class="box"><small>${t.orderStatus}</small><b>${t[ORDER_STATUSES.find((x) => x.value === (order.status || "Pending"))?.labelKey || "pending"]}</b></div>
+      <div class="box"><small>${t.paymentStatus}</small><b>${t[PAYMENT_STATUSES.find((x) => x.value === (order.payment_status || paymentStatus(grand, paid)))?.labelKey || "unpaid"]}</b></div>
+    </div>
+    <table><thead><tr><th class="center">#</th><th>${t.product}</th><th>${t.category}</th><th>${t.productType}</th><th>${t.unit}</th><th>${t.qty}</th>${amountHead}</tr></thead><tbody>${rows}</tbody></table>
+    ${totalsHtml}
+  </div>
+  <div class="footer"><span>${documentTitle}</span><span>${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</span></div>
+</div></div>
+<script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
+</body></html>`;
+
+    const w = window.open("", "_blank", "width=1200,height=850");
     if (!w) return;
     w.document.open();
     w.document.write(html);
     w.document.close();
+  };
+
+  const handleConvertToInvoice = async (order) => {
+    try {
+      const items = normalizeItems(order).filter((item) => Number(item.product_id) > 0 && num(item.order_qty) > 0);
+      if (!items.length) {
+        showToast("error", t.requiredProduct);
+        return;
+      }
+
+      const partyType = pickOrderPartyType(order) || "customer";
+      const partyId = Number(pickOrderPartyId(order) || order.party_id || 0);
+      const invoiceItems = items.map((item, idx) => {
+        const qty = num(item.order_qty);
+        const rate = num(item.rate);
+        return {
+          sr: idx + 1,
+          category_id: Number(item.category_id) || 0,
+          product_id: Number(item.product_id) || 0,
+          unit_id: Number(item.unit_id) || 0,
+          sale_type: "single",
+          carton_qty: 0,
+          pieces_qty: 0,
+          qty,
+          pieces_per_carton: 0,
+          rate,
+          amount: qty * rate,
+        };
+      });
+      const invoiceTotal = invoiceItems.reduce((sum, item) => sum + num(item.amount), 0);
+      const payload = {
+        invoice_no: generateInvoiceNoFromOrder(order),
+        reference_no: order.reference_no || order.order_no || "",
+        customer_type: partyType,
+        party_type: partyType,
+        party_id: partyId || null,
+        party_name: getOrderPartyName(order),
+        customer_id: partyType === "customer" ? partyId || null : null,
+        employee_id: partyType === "employee" ? partyId || null : null,
+        supplier_id: partyType === "supplier" ? partyId || null : null,
+        general_ledger_id: partyType === "general_ledger" ? partyId || null : null,
+        invoice_date: today(),
+        shipment_to: order.shipment_to || "",
+        previous_balance: num(order.previous_balance),
+        delivery_charges: num(order.delivery_charges),
+        discount: num(order.discount),
+        invoice_total: invoiceTotal,
+        grand_total: invoiceTotal + num(order.previous_balance) + num(order.delivery_charges) - num(order.discount),
+        sale_order_id: order.id,
+        items: invoiceItems,
+      };
+      await createSalesInvoice(payload);
+      showToast("success", t.invoiceCreated);
+    } catch (err) {
+      showToast("error", err.message || t.invoiceCreateError);
+    }
   };
 
   return (
@@ -884,7 +1015,81 @@ body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a}.pag
         const paid = num(detailsOrder.paid_amount);
         const remain = detailsOrder.remaining_balance !== undefined ? num(detailsOrder.remaining_balance) : remainingAmount(grand, paid);
         const pStatus = detailsOrder.payment_status || paymentStatus(grand, paid);
-        return <div className="modal-bg"><div className="inputModalBox" style={{ width: "min(980px,100%)" }}><div className="inputModalTitle"><span>{t.orderDetails}</span><button className="closeBtn" onClick={() => setDetailsOrder(null)}>×</button></div><div className="inputModalBody"><div className="detail-grid">{[[t.name, getOrderPartyName(detailsOrder)], [t.date, detailsOrder.order_date || "-"], [t.deliveryDate, detailsOrder.delivery_date || "-"], [t.orderStatus, t[ORDER_STATUSES.find((x) => x.value === (detailsOrder.status || "Pending"))?.labelKey || "pending"]], [t.grandTotal, fmt(grand)], [t.paidAmount, fmt(paid)], [t.remaining, fmt(remain)], [t.paymentStatus, t[PAYMENT_STATUSES.find((x) => x.value === pStatus)?.labelKey || "unpaid"]]].map(([label, value]) => <div key={label} className="detail-box"><small>{label}</small><b>{value}</b></div>)}</div><div className="table-wrap card"><table className="orders" style={{ minWidth: 760 }}><thead><tr><th>#</th><th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.product}</th><th>{t.category}</th><th>{t.productType}</th><th>{t.unit}</th><th>{t.qty}</th><th>{t.rate}</th><th>{t.amount}</th></tr></thead><tbody>{items.map((item, idx) => <tr key={idx}><td style={{ textAlign: "center" }}>{idx + 1}</td><td>{productMap[item.product_id] || item.product_id}</td><td style={{ textAlign: "center" }}>{categoryMap[item.category_id] || item.category_id}</td><td style={{ textAlign: "center" }}>{typeMap[item.product_type_id] || item.product_type_id}</td><td style={{ textAlign: "center" }}>{unitMap[item.unit_id] || item.unit_id}</td><td style={{ textAlign: "center" }}>{fmt(item.order_qty)}</td><td style={{ textAlign: "center" }}>{fmt(item.rate)}</td><td style={{ textAlign: "right", fontWeight: 900 }}>{fmt(lineTotal(item))}</td></tr>)}</tbody></table></div></div><div style={{ padding: 14, borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}><button className="btn btn-soft" onClick={() => setDetailsOrder(null)}>{t.close}</button><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="btn btn-green" onClick={() => openEdit(detailsOrder)}>{t.edit}</button><button className="btn btn-yellow" onClick={() => printOrder(detailsOrder)}>{t.print}</button><button className="btn btn-red" onClick={() => handleDelete(detailsOrder.id)}>{t.delete}</button></div></div></div></div>;
+        return (
+          <div className="modal-bg">
+            <div className="inputModalBox" style={{ width: "min(1080px,100%)" }}>
+              <div className="inputModalTitle">
+                <span>{t.orderDetails}</span>
+                <button className="closeBtn" onClick={() => setDetailsOrder(null)}>×</button>
+              </div>
+              <div className="inputModalBody">
+                <div className="detail-grid">
+                  {[
+                    [t.name, getOrderPartyName(detailsOrder)],
+                    [t.date, detailsOrder.order_date || "-"],
+                    [t.deliveryDate, detailsOrder.delivery_date || "-"],
+                    [t.orderStatus, t[ORDER_STATUSES.find((x) => x.value === (detailsOrder.status || "Pending"))?.labelKey || "pending"]],
+                    [t.grandTotal, fmt(grand)],
+                    [t.paidAmount, fmt(paid)],
+                    [t.remaining, fmt(remain)],
+                    [t.paymentStatus, t[PAYMENT_STATUSES.find((x) => x.value === pStatus)?.labelKey || "unpaid"]],
+                  ].map(([label, value]) => (
+                    <div key={label} className="detail-box"><small>{label}</small><b>{value}</b></div>
+                  ))}
+                </div>
+
+                <div className="sectionHead"><span>{t.printOptions}</span></div>
+                <div className="paymentPanel" style={{ marginBottom: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 }}>
+                    <button className="btn btn-soft" onClick={() => printOrderDocument(detailsOrder, "sale_order", true)}>{t.saleOrderPrint} - {t.withAmount}</button>
+                    <button className="btn btn-soft" onClick={() => printOrderDocument(detailsOrder, "sale_order", false)}>{t.saleOrderPrint} - {t.withoutAmount}</button>
+                    <button className="btn btn-yellow" onClick={() => printOrderDocument(detailsOrder, "order_invoice", true)}>{t.orderInvoicePrint} - {t.withAmount}</button>
+                    <button className="btn btn-yellow" onClick={() => printOrderDocument(detailsOrder, "order_invoice", false)}>{t.orderInvoicePrint} - {t.withoutAmount}</button>
+                  </div>
+                </div>
+
+                <div className="table-wrap card">
+                  <table className="orders" style={{ minWidth: 760 }}>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.product}</th>
+                        <th>{t.category}</th>
+                        <th>{t.productType}</th>
+                        <th>{t.unit}</th>
+                        <th>{t.qty}</th>
+                        <th>{t.rate}</th>
+                        <th>{t.amount}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td style={{ textAlign: "center" }}>{idx + 1}</td>
+                          <td>{productMap[item.product_id] || item.product_id}</td>
+                          <td style={{ textAlign: "center" }}>{categoryMap[item.category_id] || item.category_id}</td>
+                          <td style={{ textAlign: "center" }}>{typeMap[item.product_type_id] || item.product_type_id}</td>
+                          <td style={{ textAlign: "center" }}>{unitMap[item.unit_id] || item.unit_id}</td>
+                          <td style={{ textAlign: "center" }}>{fmt(item.order_qty)}</td>
+                          <td style={{ textAlign: "center" }}>{fmt(item.rate)}</td>
+                          <td style={{ textAlign: "right", fontWeight: 900 }}>{fmt(lineTotal(item))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div style={{ padding: 14, borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <button className="btn btn-soft" onClick={() => setDetailsOrder(null)}>{t.close}</button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn btn-green" onClick={() => openEdit(detailsOrder)}>{t.edit}</button>
+                  <button className="btn btn-primary" onClick={() => handleConvertToInvoice(detailsOrder)}>{t.convertToInvoice}</button>
+                  <button className="btn btn-red" onClick={() => handleDelete(detailsOrder.id)}>{t.delete}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       })()}
     </div>
   );
