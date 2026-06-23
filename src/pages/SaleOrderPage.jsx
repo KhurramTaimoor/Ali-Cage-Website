@@ -61,6 +61,9 @@ const LANG = {
     unit: "Unit",
     qty: "Qty",
     rate: "Rate",
+    rateMode: "Rate Mode",
+    autoRate: "Auto",
+    manualRate: "Manual",
     amount: "Amount",
     payment: "Payment",
     paymentMethod: "Payment Method",
@@ -162,6 +165,9 @@ const LANG = {
     unit: "یونٹ",
     qty: "مقدار",
     rate: "ریٹ",
+    rateMode: "ریٹ موڈ",
+    autoRate: "آٹو",
+    manualRate: "مینول",
     amount: "رقم",
     payment: "پیمنٹ",
     paymentMethod: "پیمنٹ طریقہ",
@@ -265,6 +271,7 @@ const emptyItem = (defaultProductTypeId = "") => ({
   product_id: "",
   unit_id: "",
   order_qty: "",
+  rate_mode: "auto",
   rate: "",
   debit: "0",
   credit: "0",
@@ -442,6 +449,7 @@ function normalizeItems(order) {
     product_id: String(item.product_id ?? item.productId ?? ""),
     unit_id: String(item.unit_id ?? item.unitId ?? ""),
     order_qty: String(item.order_qty ?? item.qty ?? item.quantity ?? ""),
+    rate_mode: String(item.rate_mode ?? item.rateMode ?? "auto"),
     rate: String(item.rate ?? ""),
     debit: String(item.debit ?? "0"),
     credit: String(item.credit ?? "0"),
@@ -737,6 +745,8 @@ export default function SaleOrderPage() {
 
         if (key === "product_id") {
           const selectedProduct = products.find((p) => String(getId(p)) === String(value));
+          const productRate = getProductRate(selectedProduct);
+          const rateMode = item.rate_mode || "auto";
           return {
             ...item,
             product_id: value,
@@ -744,7 +754,16 @@ export default function SaleOrderPage() {
             product_type_id: String(getProductTypeId(selectedProduct) || item.product_type_id || defaultFmsTypeId || ""),
             category_id: String(getProductCategoryId(selectedProduct) || item.category_id || ""),
             unit_id: String(getProductUnitId(selectedProduct) || item.unit_id || ""),
-            rate: String(getProductRate(selectedProduct) || item.rate || ""),
+            rate: rateMode === "manual" ? item.rate : String(productRate || ""),
+          };
+        }
+
+        if (key === "rate_mode") {
+          const selectedProduct = products.find((p) => String(getId(p)) === String(item.product_id));
+          return {
+            ...item,
+            rate_mode: value,
+            rate: value === "auto" ? String(getProductRate(selectedProduct) || "") : item.rate,
           };
         }
 
@@ -778,6 +797,7 @@ export default function SaleOrderPage() {
         product_id: Number(item.product_id) || 0,
         unit_id: Number(item.unit_id) || 0,
         order_qty: num(item.order_qty),
+        rate_mode: item.rate_mode || "auto",
         rate: num(item.rate),
         debit: num(item.debit),
         credit: num(item.credit),
@@ -1166,8 +1186,8 @@ export default function SaleOrderPage() {
               <div className="sectionHead"><span>{t.products}</span><button className="basicBtn" onClick={addItem}>{t.addRow}</button></div>
               <div style={{ overflowX: "auto" }}>
                 <table className="basicProductTable">
-                  <thead><tr><th style={{ width: 35 }}>#</th><th style={{ minWidth: 210 }}>{t.product} *</th><th style={{ minWidth: 170 }}>{t.productDescription}</th><th style={{ minWidth: 110 }}>{t.productType}</th><th style={{ minWidth: 125 }}>{t.category}</th><th style={{ width: 90 }}>{t.qty} *</th><th style={{ width: 105 }}>{t.rate}</th><th style={{ width: 110 }}>{t.amount}</th><th style={{ width: 35 }}></th></tr></thead>
-                  <tbody>{form.order_items.map((item, index) => <tr key={index}><td style={{ textAlign: "center" }}>{index + 1}</td><td><select className="productInput" value={item.product_id} onChange={(e) => updateItem(index, "product_id", e.target.value)}><option value="">{t.select}</option>{products.map((x) => <option key={getId(x)} value={getId(x)}>{getProductName(x)}</option>)}</select></td><td><input className="productInput" value={item.product_description || ""} onChange={(e) => updateItem(index, "product_description", e.target.value)} /></td><td><select className="productInput" value={item.product_type_id} onChange={(e) => updateItem(index, "product_type_id", e.target.value)}><option value="">{t.select}</option>{types.map((x) => <option key={getId(x)} value={getId(x)}>{getTypeName(x)}</option>)}</select></td><td><select className="productInput" value={item.category_id} onChange={(e) => updateItem(index, "category_id", e.target.value)}><option value="">{t.select}</option>{categories.map((x) => <option key={getId(x)} value={getId(x)}>{getCategoryName(x)}</option>)}</select></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.order_qty} onChange={(e) => updateItem(index, "order_qty", e.target.value)} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f1f5f9", fontWeight: 800 }} value={item.rate} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#eee", fontWeight: 600 }} value={fmt(lineTotal(item))} /></td><td style={{ textAlign: "center" }}><button className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeItem(index)}>x</button></td></tr>)}</tbody>
+                  <thead><tr><th style={{ width: 35 }}>#</th><th style={{ minWidth: 210 }}>{t.product} *</th><th style={{ minWidth: 170 }}>{t.productDescription}</th><th style={{ minWidth: 110 }}>{t.productType}</th><th style={{ minWidth: 125 }}>{t.category}</th><th style={{ width: 90 }}>{t.qty} *</th><th style={{ width: 105 }}>{t.rateMode}</th><th style={{ width: 105 }}>{t.rate}</th><th style={{ width: 110 }}>{t.amount}</th><th style={{ width: 35 }}></th></tr></thead>
+                  <tbody>{form.order_items.map((item, index) => <tr key={index}><td style={{ textAlign: "center" }}>{index + 1}</td><td><select className="productInput" value={item.product_id} onChange={(e) => updateItem(index, "product_id", e.target.value)}><option value="">{t.select}</option>{products.map((x) => <option key={getId(x)} value={getId(x)}>{getProductName(x)}</option>)}</select></td><td><input className="productInput" value={item.product_description || ""} onChange={(e) => updateItem(index, "product_description", e.target.value)} /></td><td><select className="productInput" value={item.product_type_id} onChange={(e) => updateItem(index, "product_type_id", e.target.value)}><option value="">{t.select}</option>{types.map((x) => <option key={getId(x)} value={getId(x)}>{getTypeName(x)}</option>)}</select></td><td><select className="productInput" value={item.category_id} onChange={(e) => updateItem(index, "category_id", e.target.value)}><option value="">{t.select}</option>{categories.map((x) => <option key={getId(x)} value={getId(x)}>{getCategoryName(x)}</option>)}</select></td><td><input type="number" className="productInput" style={{ textAlign: "right" }} value={item.order_qty} onChange={(e) => updateItem(index, "order_qty", e.target.value)} /></td><td><select className="productInput" value={item.rate_mode || "auto"} onChange={(e) => updateItem(index, "rate_mode", e.target.value)}><option value="auto">{t.autoRate}</option><option value="manual">{t.manualRate}</option></select></td><td><input type="number" readOnly={(item.rate_mode || "auto") !== "manual"} className="productInput" style={{ textAlign: "right", background: (item.rate_mode || "auto") === "manual" ? "#fff" : "#f1f5f9", fontWeight: 800 }} value={item.rate} onChange={(e) => updateItem(index, "rate", e.target.value)} /></td><td><input readOnly className="productInput" style={{ textAlign: "right", background: "#eee", fontWeight: 600 }} value={fmt(lineTotal(item))} /></td><td style={{ textAlign: "center" }}><button className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeItem(index)}>x</button></td></tr>)}</tbody>
                 </table>
               </div>
 
