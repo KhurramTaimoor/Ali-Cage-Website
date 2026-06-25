@@ -45,7 +45,7 @@ const LANG = {
     address: "Address",
     invoiceNo: "Invoice No",
     date: "Date",
-    dateFull: "Date / Month / Year",
+    dateFull: "Date",
     shipTo: "Ship To",
     products: "Products",
     addRow: "+ Add Row",
@@ -135,7 +135,7 @@ const LANG = {
     address: "ایڈریس",
     invoiceNo: "انوائس نمبر",
     date: "تاریخ",
-    dateFull: "تاریخ / مہینہ / سال",
+    dateFull: "تاریخ",
     shipTo: "شپ ٹو",
     products: "پروڈکٹس",
     addRow: "+ لائن شامل کریں",
@@ -360,17 +360,61 @@ function genInvoiceNo(list) {
   return `sales-invoice${String(max + 1).padStart(2, "0")}`;
 }
 
-// ✅ CHANGE: weekday removed — now shows: 25 Jun 2026
-function formatFullDate(dateValue, lang = "en") {
+// ✅ Date format: 25/06/2026 (day name removed)
+function formatFullDate(dateValue) {
   if (!dateValue) return "-";
-  const d = new Date(`${dateValue}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return dateValue;
-  const locale = lang === "ur" ? "ur-PK" : "en-GB";
-  return d.toLocaleDateString(locale, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const raw = String(dateValue).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+
+function parseDisplayDate(value) {
+  const v = String(value || "").trim();
+  const slash = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (slash) {
+    const dd = slash[1].padStart(2, "0");
+    const mm = slash[2].padStart(2, "0");
+    const yyyy = slash[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return "";
+}
+
+function DateTextInput({ value, onChange, className = "", style = {}, ...props }) {
+  const [draft, setDraft] = useState(formatFullDate(value));
+
+  useEffect(() => {
+    setDraft(formatFullDate(value));
+  }, [value]);
+
+  return (
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/yyyy"
+      className={className}
+      style={style}
+      value={draft}
+      onChange={(e) => {
+        const next = e.target.value;
+        setDraft(next);
+        const parsed = parseDisplayDate(next);
+        if (parsed) onChange(parsed);
+      }}
+      onBlur={() => setDraft(formatFullDate(value))}
+    />
+  );
 }
 
 function useLookup(url) {
@@ -1044,7 +1088,7 @@ export default function SalesInvoicePage() {
           <button className={`filter ${selectedDate === today() ? "active" : ""}`} onClick={() => setSelectedDate(today())}>{t.todayFilter}</button>
           <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
             <span>{t.selectDate}</span>
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent" }} />
+            <DateTextInput value={selectedDate} onChange={(v) => setSelectedDate(v || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent", width: 105 }} />
           </label>
           <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#eef2ff", color: "#3730a3", fontWeight: 900, border: "1px solid #c7d2fe", fontSize: 12 }}>
             {t.showingDate}: {formatFullDate(selectedDate, lang)}
@@ -1128,7 +1172,7 @@ export default function SalesInvoicePage() {
                   <div>
                     <label className="basicLabel">{t.dateFull}</label>
                     <div className="date-box">
-                      <input className="basicInput" type="date" value={form.invoice_date} onChange={(e) => setForm((f) => ({ ...f, invoice_date: e.target.value }))} />
+                      <DateTextInput className="basicInput" value={form.invoice_date} onChange={(v) => setForm((f) => ({ ...f, invoice_date: v }))} />
                       <div className="date-preview">{formatFullDate(form.invoice_date, lang)}</div>
                     </div>
                   </div>
