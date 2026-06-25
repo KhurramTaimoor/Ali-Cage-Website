@@ -45,7 +45,7 @@ const LANG = {
     address: "Address",
     invoiceNo: "Invoice No",
     date: "Date",
-    dateFull: "Day / Date / Year",
+    dateFull: "Date / Month / Year",
     shipTo: "Ship To",
     products: "Products",
     addRow: "+ Add Row",
@@ -135,7 +135,7 @@ const LANG = {
     address: "ایڈریس",
     invoiceNo: "انوائس نمبر",
     date: "تاریخ",
-    dateFull: "دن / تاریخ / سال",
+    dateFull: "تاریخ / مہینہ / سال",
     shipTo: "شپ ٹو",
     products: "پروڈکٹس",
     addRow: "+ لائن شامل کریں",
@@ -287,29 +287,12 @@ const getLedgerName = (o) => pickText(o, ["ledger_name", "ledger_name_en", "acco
 const getPreviousBalance = (row) => {
   if (!row) return 0;
   const keys = [
-    "previous_balance",
-    "previousBalance",
-    "prev_balance",
-    "prevBalance",
-    "opening_balance",
-    "openingBalance",
-    "balance",
-    "current_balance",
-    "currentBalance",
-    "closing_balance",
-    "closingBalance",
-    "ledger_balance",
-    "ledgerBalance",
-    "account_balance",
-    "accountBalance",
-    "old_balance",
-    "oldBalance",
-    "remaining_balance",
-    "remainingBalance",
-    "due_balance",
-    "dueBalance",
-    "payable",
-    "receivable",
+    "previous_balance", "previousBalance", "prev_balance", "prevBalance",
+    "opening_balance", "openingBalance", "balance", "current_balance",
+    "currentBalance", "closing_balance", "closingBalance", "ledger_balance",
+    "ledgerBalance", "account_balance", "accountBalance", "old_balance",
+    "oldBalance", "remaining_balance", "remainingBalance", "due_balance",
+    "dueBalance", "payable", "receivable",
   ];
   for (const key of keys) {
     if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return toNum(row[key]);
@@ -377,13 +360,13 @@ function genInvoiceNo(list) {
   return `sales-invoice${String(max + 1).padStart(2, "0")}`;
 }
 
+// ✅ CHANGE: weekday removed — now shows: 25 Jun 2026
 function formatFullDate(dateValue, lang = "en") {
   if (!dateValue) return "-";
   const d = new Date(`${dateValue}T00:00:00`);
   if (Number.isNaN(d.getTime())) return dateValue;
   const locale = lang === "ur" ? "ur-PK" : "en-GB";
   return d.toLocaleDateString(locale, {
-    weekday: "long",
     day: "2-digit",
     month: "short",
     year: "numeric",
