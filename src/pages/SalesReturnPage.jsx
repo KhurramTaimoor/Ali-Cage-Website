@@ -809,9 +809,9 @@ export default function SalesReturnPage() {
                     <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(r.credit || r.return_amount)}</td>
                     <td style={{ textAlign: "center" }}>
                       <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
-                        <button className="btn btn-green" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); openEdit(r); }}>{t.edit}</button>
-                        <button className="btn btn-yellow" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handlePrint(r); }}>{t.print}</button>
-                        <button className="btn btn-red" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}>{t.delete}</button>
+                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); openEdit(r); }}>{t.edit}</button>
+                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handlePrint(r); }}>{t.print}</button>
+                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}>{t.delete}</button>
                       </div>
                     </td>
                   </tr>
