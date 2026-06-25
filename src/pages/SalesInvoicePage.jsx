@@ -3,6 +3,7 @@ import axios from "axios";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 const API_BASE = `${API_ROOT}/api/sales-invoices`;
+const SALE_ORDERS_API = `${API_ROOT}/api/sale-orders`;
 const CUSTOMERS_API = `${API_ROOT}/api/customers`;
 const EMPLOYEES_API = `${API_ROOT}/api/employees`;
 const SUPPLIERS_API = `${API_ROOT}/api/suppliers`;
@@ -214,6 +215,7 @@ const emptyItem = () => ({
   category_id: "",
   product_id: "",
   product_description: "",
+  product_type_id: "",
   unit_id: "",
   sale_type: "single",
   carton_qty: "",
@@ -371,6 +373,21 @@ const getProductPieceRate = (p) =>
 
 const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
 const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
+const getProductTypeId = (p) =>
+  p?.product_type_id ??
+  p?.productTypeId ??
+  p?.ProductTypeID ??
+  p?.type_id ??
+  p?.typeId ??
+  p?.TypeID ??
+  p?.product_type?.id ??
+  p?.type?.id ??
+  "";
+const getTypeName = (o) => pickText(o, ["product_type_en", "product_type", "type_name", "type", "name", "name_en", "title"]);
+const getDefaultFmsTypeId = (types = []) => {
+  const found = types.find((x) => /fms/i.test(getTypeName(x)));
+  return found ? String(getRecordId(found)) : types[0] ? String(getRecordId(types[0])) : "";
+};
 
 const getPartyNameByType = (type, row) => {
   if (type === "employee") return getEmployeeName(row);
@@ -656,6 +673,7 @@ export default function SalesInvoicePage() {
   const { data: categories, loading: catLoading } = useLookup(CATEGORIES_API);
   const { data: products, loading: prodLoading } = useLookup(PRODUCTS_API);
   const { data: units, loading: unLoading } = useLookup(UNITS_API);
+  const [productTypes, setProductTypes] = useState([]);
 
   const [invoices, setInvoices] = useState([]);
   const [loadingInv, setLoadingInv] = useState(true);
@@ -673,6 +691,21 @@ export default function SalesInvoicePage() {
 
   const mastersLoading = cuLoading || emLoading || suLoading || glLoading || catLoading || prodLoading || unLoading;
 
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await axios.get(SALE_ORDERS_API);
+        const dropdowns = res.data?.dropdowns || {};
+        const list = getList(dropdowns.product_types || dropdowns.types || res.data?.product_types || res.data?.types);
+        if (alive) setProductTypes(list);
+      } catch {
+        if (alive) setProductTypes([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
   const customerMap = useMemo(() => makeMap(customers, getCustomerName), [customers]);
   const employeeMap = useMemo(() => makeMap(employees, getEmployeeName), [employees]);
   const supplierMap = useMemo(() => makeMap(suppliers, getSupplierName), [suppliers]);
@@ -680,6 +713,8 @@ export default function SalesInvoicePage() {
   const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
   const productMap = useMemo(() => makeMap(products, getProductName), [products]);
   const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
+  const typeMap = useMemo(() => makeMap(productTypes, getTypeName), [productTypes]);
+  const defaultFmsTypeId = useMemo(() => getDefaultFmsTypeId(productTypes), [productTypes]);
 
   const partyOptions = useMemo(() => {
     if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
@@ -722,6 +757,13 @@ export default function SalesInvoicePage() {
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  useEffect(() => {
+    if (!defaultFmsTypeId) return;
+    setItems((prev) =>
+      prev.map((row) => (row.product_type_id ? row : { ...row, product_type_id: defaultFmsTypeId }))
+    );
+  }, [defaultFmsTypeId]);
 
   const invTotal = useMemo(() => items.reduce((sum, row) => sum + toNum(row.amount), 0), [items]);
   const totalQty = useMemo(() => items.reduce((sum, row) => sum + toNum(row.qty || row.pieces_qty || row.carton_qty), 0), [items]);
@@ -797,6 +839,7 @@ export default function SalesInvoicePage() {
               category_id: String(row.category_id ?? row.category?.id ?? ""),
               product_id: String(row.product_id ?? row.product?.id ?? ""),
               product_description: String(row.product_description ?? row.description ?? ""),
+              product_type_id: String(row.product_type_id ?? row.productTypeId ?? row.type_id ?? row.typeId ?? ""),
               unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
               sale_type: String(row.sale_type || "single"),
               carton_qty: String(row.carton_qty || ""),
@@ -820,24 +863,25 @@ export default function SalesInvoicePage() {
       const saleUnit = getProductSaleUnit(prod || {});
       const pcsCtn = toNum(row.pieces_per_carton || getProductPcsCtn(prod || {}));
       const rate = toNum(row.rate || getProductPieceRate(prod || {}));
+      const saleType = row.sale_type || (saleUnit === "carton" ? "carton" : "single");
       let qty = 0;
+      let piecesQty = 0;
       let amount = 0;
 
-      if (saleUnit === "carton") {
-        if (row.sale_type === "carton") {
-          qty = toNum(row.carton_qty);
-          amount = qty * pcsCtn * rate;
-        } else {
-          qty = toNum(row.pieces_qty);
-          amount = qty * rate;
-        }
+      if (saleUnit === "carton" && saleType === "carton") {
+        const cartons = toNum(row.carton_qty);
+        piecesQty = cartons * pcsCtn;
+        qty = piecesQty;
+        amount = qty * rate;
       } else {
         qty = toNum(row.qty);
+        piecesQty = saleUnit === "carton" ? qty : 0;
         amount = qty * rate;
       }
 
       return {
         qty: String(qty || ""),
+        pieces_qty: String(piecesQty || ""),
         amount: String(amount.toFixed(2)),
         rate: String(rate || 0),
         pieces_per_carton: String(pcsCtn || 0),
@@ -853,27 +897,8 @@ export default function SalesInvoicePage() {
         let next = { ...row, [field]: value };
 
         if (field === "category_id") {
-          const selectedProduct = products.find((p) => sameId(getProductId(p), next.product_id));
-          const selectedProductCatId = selectedProduct ? getProductCatId(selectedProduct) : "";
-
-          // Category change par product/amount ko force zero nahi karna.
-          // Sirf tab reset karo jab already selected product new category se match na kare.
-          if (next.product_id && selectedProductCatId && value && !sameId(selectedProductCatId, value)) {
-            next = {
-              ...next,
-              product_id: "",
-              product_description: "",
-              unit_id: "",
-              sale_type: "single",
-              carton_qty: "",
-              pieces_qty: "",
-              qty: "",
-              pieces_per_carton: "0",
-              rate: "0",
-              amount: "0",
-            };
-          }
-
+          // Category choose karne se product/rate/amount zero nahi honge.
+          // Dropdown selected category ke mutabiq filter hoga, lekin row data safe rahega.
           return next;
         }
 
@@ -884,9 +909,10 @@ export default function SalesInvoicePage() {
             next.category_id = String(getProductCatId(prod) || next.category_id || "");
             next.unit_id = String(getProductUnitId(prod) || "");
             next.product_description = getProductDesc(prod) || next.product_description || "";
+            next.product_type_id = String(getProductTypeId(prod) || next.product_type_id || defaultFmsTypeId || "");
             next.rate = String(getProductPieceRate(prod) || 0);
             next.pieces_per_carton = String(getProductPcsCtn(prod) || 0);
-            next.sale_type = saleUnit === "carton" ? "pieces" : "single";
+            next.sale_type = saleUnit === "carton" ? "carton" : "single";
             next.carton_qty = "";
             next.pieces_qty = "";
             next.qty = "";
@@ -903,6 +929,7 @@ export default function SalesInvoicePage() {
 
         const calculated = calcRow(next);
         next.qty = calculated.qty;
+        next.pieces_qty = calculated.pieces_qty;
         next.amount = calculated.amount;
         next.rate = calculated.rate;
         next.pieces_per_carton = calculated.pieces_per_carton;
@@ -934,22 +961,39 @@ export default function SalesInvoicePage() {
     if (!form.party_id) throw new Error(t.requiredParty);
 
     const validItems = items
-      .filter((row) => row.category_id && row.product_id && row.unit_id && toNum(row.amount) > 0)
-      .map((row, idx) => ({
-        sr: idx + 1,
-        category_id: Number(row.category_id),
-        product_id: Number(row.product_id),
-        product_description: String(row.product_description || "").trim(),
-        description: String(row.product_description || "").trim(),
-        unit_id: Number(row.unit_id),
-        sale_type: row.sale_type || "single",
-        carton_qty: toNum(row.carton_qty),
-        pieces_qty: toNum(row.pieces_qty),
-        qty: toNum(row.qty),
-        pieces_per_carton: toNum(row.pieces_per_carton),
-        rate: toNum(row.rate),
-        amount: toNum(row.amount),
-      }));
+      .map((row, idx) => {
+        const prod = products.find((p) => sameId(getProductId(p), row.product_id));
+        const enriched = {
+          ...row,
+          category_id: row.category_id || getProductCatId(prod || {}),
+          unit_id: row.unit_id || getProductUnitId(prod || {}),
+          product_type_id: row.product_type_id || getProductTypeId(prod || {}) || defaultFmsTypeId,
+          rate: row.rate || getProductPieceRate(prod || {}),
+          pieces_per_carton: row.pieces_per_carton || getProductPcsCtn(prod || {}),
+        };
+        const calculated = calcRow(enriched);
+        const qty = toNum(calculated.qty || enriched.qty || enriched.pieces_qty || enriched.carton_qty);
+        const amount = toNum(calculated.amount || enriched.amount);
+
+        return {
+          sr: idx + 1,
+          category_id: Number(enriched.category_id) || null,
+          product_id: Number(enriched.product_id) || null,
+          product_type_id: Number(enriched.product_type_id) || null,
+          product_description: String(enriched.product_description || getProductDesc(prod || {}) || "").trim(),
+          description: String(enriched.product_description || getProductDesc(prod || {}) || "").trim(),
+          unit_id: Number(enriched.unit_id) || null,
+          sale_type: enriched.sale_type || "single",
+          carton_qty: toNum(enriched.carton_qty),
+          pieces_qty: toNum(calculated.pieces_qty || enriched.pieces_qty),
+          qty,
+          quantity: qty,
+          pieces_per_carton: toNum(calculated.pieces_per_carton || enriched.pieces_per_carton),
+          rate: toNum(calculated.rate || enriched.rate),
+          amount,
+        };
+      })
+      .filter((row) => row.product_id && row.qty > 0);
 
     if (!validItems.length) throw new Error(t.requiredItem);
 
@@ -1267,12 +1311,12 @@ export default function SalesInvoicePage() {
                       <th style={{ width: 35 }}>#</th>
                       <th style={{ width: 175 }}>{t.product}</th>
                       <th>{t.desc}</th>
+                      <th style={{ width: 130 }}>{t.productType}</th>
                       <th style={{ width: 145 }}>{t.category}</th>
                       <th style={{ width: 115 }}>{t.unit}</th>
-                      <th style={{ width: 115 }}>{t.saleType}</th>
+                      <th style={{ width: 105 }}>{t.saleType}</th>
                       <th style={{ width: 80 }}>{t.pcsCtn}</th>
                       <th style={{ width: 90 }}>{t.cartonQty}</th>
-                      <th style={{ width: 90 }}>{t.piecesQty}</th>
                       <th style={{ width: 75 }}>{t.qty}</th>
                       <th style={{ width: 105 }}>{t.amount}</th>
                       <th style={{ width: 35 }}></th>
@@ -1308,6 +1352,13 @@ export default function SalesInvoicePage() {
                             <input className="productInput" value={row.product_description} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} />
                           </td>
                           <td>
+                            <select className="productInput" value={row.product_type_id || defaultFmsTypeId || "FMS"} onChange={(e) => handleItemChange(idx, "product_type_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {productTypes.map((tp) => <option key={getRecordId(tp)} value={getRecordId(tp)}>{getTypeName(tp)}</option>)}
+                              {!productTypes.length && <option value="FMS">FMS</option>}
+                            </select>
+                          </td>
+                          <td>
                             <select className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
                               <option value="">{t.select}</option>
                               {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
@@ -1323,13 +1374,11 @@ export default function SalesInvoicePage() {
                             <select className="productInput" value={row.sale_type} onChange={(e) => handleItemChange(idx, "sale_type", e.target.value)} disabled={!isCartonProduct}>
                               <option value="single">{t.single}</option>
                               {isCartonProduct && <option value="carton">{t.carton}</option>}
-                              {isCartonProduct && <option value="pieces">{t.pieces}</option>}
                             </select>
                           </td>
                           <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc" }} value={row.pieces_per_carton} /></td>
                           <td><input type="number" className="productInput" style={{ textAlign: "right" }} disabled={!isCartonProduct || row.sale_type !== "carton"} value={row.carton_qty} onChange={(e) => handleItemChange(idx, "carton_qty", e.target.value)} /></td>
-                          <td><input type="number" className="productInput" style={{ textAlign: "right" }} disabled={!isCartonProduct || row.sale_type !== "pieces"} value={row.pieces_qty} onChange={(e) => handleItemChange(idx, "pieces_qty", e.target.value)} /></td>
-                          <td><input type="number" className="productInput" style={{ textAlign: "right" }} disabled={isCartonProduct} value={row.qty} onChange={(e) => handleItemChange(idx, "qty", e.target.value)} /></td>
+                          <td><input type="number" className="productInput" style={{ textAlign: "right", background: isCartonProduct && row.sale_type === "carton" ? "#eef2ff" : "white", color: isCartonProduct && row.sale_type === "carton" ? "#3730a3" : "#0f172a", fontWeight: isCartonProduct && row.sale_type === "carton" ? 900 : 650 }} readOnly={isCartonProduct && row.sale_type === "carton"} value={row.qty} onChange={(e) => handleItemChange(idx, "qty", e.target.value)} /></td>
                           <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc", fontWeight: 900 }} value={money(row.amount)} /></td>
                           <td style={{ textAlign: "center" }}><button type="button" className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeRow(idx)}>×</button></td>
                         </tr>
