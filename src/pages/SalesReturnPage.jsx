@@ -1,117 +1,53 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
-
-async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API_ROOT}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Request failed");
-  }
-
-  if (res.status === 204) return null;
-  return res.json();
-}
-
-const getList = (d) => {
-  if (Array.isArray(d)) return d;
-  if (Array.isArray(d?.data)) return d.data;
-  if (Array.isArray(d?.returns)) return d.returns;
-  if (Array.isArray(d?.invoices)) return d.invoices;
-  if (Array.isArray(d?.items)) return d.items;
-  if (Array.isArray(d?.products)) return d.products;
-  if (Array.isArray(d?.categories)) return d.categories;
-  if (Array.isArray(d?.units)) return d.units;
-  if (Array.isArray(d?.rows)) return d.rows;
-  return [];
-};
-
-const toNum = (value, fallback = 0) => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-};
-
-const today = () => new Date().toISOString().slice(0, 10);
-
-const money = (v) =>
-  Number(v || 0).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-
-const pickText = (row, keys, fallback = "") => {
-  for (const key of keys) {
-    if (row?.[key] !== undefined && row?.[key] !== null && String(row[key]).trim()) {
-      return String(row[key]).trim();
-    }
-  }
-  return fallback;
-};
-
-const getProductName = (row) => pickText(row, ["product_name", "product_name_en", "item_name", "name", "name_en", "title"], row?.product_id ? `#${row.product_id}` : "");
-const getCategoryName = (row) => pickText(row, ["category_name", "category_name_en", "name", "name_en", "title"], row?.category_id ? `#${row.category_id}` : "");
-const getUnitName = (row) => pickText(row, ["unit_name", "unit_name_en", "symbol", "name", "name_en", "title"], row?.unit_id ? `#${row.unit_id}` : "");
-
-const getInvoiceNo = (inv) => inv?.invoice_no || inv?.invoiceNo || inv?.order_no || inv?.id || "";
-const getInvoiceDate = (inv) => String(inv?.invoice_date || inv?.date || inv?.created_at || "").slice(0, 10);
-const getPartyName = (inv) => pickText(inv, ["party_name", "customer_name", "customer_name_en", "employee_name", "supplier_name", "general_ledger_name", "name"], "Customer");
-const getPartyType = (inv) => inv?.party_type || inv?.customer_type || (inv?.employee_id ? "employee" : inv?.supplier_id ? "supplier" : inv?.general_ledger_id ? "general_ledger" : "customer");
-const getPartyId = (inv) => inv?.party_id || inv?.customer_id || inv?.employee_id || inv?.supplier_id || inv?.general_ledger_id || "";
-
-const getItemId = (item) => item?.invoice_item_id || item?.item_id || item?.id || `${item?.product_id || "p"}-${item?.sr || Math.random()}`;
-const getSoldQty = (item) => toNum(item?.qty ?? item?.quantity ?? item?.order_qty ?? item?.pieces_qty ?? item?.carton_qty);
-const getItemRate = (item) => toNum(item?.rate ?? item?.sale_rate ?? item?.price);
-const getItemAmount = (item) => toNum(item?.amount, getSoldQty(item) * getItemRate(item));
+const RETURNS_API = `${API_ROOT}/api/sales-returns`;
+const INVOICES_API = `${API_ROOT}/api/sales-invoices`;
+const PRODUCTS_API = `${API_ROOT}/api/products`;
+const CATEGORIES_API = `${API_ROOT}/api/categories`;
+const UNITS_API = `${API_ROOT}/api/units`;
 
 const LANG = {
   en: {
     title: "Sales Return",
-    subtitle: "Select a sales invoice, load its full record and mark products as return",
+    subtitle: "Create sales returns from sales invoices with products, quantities and totals",
     newReturn: "New Return",
     editReturn: "Edit Return",
-    back: "Back",
-    cancel: "Cancel",
-    save: "Save Return",
-    saving: "Saving...",
-    refresh: "Refresh",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
-    toggleLang: "اردو",
-    search: "Search return no, invoice, customer, product or reason...",
-    returnNo: "Return No",
-    returnDate: "Return Date",
-    reason: "Reason",
-    selectInvoice: "Select Sales Invoice",
-    invoiceSearch: "Search invoice/customer name...",
-    chooseInvoice: "Choose Invoice",
-    showDetails: "Show Details",
-    hideDetails: "Hide Details",
-    selected: "Selected",
-    today: "Today",
-    allInvoices: "All Invoices",
+    refresh: "Refresh",
+    todayFilter: "Today",
     selectDate: "Select Date",
     showingDate: "Showing Date",
-    dayDateYear: "Day / Date / Year",
-    clickDetails: "Click Show Details on any invoice to load full record.",
-    noInvoices: "No invoices found.",
-    invoiceRecord: "Sales Invoice Record",
+    toggleLang: "اردو",
+    searchPlaceholder: "Search return no, invoice no, name, product or reason...",
+    all: "All",
+    totalReturns: "Total Returns",
+    totalItems: "Total Items",
+    totalQty: "Total Qty",
+    totalValue: "Total Return Value",
+    returnNo: "Return No",
     invoiceNo: "Invoice No",
+    invoiceRef: "Invoice Ref",
+    dateFull: "Date",
+    returnDate: "Return Date",
     invoiceDate: "Invoice Date",
+    name: "Name",
     customer: "Customer",
     customerType: "Customer Type",
+    reference: "Reference",
     shipTo: "Ship To",
-    invoiceTotal: "Invoice Total",
-    previousBalance: "Previous Balance",
-    deliveryCharges: "Delivery Charges",
-    discount: "Discount",
-    grandTotal: "Grand Total",
+    salesInvoices: "Sales Invoices",
+    searchInvoice: "Search invoice no, name or date...",
+    allInvoices: "All Invoices",
+    showDetails: "Show Details",
+    hideDetails: "Hide Details",
+    invoiceRecord: "Invoice Record",
+    clickShowDetails: "Click Show Details to load invoice record and products.",
     products: "Products",
     product: "Product",
-    desc: "Description",
+    desc: "Desc",
     category: "Category",
     unit: "Unit",
     soldQty: "Sold Qty",
@@ -122,73 +58,77 @@ const LANG = {
     amount: "Amount",
     returnAmount: "Return Amount",
     markReturn: "Mark Return",
+    reason: "Reason",
+    invoiceTotal: "Invoice Total",
+    previousBalance: "Previous Balance",
+    deliveryCharges: "Delivery Charges",
+    discount: "Discount",
+    grandTotal: "Grand Total",
     totalReturnQty: "Total Return Qty",
     totalReturnAmount: "Total Return Amount",
-    totalReturns: "Total Returns",
-    totalQty: "Total Qty",
-    totalAmount: "Total Amount",
-    actions: "Actions",
+    save: "Save Return",
+    update: "Update Return",
+    saving: "Saving...",
+    cancel: "Cancel",
+    back: "Back",
+    close: "Close",
     edit: "Edit",
     delete: "Delete",
     print: "Print",
-    noRecords: "No returns found.",
-    noInvoice: "No invoice selected.",
+    actions: "Actions",
     loading: "Loading...",
-    loadError: "Data load failed.",
-    saveError: "Return save failed.",
-    deleteError: "Delete failed.",
-    saved: "Sales return saved successfully.",
-    updated: "Sales return updated successfully.",
-    deleted: "Sales return deleted successfully.",
-    deleteConfirm: "Delete this return?",
+    noRecords: "No returns found.",
+    noInvoices: "No invoices found.",
     requiredReturnNo: "Return No is required.",
-    requiredInvoice: "Please select a sales invoice.",
-    requiredItem: "Please enter return quantity in at least one product row.",
-    qtyExceeded: "Return quantity cannot be greater than available quantity.",
-    printTitle: "Sales Return Slip",
+    requiredInvoice: "Please select an invoice and click Show Details.",
+    requiredItem: "Enter return quantity in at least one product row.",
+    qtyExceeded: "Return qty cannot be greater than available qty.",
+    saved: "Sales return saved.",
+    updated: "Sales return updated.",
+    deleted: "Sales return deleted.",
+    saveError: "Save failed. Check backend.",
+    loadError: "Data load failed.",
+    printError: "Print failed.",
+    deleteConfirm: "Delete this return?",
+    slipTitle: "Sales Return Slip",
     printedOn: "Printed On",
   },
   ur: {
     title: "سیلز ریٹرن",
-    subtitle: "سیلز انوائس منتخب کریں، مکمل ریکارڈ دیکھیں اور پروڈکٹس ریٹرن مارک کریں",
+    subtitle: "سیلز انوائس سے پروڈکٹس، مقدار اور ٹوٹل کے ساتھ ریٹرن بنائیں",
     newReturn: "نیا ریٹرن",
     editReturn: "ریٹرن ترمیم",
-    back: "واپس",
-    cancel: "منسوخ",
-    save: "ریٹرن محفوظ کریں",
-    saving: "محفوظ ہو رہا ہے...",
-    refresh: "ری فریش",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
-    toggleLang: "English",
-    search: "ریٹرن نمبر، انوائس، کسٹمر، پروڈکٹ یا وجہ تلاش کریں...",
-    returnNo: "ریٹرن نمبر",
-    returnDate: "ریٹرن تاریخ",
-    reason: "وجہ",
-    selectInvoice: "سیلز انوائس منتخب کریں",
-    invoiceSearch: "انوائس/کسٹمر نام تلاش کریں...",
-    chooseInvoice: "انوائس منتخب کریں",
-    showDetails: "تفصیل دیکھیں",
-    hideDetails: "تفصیل بند کریں",
-    selected: "منتخب",
-    today: "آج",
-    allInvoices: "تمام انوائسز",
+    refresh: "ری فریش",
+    todayFilter: "آج",
     selectDate: "تاریخ منتخب کریں",
     showingDate: "دکھائی جانے والی تاریخ",
-    dayDateYear: "دن / تاریخ / سال",
-    clickDetails: "کسی انوائس پر Show Details کلک کریں تاکہ مکمل ریکارڈ لوڈ ہو۔",
-    noInvoices: "کوئی انوائس نہیں ملی۔",
-    invoiceRecord: "سیلز انوائس ریکارڈ",
+    toggleLang: "English",
+    searchPlaceholder: "ریٹرن نمبر، انوائس نمبر، نام، پروڈکٹ یا وجہ تلاش کریں...",
+    all: "سب",
+    totalReturns: "کل ریٹرنز",
+    totalItems: "کل آئٹمز",
+    totalQty: "کل مقدار",
+    totalValue: "کل ریٹرن رقم",
+    returnNo: "ریٹرن نمبر",
     invoiceNo: "انوائس نمبر",
+    invoiceRef: "انوائس حوالہ",
+    dateFull: "تاریخ",
+    returnDate: "ریٹرن تاریخ",
     invoiceDate: "انوائس تاریخ",
+    name: "نام",
     customer: "کسٹمر",
     customerType: "کسٹمر ٹائپ",
+    reference: "ریفرنس",
     shipTo: "شپ ٹو",
-    invoiceTotal: "انوائس ٹوٹل",
-    previousBalance: "سابقہ بیلنس",
-    deliveryCharges: "ڈیلیوری چارجز",
-    discount: "ڈسکاؤنٹ",
-    grandTotal: "کل رقم",
+    salesInvoices: "سیلز انوائسز",
+    searchInvoice: "انوائس نمبر، نام یا تاریخ تلاش کریں...",
+    allInvoices: "تمام انوائسز",
+    showDetails: "تفصیل دیکھیں",
+    hideDetails: "تفصیل بند کریں",
+    invoiceRecord: "انوائس ریکارڈ",
+    clickShowDetails: "انوائس ریکارڈ اور پروڈکٹس لوڈ کرنے کے لیے Show Details کلک کریں۔",
     products: "پروڈکٹس",
     product: "پروڈکٹ",
     desc: "تفصیل",
@@ -202,33 +142,126 @@ const LANG = {
     amount: "رقم",
     returnAmount: "واپسی رقم",
     markReturn: "ریٹرن مارک",
+    reason: "وجہ",
+    invoiceTotal: "انوائس ٹوٹل",
+    previousBalance: "سابقہ بیلنس",
+    deliveryCharges: "ڈیلیوری چارجز",
+    discount: "ڈسکاؤنٹ",
+    grandTotal: "کل رقم",
     totalReturnQty: "کل ریٹرن مقدار",
     totalReturnAmount: "کل ریٹرن رقم",
-    totalReturns: "کل ریٹرنز",
-    totalQty: "کل مقدار",
-    totalAmount: "کل رقم",
-    actions: "اقدامات",
+    save: "ریٹرن محفوظ کریں",
+    update: "ریٹرن اپڈیٹ",
+    saving: "محفوظ ہو رہا ہے...",
+    cancel: "منسوخ",
+    back: "واپس",
+    close: "بند کریں",
     edit: "ترمیم",
     delete: "حذف",
     print: "پرنٹ",
-    noRecords: "کوئی ریٹرن نہیں ملا۔",
-    noInvoice: "کوئی انوائس منتخب نہیں۔",
+    actions: "اقدامات",
     loading: "لوڈ ہو رہا ہے...",
-    loadError: "ڈیٹا لوڈ نہیں ہوا۔",
-    saveError: "ریٹرن محفوظ نہیں ہوا۔",
-    deleteError: "حذف نہیں ہوا۔",
+    noRecords: "کوئی ریٹرن نہیں ملا۔",
+    noInvoices: "کوئی انوائس نہیں ملی۔",
+    requiredReturnNo: "ریٹرن نمبر ضروری ہے۔",
+    requiredInvoice: "انوائس منتخب کریں اور Show Details کلک کریں۔",
+    requiredItem: "کم از کم ایک پروڈکٹ میں ریٹرن مقدار درج کریں۔",
+    qtyExceeded: "ریٹرن مقدار دستیاب مقدار سے زیادہ نہیں ہو سکتی۔",
     saved: "سیلز ریٹرن محفوظ ہو گیا۔",
     updated: "سیلز ریٹرن اپڈیٹ ہو گیا۔",
     deleted: "سیلز ریٹرن حذف ہو گیا۔",
+    saveError: "محفوظ نہیں ہوا، بیک اینڈ چیک کریں۔",
+    loadError: "ڈیٹا لوڈ نہیں ہوا۔",
+    printError: "پرنٹ نہیں ہو سکا۔",
     deleteConfirm: "کیا یہ ریٹرن حذف کرنا ہے؟",
-    requiredReturnNo: "ریٹرن نمبر ضروری ہے۔",
-    requiredInvoice: "سیلز انوائس منتخب کریں۔",
-    requiredItem: "کم از کم ایک پروڈکٹ میں ریٹرن مقدار درج کریں۔",
-    qtyExceeded: "ریٹرن مقدار دستیاب مقدار سے زیادہ نہیں ہو سکتی۔",
-    printTitle: "سیلز ریٹرن سلپ",
+    slipTitle: "سیلز ریٹرن سلپ",
     printedOn: "پرنٹ تاریخ",
   },
 };
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const emptyForm = () => ({
+  return_no: "",
+  return_date: today(),
+  reason: "",
+  invoice_id: "",
+});
+
+const getList = (d) => {
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.returns)) return d.returns;
+  if (Array.isArray(d?.invoices)) return d.invoices;
+  if (Array.isArray(d?.items)) return d.items;
+  if (Array.isArray(d?.rows)) return d.rows;
+  if (Array.isArray(d?.products)) return d.products;
+  return [];
+};
+
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const money = (v) =>
+  Number(v || 0).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+
+const pickText = (o, keys, fallback = "") => {
+  for (const key of keys) {
+    if (o?.[key] !== undefined && o?.[key] !== null && String(o[key]).trim()) {
+      return String(o[key]).trim();
+    }
+  }
+  return fallback;
+};
+
+const getRecordId = (o) =>
+  o?.id ?? o?.value ?? o?.customer_id ?? o?.employee_id ?? o?.supplier_id ?? o?.general_ledger_id ?? o?.ledger_id ?? o?.account_id ?? "";
+
+const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "item_name", "name", "name_en", "title"], o?.product_id ? `#${o.product_id}` : "");
+const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "name", "name_en", "title"], o?.category_id ? `#${o.category_id}` : "");
+const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "symbol", "name", "name_en", "title"], o?.unit_id ? `#${o.unit_id}` : "");
+
+const getInvoiceNo = (inv) => inv?.invoice_no || inv?.invoiceNo || inv?.order_no || inv?.id || "";
+const getInvoiceDate = (inv) => String(inv?.invoice_date || inv?.date || inv?.created_at || "").slice(0, 10);
+const getPartyName = (inv) =>
+  pickText(inv, ["party_name", "customer_name", "customer_name_en", "employee_name", "supplier_name", "general_ledger_name", "name"], "Customer");
+const getPartyType = (inv) =>
+  inv?.party_type || inv?.customer_type || (inv?.employee_id ? "employee" : inv?.supplier_id ? "supplier" : inv?.general_ledger_id ? "general_ledger" : "customer");
+const getPartyId = (inv) => inv?.party_id || inv?.customer_id || inv?.employee_id || inv?.supplier_id || inv?.general_ledger_id || "";
+const getItemId = (item, index = 0) => item?.invoice_item_id || item?.item_id || item?.id || `${item?.product_id || "p"}-${item?.sr || index + 1}`;
+const getSoldQty = (item) => toNum(item?.qty ?? item?.quantity ?? item?.order_qty ?? item?.pieces_qty ?? item?.carton_qty);
+const getItemRate = (item) => toNum(item?.rate ?? item?.sale_rate ?? item?.price);
+const getItemAmount = (item) => toNum(item?.amount, getSoldQty(item) * getItemRate(item));
+
+// ✅ Date format: 25/06/2026 (day name removed)
+function formatFullDate(dateValue) {
+  if (!dateValue) return "-";
+  const raw = String(dateValue).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function makeMap(list, getter) {
+  const map = {};
+  list.forEach((row) => {
+    const id = String(getRecordId(row));
+    if (id) map[id] = getter(row);
+  });
+  return map;
+}
 
 function genReturnNo(list) {
   let max = 0;
@@ -240,25 +273,68 @@ function genReturnNo(list) {
   return `sales-return${String(max + 1).padStart(2, "0")}`;
 }
 
-function formatDate(value, lang = "en") {
-  if (!value) return "-";
-  const d = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
-  return d.toLocaleDateString(lang === "ur" ? "ur-PK" : "en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+
+function parseDisplayDate(value) {
+  const v = String(value || "").trim();
+  const slash = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (slash) {
+    const dd = slash[1].padStart(2, "0");
+    const mm = slash[2].padStart(2, "0");
+    const yyyy = slash[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return "";
 }
 
-function createEmptyForm() {
-  return {
-    return_no: "",
-    invoice_id: "",
-    return_date: today(),
-    reason: "",
-  };
+function DateTextInput({ value, onChange, className = "", style = {}, ...props }) {
+  const [draft, setDraft] = useState(formatFullDate(value));
+
+  useEffect(() => {
+    setDraft(formatFullDate(value));
+  }, [value]);
+
+  return (
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/yyyy"
+      className={className}
+      style={style}
+      value={draft}
+      onChange={(e) => {
+        const next = e.target.value;
+        setDraft(next);
+        const parsed = parseDisplayDate(next);
+        if (parsed) onChange(parsed);
+      }}
+      onBlur={() => setDraft(formatFullDate(value))}
+    />
+  );
+}
+
+function useLookup(url) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(url);
+      setData(getList(res.data));
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, refetch: fetchData };
 }
 
 function printReturnSlip(ret, t, lang) {
@@ -266,29 +342,27 @@ function printReturnSlip(ret, t, lang) {
   const html = `<!doctype html>
 <html dir="${isUrdu ? "rtl" : "ltr"}">
 <head>
-<title>${t.printTitle} - ${ret.return_no || ""}</title>
+<title>${t.slipTitle} - ${ret.return_no || ""}</title>
 <style>
-body{font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{max-width:920px;margin:auto;background:white;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:white;padding:18px 22px;display:flex;justify-content:space-between;gap:12px}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:12px;padding:10px}.box small{display:block;color:#64748b;font-size:11px;font-weight:800;margin-bottom:5px}.box b{font-size:15px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.reason{margin-top:12px;border:1px solid #fed7aa;background:#fff7ed;border-radius:12px;padding:12px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
+body{font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.reason{margin-top:12px;border:1px solid #fed7aa;background:#fff7ed;border-radius:12px;padding:12px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
 </style>
 </head>
-<body>
-<div class="page"><div class="sheet">
-  <div class="head"><div><h1>Ali Cages</h1><div>${t.printTitle}</div></div><div>${t.returnNo}: <b>${ret.return_no || "-"}</b><br/>${t.printedOn}: ${new Date().toLocaleString("en-PK")}</div></div>
+<body><div class="page"><div class="sheet">
+  <div class="head"><div><h1>Ali Cages</h1><div>${t.slipTitle}</div></div><div>${t.returnNo}: <b>${ret.return_no || "-"}</b><br/>${t.printedOn}: ${new Date().toLocaleString("en-PK")}</div></div>
   <div class="body">
     <div class="grid">
-      <div class="box"><small>${t.invoiceNo}</small><b>${ret.invoice_ref || "-"}</b></div>
+      <div class="box"><small>${t.invoiceNo}</small><b>${ret.invoice_ref || ret.invoice_no || "-"}</b></div>
+      <div class="box"><small>${t.name}</small><b>${ret.party_name || ret.customer_name || "-"}</b></div>
       <div class="box"><small>${t.product}</small><b>${ret.product_name || "-"}</b></div>
-      <div class="box"><small>${t.returnDate}</small><b>${formatDate(ret.return_date, lang)}</b></div>
+      <div class="box"><small>${t.returnDate}</small><b>${formatFullDate(ret.return_date, lang)}</b></div>
+      <div class="box"><small>${t.returnAmount}</small><b>${money(ret.return_amount)}</b></div>
     </div>
     <table><thead><tr><th>${t.soldQty}</th><th>${t.returnQty}</th><th>${t.rate}</th><th>${t.returnAmount}</th></tr></thead><tbody><tr><td class="num">${money(ret.sold_qty)}</td><td class="num strong">${money(ret.return_qty)}</td><td class="num">${money(ret.rate)}</td><td class="num strong">${money(ret.return_amount)}</td></tr></tbody></table>
     ${ret.reason ? `<div class="reason"><b>${t.reason}</b><br/>${ret.reason}</div>` : ""}
   </div>
-</div></div>
-<script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
-</body>
-</html>`;
+</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
 
-  const w = window.open("", "_blank", "width=1100,height=800");
+  const w = window.open("", "_blank", "width=1200,height=800");
   if (!w) return;
   w.document.open();
   w.document.write(html);
@@ -301,170 +375,95 @@ export default function SalesReturnPage() {
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
+  const { data: products } = useLookup(PRODUCTS_API);
+  const { data: categories } = useLookup(CATEGORIES_API);
+  const { data: units } = useLookup(UNITS_API);
+
   const [returns, setReturns] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [units, setUnits] = useState([]);
-
   const [loading, setLoading] = useState(true);
-  const [invoiceLoading, setInvoiceLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [search, setSearch] = useState("");
-  const [showSummary, setShowSummary] = useState(false);
+  const [loadingInvoiceDetail, setLoadingInvoiceDetail] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(createEmptyForm());
-
+  const [form, setForm] = useState(emptyForm());
+  const [search, setSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState(today());
+  const [showAllReturns, setShowAllReturns] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
-  const [invoiceSelectedDate, setInvoiceSelectedDate] = useState(today());
+  const [invoiceDate, setInvoiceDate] = useState(today());
   const [showAllInvoices, setShowAllInvoices] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [invoiceItems, setInvoiceItems] = useState([]);
-  const [rowReturns, setRowReturns] = useState({});
+  const [returnRows, setReturnRows] = useState({});
   const [msg, setMsg] = useState({ type: "", text: "" });
+  const [saving, setSaving] = useState(false);
+
+  const productMap = useMemo(() => makeMap(products, getProductName), [products]);
+  const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
+  const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
 
   const toast = useCallback((type, text) => {
     setMsg({ type, text });
-    setTimeout(() => setMsg({ type: "", text: "" }), 3000);
+    setTimeout(() => setMsg({ type: "", text: "" }), 2800);
   }, []);
 
-  const loadAll = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [retRes, invRes, prodRes, catRes, unitRes] = await Promise.all([
-        apiFetch("/api/sales-returns").catch(() => []),
-        apiFetch("/api/sales-invoices").catch(() => []),
-        apiFetch("/api/products").catch(() => []),
-        apiFetch("/api/categories").catch(() => []),
-        apiFetch("/api/units").catch(() => []),
+      const [retRes, invRes] = await Promise.all([
+        axios.get(RETURNS_API).catch(() => ({ data: [] })),
+        axios.get(INVOICES_API).catch(() => ({ data: [] })),
       ]);
-
-      setReturns(getList(retRes));
-      setInvoices(getList(invRes));
-      setProducts(getList(prodRes));
-      setCategories(getList(catRes));
-      setUnits(getList(unitRes));
-    } catch (err) {
-      toast("error", err.message || t.loadError);
+      setReturns(getList(retRes.data));
+      setInvoices(getList(invRes.data));
+    } catch {
+      toast("error", t.loadError);
     } finally {
       setLoading(false);
     }
   }, [t.loadError, toast]);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
-
-  const productMap = useMemo(() => {
-    const map = {};
-    products.forEach((p) => {
-      if (p.id) map[String(p.id)] = getProductName(p);
-    });
-    return map;
-  }, [products]);
-
-  const categoryMap = useMemo(() => {
-    const map = {};
-    categories.forEach((c) => {
-      if (c.id) map[String(c.id)] = getCategoryName(c);
-    });
-    return map;
-  }, [categories]);
-
-  const unitMap = useMemo(() => {
-    const map = {};
-    units.forEach((u) => {
-      if (u.id) map[String(u.id)] = getUnitName(u);
-    });
-    return map;
-  }, [units]);
-
-  const filteredReturns = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return returns;
-    return returns.filter((r) =>
-      [r.return_no, r.invoice_ref, r.invoice_no, r.party_name, r.customer_name, r.product_name, r.reason]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [returns, search]);
-
-  const summary = useMemo(
-    () => ({
-      totalReturns: filteredReturns.length,
-      totalQty: filteredReturns.reduce((s, r) => s + toNum(r.return_qty), 0),
-      totalAmount: filteredReturns.reduce((s, r) => s + toNum(r.return_amount), 0),
-    }),
-    [filteredReturns]
-  );
-
-  const filteredInvoices = useMemo(() => {
-    const q = invoiceSearch.trim().toLowerCase();
-    let list = invoices.slice();
-
-    if (!showAllInvoices && invoiceSelectedDate) {
-      list = list.filter((inv) => getInvoiceDate(inv) === invoiceSelectedDate);
-    }
-
-    if (q) {
-      list = list.filter((inv) =>
-        [getInvoiceNo(inv), getPartyName(inv), getInvoiceDate(inv), inv.invoice_total, inv.grand_total]
-          .join(" ")
-          .toLowerCase()
-          .includes(q)
-      );
-    }
-
-    return list.slice(0, 100);
-  }, [invoices, invoiceSearch, invoiceSelectedDate, showAllInvoices]);
+    fetchAll();
+  }, [fetchAll]);
 
   const getAlreadyReturnedQty = useCallback(
-    (item) => {
+    (item, invoiceId) => {
       const itemId = String(getItemId(item));
-      const invoiceId = String(selectedInvoice?.id || form.invoice_id || "");
       const productId = String(item.product_id || "");
       return returns
-        .filter((r) => {
-          if (editingId && String(r.id) === String(editingId)) return false;
-          const sameInvoice = String(r.invoice_id || "") === invoiceId;
-          const sameItem = String(r.invoice_item_id || "") === itemId;
-          const sameProductFallback = !r.invoice_item_id && productId && String(r.product_id || "") === productId;
+        .filter((ret) => {
+          if (editingId && String(ret.id) === String(editingId)) return false;
+          const sameInvoice = String(ret.invoice_id || "") === String(invoiceId || "");
+          const sameItem = String(ret.invoice_item_id || "") === itemId;
+          const sameProductFallback = !ret.invoice_item_id && productId && String(ret.product_id || "") === productId;
           return sameInvoice && (sameItem || sameProductFallback);
         })
-        .reduce((sum, r) => sum + toNum(r.return_qty), 0);
+        .reduce((sum, ret) => sum + toNum(ret.return_qty), 0);
     },
-    [returns, selectedInvoice, form.invoice_id, editingId]
+    [returns, editingId]
   );
 
   const normalizeInvoiceItems = useCallback(
     (items = [], inv = selectedInvoice) => {
       return items.map((item, index) => {
-        const itemId = getItemId(item);
+        const itemId = getItemId(item, index);
         const soldQty = getSoldQty(item);
-        const alreadyReturned = toNum(item.returned_qty || item.already_returned_qty || getAlreadyReturnedQty(item));
-        const available = Math.max(0, soldQty - alreadyReturned);
-        const productName =
-          item.product_name ||
-          item.product?.product_name ||
-          productMap[String(item.product_id || "")] ||
-          getProductName(item) ||
-          `Product ${index + 1}`;
+        const alreadyReturned = toNum(item.returned_qty || item.already_returned_qty || getAlreadyReturnedQty(item, inv?.id || form.invoice_id));
+        const availableQty = Math.max(0, soldQty - alreadyReturned);
+        const productName = item.product_name || item.product?.product_name || productMap[String(item.product_id || "")] || getProductName(item) || `Product ${index + 1}`;
         const categoryName = item.category_name || categoryMap[String(item.category_id || "")] || getCategoryName(item) || "-";
         const unitName = item.unit_name || unitMap[String(item.unit_id || "")] || getUnitName(item) || "-";
         return {
           ...item,
           invoice_item_id: itemId,
-          invoice_id: inv?.id || item.invoice_id || form.invoice_id,
-          invoice_ref: getInvoiceNo(inv) || item.invoice_ref || item.invoice_no || "",
           product_name: productName,
           category_name: categoryName,
           unit_name: unitName,
           sold_qty: soldQty,
           already_returned_qty: alreadyReturned,
-          available_qty: available,
+          available_qty: availableQty,
           rate: getItemRate(item),
           amount: getItemAmount(item),
         };
@@ -478,102 +477,144 @@ export default function SalesReturnPage() {
       if (!invoiceId) {
         setSelectedInvoice(null);
         setInvoiceItems([]);
-        setRowReturns({});
+        setReturnRows({});
         return;
       }
 
-      setInvoiceLoading(true);
+      setLoadingInvoiceDetail(true);
       try {
-        let invRes = await apiFetch(`/api/sales-invoices/${invoiceId}`);
-        let inv = invRes?.data || invRes?.invoice || invRes;
-        let items = getList(inv?.items || inv?.order_items || inv?.invoice_items || inv?.sales_invoice_items || invRes?.items || invRes?.data?.items);
+        const res = await axios.get(`${INVOICES_API}/${invoiceId}`);
+        let inv = res.data?.data || res.data?.invoice || res.data;
+        let items = getList(inv?.items || inv?.order_items || inv?.invoice_items || inv?.sales_invoice_items || res.data?.items || res.data?.data?.items);
 
         if (!items.length) {
-          const itemRes = await apiFetch(`/api/sales-invoices/${invoiceId}/items`).catch(() => []);
-          items = getList(itemRes);
+          const itemRes = await axios.get(`${INVOICES_API}/${invoiceId}/items`).catch(() => ({ data: [] }));
+          items = getList(itemRes.data);
         }
 
-        if (!inv?.id) {
-          inv = invoices.find((x) => String(x.id) === String(invoiceId)) || { id: invoiceId };
-        }
+        if (!inv?.id) inv = invoices.find((x) => String(x.id) === String(invoiceId)) || { id: invoiceId };
 
         setSelectedInvoice(inv);
-        const normalized = normalizeInvoiceItems(items, inv);
-        setInvoiceItems(normalized);
-        setRowReturns({});
-        setForm((f) => ({ ...f, invoice_id: String(invoiceId) }));
-      } catch (err) {
-        toast("error", err.message || t.loadError);
+        setInvoiceItems(normalizeInvoiceItems(items, inv));
+        setReturnRows({});
+        setForm((prev) => ({ ...prev, invoice_id: String(invoiceId) }));
+      } catch {
+        toast("error", t.loadError);
         setSelectedInvoice(null);
         setInvoiceItems([]);
       } finally {
-        setInvoiceLoading(false);
+        setLoadingInvoiceDetail(false);
       }
     },
     [invoices, normalizeInvoiceItems, t.loadError, toast]
   );
 
+  const filteredReturns = useMemo(() => {
+    let list = returns;
+    if (!showAllReturns && selectedDate) {
+      list = list.filter((ret) => String(ret.return_date || "").slice(0, 10) === selectedDate);
+    }
+
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+
+    return list.filter((ret) =>
+      [ret.return_no, ret.invoice_ref, ret.invoice_no, ret.party_name, ret.customer_name, ret.product_name, ret.reason]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [returns, search, selectedDate, showAllReturns]);
+
+  const filteredInvoices = useMemo(() => {
+    let list = invoices;
+    if (!showAllInvoices && invoiceDate) {
+      list = list.filter((inv) => getInvoiceDate(inv) === invoiceDate);
+    }
+
+    const q = invoiceSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter((inv) =>
+        [getInvoiceNo(inv), getPartyName(inv), getInvoiceDate(inv), inv.invoice_total, inv.grand_total]
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
+      );
+    }
+
+    return list.slice(0, 150);
+  }, [invoices, invoiceSearch, invoiceDate, showAllInvoices]);
+
+  const summary = useMemo(() => {
+    return filteredReturns.reduce(
+      (acc, ret) => {
+        acc.totalReturns += 1;
+        acc.totalItems += 1;
+        acc.totalQty += toNum(ret.return_qty);
+        acc.totalValue += toNum(ret.return_amount);
+        return acc;
+      },
+      { totalReturns: 0, totalItems: 0, totalQty: 0, totalValue: 0 }
+    );
+  }, [filteredReturns]);
+
   const openAdd = () => {
     setEditingId(null);
-    setForm({ ...createEmptyForm(), return_no: genReturnNo(returns) });
+    setForm({ ...emptyForm(), return_no: genReturnNo(returns) });
+    setInvoiceSearch("");
+    setShowAllInvoices(true);
     setSelectedInvoice(null);
     setInvoiceItems([]);
-    setRowReturns({});
-    setInvoiceSearch("");
+    setReturnRows({});
     setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm());
+    setSelectedInvoice(null);
+    setInvoiceItems([]);
+    setReturnRows({});
+  };
+
+  const handleShowDetails = (invoiceId) => {
+    const isActive = String(form.invoice_id || "") === String(invoiceId || "") && selectedInvoice;
+    if (isActive) {
+      setSelectedInvoice(null);
+      setInvoiceItems([]);
+      setReturnRows({});
+      setForm((prev) => ({ ...prev, invoice_id: "" }));
+      return;
+    }
+    loadInvoiceDetail(invoiceId);
   };
 
   const openEdit = async (ret) => {
     setEditingId(ret.id);
     setForm({
       return_no: ret.return_no || "",
-      invoice_id: String(ret.invoice_id || ""),
       return_date: String(ret.return_date || today()).slice(0, 10),
       reason: ret.reason || "",
+      invoice_id: String(ret.invoice_id || ""),
     });
     setShowForm(true);
     await loadInvoiceDetail(ret.invoice_id);
-    const itemKey = String(ret.invoice_item_id || ret.item_id || ret.product_id || "");
-    setRowReturns({
-      [itemKey]: {
-        selected: true,
-        return_qty: String(ret.return_qty || ""),
-      },
-    });
-  };
-
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setForm(createEmptyForm());
-    setSelectedInvoice(null);
-    setInvoiceItems([]);
-    setRowReturns({});
-  };
-
-  const handleInvoiceSelect = (invoiceId) => {
-    setForm((f) => ({ ...f, invoice_id: invoiceId }));
-    loadInvoiceDetail(invoiceId);
-  };
-
-  const handleInvoiceDetails = (invoiceId) => {
-    if (String(form.invoice_id || "") === String(invoiceId || "") && selectedInvoice) {
-      setForm((f) => ({ ...f, invoice_id: "" }));
-      setSelectedInvoice(null);
-      setInvoiceItems([]);
-      setRowReturns({});
-      return;
+    const key = String(ret.invoice_item_id || ret.item_id || ret.product_id || "");
+    if (key) {
+      setReturnRows({
+        [key]: { checked: true, return_qty: String(ret.return_qty || "") },
+      });
     }
-    handleInvoiceSelect(invoiceId);
   };
 
-  const updateReturnRow = (itemId, field, value) => {
-    setRowReturns((prev) => ({
+  const updateReturnRow = (itemKey, field, value) => {
+    setReturnRows((prev) => ({
       ...prev,
-      [itemId]: {
-        selected: field === "return_qty" ? toNum(value) > 0 : true,
-        return_qty: prev[itemId]?.return_qty || "",
-        ...(prev[itemId] || {}),
+      [itemKey]: {
+        ...(prev[itemKey] || {}),
+        checked: field === "return_qty" ? toNum(value) > 0 : value,
+        return_qty: prev[itemKey]?.return_qty || "",
         [field]: value,
       },
     }));
@@ -583,23 +624,24 @@ export default function SalesReturnPage() {
     return invoiceItems
       .map((item) => {
         const key = String(item.invoice_item_id);
-        const selected = !!rowReturns[key]?.selected || toNum(rowReturns[key]?.return_qty) > 0;
-        const returnQty = toNum(rowReturns[key]?.return_qty);
+        const row = returnRows[key] || {};
+        const returnQty = toNum(row.return_qty);
+        const checked = !!row.checked || returnQty > 0;
         return {
-          item,
           key,
-          selected,
+          item,
+          checked,
           returnQty,
           returnAmount: returnQty * toNum(item.rate),
         };
       })
-      .filter((row) => row.selected && row.returnQty > 0);
-  }, [invoiceItems, rowReturns]);
+      .filter((row) => row.checked && row.returnQty > 0);
+  }, [invoiceItems, returnRows]);
 
   const formTotals = useMemo(
     () => ({
-      qty: selectedRows.reduce((s, r) => s + toNum(r.returnQty), 0),
-      amount: selectedRows.reduce((s, r) => s + toNum(r.returnAmount), 0),
+      qty: selectedRows.reduce((sum, row) => sum + toNum(row.returnQty), 0),
+      amount: selectedRows.reduce((sum, row) => sum + toNum(row.returnAmount), 0),
     }),
     [selectedRows]
   );
@@ -641,8 +683,8 @@ export default function SalesReturnPage() {
   };
 
   const handleSave = async () => {
-    if (!form.return_no.trim()) return toast("error", t.requiredReturnNo);
-    if (!form.invoice_id) return toast("error", t.requiredInvoice);
+    if (!String(form.return_no || "").trim()) return toast("error", t.requiredReturnNo);
+    if (!form.invoice_id || !selectedInvoice) return toast("error", t.requiredInvoice);
     if (!selectedRows.length) return toast("error", t.requiredItem);
 
     for (const row of selectedRows) {
@@ -655,26 +697,20 @@ export default function SalesReturnPage() {
     try {
       if (editingId) {
         const payload = buildPayloadForRow(selectedRows[0], 0, 1);
-        await apiFetch(`/api/sales-returns/${editingId}`, {
-          method: "PUT",
-          body: JSON.stringify(payload),
-        });
+        await axios.put(`${RETURNS_API}/${editingId}`, payload);
         toast("success", t.updated);
       } else {
         for (let i = 0; i < selectedRows.length; i += 1) {
           const payload = buildPayloadForRow(selectedRows[i], i, selectedRows.length);
-          await apiFetch("/api/sales-returns", {
-            method: "POST",
-            body: JSON.stringify(payload),
-          });
+          await axios.post(RETURNS_API, payload);
         }
         toast("success", t.saved);
       }
 
-      await loadAll();
+      await fetchAll();
       closeForm();
     } catch (err) {
-      toast("error", err.message || t.saveError);
+      toast("error", err?.response?.data?.message || err.message || t.saveError);
     } finally {
       setSaving(false);
     }
@@ -683,329 +719,306 @@ export default function SalesReturnPage() {
   const handleDelete = async (id) => {
     if (!window.confirm(t.deleteConfirm)) return;
     try {
-      await apiFetch(`/api/sales-returns/${id}`, { method: "DELETE" });
+      await axios.delete(`${RETURNS_API}/${id}`);
       toast("success", t.deleted);
-      loadAll();
-    } catch (err) {
-      toast("error", err.message || t.deleteError);
+      fetchAll();
+    } catch {
+      toast("error", t.loadError);
     }
   };
 
-  const handlePrint = (ret) => printReturnSlip(ret, t, lang);
-
-  if (showForm) {
-    return (
-      <div dir={dir} className="sales-return-page">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-        <style>{pageCss(isUrdu)}</style>
-
-        {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
-
-        <div className="page-wrap">
-          <div className="input-page-card">
-            <div className="input-title">
-              <div>
-                <h2>{editingId ? t.editReturn : t.newReturn}</h2>
-                <p>{t.subtitle}</p>
-              </div>
-              <div className="title-actions">
-                <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
-                <button className="btn btn-soft" onClick={closeForm}><i className="bi bi-arrow-left"></i>{t.back}</button>
-              </div>
-            </div>
-
-            <div className="form-section no-radius-top">
-              <div className="form-grid return-head-grid">
-                <div>
-                  <label>{t.returnNo} *</label>
-                  <input className="input" value={form.return_no} onChange={(e) => setForm((f) => ({ ...f, return_no: e.target.value }))} />
-                </div>
-                <div>
-                  <label>{t.returnDate}</label>
-                  <input className="input" type="date" value={form.return_date} onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))} />
-                </div>
-                <div>
-                  <label>{t.reason}</label>
-                  <input className="input" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
-                </div>
-              </div>
-            </div>
-
-            <div className="section-head"><span>{t.selectInvoice}</span></div>
-            <div className="form-section">
-              <div className="invoice-toolbar">
-                <input className="search invoice-search-input" value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} placeholder={t.invoiceSearch} />
-                <button className={`filter-btn ${showAllInvoices ? "active" : ""}`} type="button" onClick={() => setShowAllInvoices(true)}>{t.allInvoices}</button>
-                <button className={`filter-btn ${!showAllInvoices && invoiceSelectedDate === today() ? "active" : ""}`} type="button" onClick={() => { setShowAllInvoices(false); setInvoiceSelectedDate(today()); }}>{t.today}</button>
-                <label className="date-filter-label">
-                  <span>{t.selectDate}</span>
-                  <input type="date" value={invoiceSelectedDate} onChange={(e) => { setInvoiceSelectedDate(e.target.value || today()); setShowAllInvoices(false); }} />
-                </label>
-                {!showAllInvoices && <span className="showing-date-pill">{t.showingDate}: {formatDate(invoiceSelectedDate, lang)}</span>}
-              </div>
-
-              <div className="invoice-list-wrap">
-                <table className="invoice-select-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 46 }}>#</th>
-                      <th>{t.invoiceNo}</th>
-                      <th>{t.customer}</th>
-                      <th>{t.dayDateYear}</th>
-                      <th className="num-head">{t.invoiceTotal}</th>
-                      <th className="num-head">{t.grandTotal}</th>
-                      <th className="center">{t.actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoiceLoading && !selectedInvoice ? (
-                      <tr><td colSpan={7} className="empty-cell center">{t.loading}</td></tr>
-                    ) : filteredInvoices.length === 0 ? (
-                      <tr><td colSpan={7} className="empty-cell center">{t.noInvoices}</td></tr>
-                    ) : (
-                      filteredInvoices.map((inv, index) => {
-                        const active = String(form.invoice_id || "") === String(inv.id || "") && selectedInvoice;
-                        return (
-                          <tr key={inv.id || index} className={active ? "active-invoice-row" : ""}>
-                            <td className="center muted strong">{index + 1}</td>
-                            <td><b className="mono">{getInvoiceNo(inv)}</b><div className="muted">{inv.reference_no || "-"}</div></td>
-                            <td><b>{getPartyName(inv)}</b><div className="muted">{getPartyType(inv)}</div></td>
-                            <td className="center strong">{formatDate(getInvoiceDate(inv), lang)}</td>
-                            <td className="num strong">{money(inv.invoice_total || inv.total_amount)}</td>
-                            <td className="num strong blue-text">{money(inv.grand_total || inv.invoice_total || inv.total_amount)}</td>
-                            <td className="center">
-                              <button className={`small-btn ${active ? "amber" : "green"}`} type="button" onClick={() => handleInvoiceDetails(inv.id)} disabled={invoiceLoading}>
-                                {active ? t.hideDetails : t.showDetails}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="section-head"><span>{t.invoiceRecord}</span></div>
-            <div className="form-section">
-              {!selectedInvoice ? (
-                <div className="empty-box">{t.clickDetails}</div>
-              ) : (
-                <div className="invoice-info-grid">
-                  <Info label={t.invoiceNo} value={getInvoiceNo(selectedInvoice)} />
-                  <Info label={t.customer} value={getPartyName(selectedInvoice)} />
-                  <Info label={t.customerType} value={getPartyType(selectedInvoice)} />
-                  <Info label={t.invoiceDate} value={formatDate(getInvoiceDate(selectedInvoice), lang)} />
-                  <Info label={t.shipTo} value={selectedInvoice.shipment_to || "-"} />
-                  <Info label={t.invoiceTotal} value={money(selectedInvoice.invoice_total || selectedInvoice.total_amount)} />
-                  <Info label={t.previousBalance} value={money(selectedInvoice.previous_balance)} />
-                  <Info label={t.deliveryCharges} value={money(selectedInvoice.delivery_charges)} />
-                  <Info label={t.discount} value={money(selectedInvoice.discount)} />
-                  <Info label={t.grandTotal} value={money(selectedInvoice.grand_total)} strong />
-                </div>
-              )}
-            </div>
-
-            {selectedInvoice && (
-              <>
-            <div className="section-head"><span>{t.products}</span></div>
-            <div className="table-panel">
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>{t.product}</th>
-                    <th>{t.desc}</th>
-                    <th>{t.category}</th>
-                    <th>{t.unit}</th>
-                    <th>{t.soldQty}</th>
-                    <th>{t.alreadyReturned}</th>
-                    <th>{t.availableQty}</th>
-                    <th>{t.rate}</th>
-                    <th>{t.returnQty}</th>
-                    <th>{t.returnAmount}</th>
-                    <th>{t.markReturn}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoiceLoading ? (
-                    <tr><td colSpan={12} className="center empty-cell">{t.loading}</td></tr>
-                  ) : !invoiceItems.length ? (
-                    <tr><td colSpan={12} className="center empty-cell">{selectedInvoice ? "No products found in this invoice." : t.noInvoice}</td></tr>
-                  ) : (
-                    invoiceItems.map((item, index) => {
-                      const key = String(item.invoice_item_id);
-                      const rowState = rowReturns[key] || {};
-                      const returnQty = rowState.return_qty || "";
-                      const returnAmount = toNum(returnQty) * toNum(item.rate);
-                      const disabled = toNum(item.available_qty) <= 0;
-                      const selected = !!rowState.selected || toNum(returnQty) > 0;
-                      return (
-                        <tr key={key} className={selected ? "selected-row" : ""}>
-                          <td className="center strong">{index + 1}</td>
-                          <td><b>{item.product_name}</b><div className="muted">#{item.product_id || "-"}</div></td>
-                          <td>{item.product_description || item.description || "-"}</td>
-                          <td>{item.category_name}</td>
-                          <td>{item.unit_name}</td>
-                          <td className="num">{money(item.sold_qty)}</td>
-                          <td className="num">{money(item.already_returned_qty)}</td>
-                          <td className="num strong" style={{ color: disabled ? "#dc2626" : "#16a34a" }}>{money(item.available_qty)}</td>
-                          <td className="num">{money(item.rate)}</td>
-                          <td>
-                            <input
-                              className="table-input"
-                              type="number"
-                              min="0"
-                              max={item.available_qty}
-                              disabled={disabled}
-                              value={returnQty}
-                              onChange={(e) => updateReturnRow(key, "return_qty", e.target.value)}
-                            />
-                          </td>
-                          <td className="num strong">{money(returnAmount)}</td>
-                          <td className="center">
-                            <input
-                              type="checkbox"
-                              disabled={disabled}
-                              checked={selected}
-                              onChange={(e) => updateReturnRow(key, "selected", e.target.checked)}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="section-head"><span>{t.returnAmount}</span></div>
-            <div className="form-section">
-              <div className="bottom-grid">
-                <div className="span-2">
-                  <label>{t.reason}</label>
-                  <textarea className="textarea" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
-                </div>
-                <TotalBox label={t.totalReturnQty} value={money(formTotals.qty)} />
-                <TotalBox label={t.totalReturnAmount} value={money(formTotals.amount)} grand />
-              </div>
-              <div className="form-footer">
-                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? t.saving : t.save}</button>
-                <button className="btn btn-soft" onClick={closeForm} disabled={saving}>{t.cancel}</button>
-              </div>
-            </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handlePrint = (ret) => {
+    try {
+      printReturnSlip(ret, t, lang);
+    } catch {
+      toast("error", t.printError);
+    }
+  };
 
   return (
     <div dir={dir} className="sales-return-page">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
       <style>{pageCss(isUrdu)}</style>
 
       {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
 
-      <div className="page-wrap">
-        <div className="top-card">
-          <div>
-            <h1 className="title">{t.title}</h1>
-            <p className="subtitle">{t.subtitle}</p>
+      {!showForm && (
+        <div className="page-wrap">
+          <div className="top-card">
+            <div>
+              <h1 className="title">{t.title}</h1>
+              <p className="subtitle">{t.subtitle}</p>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+              <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
+              <button className={`btn ${showSummary ? "btn-active" : "btn-soft"}`} onClick={() => setShowSummary((v) => !v)}>
+                {showSummary ? t.hideSummary : t.viewSummary}
+              </button>
+              <button className="btn btn-soft" onClick={fetchAll}>{loading ? t.loading : t.refresh}</button>
+              <button className="btn btn-primary" onClick={openAdd}>+ {t.newReturn}</button>
+            </div>
           </div>
-          <div className="top-actions">
-            <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
-            <button className={`btn ${showSummary ? "btn-active" : "btn-soft"}`} onClick={() => setShowSummary((v) => !v)}>{showSummary ? t.hideSummary : t.viewSummary}</button>
-            <button className="btn btn-soft" onClick={loadAll}>{t.refresh}</button>
-            <button className="btn btn-primary" onClick={openAdd}>+ {t.newReturn}</button>
+
+          {showSummary && (
+            <div className="summary-grid">
+              {[
+                [t.totalReturns, summary.totalReturns],
+                [t.totalItems, summary.totalItems],
+                [t.totalQty, money(summary.totalQty)],
+                [t.totalValue, money(summary.totalValue)],
+              ].map(([label, value], idx) => (
+                <div className="summary-card" key={label} style={{ animationDelay: `${idx * 30}ms` }}>
+                  <small>{label}</small>
+                  <b>{value}</b>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="toolbar">
+            <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
+            <button className={`filter ${showAllReturns ? "active" : ""}`} onClick={() => setShowAllReturns(true)}>{t.all}</button>
+            <button className={`filter ${!showAllReturns && selectedDate === today() ? "active" : ""}`} onClick={() => { setShowAllReturns(false); setSelectedDate(today()); }}>{t.todayFilter}</button>
+            <label className="date-filter-label">
+              <span>{t.selectDate}</span>
+              <DateTextInput value={selectedDate} onChange={(v) => { setSelectedDate(v || today()); setShowAllReturns(false); }} />
+            </label>
+            {!showAllReturns && <span className="showing-date-pill">{t.showingDate}: {formatFullDate(selectedDate, lang)}</span>}
           </div>
-        </div>
 
-        {showSummary && (
-          <div className="summary-grid">
-            <TotalBox label={t.totalReturns} value={summary.totalReturns} />
-            <TotalBox label={t.totalQty} value={money(summary.totalQty)} />
-            <TotalBox label={t.totalAmount} value={money(summary.totalAmount)} grand />
-          </div>
-        )}
-
-        <div className="toolbar">
-          <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search} />
-        </div>
-
-        <div className="card table-wrap">
-          <table className="list-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>{t.returnNo}</th>
-                <th>{t.invoiceNo}</th>
-                <th>{t.customer}</th>
-                <th>{t.product}</th>
-                <th>{t.returnDate}</th>
-                <th>{t.returnQty}</th>
-                <th>{t.rate}</th>
-                <th>{t.returnAmount}</th>
-                <th>{t.reason}</th>
-                <th>{t.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={11} className="empty-cell center">{t.loading}</td></tr>
-              ) : filteredReturns.length === 0 ? (
-                <tr><td colSpan={11} className="empty-cell center">{t.noRecords}</td></tr>
-              ) : (
-                filteredReturns.map((ret, index) => (
-                  <tr key={ret.id || index}>
-                    <td className="center muted strong">{index + 1}</td>
-                    <td><b className="mono">{ret.return_no}</b></td>
-                    <td>{ret.invoice_ref || ret.invoice_no || ret.invoice_id || "-"}</td>
-                    <td>{ret.party_name || ret.customer_name || "-"}</td>
-                    <td>{ret.product_name || productMap[String(ret.product_id || "")] || ret.product_id || "-"}</td>
-                    <td className="center">{formatDate(ret.return_date, lang)}</td>
-                    <td className="num strong">{money(ret.return_qty)}</td>
-                    <td className="num">{money(ret.rate)}</td>
-                    <td className="num strong blue-text">{money(ret.return_amount)}</td>
-                    <td className="truncate-cell">{ret.reason || "-"}</td>
-                    <td className="center">
-                      <div className="row-actions">
-                        <button className="small-btn green" onClick={() => openEdit(ret)}>{t.edit}</button>
-                        <button className="small-btn amber" onClick={() => handlePrint(ret)}>{t.print}</button>
-                        <button className="small-btn red" onClick={() => handleDelete(ret.id)}>{t.delete}</button>
+          <div className="card table-wrap">
+            <table className="list">
+              <thead>
+                <tr>
+                  <th style={{ width: 45 }}>#</th>
+                  <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.returnNo}</th>
+                  <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceNo}</th>
+                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.name}</th>
+                  <th style={{ width: 165 }}>{t.dateFull}</th>
+                  <th style={{ width: 115, textAlign: "right" }}>{t.returnQty}</th>
+                  <th style={{ width: 125, textAlign: "right" }}>{t.returnAmount}</th>
+                  <th style={{ width: 205 }}>{t.actions}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={8} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.loading}</td></tr>
+                ) : filteredReturns.length === 0 ? (
+                  <tr><td colSpan={8} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
+                ) : filteredReturns.map((ret, idx) => (
+                  <tr key={ret.id || idx}>
+                    <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
+                    <td><b style={{ fontFamily: "monospace" }}>{ret.return_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{ret.product_name || "-"}</div></td>
+                    <td><b style={{ fontFamily: "monospace" }}>{ret.invoice_ref || ret.invoice_no || ret.invoice_id || "-"}</b></td>
+                    <td><b>{ret.party_name || ret.customer_name || "-"}</b><div style={{ fontSize: 11, color: "#64748b" }}>{ret.party_type || "customer"}</div></td>
+                    <td style={{ textAlign: "center", fontSize: 12, fontWeight: 800 }}>{formatFullDate(ret.return_date, lang)}</td>
+                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(ret.return_qty)}</td>
+                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(ret.return_amount)}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+                        <button className="btn btn-green" style={{ padding: "7px 10px" }} onClick={() => openEdit(ret)}>{t.edit}</button>
+                        <button className="btn btn-yellow" style={{ padding: "7px 10px" }} onClick={() => handlePrint(ret)}>{t.print}</button>
+                        <button className="btn btn-red" style={{ padding: "7px 10px" }} onClick={() => handleDelete(ret.id)}>{t.delete}</button>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {showForm && (
+        <div className="form-page-wrap">
+          <div className="inputModalBox fullPageInputBox">
+            <div className="inputModalTitle">
+              <span>{editingId ? t.editReturn : t.newReturn}</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="closeBtn" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
+                <button className="closeBtn backBtn" onClick={closeForm}>{t.back}</button>
+              </div>
+            </div>
+
+            <div className="inputModalBody">
+              <div className="form-box">
+                <div className="formTopLine returnTopLine">
+                  <div>
+                    <label className="basicLabel">{t.returnNo} *</label>
+                    <input className="basicInput" style={{ fontFamily: "monospace", fontWeight: 900 }} value={form.return_no} onChange={(e) => setForm((f) => ({ ...f, return_no: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.returnDate}</label>
+                    <DateTextInput className="basicInput" value={form.return_date} onChange={(v) => setForm((f) => ({ ...f, return_date: v }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.invoiceRef}</label>
+                    <input className="basicInput" readOnly value={selectedInvoice ? getInvoiceNo(selectedInvoice) : ""} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.name}</label>
+                    <input className="basicInput" readOnly value={selectedInvoice ? getPartyName(selectedInvoice) : ""} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.reason}</label>
+                    <input className="basicInput" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="sectionHead"><span>{t.salesInvoices}</span></div>
+              <div className="paymentPanel">
+                <div className="toolbar" style={{ marginBottom: 12 }}>
+                  <input className="search" value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} placeholder={t.searchInvoice} />
+                  <button className={`filter ${showAllInvoices ? "active" : ""}`} onClick={() => setShowAllInvoices(true)}>{t.allInvoices}</button>
+                  <button className={`filter ${!showAllInvoices && invoiceDate === today() ? "active" : ""}`} onClick={() => { setShowAllInvoices(false); setInvoiceDate(today()); }}>{t.todayFilter}</button>
+                  <label className="date-filter-label">
+                    <span>{t.selectDate}</span>
+                    <DateTextInput value={invoiceDate} onChange={(v) => { setInvoiceDate(v || today()); setShowAllInvoices(false); }} />
+                  </label>
+                  {!showAllInvoices && <span className="showing-date-pill">{t.showingDate}: {formatFullDate(invoiceDate, lang)}</span>}
+                </div>
+
+                <div className="invoice-table-wrap">
+                  <table className="invoiceTable">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 45 }}>#</th>
+                        <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceNo}</th>
+                        <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.name}</th>
+                        <th style={{ width: 170 }}>{t.dateFull}</th>
+                        <th style={{ width: 115, textAlign: "right" }}>{t.invoiceTotal}</th>
+                        <th style={{ width: 120, textAlign: "right" }}>{t.grandTotal}</th>
+                        <th style={{ width: 145 }}>{t.actions}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInvoices.length === 0 ? (
+                        <tr><td colSpan={7} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noInvoices}</td></tr>
+                      ) : filteredInvoices.map((inv, idx) => {
+                        const active = selectedInvoice && String(selectedInvoice.id) === String(inv.id);
+                        return (
+                          <tr key={inv.id || idx} className={active ? "activeInvoiceRow" : ""}>
+                            <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
+                            <td><b style={{ fontFamily: "monospace" }}>{getInvoiceNo(inv)}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{inv.reference_no || "-"}</div></td>
+                            <td><b>{getPartyName(inv)}</b><div style={{ fontSize: 11, color: "#64748b" }}>{getPartyType(inv)}</div></td>
+                            <td style={{ textAlign: "center", fontSize: 12, fontWeight: 800 }}>{formatFullDate(getInvoiceDate(inv), lang)}</td>
+                            <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(inv.invoice_total || inv.total_amount)}</td>
+                            <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(inv.grand_total || inv.invoice_total || inv.total_amount)}</td>
+                            <td style={{ textAlign: "center" }}>
+                              <button className={`btn ${active ? "btn-yellow" : "btn-green"}`} style={{ padding: "7px 10px" }} disabled={loadingInvoiceDetail} onClick={() => handleShowDetails(inv.id)}>
+                                {active ? t.hideDetails : t.showDetails}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="sectionHead"><span>{t.invoiceRecord}</span></div>
+              <div className="paymentPanel">
+                {!selectedInvoice ? (
+                  <div className="emptyBox">{loadingInvoiceDetail ? t.loading : t.clickShowDetails}</div>
+                ) : (
+                  <div className="infoGrid">
+                    <InfoBox label={t.invoiceNo} value={getInvoiceNo(selectedInvoice)} />
+                    <InfoBox label={t.name} value={getPartyName(selectedInvoice)} />
+                    <InfoBox label={t.customerType} value={getPartyType(selectedInvoice)} />
+                    <InfoBox label={t.invoiceDate} value={formatFullDate(getInvoiceDate(selectedInvoice), lang)} />
+                    <InfoBox label={t.shipTo} value={selectedInvoice.shipment_to || "-"} />
+                    <InfoBox label={t.invoiceTotal} value={money(selectedInvoice.invoice_total || selectedInvoice.total_amount)} />
+                    <InfoBox label={t.previousBalance} value={money(selectedInvoice.previous_balance)} />
+                    <InfoBox label={t.deliveryCharges} value={money(selectedInvoice.delivery_charges)} />
+                    <InfoBox label={t.discount} value={money(selectedInvoice.discount)} />
+                    <InfoBox label={t.grandTotal} value={money(selectedInvoice.grand_total)} grand />
+                  </div>
+                )}
+              </div>
+
+              {selectedInvoice && (
+                <>
+                  <div className="sectionHead"><span>{t.products}</span></div>
+                  <div className="paymentPanel">
+                    <table className="basicProductTable returnProductTable">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>{t.product}</th>
+                          <th>{t.desc}</th>
+                          <th>{t.category}</th>
+                          <th>{t.unit}</th>
+                          <th>{t.soldQty}</th>
+                          <th>{t.alreadyReturned}</th>
+                          <th>{t.availableQty}</th>
+                          <th>{t.returnQty}</th>
+                          <th>{t.rate}</th>
+                          <th>{t.returnAmount}</th>
+                          <th>{t.markReturn}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoiceItems.length === 0 ? (
+                          <tr><td colSpan={12} style={{ textAlign: "center", padding: 28, color: "#94a3b8" }}>{t.noRecords}</td></tr>
+                        ) : invoiceItems.map((item, idx) => {
+                          const key = String(item.invoice_item_id);
+                          const row = returnRows[key] || {};
+                          const returnQty = toNum(row.return_qty);
+                          const returnAmount = returnQty * toNum(item.rate);
+                          const checked = !!row.checked || returnQty > 0;
+                          return (
+                            <tr key={key} className={checked ? "selectedLine" : ""}>
+                              <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
+                              <td><b>{item.product_name}</b></td>
+                              <td>{item.product_description || item.description || "-"}</td>
+                              <td>{item.category_name || "-"}</td>
+                              <td>{item.unit_name || "-"}</td>
+                              <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc" }} value={money(item.sold_qty)} /></td>
+                              <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc" }} value={money(item.already_returned_qty)} /></td>
+                              <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc", fontWeight: 900 }} value={money(item.available_qty)} /></td>
+                              <td><input type="number" min="0" max={item.available_qty} className="productInput" style={{ textAlign: "right" }} value={row.return_qty || ""} onChange={(e) => updateReturnRow(key, "return_qty", e.target.value)} /></td>
+                              <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc" }} value={money(item.rate)} /></td>
+                              <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc", fontWeight: 900, color: "#1d4ed8" }} value={money(returnAmount)} /></td>
+                              <td style={{ textAlign: "center" }}><input type="checkbox" checked={checked} onChange={(e) => updateReturnRow(key, "checked", e.target.checked)} /></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="sectionHead"><span>{t.returnAmount}</span></div>
+                  <div className="paymentPanel">
+                    <div className="finalTotalBar">
+                      <div className="totalBox"><label>{t.totalReturnQty}</label><b>{money(formTotals.qty)}</b></div>
+                      <div className="totalBox grandBox"><label>{t.totalReturnAmount}</label><b>{money(formTotals.amount)}</b></div>
+                      <div className="totalBox"><label>{t.returnNo}</label><b>{form.return_no || "-"}</b></div>
+                    </div>
+
+                    <div className="modalFooterBasic">
+                      <button className="basicBtn" onClick={closeForm}>{t.cancel}</button>
+                      <button className="basicBtn basicBtnGreen" onClick={handleSave} disabled={saving}>{saving ? t.saving : editingId ? t.update : t.save}</button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function Info({ label, value, strong = false }) {
+function InfoBox({ label, value, grand = false }) {
   return (
-    <div className={`info-box ${strong ? "strong-box" : ""}`}>
+    <div className={`infoBox ${grand ? "grandInfoBox" : ""}`}>
       <small>{label}</small>
       <b>{value || "-"}</b>
-    </div>
-  );
-}
-
-function TotalBox({ label, value, grand = false }) {
-  return (
-    <div className={`total-box ${grand ? "grand" : ""}`}>
-      <label>{label}</label>
-      <b>{value}</b>
     </div>
   );
 }
@@ -1013,17 +1026,22 @@ function TotalBox({ label, value, grand = false }) {
 function pageCss(isUrdu) {
   return `
     *{box-sizing:border-box}
-    .sales-return-page{min-height:100vh;background:#f3f6fb;padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"}}
-    .page-wrap{max-width:1260px;margin:0 auto}
-    .top-card{background:#fff;border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 12px 34px rgba(15,23,42,.07);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-    .title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.top-actions,.title-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s}.btn:hover{transform:translateY(-1px)}.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.22)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-active{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
-    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(480px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.search:focus,.input:focus,.textarea:focus,.table-input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}
-    .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.total-box{border:1px solid #dbe3ee;background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 8px 18px rgba(15,23,42,.04)}.total-box label{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:950;text-transform:uppercase}.total-box b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:20px}.grand{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
-    .invoice-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.invoice-search-input{width:min(360px,100%)}.filter-btn{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 12px;font-weight:900;color:#475569;cursor:pointer}.filter-btn.active{background:#4f46e5;color:white;border-color:#4f46e5}.date-filter-label{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;display:flex!important;align-items:center;gap:8px;margin:0!important;font-size:12px;color:#475569}.date-filter-label input{border:none;outline:none;font-weight:900;background:transparent;color:#0f172a}.showing-date-pill{height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:12px;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;font-weight:900;font-size:12px}.invoice-list-wrap{margin-top:12px;border:1px solid #dbe3ee;border-radius:18px;overflow:auto}.invoice-select-table{width:100%;min-width:900px;border-collapse:collapse}.invoice-select-table th{background:#111827;color:white;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 10px;text-align:${isUrdu ? "right" : "left"}}.invoice-select-table td{padding:11px 10px;border-bottom:1px solid #eef2f7;font-size:13px}.invoice-select-table tr:hover td{background:#f8fafc}.active-invoice-row td{background:#eef2ff!important}.num-head{text-align:right!important}
-    .card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}.list-table{width:100%;border-collapse:collapse;min-width:1120px}.list-table th{background:#111827;color:rgba(255,255,255,.82);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px;text-align:${isUrdu ? "right" : "left"}}.list-table td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}.list-table tr:hover td{background:#f8fafc}.center{text-align:center!important}.num{text-align:right!important;font-family:monospace}.strong{font-weight:900}.mono{font-family:monospace}.muted{color:#64748b;font-size:11px}.blue-text{color:#1d4ed8}.truncate-cell{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empty-cell{padding:40px!important;color:#94a3b8}.row-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.small-btn{border:none;border-radius:10px;padding:7px 9px;font-size:11px;font-weight:900;cursor:pointer}.green{background:#dcfce7;color:#166534}.amber{background:#fef3c7;color:#92400e}.red{background:#fee2e2;color:#991b1b}
-    .input-page-card{background:#fff;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.10);overflow:hidden}.input-title{background:#111827;color:white;padding:17px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.input-title h2{margin:0;font-size:20px;font-weight:950}.input-title p{margin:4px 0 0;color:rgba(255,255,255,.72);font-size:12px}.form-section{background:white;border:1px solid #dbe3ee;border-top:none;padding:12px;overflow:auto}.no-radius-top{border-top:none}.section-head{height:40px;background:#e9eef8;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-weight:950;color:#0f172a;font-size:17px}.form-grid{display:grid;gap:10px;align-items:end}.top-grid{grid-template-columns:150px 150px 1fr 1.5fr}.return-head-grid{grid-template-columns:170px 170px 1fr}.bottom-grid{display:grid;grid-template-columns:1fr 1fr 190px 220px;gap:12px;align-items:end}.span-2{grid-column:span 2}label{display:block;font-size:11px;color:#334155;margin-bottom:5px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.textarea,.table-input{width:100%;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:6px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.input{height:34px}.textarea{min-height:70px;resize:vertical}.empty-box{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:14px;padding:22px;text-align:center;color:#64748b;font-weight:900}.invoice-info-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.info-box{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.info-box small{display:block;color:#64748b;font-size:10.5px;font-weight:950;margin-bottom:5px;text-transform:uppercase}.info-box b{font-size:13px}.strong-box{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.table-panel{background:white;border:1px solid #dbe3ee;border-top:none;padding:8px;overflow:auto}.product-table{width:100%;min-width:1180px;border-collapse:collapse;background:white}.product-table th,.product-table td{border:1px solid #dbe3ee;padding:6px;font-size:12px}.product-table th{background:#dbe3ee;text-align:center;color:#334155;font-weight:900}.table-input{height:32px;text-align:right}.selected-row td{background:#eef2ff!important}.form-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;position:sticky;bottom:0;background:white;padding-top:10px}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
-    @media(max-width:1100px){.top-grid,.return-head-grid,.bottom-grid{grid-template-columns:repeat(2,1fr)}.invoice-info-grid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:1fr 1fr}.span-2{grid-column:span 2}}
-    @media(max-width:700px){.sales-return-page{padding:10px}.top-grid,.return-head-grid,.bottom-grid,.invoice-info-grid,.summary-grid{grid-template-columns:1fr}.span-2{grid-column:span 1}.form-footer{flex-direction:column}.btn{width:100%}.input-title{align-items:flex-start}.top-card{align-items:flex-start}.title{font-size:24px}}
+    .sales-return-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{max-width:1220px;width:100%;margin:0 auto;animation:fadeSlide .22s ease-out both}
+    .top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}
+    .btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s}.btn:hover{transform:translateY(-1px);filter:brightness(.98)}.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.25)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-active{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}.btn-green{background:#dcfce7;color:#166534}.btn-red{background:#fee2e2;color:#991b1b}.btn-yellow{background:#fef9c3;color:#854d0e}
+    .summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#4f46e5;color:white;border-color:#4f46e5}.date-filter-label{display:flex;align-items:center;gap:8px;background:white;border:1px solid #cbd5e1;border-radius:12px;padding:0 10px;height:36px;font-weight:850;color:#475569;font-size:12px}.date-filter-label input{border:none;outline:none;font-weight:850;color:#0f172a;background:transparent}.showing-date-pill{height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:12px;background:#eef2ff;color:#3730a3;font-weight:900;border:1px solid #c7d2fe;font-size:12px}
+    .card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}
+    .toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+    .inputModalBox{width:100%;max-width:100%;min-height:calc(100vh - 36px);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.10);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:19px;font-weight:950}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;min-width:38px;height:32px;border-radius:10px;cursor:pointer;padding:0 10px;font-weight:900}.backBtn{min-width:78px}.inputModalBody{padding:14px;overflow-x:hidden}.form-box{background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;margin-bottom:0}.formTopLine{display:grid;grid-template-columns:150px 150px 150px 220px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}
+    .sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.invoice-table-wrap{overflow:auto}.invoiceTable{width:100%;min-width:960px;border-collapse:collapse;table-layout:fixed}.invoiceTable th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}.invoiceTable td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}.invoiceTable tr:hover td{background:#f8fafc}.activeInvoiceRow td{background:#eef2ff!important}
+    .infoGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.infoBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.infoBox small{display:block;color:#64748b;font-size:10.5px;font-weight:950;margin-bottom:5px;text-transform:uppercase}.infoBox b{font-size:13px}.grandInfoBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.emptyBox{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:14px;padding:24px;text-align:center;color:#64748b;font-weight:900}
+    .basicProductTable{width:100%;border-collapse:collapse;background:white;min-width:1180px;table-layout:fixed}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.returnProductTable th:nth-child(1),.returnProductTable td:nth-child(1){width:35px}.returnProductTable th:nth-child(2),.returnProductTable td:nth-child(2){width:170px}.returnProductTable th:nth-child(3),.returnProductTable td:nth-child(3){width:150px}.returnProductTable th:nth-child(4),.returnProductTable td:nth-child(4){width:125px}.returnProductTable th:nth-child(5),.returnProductTable td:nth-child(5){width:90px}.returnProductTable th:nth-child(6),.returnProductTable td:nth-child(6){width:90px}.returnProductTable th:nth-child(7),.returnProductTable td:nth-child(7){width:105px}.returnProductTable th:nth-child(8),.returnProductTable td:nth-child(8){width:95px}.returnProductTable th:nth-child(9),.returnProductTable td:nth-child(9){width:95px}.returnProductTable th:nth-child(10),.returnProductTable td:nth-child(10){width:90px}.returnProductTable th:nth-child(11),.returnProductTable td:nth-child(11){width:110px}.returnProductTable th:nth-child(12),.returnProductTable td:nth-child(12){width:90px}.selectedLine td{background:#eef2ff!important}
+    .basicBtn{height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 14px;font-size:13px;cursor:pointer;border-radius:10px;font-weight:900}.basicBtn:hover{background:#f8fafc}.basicBtn:disabled{opacity:.6;cursor:not-allowed}.basicBtnGreen{background:#dcfce7;border-color:#86efac;color:#166534}.basicBtnRed{background:#fee2e2;border-color:#fecaca;color:#991b1b}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.finalTotalBar{margin-top:0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+    @media(max-width:1120px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:repeat(2,minmax(0,1fr))}.infoGrid{grid-template-columns:repeat(2,1fr)}table.list{min-width:960px}.finalTotalBar{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:700px){.sales-return-page{padding:10px}.summary-grid,.formTopLine,.infoGrid,.finalTotalBar{grid-template-columns:1fr}.title{font-size:24px}.inputModalBody{padding:10px}.modalFooterBasic{flex-direction:column}.basicBtn,.btn{width:100%}}
   `;
 }
