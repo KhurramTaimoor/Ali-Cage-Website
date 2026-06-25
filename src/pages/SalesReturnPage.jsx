@@ -1018,9 +1018,9 @@ export default function SalesReturnPage() {
         @keyframes fadeSlide{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
         .page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{max-width:1220px;width:100%;margin:0 auto;animation:fadeSlide .22s ease-out both}.fullPageInputBox{width:100%!important;max-width:100%!important;min-height:calc(100vh - 36px);box-shadow:0 18px 48px rgba(15,23,42,.08)!important}.top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:1px solid #cbd5e1;border-radius:10px;padding:9px 13px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s;background:white;color:#0f172a}.btn:hover{background:#f8fafc}.btn-primary{background:#111827;color:white;border-color:#111827}.btn-soft{background:white;color:#334155;border:1px solid #cbd5e1}.btn-active{background:#f1f5f9;color:#111827;border:1px solid #cbd5e1}.btn-green,.btn-red,.btn-yellow{background:white!important;color:#0f172a!important;border:1px solid #cbd5e1!important;box-shadow:none!important}.summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#111827;color:white;border-color:#111827}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
-        .inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.10);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.form-box{background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;margin-bottom:0}.formTopLine{display:grid;grid-template-columns:160px 210px 140px 120px 170px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(15,23,42,.08)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen,.basicBtnRed{background:white;border-color:#cbd5e1;color:#0f172a}.basicProductTable{width:100%;border-collapse:collapse;background:white;min-width:1280px}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.radioPanel{border:1px solid #cbd5e1;background:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}.radioItem{display:inline-flex;align-items:center;gap:7px;font-weight:900;font-size:13px;color:#0f172a;cursor:pointer}.clickRow{cursor:pointer}.selectedInvoiceRow td{background:#eef2ff!important}
+        .inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.10);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.form-box{background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;margin-bottom:0}.formTopLine{display:grid;grid-template-columns:160px 210px 140px 120px 170px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(15,23,42,.08)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen,.basicBtnRed{background:white;border-color:#cbd5e1;color:#0f172a}.basicProductTable{width:100%;border-collapse:collapse;background:white;min-width:1420px}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.radioPanel{border:1px solid #cbd5e1;background:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}.radioItem{display:inline-flex;align-items:center;gap:7px;font-weight:900;font-size:13px;color:#0f172a;cursor:pointer}.clickRow{cursor:pointer}.selectedInvoiceRow td{background:#eef2ff!important}
         @media(max-width:1120px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))}.finalTotalBar{grid-template-columns:repeat(2,1fr)}table.list{min-width:900px}}
-        @media(max-width:780px){.summary-grid,.formTopLine,.finalTotalBar{grid-template-columns:1fr}.inputModalBody{padding:10px!important}.basicProductTable{min-width:1120px!important}.title{font-size:24px}}
+        @media(max-width:780px){.summary-grid,.formTopLine,.finalTotalBar{grid-template-columns:1fr}.inputModalBody{padding:10px!important}.basicProductTable{min-width:1240px!important}.title{font-size:24px}}
       `}</style>
 
       {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
@@ -1235,13 +1235,13 @@ export default function SalesReturnPage() {
                 <table className="basicProductTable">
                   <thead>
                     <tr>
-                      <th style={{ width: 38 }}>#</th>
+                      <th style={{ width: 35 }}>#</th>
                       {returnMode === "auto" && <th style={{ width: 70 }}>{t.select}</th>}
-                      <th style={{ width: 150 }}>{t.category}</th>
-                      <th style={{ width: 190 }}>{t.product}</th>
-                      <th style={{ width: 135 }}>{t.productType}</th>
-                      <th style={{ width: 200 }}>{t.desc}</th>
-                      <th style={{ width: 100 }}>{t.unit}</th>
+                      <th style={{ width: 175 }}>{t.product}</th>
+                      <th style={{ width: 230 }}>{t.desc}</th>
+                      <th style={{ width: 130 }}>{t.productType}</th>
+                      <th style={{ width: 145 }}>{t.category}</th>
+                      <th style={{ width: 115 }}>{t.unit}</th>
                       <th style={{ width: 95 }}>{t.soldQty}</th>
                       <th style={{ width: 110 }}>{t.alreadyReturned}</th>
                       <th style={{ width: 105 }}>{t.availableQty}</th>
@@ -1255,7 +1255,6 @@ export default function SalesReturnPage() {
                   </thead>
                   <tbody>
                     {(returnMode === "auto" ? invoiceItems : items).map((row, idx) => {
-                      const rowList = returnMode === "auto" ? invoiceItems : items;
                       const productOptions = !row.category_id
                         ? products
                         : products.filter((p) => sameId(getProductCatId(p), row.category_id));
@@ -1269,6 +1268,32 @@ export default function SalesReturnPage() {
                           )}
                           <td>
                             {returnMode === "auto" ? (
+                              <input className="productInput" value={row.product_name || productMap[String(row.product_id)] || ""} readOnly />
+                            ) : (
+                              <select className="productInput" value={row.product_id} onChange={(e) => handleProductChange(idx, e.target.value)}>
+                                <option value="">{t.selectProduct}</option>
+                                {productOptions.length ? productOptions.map((p) => <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>) : products.map((p) => <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>)}
+                              </select>
+                            )}
+                          </td>
+                          <td>
+                            <input
+                              className="productInput"
+                              value={row.product_description || row.description || ""}
+                              onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "product_description", e.target.value) : handleItemChange(idx, "product_description", e.target.value)}
+                              readOnly={returnMode === "auto"}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="productInput"
+                              value={row.product_type || getTypeName(row) || "FMS"}
+                              onChange={(e) => handleItemChange(idx, "product_type", e.target.value)}
+                              readOnly={returnMode === "auto"}
+                            />
+                          </td>
+                          <td>
+                            {returnMode === "auto" ? (
                               <input className="productInput" value={row.category_name || categoryMap[String(row.category_id)] || ""} readOnly />
                             ) : (
                               <select className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
@@ -1279,17 +1304,14 @@ export default function SalesReturnPage() {
                           </td>
                           <td>
                             {returnMode === "auto" ? (
-                              <input className="productInput" value={row.product_name || productMap[String(row.product_id)] || ""} readOnly />
+                              <input className="productInput" value={row.unit_name || unitMap[String(row.unit_id)] || ""} readOnly />
                             ) : (
-                              <select className="productInput" value={row.product_id} onChange={(e) => handleProductChange(idx, e.target.value)}>
-                                <option value="">{t.selectProduct}</option>
-                                {productOptions.map((p) => <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>)}
+                              <select className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
+                                <option value="">{t.select}</option>
+                                {units.map((u) => <option key={getUnitId(u)} value={getUnitId(u)}>{getUnitName(u)}</option>)}
                               </select>
                             )}
                           </td>
-                          <td><input className="productInput" value={row.product_type || getTypeName(row) || "FMS"} onChange={(e) => handleItemChange(idx, "product_type", e.target.value)} readOnly={returnMode === "auto"} /></td>
-                          <td><input className="productInput" value={row.product_description || ""} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} readOnly={returnMode === "auto"} /></td>
-                          <td><input className="productInput" value={row.unit_name || unitMap[String(row.unit_id)] || ""} onChange={(e) => handleItemChange(idx, "unit_name", e.target.value)} readOnly={returnMode === "auto"} /></td>
                           <td><input className="productInput" value={row.sold_qty || ""} onChange={(e) => handleItemChange(idx, "sold_qty", e.target.value)} readOnly={returnMode === "auto"} /></td>
                           <td><input className="productInput" value={row.already_returned_qty || "0"} onChange={(e) => handleItemChange(idx, "already_returned_qty", e.target.value)} readOnly={returnMode === "auto"} /></td>
                           <td><input className="productInput" value={row.available_qty || ""} onChange={(e) => handleItemChange(idx, "available_qty", e.target.value)} readOnly={returnMode === "auto"} /></td>
@@ -1299,7 +1321,7 @@ export default function SalesReturnPage() {
                           <td><input className="productInput" type="number" value={row.debit || "0"} onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "debit", e.target.value) : handleItemChange(idx, "debit", e.target.value)} /></td>
                           <td><input className="productInput" type="number" value={row.credit || "0"} onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "credit", e.target.value) : handleItemChange(idx, "credit", e.target.value)} /></td>
                           {returnMode === "manual" && (
-                            <td style={{ textAlign: "center" }}><button className="basicBtn" onClick={() => removeRow(idx)}>×</button></td>
+                            <td style={{ textAlign: "center" }}><button type="button" className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeRow(idx)}>×</button></td>
                           )}
                         </tr>
                       );
