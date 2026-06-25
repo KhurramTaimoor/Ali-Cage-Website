@@ -4,43 +4,53 @@ import axios from "axios";
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 const RETURNS_API = `${API_ROOT}/api/sales-returns`;
 const INVOICES_API = `${API_ROOT}/api/sales-invoices`;
+const CUSTOMERS_API = `${API_ROOT}/api/customers`;
+const EMPLOYEES_API = `${API_ROOT}/api/employees`;
+const SUPPLIERS_API = `${API_ROOT}/api/suppliers`;
+const GENERAL_LEDGERS_API = `${API_ROOT}/api/general-ledgers`;
+const CATEGORIES_API = `${API_ROOT}/api/categories`;
+const PRODUCTS_API = `${API_ROOT}/api/products`;
+const UNITS_API = `${API_ROOT}/api/units`;
 
 const LANG = {
   en: {
     title: "Sales Return",
-    subtitle: "Return sold products with invoice reference and complete return fields",
+    subtitle: "Create manual returns or return products against sales invoice",
     newReturn: "New Return",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
     refresh: "Refresh",
     toggleLang: "اردو",
-    searchPlaceholder: "Search return no, invoice no, product, reason or date...",
+    searchPlaceholder: "Search return no, invoice, name, product, date or reason...",
     todayFilter: "Today",
     selectDate: "Select Date",
     showingDate: "Showing Date",
-    totalReturns: "Total Returns",
-    totalQty: "Total Qty",
-    totalAmount: "Total Amount",
-    totalCredit: "Total Credit",
+    all: "All",
+    manualReturn: "Manual Sales Return",
+    autoReturn: "Automatic Sales Return",
+    mode: "Return Mode",
+    customerType: "Customer Type",
+    name: "Name",
     returnNo: "Return No",
-    invoiceSelect: "Sales Invoice",
-    selectInvoice: "Select Invoice",
+    invoiceNo: "Invoice No",
     invoiceRef: "Invoice Ref",
-    customerName: "Name",
-    invoiceDate: "Invoice Date",
-    returnDate: "Return Date",
     saleDate: "Sale Date",
-    dateFull: "Date / Month / Year",
-    invoiceTotal: "Invoice Total",
-    grandTotal: "Grand Total",
-    previousBalance: "Previous Balance",
-    deliveryCharges: "Delivery Charges",
-    discount: "Discount",
-    product: "Product",
-    selectProduct: "Select Product",
-    manualProduct: "Manual Product Name",
-    productDescription: "Description",
+    returnDate: "Return Date",
+    date: "Date",
+    reference: "Reference",
+    reason: "Reason",
+    products: "Products",
+    invoiceProducts: "Invoice Products",
+    selectInvoice: "Select Invoice",
+    invoiceList: "Sales Invoices",
+    showDetails: "Show Details",
+    selectedInvoice: "Selected Invoice",
+    addRow: "+ Add Row",
+    productType: "Product Type",
     category: "Category",
+    product: "Product",
+    manualProductName: "Manual Product Name",
+    desc: "Desc",
     unit: "Unit",
     soldQty: "Sold Qty",
     alreadyReturned: "Already Returned",
@@ -50,74 +60,87 @@ const LANG = {
     returnAmount: "Return Amount",
     debit: "Debit",
     credit: "Credit",
-    reason: "Reason",
-    actions: "Actions",
-    edit: "Edit",
-    delete: "Delete",
-    print: "Print",
+    totalQty: "Total Quantity",
+    totalReturns: "Total Returns",
+    totalItems: "Total Items",
+    totalAmount: "Total Amount",
+    totalDebit: "Total Debit",
+    totalCredit: "Total Credit",
     save: "Save",
     update: "Update",
     saving: "Saving...",
     cancel: "Cancel",
-    back: "Back",
+    close: "Close",
+    edit: "Edit",
+    delete: "Delete",
+    print: "Print",
+    actions: "Actions",
     loading: "Loading...",
-    loadingInvoices: "Loading invoices...",
-    loadingProducts: "Loading products...",
     noRecords: "No returns found.",
-    noInvoiceItems: "No products found in selected invoice. You can still enter fields manually.",
-    selectedInvoiceDetails: "Selected Invoice Details",
-    returnFields: "Sales Return Fields",
-    productFields: "Product Return Details",
-    amountFields: "Amount Details",
-    saveSuccess: "Return saved successfully!",
-    updateSuccess: "Return updated successfully!",
-    deleteSuccess: "Return deleted successfully!",
-    loadError: "Data load failed.",
-    saveError: "Save failed. Check backend.",
-    deleteError: "Delete failed.",
-    printError: "Print failed.",
-    confirmDelete: "Delete this return?",
-    requiredReturnNo: "Return No is required.",
-    requiredProduct: "Product is required.",
+    noInvoices: "No invoices found.",
+    select: "Select",
+    selectName: "Select Name",
+    selectProduct: "Select Product",
+    customer: "Customer",
+    employee: "Employee",
+    supplier: "Supplier",
+    generalLedger: "General Ledger",
+    requiredReturn: "Return No is required.",
+    requiredPartyType: "Customer Type is required.",
+    requiredParty: "Please select a name.",
+    requiredInvoice: "Please select sales invoice.",
+    requiredItem: "Add at least one valid return product row.",
     qtyInvalid: "Return qty must be greater than 0.",
-    qtyExceeded: "Return qty cannot be greater than available qty.",
-    autoCalc: "Auto: Return Qty × Rate",
+    qtyExceeded: "Return qty exceeds available qty.",
+    saved: "Sales return saved.",
+    updated: "Sales return updated.",
+    deleted: "Sales return deleted.",
+    saveError: "Save failed. Check backend.",
+    loadError: "Data load failed.",
+    printError: "Print failed.",
+    editError: "Could not load return details.",
+    deleteConfirm: "Delete this return?",
+    createMode: "Create Mode",
+    editMode: "Edit Mode",
   },
   ur: {
     title: "سیلز ریٹرن",
-    subtitle: "انوائس ریفرنس اور مکمل ریٹرن فیلڈز کے ساتھ سیلز ریٹرن",
+    subtitle: "مینوئل ریٹرن بنائیں یا سیلز انوائس کے خلاف پروڈکٹ ریٹرن کریں",
     newReturn: "نیا ریٹرن",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
     refresh: "ری فریش",
     toggleLang: "English",
-    searchPlaceholder: "ریٹرن نمبر، انوائس، پروڈکٹ، وجہ یا تاریخ تلاش کریں...",
+    searchPlaceholder: "ریٹرن نمبر، انوائس، نام، پروڈکٹ، تاریخ یا وجہ تلاش کریں...",
     todayFilter: "آج",
     selectDate: "تاریخ منتخب کریں",
     showingDate: "دکھائی جانے والی تاریخ",
-    totalReturns: "کل ریٹرن",
-    totalQty: "کل مقدار",
-    totalAmount: "کل رقم",
-    totalCredit: "کل کریڈٹ",
+    all: "سب",
+    manualReturn: "مینوئل سیلز ریٹرن",
+    autoReturn: "آٹومیٹک سیلز ریٹرن",
+    mode: "ریٹرن موڈ",
+    customerType: "کسٹمر ٹائپ",
+    name: "نام",
     returnNo: "ریٹرن نمبر",
-    invoiceSelect: "سیلز انوائس",
-    selectInvoice: "انوائس منتخب کریں",
-    invoiceRef: "انوائس ریفرنس",
-    customerName: "نام",
-    invoiceDate: "انوائس تاریخ",
-    returnDate: "ریٹرن تاریخ",
+    invoiceNo: "انوائس نمبر",
+    invoiceRef: "انوائس حوالہ",
     saleDate: "سیل تاریخ",
-    dateFull: "تاریخ / مہینہ / سال",
-    invoiceTotal: "انوائس ٹوٹل",
-    grandTotal: "گرینڈ ٹوٹل",
-    previousBalance: "سابقہ بیلنس",
-    deliveryCharges: "ڈیلیوری چارجز",
-    discount: "ڈسکاؤنٹ",
-    product: "پروڈکٹ",
-    selectProduct: "پروڈکٹ منتخب کریں",
-    manualProduct: "پروڈکٹ نام",
-    productDescription: "تفصیل",
+    returnDate: "ریٹرن تاریخ",
+    date: "تاریخ",
+    reference: "ریفرنس",
+    reason: "وجہ",
+    products: "پروڈکٹس",
+    invoiceProducts: "انوائس پروڈکٹس",
+    selectInvoice: "انوائس منتخب کریں",
+    invoiceList: "سیلز انوائسز",
+    showDetails: "تفصیل دیکھیں",
+    selectedInvoice: "منتخب انوائس",
+    addRow: "+ لائن شامل کریں",
+    productType: "پروڈکٹ ٹائپ",
     category: "کیٹیگری",
+    product: "پروڈکٹ",
+    manualProductName: "مینوئل پروڈکٹ نام",
+    desc: "تفصیل",
     unit: "یونٹ",
     soldQty: "فروخت مقدار",
     alreadyReturned: "پہلے واپس",
@@ -127,74 +150,69 @@ const LANG = {
     returnAmount: "ریٹرن رقم",
     debit: "ڈیبٹ",
     credit: "کریڈٹ",
-    reason: "وجہ",
-    actions: "اقدامات",
-    edit: "ترمیم",
-    delete: "حذف",
-    print: "پرنٹ",
+    totalQty: "کل مقدار",
+    totalReturns: "کل ریٹرنز",
+    totalItems: "کل آئٹمز",
+    totalAmount: "کل رقم",
+    totalDebit: "کل ڈیبٹ",
+    totalCredit: "کل کریڈٹ",
     save: "محفوظ کریں",
     update: "اپڈیٹ",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
-    back: "واپس",
+    close: "بند کریں",
+    edit: "ترمیم",
+    delete: "حذف",
+    print: "پرنٹ",
+    actions: "اقدامات",
     loading: "لوڈ ہو رہا ہے...",
-    loadingInvoices: "انوائسز لوڈ ہو رہی ہیں...",
-    loadingProducts: "پروڈکٹس لوڈ ہو رہے ہیں...",
     noRecords: "کوئی ریٹرن نہیں ملا۔",
-    noInvoiceItems: "اس انوائس میں پروڈکٹس نہیں ملیں۔ آپ فیلڈز manual بھی لکھ سکتے ہیں۔",
-    selectedInvoiceDetails: "منتخب انوائس کی تفصیل",
-    returnFields: "سیلز ریٹرن فیلڈز",
-    productFields: "پروڈکٹ ریٹرن تفصیل",
-    amountFields: "رقم کی تفصیل",
-    saveSuccess: "ریٹرن محفوظ ہو گیا!",
-    updateSuccess: "ریٹرن اپڈیٹ ہو گیا!",
-    deleteSuccess: "ریٹرن حذف ہو گیا!",
-    loadError: "ڈیٹا لوڈ نہیں ہوا۔",
-    saveError: "محفوظ نہیں ہوا، بیک اینڈ چیک کریں۔",
-    deleteError: "حذف نہیں ہوا۔",
-    printError: "پرنٹ نہیں ہو سکا۔",
-    confirmDelete: "کیا یہ ریٹرن حذف کرنا ہے؟",
-    requiredReturnNo: "ریٹرن نمبر ضروری ہے۔",
-    requiredProduct: "پروڈکٹ ضروری ہے۔",
+    noInvoices: "کوئی انوائس نہیں ملی۔",
+    select: "منتخب کریں",
+    selectName: "نام منتخب کریں",
+    selectProduct: "پروڈکٹ منتخب کریں",
+    customer: "کسٹمر",
+    employee: "ملازم",
+    supplier: "سپلائر",
+    generalLedger: "جنرل لیجر",
+    requiredReturn: "ریٹرن نمبر ضروری ہے۔",
+    requiredPartyType: "کسٹمر ٹائپ ضروری ہے۔",
+    requiredParty: "نام منتخب کریں۔",
+    requiredInvoice: "سیلز انوائس منتخب کریں۔",
+    requiredItem: "کم از کم ایک درست ریٹرن پروڈکٹ لائن شامل کریں۔",
     qtyInvalid: "ریٹرن مقدار 0 سے زیادہ ہونی چاہیے۔",
-    qtyExceeded: "ریٹرن مقدار دستیاب مقدار سے زیادہ نہیں ہو سکتی۔",
-    autoCalc: "خودکار: ریٹرن مقدار × ریٹ",
+    qtyExceeded: "ریٹرن مقدار دستیاب مقدار سے زیادہ ہے۔",
+    saved: "سیلز ریٹرن محفوظ ہو گیا۔",
+    updated: "سیلز ریٹرن اپڈیٹ ہو گیا۔",
+    deleted: "سیلز ریٹرن حذف ہو گیا۔",
+    saveError: "محفوظ نہیں ہوا، بیک اینڈ چیک کریں۔",
+    loadError: "ڈیٹا لوڈ نہیں ہوا۔",
+    printError: "پرنٹ نہیں ہو سکا۔",
+    editError: "ریٹرن تفصیل لوڈ نہیں ہوئی۔",
+    deleteConfirm: "کیا یہ ریٹرن حذف کرنا ہے؟",
+    createMode: "نیا موڈ",
+    editMode: "ترمیم موڈ",
   },
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const PARTY_TYPES = [
+  { value: "customer", labelKey: "customer" },
+  { value: "employee", labelKey: "employee" },
+  { value: "supplier", labelKey: "supplier" },
+  { value: "general_ledger", labelKey: "generalLedger" },
+];
 
-const emptyForm = () => ({
-  return_no: "",
-  invoice_id: "",
-  invoice_ref: "",
-  invoice_item_id: "",
-  product_id: "",
-  product_name: "",
-  product_description: "",
-  category_name: "",
-  unit_name: "",
-  return_date: today(),
-  sale_order_date: "",
-  sold_qty: "0",
-  already_returned_qty: "0",
-  available_qty: "0",
-  return_qty: "",
-  rate: "0",
-  return_amount: "0",
-  debit: "0",
-  credit: "0",
-  reason: "",
-});
+const today = () => new Date().toISOString().slice(0, 10);
 
 const getList = (d) => {
   if (Array.isArray(d)) return d;
   if (Array.isArray(d?.data)) return d.data;
-  if (Array.isArray(d?.returns)) return d.returns;
-  if (Array.isArray(d?.sales_returns)) return d.sales_returns;
-  if (Array.isArray(d?.invoices)) return d.invoices;
   if (Array.isArray(d?.rows)) return d.rows;
   if (Array.isArray(d?.result)) return d.result;
+  if (Array.isArray(d?.returns)) return d.returns;
+  if (Array.isArray(d?.invoices)) return d.invoices;
+  if (Array.isArray(d?.items)) return d.items;
+  if (Array.isArray(d?.products)) return d.products;
   return [];
 };
 
@@ -209,174 +227,259 @@ const money = (v) =>
     maximumFractionDigits: 2,
   });
 
-function toISODate(value) {
-  if (!value) return "";
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
-  const s = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-    const [dd, mm, yyyy] = s.split("/");
-    return `${yyyy}-${mm}-${dd}`;
+const getRecordId = (o) =>
+  o?.id ??
+  o?.value ??
+  o?.ID ??
+  o?.Id ??
+  o?.customer_id ??
+  o?.CustomerID ??
+  o?.employee_id ??
+  o?.EmployeeID ??
+  o?.supplier_id ??
+  o?.SupplierID ??
+  o?.general_ledger_id ??
+  o?.ledger_id ??
+  o?.account_id ??
+  o?.category_id ??
+  o?.CategoryID ??
+  o?.unit_id ??
+  o?.UnitID ??
+  o?.product_id ??
+  o?.ProductID ??
+  "";
+
+const pickText = (o, keys) => {
+  for (const key of keys) {
+    if (o?.[key] !== undefined && o?.[key] !== null && String(o[key]).trim()) return String(o[key]).trim();
   }
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-  return s.slice(0, 10);
+  const id = getRecordId(o);
+  return id ? `#${id}` : "";
+};
+
+const getCustomerName = (o) => pickText(o, ["customer_name", "customer_name_en", "name", "name_en", "title"]);
+const getEmployeeName = (o) => pickText(o, ["employee_name", "employee_name_en", "full_name", "name", "name_en", "title"]);
+const getSupplierName = (o) => pickText(o, ["supplier_name", "supplier_name_en", "vendor_name", "name", "name_en", "title"]);
+const getLedgerName = (o) => pickText(o, ["ledger_name", "ledger_name_en", "account_name", "account_title", "name", "name_en", "title"]);
+const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "CategoryName", "name", "name_en", "title"]);
+const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "ProductName", "item_name", "ItemName", "name", "name_en", "title"]);
+const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "UnitName", "name", "name_en", "symbol", "title"]);
+const getProductDesc = (o) => pickText(o, ["product_description", "ProductDescription", "description", "Description", "details", "remarks"]);
+const getTypeName = (o) => pickText(o, ["product_type_en", "product_type", "product_type_name", "type_name", "type", "name", "name_en", "title"]);
+
+const getPreviousBalance = (row) => {
+  if (!row) return 0;
+  const keys = [
+    "previous_balance",
+    "previousBalance",
+    "prev_balance",
+    "prevBalance",
+    "opening_balance",
+    "openingBalance",
+    "balance",
+    "current_balance",
+    "currentBalance",
+    "closing_balance",
+    "ledger_balance",
+    "account_balance",
+    "old_balance",
+    "remaining_balance",
+    "due_balance",
+    "payable",
+    "receivable",
+  ];
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return toNum(row[key]);
+  }
+  const debit = toNum(row.debit || row.total_debit || row.debit_amount || row.dr || row.total_dr);
+  const credit = toNum(row.credit || row.total_credit || row.credit_amount || row.cr || row.total_cr);
+  if (debit || credit) return debit - credit;
+  return 0;
+};
+
+const makePartyOption = (row, nameGetter) => ({
+  id: String(getRecordId(row)),
+  name: nameGetter(row),
+  previous_balance: getPreviousBalance(row),
+});
+
+const getCategoryId = (o) => o?.id ?? o?.value ?? o?.category_id ?? o?.categoryId ?? o?.CategoryID ?? o?.cat_id ?? o?.CatID ?? "";
+const getProductId = (o) => o?.id ?? o?.value ?? o?.product_id ?? o?.productId ?? o?.ProductID ?? o?.item_id ?? o?.ItemID ?? "";
+const getUnitId = (o) => o?.id ?? o?.value ?? o?.unit_id ?? o?.unitId ?? o?.UnitID ?? "";
+const sameId = (a, b) => String(a ?? "") !== "" && String(a ?? "") === String(b ?? "");
+
+const getProductCatId = (p) =>
+  p?.category_id ?? p?.categoryId ?? p?.CategoryID ?? p?.cat_id ?? p?.CatID ?? p?.product_category_id ?? p?.category?.id ?? "";
+const getProductUnitId = (p) => p?.unit_id ?? p?.unitId ?? p?.UnitID ?? p?.unit?.id ?? "";
+const getProductPieceRate = (p) =>
+  p?.piece_rate ?? p?.pieceRate ?? p?.PieceRate ?? p?.sale_rate ?? p?.saleRate ?? p?.SaleRate ?? p?.rate ?? p?.Rate ?? p?.price ?? p?.Price ?? p?.sale_price ?? 0;
+const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
+const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
+const getProductTypeId = (p) => p?.product_type_id ?? p?.productTypeId ?? p?.ProductTypeID ?? p?.type_id ?? p?.typeId ?? p?.TypeID ?? "";
+const getProductTypeName = (p) => pickText(p, ["product_type", "product_type_name", "type_name", "type", "sale_unit", "SaleUnit"], "FMS");
+
+function makeMap(list, getter) {
+  const map = {};
+  list.forEach((row) => {
+    const id = String(getRecordId(row));
+    if (id) map[id] = getter(row);
+  });
+  return map;
 }
 
-function formatDateDMY(value) {
-  const iso = toISODate(value);
-  if (!iso || iso === "-") return "-";
-  const parts = iso.split("-");
-  if (parts.length !== 3) return value || "-";
-  const [yyyy, mm, dd] = parts;
+function formatFullDate(dateValue) {
+  if (!dateValue) return "-";
+  const raw = String(dateValue).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 }
 
-function getId(row) {
-  return row?.id ?? row?.value ?? row?.invoice_item_id ?? row?.item_id ?? row?.sales_invoice_item_id ?? "";
-}
-
-function pickText(row, keys, fallback = "") {
-  for (const key of keys) {
-    if (row?.[key] !== undefined && row?.[key] !== null && String(row[key]).trim()) {
-      return String(row[key]).trim();
-    }
+function parseDisplayDate(value) {
+  const v = String(value || "").trim();
+  const slash = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (slash) {
+    const dd = slash[1].padStart(2, "0");
+    const mm = slash[2].padStart(2, "0");
+    const yyyy = slash[3];
+    return `${yyyy}-${mm}-${dd}`;
   }
-  return fallback;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return "";
 }
 
-const getPartyName = (inv) =>
-  pickText(inv, [
-    "party_name",
-    "customer_name",
-    "customer_name_en",
-    "employee_name",
-    "supplier_name",
-    "general_ledger_name",
-    "name",
-    "name_en",
-  ], "");
+function DateTextInput({ value, onChange, className = "", style = {}, readOnly = false, ...props }) {
+  const [draft, setDraft] = useState(formatFullDate(value));
 
-const getProductName = (row) =>
-  pickText(row, ["product_name", "product_name_en", "item_name", "name", "name_en", "title"], "");
+  useEffect(() => {
+    setDraft(formatFullDate(value));
+  }, [value]);
 
-const getProductDesc = (row) =>
-  pickText(row, ["product_description", "description", "details", "remarks"], "");
-
-const getCategoryName = (row) =>
-  pickText(row, ["category_name", "category_name_en", "category", "cat_name"], "");
-
-const getUnitName = (row) => pickText(row, ["unit_name", "unit_name_en", "unit", "symbol"], "");
-
-const getProductId = (row) => row?.product_id ?? row?.productId ?? row?.ProductID ?? row?.product?.id ?? "";
-const getCategoryId = (row) => row?.category_id ?? row?.categoryId ?? row?.CategoryID ?? row?.category?.id ?? "";
-const getUnitId = (row) => row?.unit_id ?? row?.unitId ?? row?.UnitID ?? row?.unit?.id ?? "";
-
-function normalizeInvoiceItem(row, index = 0, inv = {}) {
-  const qty = toNum(row?.qty ?? row?.quantity ?? row?.order_qty ?? row?.pieces_qty ?? row?.carton_qty);
-  const returned = toNum(row?.returned_qty ?? row?.already_returned_qty ?? row?.return_qty_done ?? 0);
-  const rate = toNum(row?.rate ?? row?.sale_rate ?? row?.price ?? row?.unit_price ?? 0);
-  const available = Math.max(0, qty - returned);
-  return {
-    invoice_item_id: String(row?.invoice_item_id ?? row?.id ?? row?.item_id ?? row?.sales_invoice_item_id ?? index + 1),
-    invoice_id: String(row?.invoice_id ?? inv?.id ?? ""),
-    invoice_ref: row?.invoice_ref || inv?.invoice_no || "",
-    product_id: String(getProductId(row) || ""),
-    product_name: getProductName(row) || `Product ${index + 1}`,
-    product_description: getProductDesc(row),
-    category_id: String(getCategoryId(row) || ""),
-    category_name: getCategoryName(row),
-    unit_id: String(getUnitId(row) || ""),
-    unit_name: getUnitName(row),
-    sale_order_date: toISODate(row?.invoice_date || inv?.invoice_date || inv?.order_date || ""),
-    sold_qty: qty,
-    already_returned_qty: returned,
-    available_qty: available,
-    rate,
-    amount: toNum(row?.amount),
-  };
+  return (
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/yyyy"
+      className={className}
+      style={style}
+      value={draft === "-" ? "" : draft}
+      readOnly={readOnly}
+      onChange={(e) => {
+        if (readOnly) return;
+        const next = e.target.value;
+        setDraft(next);
+        const parsed = parseDisplayDate(next);
+        if (parsed) onChange(parsed);
+      }}
+      onBlur={() => setDraft(formatFullDate(value))}
+    />
+  );
 }
 
-function normalizeInvoice(inv) {
-  return {
-    ...inv,
-    id: inv?.id ?? inv?.invoice_id,
-    invoice_no: inv?.invoice_no || inv?.invoiceNo || inv?.ref_no || "",
-    invoice_date: toISODate(inv?.invoice_date || inv?.date || inv?.order_date || ""),
-    party_name: getPartyName(inv),
-    invoice_total: toNum(inv?.invoice_total ?? inv?.total_amount),
-    grand_total: toNum(inv?.grand_total ?? inv?.invoice_total ?? inv?.total_amount),
-    previous_balance: toNum(inv?.previous_balance),
-    delivery_charges: toNum(inv?.delivery_charges),
-    discount: toNum(inv?.discount),
-    items: Array.isArray(inv?.items) ? inv.items : Array.isArray(inv?.order_items) ? inv.order_items : [],
-  };
+function useLookup(url) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(url);
+      setData(getList(res.data));
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, refetch: fetchData };
 }
 
-function normalizeReturn(row) {
-  return {
-    ...row,
-    id: row?.id,
-    return_no: row?.return_no || row?.returnNo || "",
-    invoice_id: row?.invoice_id || "",
-    invoice_ref: row?.invoice_ref || row?.invoice_no || "",
-    invoice_item_id: row?.invoice_item_id || "",
-    product_id: row?.product_id || "",
-    product_name: row?.product_name || "",
-    product_description: row?.product_description || row?.description || "",
-    category_name: row?.category_name || "",
-    unit_name: row?.unit_name || "",
-    return_date: toISODate(row?.return_date),
-    sale_order_date: toISODate(row?.sale_order_date || row?.invoice_date || row?.sale_date),
-    sold_qty: toNum(row?.sold_qty),
-    already_returned_qty: toNum(row?.already_returned_qty),
-    available_qty: toNum(row?.available_qty),
-    return_qty: toNum(row?.return_qty),
-    rate: toNum(row?.rate),
-    return_amount: toNum(row?.return_amount),
-    debit: toNum(row?.debit),
-    credit: toNum(row?.credit || row?.return_amount),
-    reason: row?.reason || "",
-  };
-}
+const emptyManualItem = () => ({
+  category_id: "",
+  product_id: "",
+  product_name: "",
+  product_description: "",
+  product_type_id: "",
+  product_type: "FMS",
+  unit_id: "",
+  unit_name: "",
+  sold_qty: "",
+  already_returned_qty: "0",
+  available_qty: "",
+  return_qty: "",
+  rate: "0",
+  return_amount: "0",
+  debit: "0",
+  credit: "0",
+});
+
+const defaultReturnItems = (count = 5) => Array.from({ length: count }, () => emptyManualItem());
+
+const emptyForm = () => ({
+  return_no: "",
+  return_date: today(),
+  sale_order_date: today(),
+  invoice_id: "",
+  invoice_ref: "",
+  reference_no: "",
+  party_type: "customer",
+  party_id: "",
+  party_name: "",
+  reason: "",
+});
+
+const getInvPartyType = (inv) =>
+  inv?.customer_type ||
+  inv?.party_type ||
+  (inv?.customer_id ? "customer" : inv?.employee_id ? "employee" : inv?.supplier_id ? "supplier" : inv?.general_ledger_id ? "general_ledger" : "customer");
+
+const getInvPartyId = (inv) => {
+  const type = getInvPartyType(inv);
+  if (inv?.party_id) return inv.party_id;
+  if (type === "employee") return inv?.employee_id || "";
+  if (type === "supplier") return inv?.supplier_id || "";
+  if (type === "general_ledger") return inv?.general_ledger_id || inv?.ledger_id || inv?.account_id || "";
+  return inv?.customer_id || "";
+};
+
+const getInvoiceNo = (inv) => inv?.invoice_no || inv?.sales_invoice_no || inv?.bill_no || inv?.id || "";
+const getInvoiceDate = (inv) => String(inv?.invoice_date || inv?.date || inv?.created_at || "").slice(0, 10);
+const getInvoiceTotal = (inv) => toNum(inv?.invoice_total || inv?.total_amount || inv?.net_total || inv?.amount);
+const getGrandTotal = (inv) => toNum(inv?.grand_total || inv?.invoice_total || inv?.total_amount || inv?.net_total || inv?.amount);
 
 function genReturnNo(list) {
   let max = 0;
-  list.forEach((r) => {
-    const s = String(r.return_no || "");
-    const m1 = s.match(/^sales-return(\d+)$/i);
-    const m2 = s.match(/^SR[- ]?(\d+)$/i);
+  list.forEach((ret) => {
+    const m1 = String(ret.return_no || "").match(/^sales-return(\d+)$/i);
+    const m2 = String(ret.return_no || "").match(/^SR[- ]?(\d+)$/i);
     const m = m1 || m2;
     if (m) max = Math.max(max, Number(m[1]));
   });
   return `sales-return${String(max + 1).padStart(2, "0")}`;
 }
 
-function printReturnSlip(ret, t, isUrdu) {
-  const amount = toNum(ret.return_amount);
-  const html = `<!doctype html>
-<html dir="${isUrdu ? "rtl" : "ltr"}">
-<head>
-<title>${ret.return_no || "Sales Return"}</title>
-<style>
-body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:white;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.reason{margin-top:12px;border:1px solid #d1d5db;border-radius:10px;padding:10px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
-</style>
-</head>
-<body><div class="page"><div class="sheet">
-  <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.returnNo}: <b>${ret.return_no || "-"}</b><br/>${t.returnDate}: ${formatDateDMY(ret.return_date)}</div></div>
-  <div class="body">
-    <div class="grid">
-      <div class="box"><small>${t.returnNo}</small><b>${ret.return_no || "-"}</b></div>
-      <div class="box"><small>${t.invoiceRef}</small><b>${ret.invoice_ref || "-"}</b></div>
-      <div class="box"><small>${t.product}</small><b>${ret.product_name || "-"}</b></div>
-      <div class="box"><small>${t.saleDate}</small><b>${formatDateDMY(ret.sale_order_date)}</b></div>
-      <div class="box"><small>${t.returnDate}</small><b>${formatDateDMY(ret.return_date)}</b></div>
-    </div>
-    <table><thead><tr><th>${t.soldQty}</th><th>${t.alreadyReturned}</th><th>${t.availableQty}</th><th>${t.returnQty}</th><th class="num">${t.rate}</th><th class="num">${t.returnAmount}</th><th class="num">${t.debit}</th><th class="num">${t.credit}</th></tr></thead>
-    <tbody><tr><td>${money(ret.sold_qty)}</td><td>${money(ret.already_returned_qty)}</td><td>${money(ret.available_qty)}</td><td>${money(ret.return_qty)}</td><td class="num">${money(ret.rate)}</td><td class="num strong">${money(amount)}</td><td class="num">${money(ret.debit)}</td><td class="num">${money(ret.credit || amount)}</td></tr></tbody></table>
-    ${ret.reason ? `<div class="reason"><b>${t.reason}</b><br/>${ret.reason}</div>` : ""}
-  </div>
-</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+function getReturnPartyName(ret) {
+  return ret?.party_name || ret?.customer_name || ret?.employee_name || ret?.supplier_name || ret?.general_ledger_name || ret?.name || "";
+}
+
+function printReturn(ret, t, isUrdu) {
+  const html = `<!doctype html><html dir="${isUrdu ? "rtl" : "ltr"}"><head><title>${ret.return_no || "Sales Return"}</title><style>
+  body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
+  </style></head><body><div class="page"><div class="sheet"><div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.returnNo}: <b>${ret.return_no || "-"}</b><br/>${t.returnDate}: ${formatFullDate(ret.return_date)}</div></div><div class="body">
+  <div class="grid"><div class="box"><small>${t.returnNo}</small><b>${ret.return_no || "-"}</b></div><div class="box"><small>${t.invoiceRef}</small><b>${ret.invoice_ref || "-"}</b></div><div class="box"><small>${t.name}</small><b>${getReturnPartyName(ret) || "-"}</b></div><div class="box"><small>${t.returnDate}</small><b>${formatFullDate(ret.return_date)}</b></div><div class="box"><small>${t.saleDate}</small><b>${formatFullDate(ret.sale_order_date)}</b></div></div>
+  <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.returnQty}</th><th>${t.rate}</th><th>${t.returnAmount}</th><th>${t.reason}</th></tr></thead><tbody><tr><td>1</td><td>${ret.product_name || "-"}</td><td class="num">${money(ret.return_qty)}</td><td class="num">${money(ret.rate)}</td><td class="num strong">${money(ret.return_amount)}</td><td>${ret.reason || "-"}</td></tr></tbody></table>
+  </div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
   const w = window.open("", "_blank", "width=1200,height=800");
   if (!w) return;
   w.document.open();
@@ -390,275 +493,460 @@ export default function SalesReturnPage() {
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
+  const { data: customers, loading: cuLoading } = useLookup(CUSTOMERS_API);
+  const { data: employees, loading: emLoading } = useLookup(EMPLOYEES_API);
+  const { data: suppliers, loading: suLoading } = useLookup(SUPPLIERS_API);
+  const { data: generalLedgers, loading: glLoading } = useLookup(GENERAL_LEDGERS_API);
+  const { data: categories, loading: catLoading } = useLookup(CATEGORIES_API);
+  const { data: products, loading: prodLoading } = useLookup(PRODUCTS_API);
+  const { data: units, loading: unLoading } = useLookup(UNITS_API);
+
   const [returns, setReturns] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [invoiceItems, setInvoiceItems] = useState([]);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-
-  const [loading, setLoading] = useState(true);
-  const [invoiceLoading, setInvoiceLoading] = useState(true);
-  const [itemLoading, setItemLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [loadingRet, setLoadingRet] = useState(true);
+  const [loadingInv, setLoadingInv] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
-  const [search, setSearch] = useState("");
-  const [selectedDate, setSelectedDate] = useState(today());
-  const [msg, setMsg] = useState({ type: "", text: "" });
+  const [returnMode, setReturnMode] = useState("manual");
   const [form, setForm] = useState(emptyForm());
+  const [items, setItems] = useState(defaultReturnItems(5));
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [invoiceItems, setInvoiceItems] = useState([]);
+  const [search, setSearch] = useState("");
+  const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState(today());
+  const [showAll, setShowAll] = useState(true);
+  const [msg, setMsg] = useState({ type: "", text: "" });
+  const [saving, setSaving] = useState(false);
+
+  const mastersLoading = cuLoading || emLoading || suLoading || glLoading || catLoading || prodLoading || unLoading;
+
+  const customerMap = useMemo(() => makeMap(customers, getCustomerName), [customers]);
+  const employeeMap = useMemo(() => makeMap(employees, getEmployeeName), [employees]);
+  const supplierMap = useMemo(() => makeMap(suppliers, getSupplierName), [suppliers]);
+  const ledgerMap = useMemo(() => makeMap(generalLedgers, getLedgerName), [generalLedgers]);
+  const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
+  const productMap = useMemo(() => makeMap(products, getProductName), [products]);
+  const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
+
+  const partyOptions = useMemo(() => {
+    if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
+    if (form.party_type === "supplier") return suppliers.map((x) => makePartyOption(x, getSupplierName));
+    if (form.party_type === "general_ledger") return generalLedgers.map((x) => makePartyOption(x, getLedgerName));
+    return customers.map((x) => makePartyOption(x, getCustomerName));
+  }, [form.party_type, customers, employees, suppliers, generalLedgers]);
 
   const toast = useCallback((type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg({ type: "", text: "" }), 2800);
   }, []);
 
+  const getInvoicePartyName = useCallback(
+    (inv) => {
+      const type = getInvPartyType(inv);
+      const id = String(getInvPartyId(inv));
+      const fallback = inv.party_name || inv.customer_name || inv.employee_name || inv.supplier_name || inv.general_ledger_name || "";
+      if (type === "employee") return employeeMap[id] || fallback;
+      if (type === "supplier") return supplierMap[id] || fallback;
+      if (type === "general_ledger") return ledgerMap[id] || fallback;
+      return customerMap[id] || fallback;
+    },
+    [customerMap, employeeMap, supplierMap, ledgerMap]
+  );
+
   const fetchReturns = useCallback(async () => {
-    setLoading(true);
+    setLoadingRet(true);
     try {
       const res = await axios.get(RETURNS_API);
-      setReturns(getList(res.data).map(normalizeReturn));
+      setReturns(getList(res.data));
     } catch {
       toast("error", t.loadError);
     } finally {
-      setLoading(false);
+      setLoadingRet(false);
     }
   }, [t.loadError, toast]);
 
   const fetchInvoices = useCallback(async () => {
-    setInvoiceLoading(true);
+    setLoadingInv(true);
     try {
       const res = await axios.get(INVOICES_API);
-      setInvoices(getList(res.data).map(normalizeInvoice));
+      setInvoices(getList(res.data));
     } catch {
-      toast("error", t.loadError);
+      setInvoices([]);
     } finally {
-      setInvoiceLoading(false);
+      setLoadingInv(false);
     }
-  }, [t.loadError, toast]);
+  }, []);
 
   useEffect(() => {
     fetchReturns();
     fetchInvoices();
   }, [fetchReturns, fetchInvoices]);
 
-  useEffect(() => {
-    const amount = toNum(form.return_qty) * toNum(form.rate);
-    setForm((prev) => ({
-      ...prev,
-      return_amount: String(amount.toFixed(2)),
-      debit: "0",
-      credit: String(amount.toFixed(2)),
-    }));
-  }, [form.return_qty, form.rate]);
+  const totalReturnAmount = useMemo(() => items.reduce((sum, row) => sum + toNum(row.return_amount), 0), [items]);
+  const totalQty = useMemo(() => items.reduce((sum, row) => sum + toNum(row.return_qty), 0), [items]);
+  const totalDebit = useMemo(() => items.reduce((sum, row) => sum + toNum(row.debit), 0), [items]);
+  const totalCredit = useMemo(() => items.reduce((sum, row) => sum + toNum(row.credit), 0), [items]);
 
-  const summary = useMemo(
-    () =>
-      returns.reduce(
-        (acc, r) => {
-          acc.totalReturns += 1;
-          acc.totalQty += toNum(r.return_qty);
-          acc.totalAmount += toNum(r.return_amount);
-          acc.totalCredit += toNum(r.credit || r.return_amount);
-          return acc;
-        },
-        { totalReturns: 0, totalQty: 0, totalAmount: 0, totalCredit: 0 }
-      ),
-    [returns]
-  );
+  const summary = useMemo(() => {
+    return returns.reduce(
+      (acc, ret) => {
+        acc.totalReturns += 1;
+        acc.totalItems += 1;
+        acc.totalQty += toNum(ret.return_qty);
+        acc.totalAmount += toNum(ret.return_amount);
+        acc.totalDebit += toNum(ret.debit);
+        acc.totalCredit += toNum(ret.credit || ret.return_amount);
+        return acc;
+      },
+      { totalReturns: 0, totalItems: 0, totalQty: 0, totalAmount: 0, totalDebit: 0, totalCredit: 0 }
+    );
+  }, [returns]);
 
-  const filtered = useMemo(() => {
-    let list = returns.filter((r) => String(r.return_date || "").slice(0, 10) === (selectedDate || today()));
+  const filteredReturns = useMemo(() => {
+    let list = returns;
+    if (!showAll) {
+      const dateValue = selectedDate || today();
+      list = list.filter((ret) => String(ret.return_date || ret.created_at || "").slice(0, 10) === dateValue);
+    }
     const q = search.toLowerCase().trim();
     if (!q) return list;
-    return list.filter((r) =>
-      [r.return_no, r.invoice_ref, r.product_name, r.reason, r.return_date, r.sale_order_date]
+    return list.filter((ret) =>
+      [ret.return_no, ret.invoice_ref, ret.invoice_no, getReturnPartyName(ret), ret.product_name, ret.return_date, ret.reason]
         .join(" ")
         .toLowerCase()
         .includes(q)
     );
-  }, [returns, search, selectedDate]);
+  }, [returns, search, selectedDate, showAll]);
+
+  const filteredInvoices = useMemo(() => {
+    const q = invoiceSearch.toLowerCase().trim();
+    if (!q) return invoices;
+    return invoices.filter((inv) =>
+      [getInvoiceNo(inv), inv.reference_no, getInvoicePartyName(inv), inv.invoice_date, inv.shipment_to]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [invoices, invoiceSearch, getInvoicePartyName]);
+
+  const makeAutoRow = useCallback(
+    (row) => {
+      const soldQty = toNum(row.sold_qty ?? row.qty ?? row.quantity ?? row.pieces_qty ?? row.carton_qty);
+      const alreadyReturned = toNum(row.already_returned_qty ?? row.returned_qty);
+      const available = toNum(row.available_qty, Math.max(0, soldQty - alreadyReturned));
+      const rate = toNum(row.rate);
+      return {
+        selected: false,
+        invoice_item_id: row.invoice_item_id || row.id || row.item_id || "",
+        category_id: row.category_id || "",
+        category_name: row.category_name || categoryMap[String(row.category_id)] || "",
+        product_id: row.product_id || "",
+        product_name: row.product_name || productMap[String(row.product_id)] || "",
+        product_description: row.product_description || row.description || "",
+        product_type_id: row.product_type_id || "",
+        product_type: row.product_type || row.product_type_name || "FMS",
+        unit_id: row.unit_id || "",
+        unit_name: row.unit_name || unitMap[String(row.unit_id)] || "",
+        sold_qty: soldQty,
+        already_returned_qty: alreadyReturned,
+        available_qty: available,
+        return_qty: "",
+        rate,
+        return_amount: "0",
+        debit: "0",
+        credit: "0",
+      };
+    },
+    [categoryMap, productMap, unitMap]
+  );
 
   const openAdd = () => {
     setEditingId(null);
-    setForm({ ...emptyForm(), return_no: genReturnNo(returns) });
-    setInvoiceItems([]);
+    setReturnMode("manual");
     setSelectedInvoice(null);
+    setInvoiceItems([]);
+    setInvoiceSearch("");
+    setForm({ ...emptyForm(), return_no: genReturnNo(returns), party_type: "customer" });
+    setItems(defaultReturnItems(5));
     setShowForm(true);
   };
 
-  const openEdit = async (row) => {
-    const r = normalizeReturn(row);
-    setEditingId(r.id);
+  const openEdit = (ret) => {
+    setEditingId(ret.id);
+    setReturnMode("manual");
+    setSelectedInvoice(null);
+    setInvoiceItems([]);
     setForm({
-      return_no: r.return_no,
-      invoice_id: String(r.invoice_id || ""),
-      invoice_ref: r.invoice_ref || "",
-      invoice_item_id: String(r.invoice_item_id || ""),
-      product_id: String(r.product_id || ""),
-      product_name: r.product_name || "",
-      product_description: r.product_description || "",
-      category_name: r.category_name || "",
-      unit_name: r.unit_name || "",
-      return_date: toISODate(r.return_date) || today(),
-      sale_order_date: toISODate(r.sale_order_date),
-      sold_qty: String(r.sold_qty || 0),
-      already_returned_qty: String(r.already_returned_qty || 0),
-      available_qty: String(r.available_qty || 0),
-      return_qty: String(r.return_qty || ""),
-      rate: String(r.rate || 0),
-      return_amount: String(r.return_amount || 0),
-      debit: String(r.debit || 0),
-      credit: String(r.credit || r.return_amount || 0),
-      reason: r.reason || "",
+      return_no: ret.return_no || "",
+      return_date: String(ret.return_date || today()).slice(0, 10),
+      sale_order_date: String(ret.sale_order_date || ret.invoice_date || today()).slice(0, 10),
+      invoice_id: ret.invoice_id || "",
+      invoice_ref: ret.invoice_ref || ret.invoice_no || "",
+      reference_no: ret.reference_no || "",
+      party_type: ret.party_type || ret.customer_type || "customer",
+      party_id: String(ret.party_id || ret.customer_id || ""),
+      party_name: getReturnPartyName(ret),
+      reason: ret.reason || "",
     });
+    setItems([
+      {
+        category_id: String(ret.category_id || ""),
+        category_name: ret.category_name || "",
+        product_id: String(ret.product_id || ""),
+        product_name: ret.product_name || "",
+        product_description: ret.product_description || ret.description || "",
+        product_type_id: String(ret.product_type_id || ""),
+        product_type: ret.product_type || "FMS",
+        unit_id: String(ret.unit_id || ""),
+        unit_name: ret.unit_name || "",
+        sold_qty: String(ret.sold_qty || ""),
+        already_returned_qty: String(ret.already_returned_qty || "0"),
+        available_qty: String(ret.available_qty || ret.sold_qty || ""),
+        return_qty: String(ret.return_qty || ""),
+        rate: String(ret.rate || "0"),
+        return_amount: String(ret.return_amount || "0"),
+        debit: String(ret.debit || "0"),
+        credit: String(ret.credit || ret.return_amount || "0"),
+      },
+    ]);
     setShowForm(true);
-
-    if (r.invoice_id) {
-      await loadInvoiceDetails(r.invoice_id, false);
-    } else {
-      setInvoiceItems([]);
-      setSelectedInvoice(null);
-    }
   };
 
-  const loadInvoiceDetails = async (invoiceId, fillForm = true) => {
-    if (!invoiceId) {
-      setSelectedInvoice(null);
-      setInvoiceItems([]);
-      return;
-    }
-
-    try {
-      setItemLoading(true);
-      const res = await axios.get(`${INVOICES_API}/${invoiceId}`);
-      const inv = normalizeInvoice(res.data?.data || res.data?.invoice || res.data);
-      const rawItems = Array.isArray(inv.items) ? inv.items : [];
-      const items = rawItems.map((item, idx) => normalizeInvoiceItem(item, idx, inv));
-
-      setSelectedInvoice(inv);
-      setInvoiceItems(items);
-
-      if (fillForm) {
-        setForm((prev) => ({
-          ...prev,
-          invoice_id: String(inv.id || invoiceId),
-          invoice_ref: inv.invoice_no || "",
-          sale_order_date: toISODate(inv.invoice_date),
-          invoice_item_id: "",
-          product_id: "",
-          product_name: "",
-          product_description: "",
-          category_name: "",
-          unit_name: "",
-          sold_qty: "0",
-          already_returned_qty: "0",
-          available_qty: "0",
-          return_qty: "",
-          rate: "0",
-          return_amount: "0",
-          debit: "0",
-          credit: "0",
-        }));
-      }
-    } catch {
-      const inv = invoices.find((x) => String(x.id) === String(invoiceId));
-      if (inv) {
-        const norm = normalizeInvoice(inv);
-        const items = (norm.items || []).map((item, idx) => normalizeInvoiceItem(item, idx, norm));
-        setSelectedInvoice(norm);
-        setInvoiceItems(items);
-        if (fillForm) {
-          setForm((prev) => ({
-            ...prev,
-            invoice_id: String(norm.id || invoiceId),
-            invoice_ref: norm.invoice_no || "",
-            sale_order_date: toISODate(norm.invoice_date),
-          }));
-        }
-      } else {
-        toast("error", t.loadError);
-        setSelectedInvoice(null);
-        setInvoiceItems([]);
-      }
-    } finally {
-      setItemLoading(false);
-    }
-  };
-
-  const handleInvoiceChange = async (invoiceId) => {
-    setForm((prev) => ({ ...prev, invoice_id: invoiceId }));
-    await loadInvoiceDetails(invoiceId, true);
-  };
-
-  const handleProductChange = (invoiceItemId) => {
-    const item = invoiceItems.find((x) => String(x.invoice_item_id) === String(invoiceItemId));
-    if (!item) {
-      setForm((prev) => ({ ...prev, invoice_item_id: invoiceItemId }));
-      return;
-    }
-
+  const handleModeChange = (mode) => {
+    setReturnMode(mode);
+    setSelectedInvoice(null);
+    setInvoiceItems([]);
+    setInvoiceSearch("");
+    setItems(defaultReturnItems(5));
     setForm((prev) => ({
       ...prev,
-      invoice_item_id: item.invoice_item_id,
-      product_id: item.product_id,
-      product_name: item.product_name,
-      product_description: item.product_description,
-      category_name: item.category_name,
-      unit_name: item.unit_name,
-      sale_order_date: item.sale_order_date || prev.sale_order_date,
-      sold_qty: String(item.sold_qty || 0),
-      already_returned_qty: String(item.already_returned_qty || 0),
-      available_qty: String(item.available_qty || 0),
-      return_qty: "",
-      rate: String(item.rate || 0),
-      return_amount: "0",
-      debit: "0",
-      credit: "0",
+      invoice_id: "",
+      invoice_ref: "",
+      sale_order_date: mode === "manual" ? prev.sale_order_date || today() : "",
+      party_type: prev.party_type || "customer",
     }));
   };
 
-  const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const handlePartyTypeChange = (value) => {
+    setForm((prev) => ({ ...prev, party_type: value || "customer", party_id: "", party_name: "" }));
+  };
 
-  const buildPayload = () => {
-    if (!String(form.return_no || "").trim()) throw new Error(t.requiredReturnNo);
-    if (!String(form.product_name || "").trim() && !String(form.product_id || "").trim()) throw new Error(t.requiredProduct);
+  const handlePartyChange = (value) => {
+    const selected = partyOptions.find((x) => String(x.id) === String(value));
+    setForm((prev) => ({ ...prev, party_id: value, party_name: selected?.name || "" }));
+  };
 
-    const returnQty = toNum(form.return_qty);
-    const availableQty = toNum(form.available_qty);
-    if (returnQty <= 0) throw new Error(t.qtyInvalid);
-    if (availableQty > 0 && returnQty > availableQty) throw new Error(t.qtyExceeded);
+  const handleProductChange = (index, productId) => {
+    setItems((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        const prod = products.find((p) => sameId(getProductId(p), productId));
+        const categoryId = getProductCatId(prod || {}) || row.category_id || "";
+        const unitId = getProductUnitId(prod || {}) || row.unit_id || "";
+        const rate = toNum(getProductPieceRate(prod || {}) || row.rate);
+        const qty = toNum(row.return_qty);
+        const amount = qty * rate;
+        return {
+          ...row,
+          product_id: productId,
+          product_name: getProductName(prod || {}) || row.product_name || "",
+          product_description: getProductDesc(prod || {}) || row.product_description || "",
+          product_type_id: String(getProductTypeId(prod || {}) || row.product_type_id || ""),
+          product_type: getProductTypeName(prod || {}) || row.product_type || "FMS",
+          category_id: String(categoryId || ""),
+          category_name: categoryMap[String(categoryId)] || row.category_name || "",
+          unit_id: String(unitId || ""),
+          unit_name: unitMap[String(unitId)] || row.unit_name || "",
+          rate: String(rate || 0),
+          return_amount: String(amount.toFixed(2)),
+          credit: String(amount.toFixed(2)),
+        };
+      })
+    );
+  };
 
-    const amount = returnQty * toNum(form.rate);
+  const handleItemChange = (index, field, value) => {
+    setItems((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        let next = { ...row, [field]: value };
 
-    return {
-      return_no: String(form.return_no).trim(),
+        if (field === "category_id") {
+          next.category_name = categoryMap[String(value)] || next.category_name || "";
+          return next;
+        }
+
+        if (field === "product_id") return next;
+
+        const qty = toNum(next.return_qty);
+        const rate = toNum(next.rate);
+        const amount = qty * rate;
+        next.return_amount = String(amount.toFixed(2));
+        if (field === "return_qty" || field === "rate") {
+          next.credit = String(amount.toFixed(2));
+        }
+        return next;
+      })
+    );
+  };
+
+  const handleAutoItemChange = (index, field, value) => {
+    setInvoiceItems((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        const next = { ...row, [field]: field === "selected" ? value : value };
+        const qty = toNum(next.return_qty);
+        const rate = toNum(next.rate);
+        const amount = qty * rate;
+        next.return_amount = String(amount.toFixed(2));
+        next.credit = String(amount.toFixed(2));
+        return next;
+      })
+    );
+  };
+
+  const addRow = () => setItems((prev) => [...prev, emptyManualItem()]);
+  const removeRow = (index) => setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
+
+  const loadInvoiceDetails = async (invoice) => {
+    if (!invoice?.id) return;
+    try {
+      let inv = invoice;
+      let list = Array.isArray(invoice.items) ? invoice.items : [];
+
+      try {
+        const detailRes = await axios.get(`${INVOICES_API}/${invoice.id}`);
+        inv = detailRes.data?.data || detailRes.data?.invoice || detailRes.data || invoice;
+        list = getList(inv.items || detailRes.data?.items || detailRes.data?.data?.items);
+      } catch {}
+
+      if (!list.length) {
+        try {
+          const itemRes = await axios.get(`${INVOICES_API}/${invoice.id}/items`);
+          list = getList(itemRes.data);
+        } catch {}
+      }
+
+      const partyType = getInvPartyType(inv);
+      const partyId = String(getInvPartyId(inv) || "");
+      const partyName = getInvoicePartyName(inv);
+
+      setSelectedInvoice(inv);
+      setForm((prev) => ({
+        ...prev,
+        invoice_id: inv.id,
+        invoice_ref: getInvoiceNo(inv),
+        sale_order_date: getInvoiceDate(inv),
+        party_type: partyType || "customer",
+        party_id: partyId,
+        party_name: partyName,
+        reference_no: inv.reference_no || prev.reference_no || "",
+      }));
+      setInvoiceItems(list.map(makeAutoRow));
+    } catch {
+      toast("error", t.loadError);
+    }
+  };
+
+  const handleInvoiceSelect = (invoiceId) => {
+    const inv = invoices.find((x) => String(x.id) === String(invoiceId));
+    if (inv) loadInvoiceDetails(inv);
+  };
+
+  const makePayloads = () => {
+    if (!String(form.return_no || "").trim()) throw new Error(t.requiredReturn);
+
+    const base = {
+      return_no: form.return_no.trim(),
+      return_date: form.return_date || today(),
+      sale_order_date: form.sale_order_date || null,
       invoice_id: form.invoice_id ? Number(form.invoice_id) : null,
-      invoice_ref: String(form.invoice_ref || "").trim(),
-      invoice_item_id: form.invoice_item_id ? Number(form.invoice_item_id) : null,
-      product_id: form.product_id ? Number(form.product_id) : null,
-      product_name: String(form.product_name || "").trim(),
-      product_description: String(form.product_description || "").trim(),
-      category_name: String(form.category_name || "").trim(),
-      unit_name: String(form.unit_name || "").trim(),
-      return_date: toISODate(form.return_date) || null,
-      sale_order_date: toISODate(form.sale_order_date) || null,
-      sold_qty: toNum(form.sold_qty),
-      already_returned_qty: toNum(form.already_returned_qty),
-      available_qty: toNum(form.available_qty),
-      return_qty: returnQty,
-      rate: toNum(form.rate),
-      return_amount: amount,
-      debit: toNum(form.debit),
-      credit: toNum(form.credit) || amount,
-      reason: String(form.reason || "").trim(),
+      invoice_ref: form.invoice_ref || "",
+      invoice_no: form.invoice_ref || "",
+      reference_no: form.reference_no || "",
+      party_type: form.party_type || "customer",
+      customer_type: form.party_type || "customer",
+      party_id: form.party_id ? Number(form.party_id) : null,
+      party_name: form.party_name || partyOptions.find((p) => String(p.id) === String(form.party_id))?.name || "",
+      customer_id: (form.party_type || "customer") === "customer" && form.party_id ? Number(form.party_id) : null,
+      employee_id: form.party_type === "employee" && form.party_id ? Number(form.party_id) : null,
+      supplier_id: form.party_type === "supplier" && form.party_id ? Number(form.party_id) : null,
+      general_ledger_id: form.party_type === "general_ledger" && form.party_id ? Number(form.party_id) : null,
+      customer_name: form.party_name || partyOptions.find((p) => String(p.id) === String(form.party_id))?.name || "",
+      reason: form.reason || "",
     };
+
+    if (returnMode === "auto") {
+      if (!form.invoice_id) throw new Error(t.requiredInvoice);
+      const selectedRows = invoiceItems.filter((row) => row.selected && toNum(row.return_qty) > 0);
+      if (!selectedRows.length) throw new Error(t.requiredItem);
+
+      selectedRows.forEach((row) => {
+        if (toNum(row.return_qty) <= 0) throw new Error(t.qtyInvalid);
+        if (toNum(row.available_qty) > 0 && toNum(row.return_qty) > toNum(row.available_qty)) throw new Error(t.qtyExceeded);
+      });
+
+      return selectedRows.map((row, idx) => ({
+        ...base,
+        return_no: selectedRows.length > 1 ? `${base.return_no}-${idx + 1}` : base.return_no,
+        invoice_item_id: row.invoice_item_id ? Number(row.invoice_item_id) : null,
+        category_id: row.category_id ? Number(row.category_id) : null,
+        category_name: row.category_name || "",
+        product_id: row.product_id ? Number(row.product_id) : null,
+        product_name: row.product_name || "",
+        product_description: row.product_description || "",
+        description: row.product_description || "",
+        product_type_id: row.product_type_id ? Number(row.product_type_id) : null,
+        product_type: row.product_type || "FMS",
+        unit_id: row.unit_id ? Number(row.unit_id) : null,
+        unit_name: row.unit_name || "",
+        sold_qty: toNum(row.sold_qty),
+        already_returned_qty: toNum(row.already_returned_qty),
+        available_qty: toNum(row.available_qty),
+        return_qty: toNum(row.return_qty),
+        rate: toNum(row.rate),
+        return_amount: toNum(row.return_amount),
+        debit: toNum(row.debit),
+        credit: toNum(row.credit || row.return_amount),
+      }));
+    }
+
+    if (!form.party_type) throw new Error(t.requiredPartyType);
+    if (!form.party_id) throw new Error(t.requiredParty);
+
+    const rows = items.filter((row) => (row.product_id || row.product_name) && toNum(row.return_qty) > 0);
+    if (!rows.length) throw new Error(t.requiredItem);
+
+    return rows.map((row, idx) => ({
+      ...base,
+      return_no: rows.length > 1 ? `${base.return_no}-${idx + 1}` : base.return_no,
+      category_id: row.category_id ? Number(row.category_id) : null,
+      category_name: row.category_name || categoryMap[String(row.category_id)] || "",
+      product_id: row.product_id ? Number(row.product_id) : null,
+      product_name: row.product_name || productMap[String(row.product_id)] || "",
+      product_description: row.product_description || "",
+      description: row.product_description || "",
+      product_type_id: row.product_type_id ? Number(row.product_type_id) : null,
+      product_type: row.product_type || "FMS",
+      unit_id: row.unit_id ? Number(row.unit_id) : null,
+      unit_name: row.unit_name || unitMap[String(row.unit_id)] || "",
+      sold_qty: toNum(row.sold_qty || row.return_qty),
+      already_returned_qty: toNum(row.already_returned_qty),
+      available_qty: toNum(row.available_qty || row.return_qty),
+      return_qty: toNum(row.return_qty),
+      rate: toNum(row.rate),
+      return_amount: toNum(row.return_amount),
+      debit: toNum(row.debit),
+      credit: toNum(row.credit || row.return_amount),
+    }));
   };
 
   const handleSave = async () => {
-    let payload;
+    let payloads;
     try {
-      payload = buildPayload();
+      payloads = makePayloads();
     } catch (err) {
       toast("error", err.message);
       return;
@@ -667,44 +955,56 @@ export default function SalesReturnPage() {
     try {
       setSaving(true);
       if (editingId) {
-        await axios.put(`${RETURNS_API}/${editingId}`, payload);
-        toast("success", t.updateSuccess);
+        await axios.put(`${RETURNS_API}/${editingId}`, payloads[0]);
+        toast("success", t.updated);
       } else {
-        await axios.post(RETURNS_API, payload);
-        toast("success", t.saveSuccess);
+        for (const payload of payloads) {
+          await axios.post(RETURNS_API, payload);
+        }
+        toast("success", t.saved);
       }
       setShowForm(false);
       setEditingId(null);
-      setForm(emptyForm());
-      setInvoiceItems([]);
       setSelectedInvoice(null);
+      setInvoiceItems([]);
+      setForm(emptyForm());
+      setItems(defaultReturnItems(5));
       fetchReturns();
       fetchInvoices();
-    } catch (err) {
-      toast("error", err?.response?.data?.message || err.message || t.saveError);
+    } catch {
+      toast("error", t.saveError);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm(t.confirmDelete)) return;
+    if (!window.confirm(t.deleteConfirm)) return;
     try {
       await axios.delete(`${RETURNS_API}/${id}`);
-      toast("success", t.deleteSuccess);
+      toast("success", t.deleted);
       fetchReturns();
       fetchInvoices();
     } catch {
-      toast("error", t.deleteError);
+      toast("error", t.loadError);
     }
   };
 
-  const handlePrint = (row) => {
-    try {
-      printReturnSlip(normalizeReturn(row), t, isUrdu);
-    } catch {
-      toast("error", t.printError);
-    }
+  const totalBoxes = [
+    [t.totalQty, money(totalQty)],
+    [t.totalAmount, money(totalReturnAmount)],
+    [t.totalDebit, money(totalDebit)],
+    [t.totalCredit, money(totalCredit)],
+  ];
+
+  const buttonStyle = {
+    padding: "7px 10px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    color: "#0f172a",
+    fontWeight: 800,
+    cursor: "pointer",
   };
 
   return (
@@ -717,33 +1017,10 @@ export default function SalesReturnPage() {
         .invoice-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
         @keyframes fadeSlide{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-        .page-wrap,.form-page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{animation:fadeSlide .22s ease-out both}
-        .top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-        .title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}
-        .btn{border:1px solid #cbd5e1;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.12s;background:white;color:#334155;box-shadow:none}.btn:hover{background:#f8fafc;transform:none;filter:none}.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}.btn-primary{background:#111827;color:white;border-color:#111827;box-shadow:none}.btn-soft{background:white;color:#334155;border:1px solid #cbd5e1}.btn-active{background:white;color:#111827;border:1px solid #94a3b8}.btn-green,.btn-red,.btn-yellow,.btn-blue{background:white!important;color:#334155!important;border:1px solid #cbd5e1!important;box-shadow:none!important}.table-click-row{cursor:pointer}.table-click-row:hover td{background:#f8fafc!important}
-        .summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}
-        .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.search:focus,.input:focus,.select:focus,.productInput:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#4f46e5;color:white;border-color:#4f46e5}
-        .card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}
-        .toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
-        .inputBox{width:100%;background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.08);overflow:hidden;min-height:calc(100vh - 36px)}.inputTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.inputBody{padding:14px;overflow-x:hidden}.formTopLine{display:grid;grid-template-columns:150px 220px 220px 150px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.select,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.input[readonly]{background:#f1f5f9}.dateBox{display:grid;grid-template-columns:1fr 115px;gap:6px}.datePreview{height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:8px 9px;font-size:11px;font-weight:900;color:#334155;text-align:center;font-family:monospace}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.panel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.invoiceGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.infoBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.infoBox small{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:900}.infoBox b{font-size:14px;font-family:monospace}.fieldGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.wide{grid-column:span 2}.full{grid-column:1/-1}.amountBox{background:#eef2ff;border-color:#c7d2fe}.footerBtns{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}
-        @media(max-width:1160px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:repeat(2,1fr)}.fieldGrid,.invoiceGrid{grid-template-columns:repeat(2,1fr)}.wide{grid-column:span 1}table.list{min-width:1050px}}
-        @media(max-width:720px){.summary-grid,.formTopLine,.fieldGrid,.invoiceGrid{grid-template-columns:1fr}.dateBox{grid-template-columns:1fr}.title{font-size:24px}.footerBtns{flex-direction:column}.btn{width:100%}}
-
-        /* EXACT Sales Invoice layout aliases */
-        .fullPageInputBox{width:100%!important;max-width:100%!important;min-height:calc(100vh - 36px);box-shadow:0 18px 48px rgba(15,23,42,.08)!important}
-        .inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}
-        .inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}
-        .inputModalBody{padding:14px;overflow-x:hidden;background:#f3f6fb;min-height:calc(100vh - 90px)}
-        .formTopLine{display:grid;grid-template-columns:150px 250px 140px 140px minmax(230px,1fr)!important;gap:10px;align-items:end;margin-bottom:10px}
-        .formTopLine>div:nth-child(5){grid-column:auto}
-        .sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}
-        .panel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}
-        .input,.select,.productInput{height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650;box-shadow:none}
-        .input[readonly],.productInput[readonly]{background:#f1f5f9}
-        .footerBtns{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}
-        @media(max-width:1250px){.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))!important}.inputModalBox{width:100%!important}.fieldGrid,.invoiceGrid{grid-template-columns:repeat(3,1fr)}}
-        @media(max-width:780px){.formTopLine{grid-template-columns:1fr!important}.fieldGrid,.invoiceGrid{grid-template-columns:1fr}.inputModalBody{padding:10px!important}}
-
+        .page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{max-width:1220px;width:100%;margin:0 auto;animation:fadeSlide .22s ease-out both}.fullPageInputBox{width:100%!important;max-width:100%!important;min-height:calc(100vh - 36px);box-shadow:0 18px 48px rgba(15,23,42,.08)!important}.top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:1px solid #cbd5e1;border-radius:10px;padding:9px 13px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s;background:white;color:#0f172a}.btn:hover{background:#f8fafc}.btn-primary{background:#111827;color:white;border-color:#111827}.btn-soft{background:white;color:#334155;border:1px solid #cbd5e1}.btn-active{background:#f1f5f9;color:#111827;border:1px solid #cbd5e1}.btn-green,.btn-red,.btn-yellow{background:white!important;color:#0f172a!important;border:1px solid #cbd5e1!important;box-shadow:none!important}.summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#111827;color:white;border-color:#111827}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+        .inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.10);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.form-box{background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;margin-bottom:0}.formTopLine{display:grid;grid-template-columns:160px 210px 140px 120px 170px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(15,23,42,.08)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen,.basicBtnRed{background:white;border-color:#cbd5e1;color:#0f172a}.basicProductTable{width:100%;border-collapse:collapse;background:white;min-width:1280px}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}.radioPanel{border:1px solid #cbd5e1;background:#fff;border-radius:14px;padding:10px 12px;display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}.radioItem{display:inline-flex;align-items:center;gap:7px;font-weight:900;font-size:13px;color:#0f172a;cursor:pointer}.clickRow{cursor:pointer}.selectedInvoiceRow td{background:#eef2ff!important}
+        @media(max-width:1120px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))}.finalTotalBar{grid-template-columns:repeat(2,1fr)}table.list{min-width:900px}}
+        @media(max-width:780px){.summary-grid,.formTopLine,.finalTotalBar{grid-template-columns:1fr}.inputModalBody{padding:10px!important}.basicProductTable{min-width:1120px!important}.title{font-size:24px}}
       `}</style>
 
       {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
@@ -758,7 +1035,7 @@ export default function SalesReturnPage() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
               <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
               <button className={`btn ${showSummary ? "btn-active" : "btn-soft"}`} onClick={() => setShowSummary((v) => !v)}>{showSummary ? t.hideSummary : t.viewSummary}</button>
-              <button className="btn btn-soft" onClick={fetchReturns}>{loading ? t.loading : t.refresh}</button>
+              <button className="btn btn-soft" onClick={fetchReturns}>{loadingRet ? t.loading : t.refresh}</button>
               <button className="btn btn-primary" onClick={openAdd}>+ {t.newReturn}</button>
             </div>
           </div>
@@ -767,6 +1044,7 @@ export default function SalesReturnPage() {
             <div className="summary-grid">
               {[
                 [t.totalReturns, summary.totalReturns],
+                [t.totalItems, summary.totalItems],
                 [t.totalQty, money(summary.totalQty)],
                 [t.totalAmount, money(summary.totalAmount)],
                 [t.totalCredit, money(summary.totalCredit)],
@@ -781,14 +1059,17 @@ export default function SalesReturnPage() {
 
           <div className="toolbar">
             <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
-            <button className={`filter ${selectedDate === today() ? "active" : ""}`} onClick={() => setSelectedDate(today())}>{t.todayFilter}</button>
+            <button className={`filter ${showAll ? "active" : ""}`} onClick={() => setShowAll(true)}>{t.all}</button>
+            <button className={`filter ${!showAll && selectedDate === today() ? "active" : ""}`} onClick={() => { setShowAll(false); setSelectedDate(today()); }}>{t.todayFilter}</button>
             <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
               <span>{t.selectDate}</span>
-              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent" }} />
+              <DateTextInput value={selectedDate} onChange={(v) => { setShowAll(false); setSelectedDate(v || today()); }} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent", width: 100 }} />
             </label>
-            <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#eef2ff", color: "#3730a3", fontWeight: 900, border: "1px solid #c7d2fe", fontSize: 12 }}>
-              {t.showingDate}: {formatDateDMY(selectedDate)}
-            </span>
+            {!showAll && (
+              <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#eef2ff", color: "#3730a3", fontWeight: 900, border: "1px solid #c7d2fe", fontSize: 12 }}>
+                {t.showingDate}: {formatFullDate(selectedDate)}
+              </span>
+            )}
           </div>
 
           <div className="card table-wrap">
@@ -796,38 +1077,36 @@ export default function SalesReturnPage() {
               <thead>
                 <tr>
                   <th style={{ width: 45 }}>#</th>
-                  <th style={{ width: 150, textAlign: isUrdu ? "right" : "left" }}>{t.returnNo}</th>
-                  <th style={{ width: 150, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceRef}</th>
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.product}</th>
-                  <th style={{ width: 120 }}>{t.saleDate}</th>
-                  <th style={{ width: 120 }}>{t.returnDate}</th>
-                  <th style={{ width: 95, textAlign: "right" }}>{t.returnQty}</th>
-                  <th style={{ width: 110, textAlign: "right" }}>{t.returnAmount}</th>
-                  <th style={{ width: 110, textAlign: "right" }}>{t.credit}</th>
-                  <th style={{ width: 185 }}>{t.actions}</th>
+                  <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.returnNo}</th>
+                  <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceRef}</th>
+                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.name}</th>
+                  <th style={{ width: 140 }}>{t.returnDate}</th>
+                  <th style={{ width: 140 }}>{t.saleDate}</th>
+                  <th style={{ width: 115, textAlign: "right" }}>{t.returnQty}</th>
+                  <th style={{ width: 125, textAlign: "right" }}>{t.returnAmount}</th>
+                  <th style={{ width: 170 }}>{t.actions}</th>
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr><td colSpan={10} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.loading}</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={10} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
-                ) : filtered.map((r, idx) => (
-                  <tr key={r.id || idx} className="table-click-row" onClick={() => openEdit(r)} title="Click to open">
+                {loadingRet ? (
+                  <tr><td colSpan={9} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.loading}</td></tr>
+                ) : filteredReturns.length === 0 ? (
+                  <tr><td colSpan={9} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
+                ) : filteredReturns.map((ret, idx) => (
+                  <tr key={ret.id || idx} className="clickRow" onClick={() => openEdit(ret)}>
                     <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
-                    <td><b style={{ fontFamily: "monospace" }}>{r.return_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{r.reason || "-"}</div></td>
-                    <td><b>{r.invoice_ref || "-"}</b></td>
-                    <td><b>{r.product_name || "-"}</b><div style={{ fontSize: 11, color: "#64748b" }}>{r.product_description || r.category_name || "-"}</div></td>
-                    <td style={{ textAlign: "center", fontFamily: "monospace", fontWeight: 800 }}>{formatDateDMY(r.sale_order_date)}</td>
-                    <td style={{ textAlign: "center", fontFamily: "monospace", fontWeight: 800 }}>{formatDateDMY(r.return_date)}</td>
-                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(r.return_qty)}</td>
-                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(r.return_amount)}</td>
-                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(r.credit || r.return_amount)}</td>
+                    <td><b style={{ fontFamily: "monospace" }}>{ret.return_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{ret.product_name || "-"}</div></td>
+                    <td><b style={{ fontFamily: "monospace" }}>{ret.invoice_ref || "-"}</b></td>
+                    <td><b>{getReturnPartyName(ret) || "-"}</b><div style={{ fontSize: 11, color: "#64748b" }}>{ret.party_type || ret.customer_type || "customer"}</div></td>
+                    <td style={{ textAlign: "center", fontSize: 12, fontWeight: 800 }}>{formatFullDate(ret.return_date)}</td>
+                    <td style={{ textAlign: "center", fontSize: 12, fontWeight: 800 }}>{formatFullDate(ret.sale_order_date)}</td>
+                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(ret.return_qty)}</td>
+                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(ret.return_amount)}</td>
                     <td style={{ textAlign: "center" }}>
                       <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
-                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); openEdit(r); }}>{t.edit}</button>
-                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handlePrint(r); }}>{t.print}</button>
-                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}>{t.delete}</button>
+                        <button style={buttonStyle} onClick={(e) => { e.stopPropagation(); openEdit(ret); }}>{t.edit}</button>
+                        <button style={buttonStyle} onClick={(e) => { e.stopPropagation(); printReturn(ret, t, isUrdu); }}>{t.print}</button>
+                        <button style={buttonStyle} onClick={(e) => { e.stopPropagation(); handleDelete(ret.id); }}>{t.delete}</button>
                       </div>
                     </td>
                   </tr>
@@ -842,116 +1121,208 @@ export default function SalesReturnPage() {
         <div className="form-page-wrap">
           <div className="inputModalBox fullPageInputBox">
             <div className="inputModalTitle">
-              <span>{editingId ? t.update : t.newReturn}</span>
-              <button className="btn btn-soft" onClick={() => setShowForm(false)} style={{ height: 34, padding: "6px 12px" }}>{t.back}</button>
+              <div>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.10)", borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 900, marginBottom: 3 }}>
+                  {editingId ? t.editMode : t.createMode}
+                </span>
+                <div>{editingId ? t.edit : t.newReturn}</div>
+              </div>
+              <button className="closeBtn" onClick={() => setShowForm(false)}>×</button>
             </div>
+
             <div className="inputModalBody">
-              <div className="formTopLine">
-                <div>
-                  <label className="basicLabel">{t.returnNo}</label>
-                  <input className="input" value={form.return_no} onChange={(e) => updateForm("return_no", e.target.value)} />
-                </div>
-                <div>
-                  <label className="basicLabel">{t.invoiceSelect}</label>
-                  <select className="select" value={form.invoice_id} onChange={(e) => handleInvoiceChange(e.target.value)}>
-                    <option value="">{invoiceLoading ? t.loadingInvoices : t.selectInvoice}</option>
-                    {invoices.map((inv) => (
-                      <option key={inv.id} value={inv.id}>{inv.invoice_no} - {inv.party_name || inv.customer_name || t.customerName} - {formatDateDMY(inv.invoice_date)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="basicLabel">{t.invoiceRef}</label>
-                  <input className="input" value={form.invoice_ref} onChange={(e) => updateForm("invoice_ref", e.target.value)} />
-                </div>
-                <div>
-                  <label className="basicLabel">{t.returnDate}</label>
-                  <div className="dateBox">
-                    <input className="input" type="date" value={form.return_date} onChange={(e) => updateForm("return_date", e.target.value)} />
-                    <div className="datePreview">{formatDateDMY(form.return_date)}</div>
+              <div className="radioPanel">
+                <span style={{ fontWeight: 950, color: "#334155", fontSize: 12, textTransform: "uppercase" }}>{t.mode}</span>
+                <label className="radioItem">
+                  <input type="radio" checked={returnMode === "manual"} onChange={() => handleModeChange("manual")} disabled={!!editingId} />
+                  {t.manualReturn}
+                </label>
+                <label className="radioItem">
+                  <input type="radio" checked={returnMode === "auto"} onChange={() => handleModeChange("auto")} disabled={!!editingId} />
+                  {t.autoReturn}
+                </label>
+              </div>
+
+              <div className="form-box">
+                <div className="formTopLine">
+                  <div>
+                    <label className="basicLabel">{t.returnNo}</label>
+                    <input className="basicInput" value={form.return_no} onChange={(e) => setForm((p) => ({ ...p, return_no: e.target.value }))} />
                   </div>
-                </div>
-                <div>
-                  <label className="basicLabel">{t.saleDate}</label>
-                  <div className="dateBox">
-                    <input className="input" type="date" value={form.sale_order_date} onChange={(e) => updateForm("sale_order_date", e.target.value)} />
-                    <div className="datePreview">{formatDateDMY(form.sale_order_date)}</div>
+                  <div>
+                    <label className="basicLabel">{t.customerType}</label>
+                    <select className="basicSelect" value={form.party_type} onChange={(e) => handlePartyTypeChange(e.target.value)} disabled={returnMode === "auto" && !!selectedInvoice}>
+                      {PARTY_TYPES.map((p) => <option key={p.value} value={p.value}>{t[p.labelKey]}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.name}</label>
+                    <select className="basicSelect" value={form.party_id} onChange={(e) => handlePartyChange(e.target.value)} disabled={returnMode === "auto" && !!selectedInvoice}>
+                      <option value="">{returnMode === "auto" && selectedInvoice ? form.party_name || "-" : t.selectName}</option>
+                      {partyOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.returnDate}</label>
+                    <DateTextInput className="basicInput" value={form.return_date} onChange={(v) => setForm((p) => ({ ...p, return_date: v }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.saleDate}</label>
+                    <DateTextInput className="basicInput" value={form.sale_order_date} onChange={(v) => setForm((p) => ({ ...p, sale_order_date: v }))} readOnly={returnMode === "auto"} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.reason}</label>
+                    <input className="basicInput" value={form.reason} onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))} />
                   </div>
                 </div>
               </div>
 
-              {selectedInvoice && (
+              {returnMode === "auto" && (
                 <>
-                  <div className="sectionHead"><span>{t.selectedInvoiceDetails}</span></div>
-                  <div className="panel">
-                    <div className="invoiceGrid">
-                      <div className="infoBox"><small>{t.invoiceRef}</small><b>{selectedInvoice.invoice_no || "-"}</b></div>
-                      <div className="infoBox"><small>{t.customerName}</small><b>{selectedInvoice.party_name || t.customerName}</b></div>
-                      <div className="infoBox"><small>{t.invoiceDate}</small><b>{formatDateDMY(selectedInvoice.invoice_date)}</b></div>
-                      <div className="infoBox"><small>{t.invoiceTotal}</small><b>{money(selectedInvoice.invoice_total)}</b></div>
-                      <div className="infoBox"><small>{t.previousBalance}</small><b>{money(selectedInvoice.previous_balance)}</b></div>
-                      <div className="infoBox"><small>{t.grandTotal}</small><b>{money(selectedInvoice.grand_total)}</b></div>
-                    </div>
+                  <div className="sectionHead">
+                    <span>{t.invoiceList}</span>
+                    <input className="search" style={{ height: 30, width: 260 }} value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} placeholder={t.searchPlaceholder} />
                   </div>
+                  <div className="paymentPanel" style={{ padding: 0 }}>
+                    <table className="list" style={{ minWidth: 850 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 45 }}>#</th>
+                          <th style={{ width: 150, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceNo}</th>
+                          <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.name}</th>
+                          <th style={{ width: 150 }}>{t.date}</th>
+                          <th style={{ width: 130, textAlign: "right" }}>{t.returnAmount}</th>
+                          <th style={{ width: 120 }}>{t.actions}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loadingInv ? (
+                          <tr><td colSpan={6} style={{ textAlign: "center", padding: 25 }}>{t.loading}</td></tr>
+                        ) : filteredInvoices.length === 0 ? (
+                          <tr><td colSpan={6} style={{ textAlign: "center", padding: 25 }}>{t.noInvoices}</td></tr>
+                        ) : filteredInvoices.map((inv, idx) => (
+                          <tr key={inv.id || idx} className={`clickRow ${String(selectedInvoice?.id) === String(inv.id) ? "selectedInvoiceRow" : ""}`} onClick={() => loadInvoiceDetails(inv)}>
+                            <td style={{ textAlign: "center" }}>{idx + 1}</td>
+                            <td><b style={{ fontFamily: "monospace" }}>{getInvoiceNo(inv)}</b></td>
+                            <td><b>{getInvoicePartyName(inv) || "-"}</b></td>
+                            <td style={{ textAlign: "center" }}>{formatFullDate(getInvoiceDate(inv))}</td>
+                            <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(getGrandTotal(inv))}</td>
+                            <td style={{ textAlign: "center" }}><button style={buttonStyle} onClick={(e) => { e.stopPropagation(); loadInvoiceDetails(inv); }}>{t.showDetails}</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {selectedInvoice && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginTop: 12 }}>
+                      <div className="totalBox"><label>{t.invoiceNo}</label><b>{getInvoiceNo(selectedInvoice)}</b></div>
+                      <div className="totalBox"><label>{t.name}</label><b>{form.party_name || getInvoicePartyName(selectedInvoice) || "-"}</b></div>
+                      <div className="totalBox"><label>{t.saleDate}</label><b>{formatFullDate(form.sale_order_date)}</b></div>
+                      <div className="totalBox"><label>{t.returnAmount}</label><b>{money(getInvoiceTotal(selectedInvoice))}</b></div>
+                      <div className="totalBox grandBox"><label>{t.totalAmount}</label><b>{money(getGrandTotal(selectedInvoice))}</b></div>
+                    </div>
+                  )}
                 </>
               )}
 
-              <div className="sectionHead"><span>{t.productFields}</span></div>
-              <div className="panel">
-                <div className="fieldGrid">
-                  <div className="wide">
-                    <label className="basicLabel">{t.product}</label>
-                    <select className="productInput" value={form.invoice_item_id} disabled={itemLoading || !invoiceItems.length} onChange={(e) => handleProductChange(e.target.value)}>
-                      <option value="">{itemLoading ? t.loadingProducts : t.selectProduct}</option>
-                      {invoiceItems.map((item) => (
-                        <option key={item.invoice_item_id} value={item.invoice_item_id}>
-                          {item.product_name} | Sold: {money(item.sold_qty)} | Returned: {money(item.already_returned_qty)}
-                        </option>
-                      ))}
-                    </select>
-                    {form.invoice_id && !itemLoading && invoiceItems.length === 0 && <div style={{ color: "#b45309", fontSize: 12, marginTop: 6, fontWeight: 800 }}>{t.noInvoiceItems}</div>}
-                  </div>
-                  <div className="wide">
-                    <label className="basicLabel">{t.manualProduct}</label>
-                    <input className="productInput" value={form.product_name} onChange={(e) => updateForm("product_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="basicLabel">{t.category}</label>
-                    <input className="productInput" value={form.category_name} onChange={(e) => updateForm("category_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="basicLabel">{t.unit}</label>
-                    <input className="productInput" value={form.unit_name} onChange={(e) => updateForm("unit_name", e.target.value)} />
-                  </div>
-                  <div className="full">
-                    <label className="basicLabel">{t.productDescription}</label>
-                    <input className="productInput" value={form.product_description} onChange={(e) => updateForm("product_description", e.target.value)} />
-                  </div>
-                </div>
+              <div className="sectionHead">
+                <span>{returnMode === "auto" ? t.invoiceProducts : t.products}</span>
+                {returnMode === "manual" && <button className="basicBtn" onClick={addRow}>{t.addRow}</button>}
               </div>
 
-              <div className="sectionHead"><span>{t.returnFields}</span></div>
-              <div className="panel">
-                <div className="fieldGrid">
-                  <div><label className="basicLabel">{t.soldQty}</label><input className="productInput" type="number" value={form.sold_qty} onChange={(e) => updateForm("sold_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.alreadyReturned}</label><input className="productInput" type="number" value={form.already_returned_qty} onChange={(e) => updateForm("already_returned_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.availableQty}</label><input className="productInput" type="number" value={form.available_qty} onChange={(e) => updateForm("available_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.returnQty}</label><input className="productInput" type="number" value={form.return_qty} onChange={(e) => updateForm("return_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.rate}</label><input className="productInput" type="number" value={form.rate} onChange={(e) => updateForm("rate", e.target.value)} /></div>
-                  <div className="amountBox" style={{ border: "1px solid #c7d2fe", borderRadius: 12, padding: 8 }}>
-                    <label className="basicLabel">{t.returnAmount}</label>
-                    <input className="productInput" readOnly style={{ background: "#eef2ff", color: "#3730a3", fontWeight: 900, textAlign: "right" }} value={money(form.return_amount)} />
-                    <div style={{ fontSize: 10, color: "#4f46e5", fontWeight: 900, marginTop: 4 }}>{t.autoCalc}</div>
-                  </div>
-                  <div><label className="basicLabel">{t.debit}</label><input className="productInput" type="number" value={form.debit} onChange={(e) => updateForm("debit", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.credit}</label><input className="productInput" type="number" value={form.credit} onChange={(e) => updateForm("credit", e.target.value)} /></div>
-                  <div className="full"><label className="basicLabel">{t.reason}</label><textarea className="productInput" style={{ height: 68, resize: "vertical", paddingTop: 8 }} value={form.reason} onChange={(e) => updateForm("reason", e.target.value)} /></div>
-                </div>
-              </div>
+              <div className="paymentPanel">
+                <table className="basicProductTable">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 38 }}>#</th>
+                      {returnMode === "auto" && <th style={{ width: 70 }}>{t.select}</th>}
+                      <th style={{ width: 150 }}>{t.category}</th>
+                      <th style={{ width: 190 }}>{t.product}</th>
+                      <th style={{ width: 135 }}>{t.productType}</th>
+                      <th style={{ width: 200 }}>{t.desc}</th>
+                      <th style={{ width: 100 }}>{t.unit}</th>
+                      <th style={{ width: 95 }}>{t.soldQty}</th>
+                      <th style={{ width: 110 }}>{t.alreadyReturned}</th>
+                      <th style={{ width: 105 }}>{t.availableQty}</th>
+                      <th style={{ width: 100 }}>{t.returnQty}</th>
+                      <th style={{ width: 90 }}>{t.rate}</th>
+                      <th style={{ width: 120 }}>{t.returnAmount}</th>
+                      <th style={{ width: 90 }}>{t.debit}</th>
+                      <th style={{ width: 90 }}>{t.credit}</th>
+                      {returnMode === "manual" && <th style={{ width: 42 }}></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(returnMode === "auto" ? invoiceItems : items).map((row, idx) => {
+                      const rowList = returnMode === "auto" ? invoiceItems : items;
+                      const productOptions = !row.category_id
+                        ? products
+                        : products.filter((p) => sameId(getProductCatId(p), row.category_id));
+                      return (
+                        <tr key={idx}>
+                          <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
+                          {returnMode === "auto" && (
+                            <td style={{ textAlign: "center" }}>
+                              <input type="checkbox" checked={!!row.selected} onChange={(e) => handleAutoItemChange(idx, "selected", e.target.checked)} />
+                            </td>
+                          )}
+                          <td>
+                            {returnMode === "auto" ? (
+                              <input className="productInput" value={row.category_name || categoryMap[String(row.category_id)] || ""} readOnly />
+                            ) : (
+                              <select className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
+                                <option value="">{t.select}</option>
+                                {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
+                              </select>
+                            )}
+                          </td>
+                          <td>
+                            {returnMode === "auto" ? (
+                              <input className="productInput" value={row.product_name || productMap[String(row.product_id)] || ""} readOnly />
+                            ) : (
+                              <select className="productInput" value={row.product_id} onChange={(e) => handleProductChange(idx, e.target.value)}>
+                                <option value="">{t.selectProduct}</option>
+                                {productOptions.map((p) => <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>)}
+                              </select>
+                            )}
+                          </td>
+                          <td><input className="productInput" value={row.product_type || getTypeName(row) || "FMS"} onChange={(e) => handleItemChange(idx, "product_type", e.target.value)} readOnly={returnMode === "auto"} /></td>
+                          <td><input className="productInput" value={row.product_description || ""} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} readOnly={returnMode === "auto"} /></td>
+                          <td><input className="productInput" value={row.unit_name || unitMap[String(row.unit_id)] || ""} onChange={(e) => handleItemChange(idx, "unit_name", e.target.value)} readOnly={returnMode === "auto"} /></td>
+                          <td><input className="productInput" value={row.sold_qty || ""} onChange={(e) => handleItemChange(idx, "sold_qty", e.target.value)} readOnly={returnMode === "auto"} /></td>
+                          <td><input className="productInput" value={row.already_returned_qty || "0"} onChange={(e) => handleItemChange(idx, "already_returned_qty", e.target.value)} readOnly={returnMode === "auto"} /></td>
+                          <td><input className="productInput" value={row.available_qty || ""} onChange={(e) => handleItemChange(idx, "available_qty", e.target.value)} readOnly={returnMode === "auto"} /></td>
+                          <td><input className="productInput" type="number" value={row.return_qty || ""} onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "return_qty", e.target.value) : handleItemChange(idx, "return_qty", e.target.value)} /></td>
+                          <td><input className="productInput" type="number" value={row.rate || "0"} onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "rate", e.target.value) : handleItemChange(idx, "rate", e.target.value)} /></td>
+                          <td><input className="productInput" value={money(row.return_amount)} readOnly /></td>
+                          <td><input className="productInput" type="number" value={row.debit || "0"} onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "debit", e.target.value) : handleItemChange(idx, "debit", e.target.value)} /></td>
+                          <td><input className="productInput" type="number" value={row.credit || "0"} onChange={(e) => returnMode === "auto" ? handleAutoItemChange(idx, "credit", e.target.value) : handleItemChange(idx, "credit", e.target.value)} /></td>
+                          {returnMode === "manual" && (
+                            <td style={{ textAlign: "center" }}><button className="basicBtn" onClick={() => removeRow(idx)}>×</button></td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                    {returnMode === "auto" && !invoiceItems.length && (
+                      <tr><td colSpan={15} style={{ textAlign: "center", padding: 25, color: "#94a3b8" }}>{selectedInvoice ? t.requiredItem : t.requiredInvoice}</td></tr>
+                    )}
+                  </tbody>
+                </table>
 
-              <div className="footerBtns">
-                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? t.saving : editingId ? t.update : t.save}</button>
-                <button className="btn btn-soft" onClick={() => setShowForm(false)} disabled={saving}>{t.cancel}</button>
+                <div className="finalTotalBar">
+                  {totalBoxes.map(([label, value]) => (
+                    <div className={`totalBox ${label === t.totalAmount ? "grandBox" : ""}`} key={label}>
+                      <label>{label}</label>
+                      <b>{value}</b>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="modalFooterBasic">
+                  <button className="btn btn-soft" onClick={() => setShowForm(false)} disabled={saving}>{t.cancel}</button>
+                  <button className="btn btn-primary" onClick={handleSave} disabled={saving || mastersLoading}>{saving ? t.saving : editingId ? t.update : t.save}</button>
+                </div>
               </div>
             </div>
           </div>
