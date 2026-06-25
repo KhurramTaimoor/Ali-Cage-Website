@@ -708,13 +708,13 @@ export default function SalesReturnPage() {
   };
 
   return (
-    <div dir={dir} className="return-page">
+    <div dir={dir} className="invoice-page">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       <style>{`
         *{box-sizing:border-box}
-        .return-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
+        .invoice-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
         @keyframes fadeSlide{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
         .page-wrap,.form-page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{animation:fadeSlide .22s ease-out both}
@@ -728,6 +728,22 @@ export default function SalesReturnPage() {
         .inputBox{width:100%;background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.08);overflow:hidden;min-height:calc(100vh - 36px)}.inputTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.inputBody{padding:14px;overflow-x:hidden}.formTopLine{display:grid;grid-template-columns:150px 220px 220px 150px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.select,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.input[readonly]{background:#f1f5f9}.dateBox{display:grid;grid-template-columns:1fr 115px;gap:6px}.datePreview{height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:8px 9px;font-size:11px;font-weight:900;color:#334155;text-align:center;font-family:monospace}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.panel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.invoiceGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.infoBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.infoBox small{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:900}.infoBox b{font-size:14px;font-family:monospace}.fieldGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.wide{grid-column:span 2}.full{grid-column:1/-1}.amountBox{background:#eef2ff;border-color:#c7d2fe}.footerBtns{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}
         @media(max-width:1160px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:repeat(2,1fr)}.fieldGrid,.invoiceGrid{grid-template-columns:repeat(2,1fr)}.wide{grid-column:span 1}table.list{min-width:1050px}}
         @media(max-width:720px){.summary-grid,.formTopLine,.fieldGrid,.invoiceGrid{grid-template-columns:1fr}.dateBox{grid-template-columns:1fr}.title{font-size:24px}.footerBtns{flex-direction:column}.btn{width:100%}}
+
+        /* EXACT Sales Invoice layout aliases */
+        .fullPageInputBox{width:100%!important;max-width:100%!important;min-height:calc(100vh - 36px);box-shadow:0 18px 48px rgba(15,23,42,.08)!important}
+        .inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}
+        .inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}
+        .inputModalBody{padding:14px;overflow-x:hidden;background:#f3f6fb;min-height:calc(100vh - 90px)}
+        .formTopLine{display:grid;grid-template-columns:150px 250px 140px 140px minmax(230px,1fr)!important;gap:10px;align-items:end;margin-bottom:10px}
+        .formTopLine>div:nth-child(5){grid-column:auto}
+        .sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}
+        .panel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}
+        .input,.select,.productInput{height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650;box-shadow:none}
+        .input[readonly],.productInput[readonly]{background:#f1f5f9}
+        .footerBtns{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}
+        @media(max-width:1250px){.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))!important}.inputModalBox{width:100%!important}.fieldGrid,.invoiceGrid{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:780px){.formTopLine{grid-template-columns:1fr!important}.fieldGrid,.invoiceGrid{grid-template-columns:1fr}.inputModalBody{padding:10px!important}}
+
       `}</style>
 
       {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
@@ -797,7 +813,7 @@ export default function SalesReturnPage() {
                 ) : filtered.length === 0 ? (
                   <tr><td colSpan={10} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
                 ) : filtered.map((r, idx) => (
-                  <tr key={r.id || idx} className="table-click-row" onClick={() => openEdit(r)} title="Click to open return">
+                  <tr key={r.id || idx} className="table-click-row" onClick={() => openEdit(r)} title="Click to open">
                     <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
                     <td><b style={{ fontFamily: "monospace" }}>{r.return_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{r.reason || "-"}</div></td>
                     <td><b>{r.invoice_ref || "-"}</b></td>
@@ -824,12 +840,12 @@ export default function SalesReturnPage() {
 
       {showForm && (
         <div className="form-page-wrap">
-          <div className="inputBox">
-            <div className="inputTitle">
+          <div className="inputModalBox fullPageInputBox">
+            <div className="inputModalTitle">
               <span>{editingId ? t.update : t.newReturn}</span>
               <button className="btn btn-soft" onClick={() => setShowForm(false)} style={{ height: 34, padding: "6px 12px" }}>{t.back}</button>
             </div>
-            <div className="inputBody">
+            <div className="inputModalBody">
               <div className="formTopLine">
                 <div>
                   <label className="basicLabel">{t.returnNo}</label>
