@@ -2,199 +2,252 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
-const RETURNS_API = `${API_ROOT}/api/sales-returns`;
-const INVOICES_API = `${API_ROOT}/api/sales-invoices`;
+const API_BASE = `${API_ROOT}/api/sales-invoices`;
+const SALE_ORDERS_API = `${API_ROOT}/api/sale-orders`;
+const CUSTOMERS_API = `${API_ROOT}/api/customers`;
+const EMPLOYEES_API = `${API_ROOT}/api/employees`;
+const SUPPLIERS_API = `${API_ROOT}/api/suppliers`;
+const GENERAL_LEDGERS_API = `${API_ROOT}/api/general-ledgers`;
+const CATEGORIES_API = `${API_ROOT}/api/categories`;
+const PRODUCTS_API = `${API_ROOT}/api/products`;
+const UNITS_API = `${API_ROOT}/api/units`;
 
 const LANG = {
   en: {
-    title: "Sales Return",
-    subtitle: "Return sold products with invoice reference and complete return fields",
-    newReturn: "New Return",
+    title: "Sales Invoice",
+    subtitle: "Create invoices with products, quantities, dates and totals",
+    newInvoice: "New Invoice",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
     refresh: "Refresh",
-    toggleLang: "اردو",
-    searchPlaceholder: "Search return no, invoice no, product, reason or date...",
     todayFilter: "Today",
     selectDate: "Select Date",
     showingDate: "Showing Date",
-    totalReturns: "Total Returns",
-    totalQty: "Total Qty",
-    totalAmount: "Total Amount",
-    totalCredit: "Total Credit",
-    returnNo: "Return No",
-    invoiceSelect: "Sales Invoice",
-    selectInvoice: "Select Invoice",
-    invoiceRef: "Invoice Ref",
-    customerName: "Name",
-    invoiceDate: "Invoice Date",
-    returnDate: "Return Date",
-    saleDate: "Sale Date",
-    dateFull: "Date / Month / Year",
+    toggleLang: "اردو",
+    searchPlaceholder: "Search invoice no, name, product or date...",
+    customerInvoiceSearch: "Customer Invoices",
+    customerInvoicePlaceholder: "Type customer name to show all invoices...",
+    bulkPrint: "Bulk Print",
+    bulkPrinting: "Printing...",
+    allCustomerInvoices: "All invoices for this customer",
+    all: "All",
+    last24: "24 Hours",
+    last7: "7 Days",
+    month: "This Month",
+    totalInvoices: "Total Invoices",
+    totalItems: "Total Items",
+    totalValue: "Total Value",
+    totalPrev: "Previous Balance",
+    totalDiscount: "Total Discount",
+    totalDelivery: "Delivery Charges",
+    customerType: "Customer Type",
+    name: "Name",
+    reference: "Reference",
+    address: "Address",
+    invoiceNo: "Invoice No",
+    date: "Date",
+    dateFull: "Date",
+    shipTo: "Ship To",
+    products: "Products",
+    addRow: "+ Add Row",
+    productType: "Product Type",
+    category: "Category",
+    product: "Product",
+    desc: "Desc",
+    unit: "Unit",
+    saleType: "Sale Type",
+    single: "Single",
+    carton: "Carton",
+    pieces: "Pieces",
+    cartonQty: "Carton Qty",
+    piecesQty: "Pieces Qty",
+    pcsCtn: "Pcs/Ctn",
+    qty: "Qty",
+    rate: "Rate",
+    amount: "Amount",
+    totalQty: "Total Quantity",
     invoiceTotal: "Invoice Total",
-    grandTotal: "Grand Total",
     previousBalance: "Previous Balance",
     deliveryCharges: "Delivery Charges",
     discount: "Discount",
-    product: "Product",
-    selectProduct: "Select Product",
-    manualProduct: "Manual Product Name",
-    productDescription: "Description",
-    category: "Category",
-    unit: "Unit",
-    soldQty: "Sold Qty",
-    alreadyReturned: "Already Returned",
-    availableQty: "Available Qty",
-    returnQty: "Return Qty",
-    rate: "Rate",
-    returnAmount: "Return Amount",
-    debit: "Debit",
-    credit: "Credit",
-    reason: "Reason",
-    actions: "Actions",
-    edit: "Edit",
-    delete: "Delete",
-    print: "Print",
+    grandTotal: "Grand Total",
     save: "Save",
     update: "Update",
     saving: "Saving...",
     cancel: "Cancel",
-    back: "Back",
+    close: "Close",
+    edit: "Edit",
+    delete: "Delete",
+    print: "Print",
+    actions: "Actions",
     loading: "Loading...",
-    loadingInvoices: "Loading invoices...",
-    loadingProducts: "Loading products...",
-    noRecords: "No returns found.",
-    noInvoiceItems: "No products found in selected invoice. You can still enter fields manually.",
-    selectedInvoiceDetails: "Selected Invoice Details",
-    returnFields: "Sales Return Fields",
-    productFields: "Product Return Details",
-    amountFields: "Amount Details",
-    saveSuccess: "Return saved successfully!",
-    updateSuccess: "Return updated successfully!",
-    deleteSuccess: "Return deleted successfully!",
-    loadError: "Data load failed.",
+    noRecords: "No invoices found.",
+    select: "Select",
+    selectName: "Select Name",
+    customer: "Customer",
+    employee: "Employee",
+    supplier: "Supplier",
+    generalLedger: "General Ledger",
+    requiredInvoice: "Invoice No is required.",
+    requiredPartyType: "Customer Type is required.",
+    requiredParty: "Please select a name.",
+    requiredItem: "Add at least one valid product row.",
+    saved: "Invoice saved.",
+    updated: "Invoice updated.",
+    deleted: "Invoice deleted.",
     saveError: "Save failed. Check backend.",
-    deleteError: "Delete failed.",
+    loadError: "Data load failed.",
     printError: "Print failed.",
-    confirmDelete: "Delete this return?",
-    requiredReturnNo: "Return No is required.",
-    requiredProduct: "Product is required.",
-    qtyInvalid: "Return qty must be greater than 0.",
-    qtyExceeded: "Return qty cannot be greater than available qty.",
-    autoCalc: "Auto: Return Qty × Rate",
+    editError: "Could not load invoice details.",
+    deleteConfirm: "Delete this invoice?",
+    createMode: "Create Mode",
+    editMode: "Edit Mode",
   },
   ur: {
-    title: "سیلز ریٹرن",
-    subtitle: "انوائس ریفرنس اور مکمل ریٹرن فیلڈز کے ساتھ سیلز ریٹرن",
-    newReturn: "نیا ریٹرن",
+    title: "سیلز انوائس",
+    subtitle: "پروڈکٹس، مقدار، تاریخ اور ٹوٹل کے ساتھ انوائس بنائیں",
+    newInvoice: "نئی انوائس",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
     refresh: "ری فریش",
-    toggleLang: "English",
-    searchPlaceholder: "ریٹرن نمبر، انوائس، پروڈکٹ، وجہ یا تاریخ تلاش کریں...",
     todayFilter: "آج",
     selectDate: "تاریخ منتخب کریں",
     showingDate: "دکھائی جانے والی تاریخ",
-    totalReturns: "کل ریٹرن",
+    toggleLang: "English",
+    searchPlaceholder: "انوائس نمبر، نام، پروڈکٹ یا تاریخ تلاش کریں...",
+    customerInvoiceSearch: "کسٹمر انوائسز",
+    customerInvoicePlaceholder: "کسٹمر کا نام لکھیں، تمام انوائسز آئیں گی...",
+    bulkPrint: "بلک پرنٹ",
+    bulkPrinting: "پرنٹ ہو رہا ہے...",
+    allCustomerInvoices: "اس کسٹمر کی تمام انوائسز",
+    all: "سب",
+    last24: "24 گھنٹے",
+    last7: "7 دن",
+    month: "یہ مہینہ",
+    totalInvoices: "کل انوائسز",
+    totalItems: "کل آئٹمز",
+    totalValue: "کل رقم",
+    totalPrev: "سابقہ بیلنس",
+    totalDiscount: "کل ڈسکاؤنٹ",
+    totalDelivery: "ڈیلیوری چارجز",
+    customerType: "کسٹمر ٹائپ",
+    name: "نام",
+    reference: "ریفرنس",
+    address: "ایڈریس",
+    invoiceNo: "انوائس نمبر",
+    date: "تاریخ",
+    dateFull: "تاریخ",
+    shipTo: "شپ ٹو",
+    products: "پروڈکٹس",
+    addRow: "+ لائن شامل کریں",
+    productType: "پروڈکٹ ٹائپ",
+    category: "کیٹیگری",
+    product: "پروڈکٹ",
+    desc: "تفصیل",
+    unit: "یونٹ",
+    saleType: "قسم",
+    single: "سنگل",
+    carton: "کارٹن",
+    pieces: "پیسز",
+    cartonQty: "کارٹن مقدار",
+    piecesQty: "پیسز مقدار",
+    pcsCtn: "فی کارٹن",
+    qty: "مقدار",
+    rate: "ریٹ",
+    amount: "رقم",
     totalQty: "کل مقدار",
-    totalAmount: "کل رقم",
-    totalCredit: "کل کریڈٹ",
-    returnNo: "ریٹرن نمبر",
-    invoiceSelect: "سیلز انوائس",
-    selectInvoice: "انوائس منتخب کریں",
-    invoiceRef: "انوائس ریفرنس",
-    customerName: "نام",
-    invoiceDate: "انوائس تاریخ",
-    returnDate: "ریٹرن تاریخ",
-    saleDate: "سیل تاریخ",
-    dateFull: "تاریخ / مہینہ / سال",
     invoiceTotal: "انوائس ٹوٹل",
-    grandTotal: "گرینڈ ٹوٹل",
     previousBalance: "سابقہ بیلنس",
     deliveryCharges: "ڈیلیوری چارجز",
     discount: "ڈسکاؤنٹ",
-    product: "پروڈکٹ",
-    selectProduct: "پروڈکٹ منتخب کریں",
-    manualProduct: "پروڈکٹ نام",
-    productDescription: "تفصیل",
-    category: "کیٹیگری",
-    unit: "یونٹ",
-    soldQty: "فروخت مقدار",
-    alreadyReturned: "پہلے واپس",
-    availableQty: "دستیاب مقدار",
-    returnQty: "ریٹرن مقدار",
-    rate: "ریٹ",
-    returnAmount: "ریٹرن رقم",
-    debit: "ڈیبٹ",
-    credit: "کریڈٹ",
-    reason: "وجہ",
-    actions: "اقدامات",
-    edit: "ترمیم",
-    delete: "حذف",
-    print: "پرنٹ",
+    grandTotal: "کل رقم",
     save: "محفوظ کریں",
     update: "اپڈیٹ",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
-    back: "واپس",
+    close: "بند کریں",
+    edit: "ترمیم",
+    delete: "حذف",
+    print: "پرنٹ",
+    actions: "اقدامات",
     loading: "لوڈ ہو رہا ہے...",
-    loadingInvoices: "انوائسز لوڈ ہو رہی ہیں...",
-    loadingProducts: "پروڈکٹس لوڈ ہو رہے ہیں...",
-    noRecords: "کوئی ریٹرن نہیں ملا۔",
-    noInvoiceItems: "اس انوائس میں پروڈکٹس نہیں ملیں۔ آپ فیلڈز manual بھی لکھ سکتے ہیں۔",
-    selectedInvoiceDetails: "منتخب انوائس کی تفصیل",
-    returnFields: "سیلز ریٹرن فیلڈز",
-    productFields: "پروڈکٹ ریٹرن تفصیل",
-    amountFields: "رقم کی تفصیل",
-    saveSuccess: "ریٹرن محفوظ ہو گیا!",
-    updateSuccess: "ریٹرن اپڈیٹ ہو گیا!",
-    deleteSuccess: "ریٹرن حذف ہو گیا!",
+    noRecords: "کوئی انوائس نہیں ملی۔",
+    select: "منتخب کریں",
+    selectName: "نام منتخب کریں",
+    customer: "کسٹمر",
+    employee: "ملازم",
+    supplier: "سپلائر",
+    generalLedger: "جنرل لیجر",
+    requiredInvoice: "انوائس نمبر ضروری ہے۔",
+    requiredPartyType: "کسٹمر ٹائپ ضروری ہے۔",
+    requiredParty: "نام منتخب کریں۔",
+    requiredItem: "کم از کم ایک درست پروڈکٹ لائن شامل کریں۔",
+    saved: "انوائس محفوظ ہو گئی۔",
+    updated: "انوائس اپڈیٹ ہو گئی۔",
+    deleted: "انوائس حذف ہو گئی۔",
+    saveError: "محفوظ نہیں ہوئی، بیک اینڈ چیک کریں۔",
     loadError: "ڈیٹا لوڈ نہیں ہوا۔",
-    saveError: "محفوظ نہیں ہوا، بیک اینڈ چیک کریں۔",
-    deleteError: "حذف نہیں ہوا۔",
     printError: "پرنٹ نہیں ہو سکا۔",
-    confirmDelete: "کیا یہ ریٹرن حذف کرنا ہے؟",
-    requiredReturnNo: "ریٹرن نمبر ضروری ہے۔",
-    requiredProduct: "پروڈکٹ ضروری ہے۔",
-    qtyInvalid: "ریٹرن مقدار 0 سے زیادہ ہونی چاہیے۔",
-    qtyExceeded: "ریٹرن مقدار دستیاب مقدار سے زیادہ نہیں ہو سکتی۔",
-    autoCalc: "خودکار: ریٹرن مقدار × ریٹ",
+    editError: "انوائس تفصیل لوڈ نہیں ہوئی۔",
+    deleteConfirm: "کیا یہ انوائس حذف کرنی ہے؟",
+    createMode: "نیا موڈ",
+    editMode: "ترمیم موڈ",
   },
 };
 
+const PARTY_TYPES = [
+  { value: "customer", labelKey: "customer" },
+  { value: "employee", labelKey: "employee" },
+  { value: "supplier", labelKey: "supplier" },
+  { value: "general_ledger", labelKey: "generalLedger" },
+];
+
+const DATE_FILTERS = [
+  { value: "all", labelKey: "all" },
+  { value: "24h", labelKey: "last24" },
+  { value: "7d", labelKey: "last7" },
+  { value: "month", labelKey: "month" },
+];
+
 const today = () => new Date().toISOString().slice(0, 10);
 
-const emptyForm = () => ({
-  return_no: "",
-  invoice_id: "",
-  invoice_ref: "",
-  invoice_item_id: "",
+const emptyItem = () => ({
+  category_id: "",
   product_id: "",
-  product_name: "",
   product_description: "",
-  category_name: "",
-  unit_name: "",
-  return_date: today(),
-  sale_order_date: "",
-  sold_qty: "0",
-  already_returned_qty: "0",
-  available_qty: "0",
-  return_qty: "",
+  product_type_id: "",
+  unit_id: "",
+  sale_type: "single",
+  carton_qty: "",
+  pieces_qty: "",
+  qty: "",
+  pieces_per_carton: "0",
   rate: "0",
-  return_amount: "0",
-  debit: "0",
-  credit: "0",
-  reason: "",
+  amount: "0",
+});
+
+const defaultInvoiceItems = (count = 5) =>
+  Array.from({ length: count }, () => emptyItem());
+
+const emptyForm = () => ({
+  invoice_no: "",
+  reference_no: "",
+  party_type: "customer",
+  party_id: "",
+  customer_id: "",
+  invoice_date: today(),
+  shipment_to: "",
+  previous_balance: "0",
+  delivery_charges: "0",
+  discount: "0",
 });
 
 const getList = (d) => {
   if (Array.isArray(d)) return d;
   if (Array.isArray(d?.data)) return d.data;
-  if (Array.isArray(d?.returns)) return d.returns;
-  if (Array.isArray(d?.sales_returns)) return d.sales_returns;
-  if (Array.isArray(d?.invoices)) return d.invoices;
-  if (Array.isArray(d?.rows)) return d.rows;
+  if (Array.isArray(d?.products)) return d.products;
   if (Array.isArray(d?.result)) return d.result;
+  if (Array.isArray(d?.rows)) return d.rows;
   return [];
 };
 
@@ -209,174 +262,331 @@ const money = (v) =>
     maximumFractionDigits: 2,
   });
 
-function toISODate(value) {
-  if (!value) return "";
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
-  const s = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-    const [dd, mm, yyyy] = s.split("/");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-  return s.slice(0, 10);
-}
+const getRecordId = (o) =>
+  o?.id ??
+  o?.value ??
+  o?.ID ??
+  o?.Id ??
+  o?.customer_id ??
+  o?.CustomerID ??
+  o?.employee_id ??
+  o?.EmployeeID ??
+  o?.supplier_id ??
+  o?.SupplierID ??
+  o?.general_ledger_id ??
+  o?.ledger_id ??
+  o?.account_id ??
+  o?.category_id ??
+  o?.CategoryID ??
+  o?.unit_id ??
+  o?.UnitID ??
+  o?.product_id ??
+  o?.ProductID ??
+  "";
 
-function formatDateDMY(value) {
-  const iso = toISODate(value);
-  if (!iso || iso === "-") return "-";
-  const parts = iso.split("-");
-  if (parts.length !== 3) return value || "-";
-  const [yyyy, mm, dd] = parts;
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function getId(row) {
-  return row?.id ?? row?.value ?? row?.invoice_item_id ?? row?.item_id ?? row?.sales_invoice_item_id ?? "";
-}
-
-function pickText(row, keys, fallback = "") {
+const pickText = (o, keys) => {
   for (const key of keys) {
-    if (row?.[key] !== undefined && row?.[key] !== null && String(row[key]).trim()) {
-      return String(row[key]).trim();
-    }
+    if (o?.[key] !== undefined && o?.[key] !== null && String(o[key]).trim()) return String(o[key]).trim();
   }
-  return fallback;
+  const id = getRecordId(o);
+  return id ? `#${id}` : "";
+};
+
+const getCustomerName = (o) => pickText(o, ["customer_name", "customer_name_en", "name", "name_en", "title"]);
+const getEmployeeName = (o) => pickText(o, ["employee_name", "employee_name_en", "full_name", "name", "name_en", "title"]);
+const getSupplierName = (o) => pickText(o, ["supplier_name", "supplier_name_en", "vendor_name", "name", "name_en", "title"]);
+const getLedgerName = (o) => pickText(o, ["ledger_name", "ledger_name_en", "account_name", "account_title", "name", "name_en", "title"]);
+
+const getPreviousBalance = (row) => {
+  if (!row) return 0;
+  const keys = [
+    "previous_balance", "previousBalance", "prev_balance", "prevBalance",
+    "opening_balance", "openingBalance", "balance", "current_balance",
+    "currentBalance", "closing_balance", "closingBalance", "ledger_balance",
+    "ledgerBalance", "account_balance", "accountBalance", "old_balance",
+    "oldBalance", "remaining_balance", "remainingBalance", "due_balance",
+    "dueBalance", "payable", "receivable",
+  ];
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return toNum(row[key]);
+  }
+  const debit = toNum(row.debit || row.total_debit || row.debit_amount || row.dr || row.total_dr);
+  const credit = toNum(row.credit || row.total_credit || row.credit_amount || row.cr || row.total_cr);
+  if (debit || credit) return debit - credit;
+  return 0;
+};
+
+const makePartyOption = (row, nameGetter) => ({
+  id: String(getRecordId(row)),
+  name: nameGetter(row),
+  previous_balance: getPreviousBalance(row),
+});
+const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "CategoryName", "name", "name_en", "title"]);
+const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "ProductName", "item_name", "ItemName", "name", "name_en", "title"]);
+const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "UnitName", "name", "name_en", "symbol", "title"]);
+const getProductDesc = (o) => pickText(o, ["product_description", "ProductDescription", "description", "Description", "details", "remarks"]);
+
+const getCategoryId = (o) =>
+  o?.id ?? o?.value ?? o?.category_id ?? o?.categoryId ?? o?.CategoryID ?? o?.cat_id ?? o?.CatID ?? "";
+
+const getProductId = (o) =>
+  o?.id ?? o?.value ?? o?.product_id ?? o?.productId ?? o?.ProductID ?? o?.item_id ?? o?.ItemID ?? "";
+
+const getUnitId = (o) =>
+  o?.id ?? o?.value ?? o?.unit_id ?? o?.unitId ?? o?.UnitID ?? "";
+
+const sameId = (a, b) => String(a ?? "") !== "" && String(a ?? "") === String(b ?? "");
+
+const getProductCatId = (p) =>
+  p?.category_id ??
+  p?.categoryId ??
+  p?.CategoryID ??
+  p?.cat_id ??
+  p?.CatID ??
+  p?.product_category_id ??
+  p?.productCategoryId ??
+  p?.ProductCategoryID ??
+  p?.category?.id ??
+  p?.category?.category_id ??
+  p?.category?.CategoryID ??
+  "";
+
+const getProductUnitId = (p) =>
+  p?.unit_id ?? p?.unitId ?? p?.UnitID ?? p?.unit?.id ?? p?.unit?.unit_id ?? p?.unit?.UnitID ?? "";
+
+const getProductPieceRate = (p) =>
+  p?.piece_rate ??
+  p?.pieceRate ??
+  p?.PieceRate ??
+  p?.sale_rate ??
+  p?.saleRate ??
+  p?.SaleRate ??
+  p?.rate ??
+  p?.Rate ??
+  p?.price ??
+  p?.Price ??
+  p?.sale_price ??
+  p?.SalePrice ??
+  p?.retail_price ??
+  p?.RetailPrice ??
+  0;
+
+const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
+const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
+const getProductTypeId = (p) =>
+  p?.product_type_id ??
+  p?.productTypeId ??
+  p?.ProductTypeID ??
+  p?.type_id ??
+  p?.typeId ??
+  p?.TypeID ??
+  p?.product_type?.id ??
+  p?.type?.id ??
+  "";
+const getTypeName = (o) => pickText(o, ["product_type_en", "product_type", "type_name", "type", "name", "name_en", "title"]);
+const getDefaultFmsTypeId = (types = []) => {
+  const found = types.find((x) => /fms/i.test(getTypeName(x)));
+  return found ? String(getRecordId(found)) : types[0] ? String(getRecordId(types[0])) : "";
+};
+
+const getPartyNameByType = (type, row) => {
+  if (type === "employee") return getEmployeeName(row);
+  if (type === "supplier") return getSupplierName(row);
+  if (type === "general_ledger") return getLedgerName(row);
+  return getCustomerName(row);
+};
+
+const getInvPartyType = (inv) =>
+  inv?.customer_type ||
+  inv?.party_type ||
+  (inv?.customer_id ? "customer" : inv?.employee_id ? "employee" : inv?.supplier_id ? "supplier" : inv?.general_ledger_id ? "general_ledger" : "customer");
+
+const getInvPartyId = (inv) => {
+  const type = getInvPartyType(inv);
+  if (inv?.party_id) return inv.party_id;
+  if (type === "employee") return inv?.employee_id || "";
+  if (type === "supplier") return inv?.supplier_id || "";
+  if (type === "general_ledger") return inv?.general_ledger_id || inv?.ledger_id || inv?.account_id || "";
+  return inv?.customer_id || "";
+};
+
+function makeMap(list, getter) {
+  const map = {};
+  list.forEach((row) => {
+    const id = String(getRecordId(row));
+    if (id) map[id] = getter(row);
+  });
+  return map;
 }
 
-const getPartyName = (inv) =>
-  pickText(inv, [
-    "party_name",
-    "customer_name",
-    "customer_name_en",
-    "employee_name",
-    "supplier_name",
-    "general_ledger_name",
-    "name",
-    "name_en",
-  ], "");
-
-const getProductName = (row) =>
-  pickText(row, ["product_name", "product_name_en", "item_name", "name", "name_en", "title"], "");
-
-const getProductDesc = (row) =>
-  pickText(row, ["product_description", "description", "details", "remarks"], "");
-
-const getCategoryName = (row) =>
-  pickText(row, ["category_name", "category_name_en", "category", "cat_name"], "");
-
-const getUnitName = (row) => pickText(row, ["unit_name", "unit_name_en", "unit", "symbol"], "");
-
-const getProductId = (row) => row?.product_id ?? row?.productId ?? row?.ProductID ?? row?.product?.id ?? "";
-const getCategoryId = (row) => row?.category_id ?? row?.categoryId ?? row?.CategoryID ?? row?.category?.id ?? "";
-const getUnitId = (row) => row?.unit_id ?? row?.unitId ?? row?.UnitID ?? row?.unit?.id ?? "";
-
-function normalizeInvoiceItem(row, index = 0, inv = {}) {
-  const qty = toNum(row?.qty ?? row?.quantity ?? row?.order_qty ?? row?.pieces_qty ?? row?.carton_qty);
-  const returned = toNum(row?.returned_qty ?? row?.already_returned_qty ?? row?.return_qty_done ?? 0);
-  const rate = toNum(row?.rate ?? row?.sale_rate ?? row?.price ?? row?.unit_price ?? 0);
-  const available = Math.max(0, qty - returned);
-  return {
-    invoice_item_id: String(row?.invoice_item_id ?? row?.id ?? row?.item_id ?? row?.sales_invoice_item_id ?? index + 1),
-    invoice_id: String(row?.invoice_id ?? inv?.id ?? ""),
-    invoice_ref: row?.invoice_ref || inv?.invoice_no || "",
-    product_id: String(getProductId(row) || ""),
-    product_name: getProductName(row) || `Product ${index + 1}`,
-    product_description: getProductDesc(row),
-    category_id: String(getCategoryId(row) || ""),
-    category_name: getCategoryName(row),
-    unit_id: String(getUnitId(row) || ""),
-    unit_name: getUnitName(row),
-    sale_order_date: toISODate(row?.invoice_date || inv?.invoice_date || inv?.order_date || ""),
-    sold_qty: qty,
-    already_returned_qty: returned,
-    available_qty: available,
-    rate,
-    amount: toNum(row?.amount),
-  };
-}
-
-function normalizeInvoice(inv) {
-  return {
-    ...inv,
-    id: inv?.id ?? inv?.invoice_id,
-    invoice_no: inv?.invoice_no || inv?.invoiceNo || inv?.ref_no || "",
-    invoice_date: toISODate(inv?.invoice_date || inv?.date || inv?.order_date || ""),
-    party_name: getPartyName(inv),
-    invoice_total: toNum(inv?.invoice_total ?? inv?.total_amount),
-    grand_total: toNum(inv?.grand_total ?? inv?.invoice_total ?? inv?.total_amount),
-    previous_balance: toNum(inv?.previous_balance),
-    delivery_charges: toNum(inv?.delivery_charges),
-    discount: toNum(inv?.discount),
-    items: Array.isArray(inv?.items) ? inv.items : Array.isArray(inv?.order_items) ? inv.order_items : [],
-  };
-}
-
-function normalizeReturn(row) {
-  return {
-    ...row,
-    id: row?.id,
-    return_no: row?.return_no || row?.returnNo || "",
-    invoice_id: row?.invoice_id || "",
-    invoice_ref: row?.invoice_ref || row?.invoice_no || "",
-    invoice_item_id: row?.invoice_item_id || "",
-    product_id: row?.product_id || "",
-    product_name: row?.product_name || "",
-    product_description: row?.product_description || row?.description || "",
-    category_name: row?.category_name || "",
-    unit_name: row?.unit_name || "",
-    return_date: toISODate(row?.return_date),
-    sale_order_date: toISODate(row?.sale_order_date || row?.invoice_date || row?.sale_date),
-    sold_qty: toNum(row?.sold_qty),
-    already_returned_qty: toNum(row?.already_returned_qty),
-    available_qty: toNum(row?.available_qty),
-    return_qty: toNum(row?.return_qty),
-    rate: toNum(row?.rate),
-    return_amount: toNum(row?.return_amount),
-    debit: toNum(row?.debit),
-    credit: toNum(row?.credit || row?.return_amount),
-    reason: row?.reason || "",
-  };
-}
-
-function genReturnNo(list) {
+function genInvoiceNo(list) {
   let max = 0;
-  list.forEach((r) => {
-    const s = String(r.return_no || "");
-    const m1 = s.match(/^sales-return(\d+)$/i);
-    const m2 = s.match(/^SR[- ]?(\d+)$/i);
+  list.forEach((inv) => {
+    const m1 = String(inv.invoice_no || "").match(/^sales-invoice(\d+)$/i);
+    const m2 = String(inv.invoice_no || "").match(/^SI[- ]?(\d+)$/i);
     const m = m1 || m2;
     if (m) max = Math.max(max, Number(m[1]));
   });
-  return `sales-return${String(max + 1).padStart(2, "0")}`;
+  return `sales-invoice${String(max + 1).padStart(2, "0")}`;
 }
 
-function printReturnSlip(ret, t, isUrdu) {
-  const amount = toNum(ret.return_amount);
+// ✅ Date format: 25/06/2026 (day name removed)
+function formatFullDate(dateValue) {
+  if (!dateValue) return "-";
+  const raw = String(dateValue).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+
+function parseDisplayDate(value) {
+  const v = String(value || "").trim();
+  const slash = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (slash) {
+    const dd = slash[1].padStart(2, "0");
+    const mm = slash[2].padStart(2, "0");
+    const yyyy = slash[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return "";
+}
+
+function DateTextInput({ value, onChange, className = "", style = {}, ...props }) {
+  const [draft, setDraft] = useState(formatFullDate(value));
+
+  useEffect(() => {
+    setDraft(formatFullDate(value));
+  }, [value]);
+
+  return (
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/yyyy"
+      className={className}
+      style={style}
+      value={draft}
+      onChange={(e) => {
+        const next = e.target.value;
+        setDraft(next);
+        const parsed = parseDisplayDate(next);
+        if (parsed) onChange(parsed);
+      }}
+      onBlur={() => setDraft(formatFullDate(value))}
+    />
+  );
+}
+
+function useLookup(url) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await axios.get(url);
+      setData(getList(res.data));
+    } catch (err) {
+      setError(err?.message || "Load error");
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}
+
+function badgeStyle(tone) {
+  const styles = {
+    green: { background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" },
+    blue: { background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" },
+    red: { background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" },
+    amber: { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" },
+    slate: { background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" },
+  };
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px 10px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+    ...(styles[tone] || styles.slate),
+  };
+}
+
+function printInvoice(invoice, maps, t, isUrdu) {
+  const items = Array.isArray(invoice.items) ? invoice.items : [];
+  const invTotal = toNum(invoice.invoice_total) || items.reduce((s, r) => s + toNum(r.amount), 0);
+  const prev = toNum(invoice.previous_balance);
+  const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
+  const discount = toNum(invoice.discount);
+  const grand = toNum(invoice.grand_total) || invTotal + prev + delivery - discount;
+
+  const rows = items
+    .map((row, idx) => {
+      const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || "-";
+      const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || "-";
+      const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || "-";
+      return `<tr>
+        <td class="center">${idx + 1}</td>
+        <td>${product}<div class="desc">${row.product_description || row.description || ""}</div></td>
+        <td>${category}</td>
+        <td class="center">${unit}</td>
+        <td class="num">${money(row.qty || row.pieces_qty || row.carton_qty)}</td>
+        <td class="num">${money(row.rate)}</td>
+        <td class="num strong">${money(row.amount)}</td>
+      </tr>`;
+    })
+    .join("");
+
   const html = `<!doctype html>
 <html dir="${isUrdu ? "rtl" : "ltr"}">
 <head>
-<title>${ret.return_no || "Sales Return"}</title>
+<title>${invoice.invoice_no || "Sales Invoice"}</title>
 <style>
-body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:white;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.reason{margin-top:12px;border:1px solid #d1d5db;border-radius:10px;padding:10px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
+body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.desc{font-size:10px;color:#64748b;margin-top:4px}.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
 </style>
 </head>
 <body><div class="page"><div class="sheet">
-  <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.returnNo}: <b>${ret.return_no || "-"}</b><br/>${t.returnDate}: ${formatDateDMY(ret.return_date)}</div></div>
+  <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.invoiceNo}: <b>${invoice.invoice_no || "-"}</b><br/>${t.date}: ${invoice.invoice_date || "-"}</div></div>
   <div class="body">
     <div class="grid">
-      <div class="box"><small>${t.returnNo}</small><b>${ret.return_no || "-"}</b></div>
-      <div class="box"><small>${t.invoiceRef}</small><b>${ret.invoice_ref || "-"}</b></div>
-      <div class="box"><small>${t.product}</small><b>${ret.product_name || "-"}</b></div>
-      <div class="box"><small>${t.saleDate}</small><b>${formatDateDMY(ret.sale_order_date)}</b></div>
-      <div class="box"><small>${t.returnDate}</small><b>${formatDateDMY(ret.return_date)}</b></div>
+      <div class="box"><small>${t.invoiceNo}</small><b>${invoice.invoice_no || "-"}</b></div>
+      <div class="box"><small>${t.reference}</small><b>${invoice.reference_no || "-"}</b></div>
+      <div class="box"><small>${t.name}</small><b>${invoice.party_name || invoice.customer_name || "-"}</b></div>
+      <div class="box"><small>${t.dateFull}</small><b>${formatFullDate(invoice.invoice_date, isUrdu ? "ur" : "en")}</b></div>
+      <div class="box"><small>${t.shipTo}</small><b>${invoice.shipment_to || "-"}</b></div>
     </div>
-    <table><thead><tr><th>${t.soldQty}</th><th>${t.alreadyReturned}</th><th>${t.availableQty}</th><th>${t.returnQty}</th><th class="num">${t.rate}</th><th class="num">${t.returnAmount}</th><th class="num">${t.debit}</th><th class="num">${t.credit}</th></tr></thead>
-    <tbody><tr><td>${money(ret.sold_qty)}</td><td>${money(ret.already_returned_qty)}</td><td>${money(ret.available_qty)}</td><td>${money(ret.return_qty)}</td><td class="num">${money(ret.rate)}</td><td class="num strong">${money(amount)}</td><td class="num">${money(ret.debit)}</td><td class="num">${money(ret.credit || amount)}</td></tr></tbody></table>
-    ${ret.reason ? `<div class="reason"><b>${t.reason}</b><br/>${ret.reason}</div>` : ""}
+    <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="totals">
+      <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
+      <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
+      <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
+      <div class="box"><small>${t.discount}</small><b>${money(discount)}</b></div>
+      <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
+    </div>
   </div>
 </div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+
   const w = window.open("", "_blank", "width=1200,height=800");
   if (!w) return;
   w.document.open();
@@ -384,281 +594,442 @@ body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.pag
   w.document.close();
 }
 
-export default function SalesReturnPage() {
+function makeInvoiceSheet(invoice, maps, t, isUrdu) {
+  const items = Array.isArray(invoice.items) ? invoice.items : [];
+  const invTotal = toNum(invoice.invoice_total) || items.reduce((s, r) => s + toNum(r.amount), 0);
+  const prev = toNum(invoice.previous_balance);
+  const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
+  const discount = toNum(invoice.discount);
+  const grand = toNum(invoice.grand_total) || invTotal + prev + delivery - discount;
+
+  const rows = items
+    .map((row, idx) => {
+      const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || "-";
+      const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || "-";
+      const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || "-";
+      return `<tr>
+        <td class="center">${idx + 1}</td>
+        <td>${product}<div class="desc">${row.product_description || row.description || ""}</div></td>
+        <td>${category}</td>
+        <td class="center">${unit}</td>
+        <td class="num">${money(row.qty || row.pieces_qty || row.carton_qty)}</td>
+        <td class="num">${money(row.rate)}</td>
+        <td class="num strong">${money(row.amount)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class="sheet">
+    <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.invoiceNo}: <b>${invoice.invoice_no || "-"}</b><br/>${t.date}: ${invoice.invoice_date || "-"}</div></div>
+    <div class="body">
+      <div class="grid">
+        <div class="box"><small>${t.invoiceNo}</small><b>${invoice.invoice_no || "-"}</b></div>
+        <div class="box"><small>${t.reference}</small><b>${invoice.reference_no || "-"}</b></div>
+        <div class="box"><small>${t.name}</small><b>${invoice.party_name || invoice.customer_name || "-"}</b></div>
+        <div class="box"><small>${t.dateFull}</small><b>${formatFullDate(invoice.invoice_date, isUrdu ? "ur" : "en")}</b></div>
+        <div class="box"><small>${t.shipTo}</small><b>${invoice.shipment_to || "-"}</b></div>
+      </div>
+      <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="totals">
+        <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
+        <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
+        <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
+        <div class="box"><small>${t.discount}</small><b>${money(discount)}</b></div>
+        <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function printBulkInvoices(invoices, maps, t, isUrdu) {
+  const sheets = invoices.map((invoice) => makeInvoiceSheet(invoice, maps, t, isUrdu)).join("<div class='page-break'></div>");
+  const html = `<!doctype html>
+<html dir="${isUrdu ? "rtl" : "ltr"}">
+<head>
+<title>${t.bulkPrint}</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden;margin-bottom:18px}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.desc{font-size:10px;color:#64748b;margin-top:4px}.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}.page-break{page-break-after:always}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}.page-break{page-break-after:always}}
+</style>
+</head>
+<body><div class="page">${sheets}</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+
+  const w = window.open("", "_blank", "width=1200,height=800");
+  if (!w) return;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+export default function SalesInvoicePage() {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
-  const [returns, setReturns] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [invoiceItems, setInvoiceItems] = useState([]);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const { data: customers, loading: cuLoading } = useLookup(CUSTOMERS_API);
+  const { data: employees, loading: emLoading } = useLookup(EMPLOYEES_API);
+  const { data: suppliers, loading: suLoading } = useLookup(SUPPLIERS_API);
+  const { data: generalLedgers, loading: glLoading } = useLookup(GENERAL_LEDGERS_API);
+  const { data: categories, loading: catLoading } = useLookup(CATEGORIES_API);
+  const { data: products, loading: prodLoading } = useLookup(PRODUCTS_API);
+  const { data: units, loading: unLoading } = useLookup(UNITS_API);
+  const [productTypes, setProductTypes] = useState([]);
 
-  const [loading, setLoading] = useState(true);
-  const [invoiceLoading, setInvoiceLoading] = useState(true);
-  const [itemLoading, setItemLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [invoices, setInvoices] = useState([]);
+  const [loadingInv, setLoadingInv] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
+  const [form, setForm] = useState(emptyForm());
+  const [items, setItems] = useState(defaultInvoiceItems(5));
   const [search, setSearch] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [bulkPrinting, setBulkPrinting] = useState(false);
   const [selectedDate, setSelectedDate] = useState(today());
   const [msg, setMsg] = useState({ type: "", text: "" });
-  const [form, setForm] = useState(emptyForm());
+  const [saving, setSaving] = useState(false);
+
+  const mastersLoading = cuLoading || emLoading || suLoading || glLoading || catLoading || prodLoading || unLoading;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await axios.get(SALE_ORDERS_API);
+        const dropdowns = res.data?.dropdowns || {};
+        const list = getList(dropdowns.product_types || dropdowns.types || res.data?.product_types || res.data?.types);
+        if (alive) setProductTypes(list);
+      } catch {
+        if (alive) setProductTypes([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const customerMap = useMemo(() => makeMap(customers, getCustomerName), [customers]);
+  const employeeMap = useMemo(() => makeMap(employees, getEmployeeName), [employees]);
+  const supplierMap = useMemo(() => makeMap(suppliers, getSupplierName), [suppliers]);
+  const ledgerMap = useMemo(() => makeMap(generalLedgers, getLedgerName), [generalLedgers]);
+  const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
+  const productMap = useMemo(() => makeMap(products, getProductName), [products]);
+  const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
+  const typeMap = useMemo(() => makeMap(productTypes, getTypeName), [productTypes]);
+  const defaultFmsTypeId = useMemo(() => getDefaultFmsTypeId(productTypes), [productTypes]);
+
+  const partyOptions = useMemo(() => {
+    if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
+    if (form.party_type === "supplier") return suppliers.map((x) => makePartyOption(x, getSupplierName));
+    if (form.party_type === "general_ledger") return generalLedgers.map((x) => makePartyOption(x, getLedgerName));
+    if (form.party_type === "customer") return customers.map((x) => makePartyOption(x, getCustomerName));
+    return [];
+  }, [form.party_type, customers, employees, suppliers, generalLedgers]);
+
+  const getInvoicePartyName = useCallback(
+    (inv) => {
+      const type = getInvPartyType(inv);
+      const id = String(getInvPartyId(inv));
+      const fallback = inv.party_name || inv.customer_name || inv.employee_name || inv.supplier_name || inv.general_ledger_name || "";
+      if (type === "employee") return employeeMap[id] || fallback;
+      if (type === "supplier") return supplierMap[id] || fallback;
+      if (type === "general_ledger") return ledgerMap[id] || fallback;
+      return customerMap[id] || fallback;
+    },
+    [customerMap, employeeMap, supplierMap, ledgerMap]
+  );
 
   const toast = useCallback((type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg({ type: "", text: "" }), 2800);
   }, []);
 
-  const fetchReturns = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(RETURNS_API);
-      setReturns(getList(res.data).map(normalizeReturn));
-    } catch {
-      toast("error", t.loadError);
-    } finally {
-      setLoading(false);
-    }
-  }, [t.loadError, toast]);
-
   const fetchInvoices = useCallback(async () => {
-    setInvoiceLoading(true);
+    setLoadingInv(true);
     try {
-      const res = await axios.get(INVOICES_API);
-      setInvoices(getList(res.data).map(normalizeInvoice));
+      const res = await axios.get(API_BASE);
+      setInvoices(getList(res.data));
     } catch {
       toast("error", t.loadError);
     } finally {
-      setInvoiceLoading(false);
+      setLoadingInv(false);
     }
   }, [t.loadError, toast]);
 
   useEffect(() => {
-    fetchReturns();
     fetchInvoices();
-  }, [fetchReturns, fetchInvoices]);
+  }, [fetchInvoices]);
 
   useEffect(() => {
-    const amount = toNum(form.return_qty) * toNum(form.rate);
-    setForm((prev) => ({
-      ...prev,
-      return_amount: String(amount.toFixed(2)),
-      debit: "0",
-      credit: String(amount.toFixed(2)),
-    }));
-  }, [form.return_qty, form.rate]);
+    if (!defaultFmsTypeId) return;
+    setItems((prev) =>
+      prev.map((row) => (row.product_type_id ? row : { ...row, product_type_id: defaultFmsTypeId }))
+    );
+  }, [defaultFmsTypeId]);
 
-  const summary = useMemo(
-    () =>
-      returns.reduce(
-        (acc, r) => {
-          acc.totalReturns += 1;
-          acc.totalQty += toNum(r.return_qty);
-          acc.totalAmount += toNum(r.return_amount);
-          acc.totalCredit += toNum(r.credit || r.return_amount);
-          return acc;
-        },
-        { totalReturns: 0, totalQty: 0, totalAmount: 0, totalCredit: 0 }
-      ),
-    [returns]
-  );
+  const invTotal = useMemo(() => items.reduce((sum, row) => sum + toNum(row.amount), 0), [items]);
+  const totalQty = useMemo(() => items.reduce((sum, row) => sum + toNum(row.qty || row.pieces_qty || row.carton_qty), 0), [items]);
+  const grandTotal = invTotal + toNum(form.previous_balance) + toNum(form.delivery_charges) - toNum(form.discount);
+
+  const summary = useMemo(() => {
+    return invoices.reduce(
+      (acc, inv) => {
+        const total = toNum(inv.grand_total) || toNum(inv.invoice_total);
+        acc.totalInvoices += 1;
+        acc.totalItems += Number(inv.items_count || inv.items?.length || 0);
+        acc.totalValue += total;
+        acc.totalPrev += toNum(inv.previous_balance);
+        acc.totalDiscount += toNum(inv.discount);
+        acc.totalDelivery += toNum(inv.delivery_charges ?? inv.deliveryCharges);
+        return acc;
+      },
+      { totalInvoices: 0, totalItems: 0, totalValue: 0, totalPrev: 0, totalDiscount: 0, totalDelivery: 0 }
+    );
+  }, [invoices]);
 
   const filtered = useMemo(() => {
-    let list = returns.filter((r) => String(r.return_date || "").slice(0, 10) === (selectedDate || today()));
+    const customerQ = customerFilter.toLowerCase().trim();
+    let list = invoices;
+
+    if (customerQ) {
+      list = invoices.filter((inv) => getInvoicePartyName(inv).toLowerCase().includes(customerQ));
+    } else {
+      const dateValue = selectedDate || today();
+      list = invoices.filter((inv) => String(inv.invoice_date || "").slice(0, 10) === dateValue);
+    }
+
     const q = search.toLowerCase().trim();
     if (!q) return list;
-    return list.filter((r) =>
-      [r.return_no, r.invoice_ref, r.product_name, r.reason, r.return_date, r.sale_order_date]
+
+    return list.filter((inv) =>
+      [inv.invoice_no, inv.reference_no, getInvoicePartyName(inv), inv.invoice_date, inv.shipment_to]
         .join(" ")
         .toLowerCase()
         .includes(q)
     );
-  }, [returns, search, selectedDate]);
+  }, [invoices, search, customerFilter, selectedDate, getInvoicePartyName]);
 
   const openAdd = () => {
     setEditingId(null);
-    setForm({ ...emptyForm(), return_no: genReturnNo(returns) });
-    setInvoiceItems([]);
-    setSelectedInvoice(null);
+    setForm({ ...emptyForm(), invoice_no: genInvoiceNo(invoices) });
+    setItems(defaultInvoiceItems(5));
     setShowForm(true);
   };
 
-  const openEdit = async (row) => {
-    const r = normalizeReturn(row);
-    setEditingId(r.id);
-    setForm({
-      return_no: r.return_no,
-      invoice_id: String(r.invoice_id || ""),
-      invoice_ref: r.invoice_ref || "",
-      invoice_item_id: String(r.invoice_item_id || ""),
-      product_id: String(r.product_id || ""),
-      product_name: r.product_name || "",
-      product_description: r.product_description || "",
-      category_name: r.category_name || "",
-      unit_name: r.unit_name || "",
-      return_date: toISODate(r.return_date) || today(),
-      sale_order_date: toISODate(r.sale_order_date),
-      sold_qty: String(r.sold_qty || 0),
-      already_returned_qty: String(r.already_returned_qty || 0),
-      available_qty: String(r.available_qty || 0),
-      return_qty: String(r.return_qty || ""),
-      rate: String(r.rate || 0),
-      return_amount: String(r.return_amount || 0),
-      debit: String(r.debit || 0),
-      credit: String(r.credit || r.return_amount || 0),
-      reason: r.reason || "",
-    });
-    setShowForm(true);
-
-    if (r.invoice_id) {
-      await loadInvoiceDetails(r.invoice_id, false);
-    } else {
-      setInvoiceItems([]);
-      setSelectedInvoice(null);
-    }
-  };
-
-  const loadInvoiceDetails = async (invoiceId, fillForm = true) => {
-    if (!invoiceId) {
-      setSelectedInvoice(null);
-      setInvoiceItems([]);
-      return;
-    }
-
+  const openEdit = async (id) => {
     try {
-      setItemLoading(true);
-      const res = await axios.get(`${INVOICES_API}/${invoiceId}`);
-      const inv = normalizeInvoice(res.data?.data || res.data?.invoice || res.data);
-      const rawItems = Array.isArray(inv.items) ? inv.items : [];
-      const items = rawItems.map((item, idx) => normalizeInvoiceItem(item, idx, inv));
-
-      setSelectedInvoice(inv);
-      setInvoiceItems(items);
-
-      if (fillForm) {
-        setForm((prev) => ({
-          ...prev,
-          invoice_id: String(inv.id || invoiceId),
-          invoice_ref: inv.invoice_no || "",
-          sale_order_date: toISODate(inv.invoice_date),
-          invoice_item_id: "",
-          product_id: "",
-          product_name: "",
-          product_description: "",
-          category_name: "",
-          unit_name: "",
-          sold_qty: "0",
-          already_returned_qty: "0",
-          available_qty: "0",
-          return_qty: "",
-          rate: "0",
-          return_amount: "0",
-          debit: "0",
-          credit: "0",
-        }));
-      }
+      const res = await axios.get(`${API_BASE}/${id}`);
+      const inv = res.data?.data || res.data;
+      const pType = getInvPartyType(inv);
+      const pId = String(getInvPartyId(inv) || "");
+      setEditingId(inv.id);
+      setForm({
+        invoice_no: inv.invoice_no || "",
+        reference_no: inv.reference_no || "",
+        party_type: pType || "",
+        party_id: pId,
+        customer_id: pType === "customer" ? pId : "",
+        invoice_date: inv.invoice_date || today(),
+        shipment_to: inv.shipment_to || "",
+        previous_balance: String(inv.previous_balance || 0),
+        delivery_charges: String(inv.delivery_charges ?? inv.deliveryCharges ?? 0),
+        discount: String(inv.discount || 0),
+      });
+      setItems(
+        Array.isArray(inv.items) && inv.items.length
+          ? inv.items.map((row) => ({
+              category_id: String(row.category_id ?? row.category?.id ?? ""),
+              product_id: String(row.product_id ?? row.product?.id ?? ""),
+              product_description: String(row.product_description ?? row.description ?? ""),
+              product_type_id: String(row.product_type_id ?? row.productTypeId ?? row.type_id ?? row.typeId ?? ""),
+              unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
+              sale_type: String(row.sale_type || "single"),
+              carton_qty: String(row.carton_qty || ""),
+              pieces_qty: String(row.pieces_qty || ""),
+              qty: String(row.qty || row.quantity || ""),
+              pieces_per_carton: String(row.pieces_per_carton || 0),
+              rate: String(row.rate || 0),
+              amount: String(row.amount || 0),
+            }))
+          : defaultInvoiceItems(5)
+      );
+      setShowForm(true);
     } catch {
-      const inv = invoices.find((x) => String(x.id) === String(invoiceId));
-      if (inv) {
-        const norm = normalizeInvoice(inv);
-        const items = (norm.items || []).map((item, idx) => normalizeInvoiceItem(item, idx, norm));
-        setSelectedInvoice(norm);
-        setInvoiceItems(items);
-        if (fillForm) {
-          setForm((prev) => ({
-            ...prev,
-            invoice_id: String(norm.id || invoiceId),
-            invoice_ref: norm.invoice_no || "",
-            sale_order_date: toISODate(norm.invoice_date),
-          }));
-        }
+      toast("error", t.editError);
+    }
+  };
+
+  const calcRow = useCallback(
+    (row) => {
+      const prod = products.find((p) => sameId(getProductId(p), row.product_id));
+      const saleUnit = getProductSaleUnit(prod || {});
+      const pcsCtn = toNum(row.pieces_per_carton || getProductPcsCtn(prod || {}));
+      const rate = toNum(row.rate || getProductPieceRate(prod || {}));
+      const saleType = row.sale_type || (saleUnit === "carton" ? "carton" : "single");
+      let qty = 0;
+      let piecesQty = 0;
+      let amount = 0;
+
+      if (saleUnit === "carton" && saleType === "carton") {
+        const cartons = toNum(row.carton_qty);
+        piecesQty = cartons * pcsCtn;
+        qty = piecesQty;
+        amount = qty * rate;
       } else {
-        toast("error", t.loadError);
-        setSelectedInvoice(null);
-        setInvoiceItems([]);
+        qty = toNum(row.qty);
+        piecesQty = saleUnit === "carton" ? qty : 0;
+        amount = qty * rate;
       }
-    } finally {
-      setItemLoading(false);
-    }
+
+      return {
+        qty: String(qty || ""),
+        pieces_qty: String(piecesQty || ""),
+        amount: String(amount.toFixed(2)),
+        rate: String(rate || 0),
+        pieces_per_carton: String(pcsCtn || 0),
+      };
+    },
+    [products]
+  );
+
+  const handleItemChange = (index, field, value) => {
+    setItems((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        let next = { ...row, [field]: value };
+
+        if (field === "category_id") {
+          // Category choose karne se product/rate/amount zero nahi honge.
+          // Dropdown selected category ke mutabiq filter hoga, lekin row data safe rahega.
+          return next;
+        }
+
+        if (field === "product_id") {
+          const prod = products.find((p) => sameId(getProductId(p), value));
+          if (prod) {
+            const saleUnit = getProductSaleUnit(prod);
+            next.category_id = String(getProductCatId(prod) || next.category_id || "");
+            next.unit_id = String(getProductUnitId(prod) || "");
+            next.product_description = getProductDesc(prod) || next.product_description || "";
+            next.product_type_id = String(getProductTypeId(prod) || next.product_type_id || defaultFmsTypeId || "");
+            next.rate = String(getProductPieceRate(prod) || 0);
+            next.pieces_per_carton = String(getProductPcsCtn(prod) || 0);
+            next.sale_type = saleUnit === "carton" ? "carton" : "single";
+            next.carton_qty = "";
+            next.pieces_qty = "";
+            next.qty = "";
+          }
+        }
+
+        if (field === "sale_type") {
+          next.carton_qty = "";
+          next.pieces_qty = "";
+          next.qty = "";
+        }
+
+        if (field === "product_description") return next;
+
+        const calculated = calcRow(next);
+        next.qty = calculated.qty;
+        next.pieces_qty = calculated.pieces_qty;
+        next.amount = calculated.amount;
+        next.rate = calculated.rate;
+        next.pieces_per_carton = calculated.pieces_per_carton;
+        return next;
+      })
+    );
   };
 
-  const handleInvoiceChange = async (invoiceId) => {
-    setForm((prev) => ({ ...prev, invoice_id: invoiceId }));
-    await loadInvoiceDetails(invoiceId, true);
+  const addRow = () => setItems((prev) => [...prev, emptyItem()]);
+  const removeRow = (index) => setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
+
+  const handlePartyTypeChange = (value) => {
+    setForm((prev) => ({ ...prev, party_type: value, party_id: "", customer_id: "", previous_balance: "0" }));
   };
 
-  const handleProductChange = (invoiceItemId) => {
-    const item = invoiceItems.find((x) => String(x.invoice_item_id) === String(invoiceItemId));
-    if (!item) {
-      setForm((prev) => ({ ...prev, invoice_item_id: invoiceItemId }));
-      return;
-    }
-
+  const handlePartyChange = (value) => {
+    const selected = partyOptions.find((x) => String(x.id) === String(value));
     setForm((prev) => ({
       ...prev,
-      invoice_item_id: item.invoice_item_id,
-      product_id: item.product_id,
-      product_name: item.product_name,
-      product_description: item.product_description,
-      category_name: item.category_name,
-      unit_name: item.unit_name,
-      sale_order_date: item.sale_order_date || prev.sale_order_date,
-      sold_qty: String(item.sold_qty || 0),
-      already_returned_qty: String(item.already_returned_qty || 0),
-      available_qty: String(item.available_qty || 0),
-      return_qty: "",
-      rate: String(item.rate || 0),
-      return_amount: "0",
-      debit: "0",
-      credit: "0",
+      party_id: value,
+      customer_id: prev.party_type === "customer" ? value : "",
+      previous_balance: value ? String(selected?.previous_balance ?? 0) : "0",
     }));
   };
 
-  const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const preparePayload = () => {
+    if (!String(form.invoice_no || "").trim()) throw new Error(t.requiredInvoice);
+    if (!form.party_type) throw new Error(t.requiredPartyType);
+    if (!form.party_id) throw new Error(t.requiredParty);
 
-  const buildPayload = () => {
-    if (!String(form.return_no || "").trim()) throw new Error(t.requiredReturnNo);
-    if (!String(form.product_name || "").trim() && !String(form.product_id || "").trim()) throw new Error(t.requiredProduct);
+    const validItems = items
+      .map((row, idx) => {
+        const prod = products.find((p) => sameId(getProductId(p), row.product_id));
+        const enriched = {
+          ...row,
+          category_id: row.category_id || getProductCatId(prod || {}),
+          unit_id: row.unit_id || getProductUnitId(prod || {}),
+          product_type_id: row.product_type_id || getProductTypeId(prod || {}) || defaultFmsTypeId,
+          rate: row.rate || getProductPieceRate(prod || {}),
+          pieces_per_carton: row.pieces_per_carton || getProductPcsCtn(prod || {}),
+        };
+        const calculated = calcRow(enriched);
+        const qty = toNum(calculated.qty || enriched.qty || enriched.pieces_qty || enriched.carton_qty);
+        const amount = toNum(calculated.amount || enriched.amount);
 
-    const returnQty = toNum(form.return_qty);
-    const availableQty = toNum(form.available_qty);
-    if (returnQty <= 0) throw new Error(t.qtyInvalid);
-    if (availableQty > 0 && returnQty > availableQty) throw new Error(t.qtyExceeded);
+        return {
+          sr: idx + 1,
+          category_id: Number(enriched.category_id) || null,
+          product_id: Number(enriched.product_id) || null,
+          product_type_id: Number(enriched.product_type_id) || null,
+          product_description: String(enriched.product_description || getProductDesc(prod || {}) || "").trim(),
+          description: String(enriched.product_description || getProductDesc(prod || {}) || "").trim(),
+          unit_id: Number(enriched.unit_id) || null,
+          sale_type: enriched.sale_type || "single",
+          carton_qty: toNum(enriched.carton_qty),
+          pieces_qty: toNum(calculated.pieces_qty || enriched.pieces_qty),
+          qty,
+          quantity: qty,
+          pieces_per_carton: toNum(calculated.pieces_per_carton || enriched.pieces_per_carton),
+          rate: toNum(calculated.rate || enriched.rate),
+          amount,
+        };
+      })
+      .filter((row) => row.product_id && row.qty > 0);
 
-    const amount = returnQty * toNum(form.rate);
+    if (!validItems.length) throw new Error(t.requiredItem);
+
+    const partyId = Number(form.party_id);
+    const total = validItems.reduce((sum, row) => sum + toNum(row.amount), 0);
+    const delivery = toNum(form.delivery_charges);
+    const previous = toNum(form.previous_balance);
+    const discount = toNum(form.discount);
+    const partyName = partyOptions.find((p) => String(p.id) === String(form.party_id))?.name || "";
 
     return {
-      return_no: String(form.return_no).trim(),
-      invoice_id: form.invoice_id ? Number(form.invoice_id) : null,
-      invoice_ref: String(form.invoice_ref || "").trim(),
-      invoice_item_id: form.invoice_item_id ? Number(form.invoice_item_id) : null,
-      product_id: form.product_id ? Number(form.product_id) : null,
-      product_name: String(form.product_name || "").trim(),
-      product_description: String(form.product_description || "").trim(),
-      category_name: String(form.category_name || "").trim(),
-      unit_name: String(form.unit_name || "").trim(),
-      return_date: toISODate(form.return_date) || null,
-      sale_order_date: toISODate(form.sale_order_date) || null,
-      sold_qty: toNum(form.sold_qty),
-      already_returned_qty: toNum(form.already_returned_qty),
-      available_qty: toNum(form.available_qty),
-      return_qty: returnQty,
-      rate: toNum(form.rate),
-      return_amount: amount,
-      debit: toNum(form.debit),
-      credit: toNum(form.credit) || amount,
-      reason: String(form.reason || "").trim(),
+      invoice_no: form.invoice_no.trim(),
+      reference_no: form.reference_no.trim(),
+      customer_type: form.party_type,
+      party_type: form.party_type,
+      party_id: partyId,
+      party_name: partyName,
+      customer_id: form.party_type === "customer" ? partyId : null,
+      employee_id: form.party_type === "employee" ? partyId : null,
+      supplier_id: form.party_type === "supplier" ? partyId : null,
+      general_ledger_id: form.party_type === "general_ledger" ? partyId : null,
+      invoice_date: form.invoice_date,
+      shipment_to: form.shipment_to || "",
+      previous_balance: previous,
+      delivery_charges: delivery,
+      discount,
+      invoice_total: total,
+      grand_total: total + previous + delivery - discount,
+      items: validItems,
     };
   };
 
   const handleSave = async () => {
     let payload;
     try {
-      payload = buildPayload();
+      payload = preparePayload();
     } catch (err) {
       toast("error", err.message);
       return;
@@ -667,275 +1038,395 @@ export default function SalesReturnPage() {
     try {
       setSaving(true);
       if (editingId) {
-        await axios.put(`${RETURNS_API}/${editingId}`, payload);
-        toast("success", t.updateSuccess);
+        await axios.put(`${API_BASE}/${editingId}`, payload);
+        toast("success", t.updated);
       } else {
-        await axios.post(RETURNS_API, payload);
-        toast("success", t.saveSuccess);
+        await axios.post(API_BASE, payload);
+        toast("success", t.saved);
       }
       setShowForm(false);
       setEditingId(null);
       setForm(emptyForm());
-      setInvoiceItems([]);
-      setSelectedInvoice(null);
-      fetchReturns();
+      setItems(defaultInvoiceItems(5));
       fetchInvoices();
-    } catch (err) {
-      toast("error", err?.response?.data?.message || err.message || t.saveError);
+    } catch {
+      toast("error", t.saveError);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm(t.confirmDelete)) return;
+    if (!window.confirm(t.deleteConfirm)) return;
     try {
-      await axios.delete(`${RETURNS_API}/${id}`);
-      toast("success", t.deleteSuccess);
-      fetchReturns();
+      await axios.delete(`${API_BASE}/${id}`);
+      toast("success", t.deleted);
       fetchInvoices();
     } catch {
-      toast("error", t.deleteError);
+      toast("error", t.loadError);
     }
   };
 
-  const handlePrint = (row) => {
+  const handlePrint = async (id) => {
     try {
-      printReturnSlip(normalizeReturn(row), t, isUrdu);
+      const res = await axios.get(`${API_BASE}/${id}`);
+      const inv = res.data?.data || res.data;
+      const normItems = (inv.items || []).map((row, index) => ({
+        sr: row.sr || index + 1,
+        category_id: String(row.category_id ?? row.category?.id ?? ""),
+        product_id: String(row.product_id ?? row.product?.id ?? ""),
+        unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
+        product_description: row.product_description || row.description || "",
+        category_name: row.category_name || categoryMap[String(row.category_id ?? "")] || "",
+        product_name: row.product_name || productMap[String(row.product_id ?? "")] || "",
+        unit_name: row.unit_name || unitMap[String(row.unit_id ?? "")] || "",
+        sale_type: row.sale_type || "single",
+        carton_qty: row.carton_qty || "",
+        pieces_qty: row.pieces_qty || "",
+        pieces_per_carton: row.pieces_per_carton || 0,
+        qty: row.qty || row.quantity || "",
+        rate: row.rate || 0,
+        amount: row.amount || 0,
+      }));
+
+      const partyName = getInvoicePartyName(inv);
+      printInvoice({ ...inv, party_name: inv.party_name || partyName, items: normItems }, { cat: categoryMap, prod: productMap, unit: unitMap }, t, isUrdu);
     } catch {
       toast("error", t.printError);
     }
   };
 
+  const normalizeInvoiceForPrint = useCallback(
+    (inv) => {
+      const normItems = (inv.items || []).map((row, index) => ({
+        sr: row.sr || index + 1,
+        category_id: String(row.category_id ?? row.category?.id ?? ""),
+        product_id: String(row.product_id ?? row.product?.id ?? ""),
+        unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
+        product_description: row.product_description || row.description || "",
+        category_name: row.category_name || categoryMap[String(row.category_id ?? "")] || "",
+        product_name: row.product_name || productMap[String(row.product_id ?? "")] || "",
+        unit_name: row.unit_name || unitMap[String(row.unit_id ?? "")] || "",
+        sale_type: row.sale_type || "single",
+        carton_qty: row.carton_qty || "",
+        pieces_qty: row.pieces_qty || "",
+        pieces_per_carton: row.pieces_per_carton || 0,
+        qty: row.qty || row.quantity || "",
+        rate: row.rate || 0,
+        amount: row.amount || 0,
+      }));
+      const partyName = getInvoicePartyName(inv);
+      return { ...inv, party_name: inv.party_name || partyName, items: normItems };
+    },
+    [categoryMap, productMap, unitMap, getInvoicePartyName]
+  );
+
+  const handleBulkPrint = async () => {
+    if (!filtered.length) {
+      toast("error", t.noRecords);
+      return;
+    }
+
+    try {
+      setBulkPrinting(true);
+      const detailed = await Promise.all(
+        filtered.map(async (inv) => {
+          const res = await axios.get(`${API_BASE}/${inv.id}`);
+          return normalizeInvoiceForPrint(res.data?.data || res.data);
+        })
+      );
+      printBulkInvoices(detailed, { cat: categoryMap, prod: productMap, unit: unitMap }, t, isUrdu);
+    } catch {
+      toast("error", t.printError);
+    } finally {
+      setBulkPrinting(false);
+    }
+  };
+
   return (
-    <div dir={dir} className="return-page">
+    <div dir={dir} className="invoice-page">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       <style>{`
         *{box-sizing:border-box}
-        .return-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
+        .invoice-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
         @keyframes fadeSlide{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-        .page-wrap,.form-page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{animation:fadeSlide .22s ease-out both}
-        .top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-        .title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}
-        .btn{border:1px solid #cbd5e1;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.12s;background:white;color:#334155;box-shadow:none}.btn:hover{background:#f8fafc;transform:none;filter:none}.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}.btn-primary{background:#111827;color:white;border-color:#111827;box-shadow:none}.btn-soft{background:white;color:#334155;border:1px solid #cbd5e1}.btn-active{background:white;color:#111827;border:1px solid #94a3b8}.btn-green,.btn-red,.btn-yellow,.btn-blue{background:white!important;color:#334155!important;border:1px solid #cbd5e1!important;box-shadow:none!important}.table-click-row{cursor:pointer}.table-click-row:hover td{background:#f8fafc!important}
-        .summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}
-        .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.search:focus,.input:focus,.select:focus,.productInput:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#4f46e5;color:white;border-color:#4f46e5}
-        .card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}
-        .toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
-        .inputBox{width:100%;background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.08);overflow:hidden;min-height:calc(100vh - 36px)}.inputTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.inputBody{padding:14px;overflow-x:hidden}.formTopLine{display:grid;grid-template-columns:150px 220px 220px 150px 1fr;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.select,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.input[readonly]{background:#f1f5f9}.dateBox{display:grid;grid-template-columns:1fr 115px;gap:6px}.datePreview{height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:8px 9px;font-size:11px;font-weight:900;color:#334155;text-align:center;font-family:monospace}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.panel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.invoiceGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.infoBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.infoBox small{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:900}.infoBox b{font-size:14px;font-family:monospace}.fieldGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.wide{grid-column:span 2}.full{grid-column:1/-1}.amountBox{background:#eef2ff;border-color:#c7d2fe}.footerBtns{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}
-        @media(max-width:1160px){.summary-grid{grid-template-columns:repeat(2,1fr)}.formTopLine{grid-template-columns:repeat(2,1fr)}.fieldGrid,.invoiceGrid{grid-template-columns:repeat(2,1fr)}.wide{grid-column:span 1}table.list{min-width:1050px}}
-        @media(max-width:720px){.summary-grid,.formTopLine,.fieldGrid,.invoiceGrid{grid-template-columns:1fr}.dateBox{grid-template-columns:1fr}.title{font-size:24px}.footerBtns{flex-direction:column}.btn{width:100%}}
+        .page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{max-width:1220px;width:100%;margin:0 auto;animation:fadeSlide .22s ease-out both}.fullPageInputBox{width:100%!important;max-width:100%!important;min-height:calc(100vh - 36px);box-shadow:0 18px 48px rgba(15,23,42,.08)!important}.top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.12s;box-shadow:none}.btn:hover{background:#f8fafc;transform:none;filter:none}.btn-primary{background:white;color:#0f172a;border:1px solid #cbd5e1;box-shadow:none}.btn-soft{background:white;color:#0f172a;border:1px solid #cbd5e1}.btn-active{background:#f8fafc;color:#0f172a;border:1px solid #94a3b8}.btn-green{background:white;color:#0f172a;border:1px solid #cbd5e1}.btn-red{background:white;color:#0f172a;border:1px solid #cbd5e1}.btn-yellow{background:white;color:#0f172a;border:1px solid #cbd5e1}.summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#4f46e5;color:white;border-color:#4f46e5}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+        .modal-back{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(6px);z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.invoice-modal{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden;animation:fadeSlide .22s ease-out both}.modal-title{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px}.modal-title h2{margin:0;font-size:17px;font-weight:900}.mode-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);border-radius:999px;padding:3px 9px;font-size:9.5px;font-weight:900;margin-bottom:3px}.close-btn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer;font-size:18px}.modal-body{padding:14px;background:#f3f6fb;max-height:calc(100vh - 112px);overflow:auto}.form-box{background:white;border:1px solid #dbe3ee;border-radius:14px;padding:10px;box-shadow:0 8px 20px rgba(15,23,42,.045);margin-bottom:10px}.top-line{display:grid;grid-template-columns:150px 235px 130px 160px 120px 210px;gap:8px;align-items:end}.second-line{display:grid;grid-template-columns:1fr 145px 145px 145px;gap:8px;align-items:end}.label{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.select,.product-input{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650;box-shadow:none;transition:.16s}.input:focus,.select:focus,.product-input:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.date-box{display:grid;grid-template-columns:105px 1fr;gap:6px}.date-preview{height:34px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc;padding:7px 9px;font-size:11px;font-weight:900;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.section-head{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a;box-shadow:0 10px 24px rgba(15,23,42,.045)}.section-body{background:white;border:1px solid #dbe3ee;border-top:none;border-radius:0 0 14px 14px;padding:8px;box-shadow:0 12px 28px rgba(15,23,42,.055);overflow:auto}.product-table{width:100%;min-width:1030px;border-collapse:collapse;background:white}.product-table th,.product-table td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.product-table th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.product-table tr:last-child td{border-bottom:none}.product-table td:last-child,.product-table th:last-child{border-right:none}.totals-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.total-box{border:1px solid #dbe3ee;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:18px;padding:12px 14px;box-shadow:0 8px 20px rgba(15,23,42,.045)}.total-box label{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:950;text-transform:uppercase}.total-box b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:20px;letter-spacing:-.4px}.grand{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.footer{padding:14px 0 0;display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.form-box{background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;margin-bottom:0}.formTopLine{display:grid;grid-template-columns:160px 260px 140px 120px 210px 140px;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen{background:white;border-color:#cbd5e1;color:#0f172a}.basicBtnRed{background:white;border-color:#cbd5e1;color:#0f172a}.basicProductTable{width:100%;border-collapse:collapse;background:white;min-width:1030px}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}@media(max-width:1120px){.summary-grid{grid-template-columns:repeat(2,1fr)}.top-line,.second-line{grid-template-columns:1fr 1fr}.date-box{grid-template-columns:1fr}.totals-grid{grid-template-columns:repeat(2,1fr)}table.list{min-width:860px}}@media(max-width:650px){.summary-grid,.top-line,.second-line,.totals-grid{grid-template-columns:1fr}.title{font-size:24px}}
+
+        .inputModalBox{width:100%!important;max-width:100%!important}.inputModalBody{overflow-x:hidden}.formTopLine{grid-template-columns:150px 250px 140px 140px minmax(230px,1fr)!important}.formTopLine>div:nth-child(6){grid-column:1/-1}.date-box{display:grid;grid-template-columns:118px minmax(0,1fr)!important;gap:6px}.date-preview{min-width:0;text-overflow:ellipsis!important;white-space:nowrap}.paymentPanel{overflow-x:auto}.basicProductTable{min-width:1110px!important;table-layout:fixed}.basicProductTable th:nth-child(1),.basicProductTable td:nth-child(1){width:36px}.basicProductTable th:nth-child(2),.basicProductTable td:nth-child(2){width:170px}.basicProductTable th:nth-child(3),.basicProductTable td:nth-child(3){width:135px}.basicProductTable th:nth-child(4),.basicProductTable td:nth-child(4){width:145px}.basicProductTable th:nth-child(5),.basicProductTable td:nth-child(5){width:110px}.basicProductTable th:nth-child(6),.basicProductTable td:nth-child(6){width:110px}.basicProductTable th:nth-child(7),.basicProductTable td:nth-child(7){width:70px}.basicProductTable th:nth-child(8),.basicProductTable td:nth-child(8){width:85px}.basicProductTable th:nth-child(9),.basicProductTable td:nth-child(9){width:85px}.basicProductTable th:nth-child(10),.basicProductTable td:nth-child(10){width:70px}.basicProductTable th:nth-child(11),.basicProductTable td:nth-child(11){width:100px}.basicProductTable th:nth-child(12),.basicProductTable td:nth-child(12){width:36px}.productInput{min-width:0!important;padding:5px 6px!important}.finalTotalBar{grid-template-columns:repeat(3,1fr)!important}
+        @media(max-width:1250px){.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))!important}.formTopLine>div:nth-child(6){grid-column:1/-1}.date-box{grid-template-columns:125px minmax(0,1fr)!important}.inputModalBox{width:100%!important}.finalTotalBar{grid-template-columns:repeat(3,1fr)!important}}
+        @media(max-width:780px){.formTopLine{grid-template-columns:1fr!important}.formTopLine>div:nth-child(6){grid-column:1}.date-box{grid-template-columns:1fr!important}.date-preview{min-width:0}.finalTotalBar{grid-template-columns:1fr!important}.basicProductTable{min-width:980px!important}.inputModalBody{padding:10px!important}}
+
       `}</style>
 
       {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
 
       {!showForm && (
         <div className="page-wrap">
-          <div className="top-card">
-            <div>
-              <h1 className="title">{t.title}</h1>
-              <p className="subtitle">{t.subtitle}</p>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
-              <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
-              <button className={`btn ${showSummary ? "btn-active" : "btn-soft"}`} onClick={() => setShowSummary((v) => !v)}>{showSummary ? t.hideSummary : t.viewSummary}</button>
-              <button className="btn btn-soft" onClick={fetchReturns}>{loading ? t.loading : t.refresh}</button>
-              <button className="btn btn-primary" onClick={openAdd}>+ {t.newReturn}</button>
-            </div>
+        <div className="top-card">
+          <div>
+            <h1 className="title">{t.title}</h1>
+            <p className="subtitle">{t.subtitle}</p>
           </div>
-
-          {showSummary && (
-            <div className="summary-grid">
-              {[
-                [t.totalReturns, summary.totalReturns],
-                [t.totalQty, money(summary.totalQty)],
-                [t.totalAmount, money(summary.totalAmount)],
-                [t.totalCredit, money(summary.totalCredit)],
-              ].map(([label, value], idx) => (
-                <div className="summary-card" key={label} style={{ animationDelay: `${idx * 30}ms` }}>
-                  <small>{label}</small>
-                  <b>{value}</b>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="toolbar">
-            <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
-            <button className={`filter ${selectedDate === today() ? "active" : ""}`} onClick={() => setSelectedDate(today())}>{t.todayFilter}</button>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
-              <span>{t.selectDate}</span>
-              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent" }} />
-            </label>
-            <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#eef2ff", color: "#3730a3", fontWeight: 900, border: "1px solid #c7d2fe", fontSize: 12 }}>
-              {t.showingDate}: {formatDateDMY(selectedDate)}
-            </span>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+            <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
+            <button className={`btn ${showSummary ? "btn-active" : "btn-soft"}`} onClick={() => setShowSummary((v) => !v)}>{showSummary ? t.hideSummary : t.viewSummary}</button>
+            <button className="btn btn-soft" onClick={fetchInvoices}>{loadingInv ? t.loading : t.refresh}</button>
+            <button className="btn btn-primary" onClick={openAdd}>+ {t.newInvoice}</button>
           </div>
+        </div>
 
-          <div className="card table-wrap">
-            <table className="list">
-              <thead>
-                <tr>
-                  <th style={{ width: 45 }}>#</th>
-                  <th style={{ width: 150, textAlign: isUrdu ? "right" : "left" }}>{t.returnNo}</th>
-                  <th style={{ width: 150, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceRef}</th>
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.product}</th>
-                  <th style={{ width: 120 }}>{t.saleDate}</th>
-                  <th style={{ width: 120 }}>{t.returnDate}</th>
-                  <th style={{ width: 95, textAlign: "right" }}>{t.returnQty}</th>
-                  <th style={{ width: 110, textAlign: "right" }}>{t.returnAmount}</th>
-                  <th style={{ width: 110, textAlign: "right" }}>{t.credit}</th>
-                  <th style={{ width: 185 }}>{t.actions}</th>
+        {showSummary && (
+          <div className="summary-grid">
+            {[
+              [t.totalInvoices, summary.totalInvoices],
+              [t.totalItems, summary.totalItems],
+              [t.totalValue, money(summary.totalValue)],
+              [t.totalPrev, money(summary.totalPrev)],
+              [t.totalDelivery, money(summary.totalDelivery)],
+              [t.totalDiscount, money(summary.totalDiscount)],
+            ].map(([label, value], idx) => (
+              <div className="summary-card" key={label} style={{ animationDelay: `${idx * 30}ms` }}>
+                <small>{label}</small>
+                <b>{value}</b>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="toolbar">
+          <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
+          <input className="search" style={{ width: "min(360px,100%)" }} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder={t.customerInvoicePlaceholder} />
+          <button className="btn btn-yellow" disabled={bulkPrinting || loadingInv || filtered.length === 0} onClick={handleBulkPrint}>{bulkPrinting ? t.bulkPrinting : `${t.bulkPrint} (${filtered.length})`}</button>
+          {customerFilter.trim() && <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#dcfce7", color: "#166534", fontWeight: 900, border: "1px solid #bbf7d0", fontSize: 12 }}>{t.allCustomerInvoices}</span>}
+          <button className={`filter ${selectedDate === today() ? "active" : ""}`} onClick={() => setSelectedDate(today())}>{t.todayFilter}</button>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
+            <span>{t.selectDate}</span>
+            <DateTextInput value={selectedDate} onChange={(v) => setSelectedDate(v || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent", width: 105 }} />
+          </label>
+          <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#eef2ff", color: "#3730a3", fontWeight: 900, border: "1px solid #c7d2fe", fontSize: 12 }}>
+            {t.showingDate}: {formatFullDate(selectedDate, lang)}
+          </span>
+        </div>
+
+        <div className="card table-wrap">
+          <table className="list">
+            <thead>
+              <tr>
+                <th style={{ width: 45 }}>#</th>
+                <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceNo}</th>
+                <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.name}</th>
+                <th style={{ width: 180 }}>{t.dateFull}</th>
+                <th style={{ width: 115, textAlign: "right" }}>{t.invoiceTotal}</th>
+                <th style={{ width: 120, textAlign: "right" }}>{t.grandTotal}</th>
+                <th style={{ width: 185 }}>{t.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingInv ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.loading}</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
+              ) : filtered.map((inv, idx) => (
+                <tr
+                  key={inv.id || idx}
+                  onClick={() => openEdit(inv.id)}
+                  title="Click to open invoice"
+                  style={{ cursor: "pointer" }}
+                >
+                  <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
+                  <td><b style={{ fontFamily: "monospace" }}>{inv.invoice_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{inv.reference_no || "-"}</div></td>
+                  <td><b>{getInvoicePartyName(inv)}</b><div style={{ fontSize: 11, color: "#64748b" }}>{getInvPartyType(inv)}</div></td>
+                  <td style={{ textAlign: "center", fontSize: 12, fontWeight: 800 }}>{formatFullDate(inv.invoice_date, lang)}</td>
+                  <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(inv.invoice_total)}</td>
+                  <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(inv.grand_total)}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+                      <button className="btn btn-soft" style={{ padding: "6px 10px" }} onClick={(e) => { e.stopPropagation(); openEdit(inv.id); }}>{t.edit}</button>
+                      <button className="btn btn-soft" style={{ padding: "6px 10px" }} onClick={(e) => { e.stopPropagation(); handlePrint(inv.id); }}>{t.print}</button>
+                      <button className="btn btn-soft" style={{ padding: "6px 10px" }} onClick={(e) => { e.stopPropagation(); handleDelete(inv.id); }}>{t.delete}</button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={10} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.loading}</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={10} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
-                ) : filtered.map((r, idx) => (
-                  <tr key={r.id || idx} className="table-click-row" onClick={() => openEdit(r)} title="Click to open return">
-                    <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
-                    <td><b style={{ fontFamily: "monospace" }}>{r.return_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{r.reason || "-"}</div></td>
-                    <td><b>{r.invoice_ref || "-"}</b></td>
-                    <td><b>{r.product_name || "-"}</b><div style={{ fontSize: 11, color: "#64748b" }}>{r.product_description || r.category_name || "-"}</div></td>
-                    <td style={{ textAlign: "center", fontFamily: "monospace", fontWeight: 800 }}>{formatDateDMY(r.sale_order_date)}</td>
-                    <td style={{ textAlign: "center", fontFamily: "monospace", fontWeight: 800 }}>{formatDateDMY(r.return_date)}</td>
-                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(r.return_qty)}</td>
-                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(r.return_amount)}</td>
-                    <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(r.credit || r.return_amount)}</td>
-                    <td style={{ textAlign: "center" }}>
-                      <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
-                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); openEdit(r); }}>{t.edit}</button>
-                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handlePrint(r); }}>{t.print}</button>
-                        <button className="btn btn-soft" style={{ padding: "7px 10px" }} onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}>{t.delete}</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
         </div>
       )}
 
       {showForm && (
-        <div className="form-page-wrap">
-          <div className="inputBox">
-            <div className="inputTitle">
-              <span>{editingId ? t.update : t.newReturn}</span>
-              <button className="btn btn-soft" onClick={() => setShowForm(false)} style={{ height: 34, padding: "6px 12px" }}>{t.back}</button>
+        <div className="page-wrap form-page-wrap">
+          <div className="inputModalBox fullPageInputBox">
+            <div className="inputModalTitle">
+              <span>{editingId ? t.update : t.newInvoice}</span>
+              <button className="closeBtn" style={{ width: "auto", padding: "0 12px", fontWeight: 900 }} onClick={() => setShowForm(false)}>← {t.cancel}</button>
             </div>
-            <div className="inputBody">
-              <div className="formTopLine">
-                <div>
-                  <label className="basicLabel">{t.returnNo}</label>
-                  <input className="input" value={form.return_no} onChange={(e) => updateForm("return_no", e.target.value)} />
-                </div>
-                <div>
-                  <label className="basicLabel">{t.invoiceSelect}</label>
-                  <select className="select" value={form.invoice_id} onChange={(e) => handleInvoiceChange(e.target.value)}>
-                    <option value="">{invoiceLoading ? t.loadingInvoices : t.selectInvoice}</option>
-                    {invoices.map((inv) => (
-                      <option key={inv.id} value={inv.id}>{inv.invoice_no} - {inv.party_name || inv.customer_name || t.customerName} - {formatDateDMY(inv.invoice_date)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="basicLabel">{t.invoiceRef}</label>
-                  <input className="input" value={form.invoice_ref} onChange={(e) => updateForm("invoice_ref", e.target.value)} />
-                </div>
-                <div>
-                  <label className="basicLabel">{t.returnDate}</label>
-                  <div className="dateBox">
-                    <input className="input" type="date" value={form.return_date} onChange={(e) => updateForm("return_date", e.target.value)} />
-                    <div className="datePreview">{formatDateDMY(form.return_date)}</div>
-                  </div>
-                </div>
-                <div>
-                  <label className="basicLabel">{t.saleDate}</label>
-                  <div className="dateBox">
-                    <input className="input" type="date" value={form.sale_order_date} onChange={(e) => updateForm("sale_order_date", e.target.value)} />
-                    <div className="datePreview">{formatDateDMY(form.sale_order_date)}</div>
-                  </div>
-                </div>
-              </div>
 
-              {selectedInvoice && (
-                <>
-                  <div className="sectionHead"><span>{t.selectedInvoiceDetails}</span></div>
-                  <div className="panel">
-                    <div className="invoiceGrid">
-                      <div className="infoBox"><small>{t.invoiceRef}</small><b>{selectedInvoice.invoice_no || "-"}</b></div>
-                      <div className="infoBox"><small>{t.customerName}</small><b>{selectedInvoice.party_name || t.customerName}</b></div>
-                      <div className="infoBox"><small>{t.invoiceDate}</small><b>{formatDateDMY(selectedInvoice.invoice_date)}</b></div>
-                      <div className="infoBox"><small>{t.invoiceTotal}</small><b>{money(selectedInvoice.invoice_total)}</b></div>
-                      <div className="infoBox"><small>{t.previousBalance}</small><b>{money(selectedInvoice.previous_balance)}</b></div>
-                      <div className="infoBox"><small>{t.grandTotal}</small><b>{money(selectedInvoice.grand_total)}</b></div>
+            <div className="inputModalBody">
+              <div className="form-box">
+                <div className="formTopLine">
+                  <div>
+                    <label className="basicLabel">{t.customerType}</label>
+                    <select className="basicSelect" value={form.party_type} onChange={(e) => handlePartyTypeChange(e.target.value)}>
+                      <option value="">{t.select}</option>
+                      {PARTY_TYPES.map((p) => <option key={p.value} value={p.value}>{t[p.labelKey]}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.name} *</label>
+                    <select className="basicSelect" value={form.party_id} disabled={!form.party_type || mastersLoading} onChange={(e) => handlePartyChange(e.target.value)}>
+                      <option value="">{mastersLoading ? t.loading : t.selectName}</option>
+                      {partyOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.reference}</label>
+                    <input className="basicInput" value={form.reference_no} onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.invoiceNo}</label>
+                    <input className="basicInput" style={{ fontFamily: "monospace", fontWeight: 900 }} value={form.invoice_no} onChange={(e) => setForm((f) => ({ ...f, invoice_no: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.dateFull}</label>
+                    <div className="date-box">
+                      <DateTextInput className="basicInput" value={form.invoice_date} onChange={(v) => setForm((f) => ({ ...f, invoice_date: v }))} />
+                      <div className="date-preview">{formatFullDate(form.invoice_date, lang)}</div>
                     </div>
                   </div>
-                </>
-              )}
-
-              <div className="sectionHead"><span>{t.productFields}</span></div>
-              <div className="panel">
-                <div className="fieldGrid">
-                  <div className="wide">
-                    <label className="basicLabel">{t.product}</label>
-                    <select className="productInput" value={form.invoice_item_id} disabled={itemLoading || !invoiceItems.length} onChange={(e) => handleProductChange(e.target.value)}>
-                      <option value="">{itemLoading ? t.loadingProducts : t.selectProduct}</option>
-                      {invoiceItems.map((item) => (
-                        <option key={item.invoice_item_id} value={item.invoice_item_id}>
-                          {item.product_name} | Sold: {money(item.sold_qty)} | Returned: {money(item.already_returned_qty)}
-                        </option>
-                      ))}
-                    </select>
-                    {form.invoice_id && !itemLoading && invoiceItems.length === 0 && <div style={{ color: "#b45309", fontSize: 12, marginTop: 6, fontWeight: 800 }}>{t.noInvoiceItems}</div>}
-                  </div>
-                  <div className="wide">
-                    <label className="basicLabel">{t.manualProduct}</label>
-                    <input className="productInput" value={form.product_name} onChange={(e) => updateForm("product_name", e.target.value)} />
-                  </div>
                   <div>
-                    <label className="basicLabel">{t.category}</label>
-                    <input className="productInput" value={form.category_name} onChange={(e) => updateForm("category_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="basicLabel">{t.unit}</label>
-                    <input className="productInput" value={form.unit_name} onChange={(e) => updateForm("unit_name", e.target.value)} />
-                  </div>
-                  <div className="full">
-                    <label className="basicLabel">{t.productDescription}</label>
-                    <input className="productInput" value={form.product_description} onChange={(e) => updateForm("product_description", e.target.value)} />
+                    <label className="basicLabel">{t.shipTo}</label>
+                    <input className="basicInput" value={form.shipment_to} onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))} />
                   </div>
                 </div>
               </div>
 
-              <div className="sectionHead"><span>{t.returnFields}</span></div>
-              <div className="panel">
-                <div className="fieldGrid">
-                  <div><label className="basicLabel">{t.soldQty}</label><input className="productInput" type="number" value={form.sold_qty} onChange={(e) => updateForm("sold_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.alreadyReturned}</label><input className="productInput" type="number" value={form.already_returned_qty} onChange={(e) => updateForm("already_returned_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.availableQty}</label><input className="productInput" type="number" value={form.available_qty} onChange={(e) => updateForm("available_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.returnQty}</label><input className="productInput" type="number" value={form.return_qty} onChange={(e) => updateForm("return_qty", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.rate}</label><input className="productInput" type="number" value={form.rate} onChange={(e) => updateForm("rate", e.target.value)} /></div>
-                  <div className="amountBox" style={{ border: "1px solid #c7d2fe", borderRadius: 12, padding: 8 }}>
-                    <label className="basicLabel">{t.returnAmount}</label>
-                    <input className="productInput" readOnly style={{ background: "#eef2ff", color: "#3730a3", fontWeight: 900, textAlign: "right" }} value={money(form.return_amount)} />
-                    <div style={{ fontSize: 10, color: "#4f46e5", fontWeight: 900, marginTop: 4 }}>{t.autoCalc}</div>
+              <div className="sectionHead">
+                <span>{t.products}</span>
+                <button className="basicBtn" type="button" onClick={addRow}>{t.addRow}</button>
+              </div>
+              <div className="paymentPanel">
+                <table className="basicProductTable">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 35 }}>#</th>
+                      <th style={{ width: 175 }}>{t.product}</th>
+                      <th>{t.desc}</th>
+                      <th style={{ width: 130 }}>{t.productType}</th>
+                      <th style={{ width: 145 }}>{t.category}</th>
+                      <th style={{ width: 115 }}>{t.unit}</th>
+                      <th style={{ width: 105 }}>{t.saleType}</th>
+                      <th style={{ width: 80 }}>{t.pcsCtn}</th>
+                      <th style={{ width: 90 }}>{t.cartonQty}</th>
+                      <th style={{ width: 75 }}>{t.qty}</th>
+                      <th style={{ width: 105 }}>{t.amount}</th>
+                      <th style={{ width: 35 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((row, idx) => {
+                      const product = products.find((p) => sameId(getProductId(p), row.product_id));
+                      const saleUnit = getProductSaleUnit(product || {});
+                      const isCartonProduct = saleUnit === "carton";
+                      return (
+                        <tr key={idx}>
+                          <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
+                          <td>
+                            <select className="productInput" value={row.product_id} onChange={(e) => handleItemChange(idx, "product_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {(() => {
+                                const selectedCategory = String(row.category_id || "");
+                                const matchedProducts = products.filter((p) => {
+                                  const productCatId = getProductCatId(p);
+                                  if (!selectedCategory) return true;
+                                  if (!productCatId) return true;
+                                  return sameId(productCatId, selectedCategory);
+                                });
+                                const list = selectedCategory && matchedProducts.length === 0 ? products : matchedProducts;
+                                return list.map((p) => (
+                                  <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>
+                                ));
+                              })()}
+                            </select>
+                          </td>
+                          <td>
+                            <input className="productInput" value={row.product_description} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} />
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.product_type_id || defaultFmsTypeId || "FMS"} onChange={(e) => handleItemChange(idx, "product_type_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {productTypes.map((tp) => <option key={getRecordId(tp)} value={getRecordId(tp)}>{getTypeName(tp)}</option>)}
+                              {!productTypes.length && <option value="FMS">FMS</option>}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {units.map((u) => <option key={getUnitId(u)} value={getUnitId(u)}>{getUnitName(u)}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.sale_type} onChange={(e) => handleItemChange(idx, "sale_type", e.target.value)} disabled={!isCartonProduct}>
+                              <option value="single">{t.single}</option>
+                              {isCartonProduct && <option value="carton">{t.carton}</option>}
+                            </select>
+                          </td>
+                          <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc" }} value={row.pieces_per_carton} /></td>
+                          <td><input type="number" className="productInput" style={{ textAlign: "right" }} disabled={!isCartonProduct || row.sale_type !== "carton"} value={row.carton_qty} onChange={(e) => handleItemChange(idx, "carton_qty", e.target.value)} /></td>
+                          <td><input type="number" className="productInput" style={{ textAlign: "right", background: isCartonProduct && row.sale_type === "carton" ? "#eef2ff" : "white", color: isCartonProduct && row.sale_type === "carton" ? "#3730a3" : "#0f172a", fontWeight: isCartonProduct && row.sale_type === "carton" ? 900 : 650 }} readOnly={isCartonProduct && row.sale_type === "carton"} value={row.qty} onChange={(e) => handleItemChange(idx, "qty", e.target.value)} /></td>
+                          <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc", fontWeight: 900 }} value={money(row.amount)} /></td>
+                          <td style={{ textAlign: "center" }}><button type="button" className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeRow(idx)}>×</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="sectionHead"><span>{t.invoiceTotal}</span></div>
+              <div className="paymentPanel">
+                <div className="second-line" style={{ boxShadow: "none", border: "none", padding: 0, marginBottom: 12 }}>
+                  <div>
+                    <label className="basicLabel">{t.totalQty}</label>
+                    <input readOnly className="basicInput" value={money(totalQty)} />
                   </div>
-                  <div><label className="basicLabel">{t.debit}</label><input className="productInput" type="number" value={form.debit} onChange={(e) => updateForm("debit", e.target.value)} /></div>
-                  <div><label className="basicLabel">{t.credit}</label><input className="productInput" type="number" value={form.credit} onChange={(e) => updateForm("credit", e.target.value)} /></div>
-                  <div className="full"><label className="basicLabel">{t.reason}</label><textarea className="productInput" style={{ height: 68, resize: "vertical", paddingTop: 8 }} value={form.reason} onChange={(e) => updateForm("reason", e.target.value)} /></div>
+                  <div>
+                    <label className="basicLabel">{t.previousBalance}</label>
+                    <input type="number" className="basicInput" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.deliveryCharges}</label>
+                    <input type="number" className="basicInput" value={form.delivery_charges} onChange={(e) => setForm((f) => ({ ...f, delivery_charges: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.discount}</label>
+                    <input type="number" className="basicInput" value={form.discount} onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="finalTotalBar">
+                  <div className="totalBox"><label>{t.totalQty}</label><b>{money(totalQty)}</b></div>
+                  <div className="totalBox"><label>{t.invoiceTotal}</label><b>{money(invTotal)}</b></div>
+                  <div className="totalBox"><label>{t.previousBalance}</label><b>{money(form.previous_balance)}</b></div>
+                  <div className="totalBox"><label>{t.deliveryCharges}</label><b>{money(form.delivery_charges)}</b></div>
+                  <div className="totalBox"><label>{t.discount}</label><b>{money(form.discount)}</b></div>
+                  <div className="totalBox grandBox"><label>{t.grandTotal}</label><b>{money(grandTotal)}</b></div>
                 </div>
               </div>
 
-              <div className="footerBtns">
-                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? t.saving : editingId ? t.update : t.save}</button>
-                <button className="btn btn-soft" onClick={() => setShowForm(false)} disabled={saving}>{t.cancel}</button>
+              <div className="modalFooterBasic">
+                <button className="basicBtn" type="button" onClick={() => setShowForm(false)}>{t.cancel}</button>
+                <button className="basicBtn basicBtnGreen" type="button" disabled={saving} onClick={handleSave}>{saving ? t.saving : editingId ? t.update : t.save}</button>
               </div>
             </div>
           </div>
