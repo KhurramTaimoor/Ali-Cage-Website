@@ -88,6 +88,16 @@ const LANG = {
     selectInvoice: "Select Sales Invoice",
     invoiceSearch: "Search invoice/customer name...",
     chooseInvoice: "Choose Invoice",
+    showDetails: "Show Details",
+    hideDetails: "Hide Details",
+    selected: "Selected",
+    today: "Today",
+    allInvoices: "All Invoices",
+    selectDate: "Select Date",
+    showingDate: "Showing Date",
+    dayDateYear: "Day / Date / Year",
+    clickDetails: "Click Show Details on any invoice to load full record.",
+    noInvoices: "No invoices found.",
     invoiceRecord: "Sales Invoice Record",
     invoiceNo: "Invoice No",
     invoiceDate: "Invoice Date",
@@ -158,6 +168,16 @@ const LANG = {
     selectInvoice: "سیلز انوائس منتخب کریں",
     invoiceSearch: "انوائس/کسٹمر نام تلاش کریں...",
     chooseInvoice: "انوائس منتخب کریں",
+    showDetails: "تفصیل دیکھیں",
+    hideDetails: "تفصیل بند کریں",
+    selected: "منتخب",
+    today: "آج",
+    allInvoices: "تمام انوائسز",
+    selectDate: "تاریخ منتخب کریں",
+    showingDate: "دکھائی جانے والی تاریخ",
+    dayDateYear: "دن / تاریخ / سال",
+    clickDetails: "کسی انوائس پر Show Details کلک کریں تاکہ مکمل ریکارڈ لوڈ ہو۔",
+    noInvoices: "کوئی انوائس نہیں ملی۔",
     invoiceRecord: "سیلز انوائس ریکارڈ",
     invoiceNo: "انوائس نمبر",
     invoiceDate: "انوائس تاریخ",
@@ -298,6 +318,8 @@ export default function SalesReturnPage() {
   const [form, setForm] = useState(createEmptyForm());
 
   const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [invoiceSelectedDate, setInvoiceSelectedDate] = useState(today());
+  const [showAllInvoices, setShowAllInvoices] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [invoiceItems, setInvoiceItems] = useState([]);
   const [rowReturns, setRowReturns] = useState({});
@@ -381,12 +403,23 @@ export default function SalesReturnPage() {
 
   const filteredInvoices = useMemo(() => {
     const q = invoiceSearch.trim().toLowerCase();
-    const list = invoices.slice();
-    if (!q) return list.slice(0, 80);
-    return list
-      .filter((inv) => [getInvoiceNo(inv), getPartyName(inv), getInvoiceDate(inv), inv.grand_total].join(" ").toLowerCase().includes(q))
-      .slice(0, 80);
-  }, [invoices, invoiceSearch]);
+    let list = invoices.slice();
+
+    if (!showAllInvoices && invoiceSelectedDate) {
+      list = list.filter((inv) => getInvoiceDate(inv) === invoiceSelectedDate);
+    }
+
+    if (q) {
+      list = list.filter((inv) =>
+        [getInvoiceNo(inv), getPartyName(inv), getInvoiceDate(inv), inv.invoice_total, inv.grand_total]
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
+      );
+    }
+
+    return list.slice(0, 100);
+  }, [invoices, invoiceSearch, invoiceSelectedDate, showAllInvoices]);
 
   const getAlreadyReturnedQty = useCallback(
     (item) => {
@@ -521,6 +554,17 @@ export default function SalesReturnPage() {
   const handleInvoiceSelect = (invoiceId) => {
     setForm((f) => ({ ...f, invoice_id: invoiceId }));
     loadInvoiceDetail(invoiceId);
+  };
+
+  const handleInvoiceDetails = (invoiceId) => {
+    if (String(form.invoice_id || "") === String(invoiceId || "") && selectedInvoice) {
+      setForm((f) => ({ ...f, invoice_id: "" }));
+      setSelectedInvoice(null);
+      setInvoiceItems([]);
+      setRowReturns({});
+      return;
+    }
+    handleInvoiceSelect(invoiceId);
   };
 
   const updateReturnRow = (itemId, field, value) => {
@@ -673,7 +717,7 @@ export default function SalesReturnPage() {
             </div>
 
             <div className="form-section no-radius-top">
-              <div className="form-grid top-grid">
+              <div className="form-grid return-head-grid">
                 <div>
                   <label>{t.returnNo} *</label>
                   <input className="input" value={form.return_no} onChange={(e) => setForm((f) => ({ ...f, return_no: e.target.value }))} />
@@ -683,45 +727,90 @@ export default function SalesReturnPage() {
                   <input className="input" type="date" value={form.return_date} onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))} />
                 </div>
                 <div>
-                  <label>{t.invoiceSearch}</label>
-                  <input className="input" value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} placeholder={t.invoiceSearch} />
+                  <label>{t.reason}</label>
+                  <input className="input" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
                 </div>
-                <div className="span-2">
-                  <label>{t.selectInvoice} *</label>
-                  <select className="input" value={form.invoice_id} onChange={(e) => handleInvoiceSelect(e.target.value)} disabled={invoiceLoading}>
-                    <option value="">{invoiceLoading ? t.loading : t.chooseInvoice}</option>
-                    {filteredInvoices.map((inv) => (
-                      <option key={inv.id} value={inv.id}>
-                        {getInvoiceNo(inv)} - {getPartyName(inv)} - {getInvoiceDate(inv)} - Rs {money(inv.grand_total || inv.invoice_total)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              </div>
+            </div>
+
+            <div className="section-head"><span>{t.selectInvoice}</span></div>
+            <div className="form-section">
+              <div className="invoice-toolbar">
+                <input className="search invoice-search-input" value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} placeholder={t.invoiceSearch} />
+                <button className={`filter-btn ${showAllInvoices ? "active" : ""}`} type="button" onClick={() => setShowAllInvoices(true)}>{t.allInvoices}</button>
+                <button className={`filter-btn ${!showAllInvoices && invoiceSelectedDate === today() ? "active" : ""}`} type="button" onClick={() => { setShowAllInvoices(false); setInvoiceSelectedDate(today()); }}>{t.today}</button>
+                <label className="date-filter-label">
+                  <span>{t.selectDate}</span>
+                  <input type="date" value={invoiceSelectedDate} onChange={(e) => { setInvoiceSelectedDate(e.target.value || today()); setShowAllInvoices(false); }} />
+                </label>
+                {!showAllInvoices && <span className="showing-date-pill">{t.showingDate}: {formatDate(invoiceSelectedDate, lang)}</span>}
+              </div>
+
+              <div className="invoice-list-wrap">
+                <table className="invoice-select-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 46 }}>#</th>
+                      <th>{t.invoiceNo}</th>
+                      <th>{t.customer}</th>
+                      <th>{t.dayDateYear}</th>
+                      <th className="num-head">{t.invoiceTotal}</th>
+                      <th className="num-head">{t.grandTotal}</th>
+                      <th className="center">{t.actions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceLoading && !selectedInvoice ? (
+                      <tr><td colSpan={7} className="empty-cell center">{t.loading}</td></tr>
+                    ) : filteredInvoices.length === 0 ? (
+                      <tr><td colSpan={7} className="empty-cell center">{t.noInvoices}</td></tr>
+                    ) : (
+                      filteredInvoices.map((inv, index) => {
+                        const active = String(form.invoice_id || "") === String(inv.id || "") && selectedInvoice;
+                        return (
+                          <tr key={inv.id || index} className={active ? "active-invoice-row" : ""}>
+                            <td className="center muted strong">{index + 1}</td>
+                            <td><b className="mono">{getInvoiceNo(inv)}</b><div className="muted">{inv.reference_no || "-"}</div></td>
+                            <td><b>{getPartyName(inv)}</b><div className="muted">{getPartyType(inv)}</div></td>
+                            <td className="center strong">{formatDate(getInvoiceDate(inv), lang)}</td>
+                            <td className="num strong">{money(inv.invoice_total || inv.total_amount)}</td>
+                            <td className="num strong blue-text">{money(inv.grand_total || inv.invoice_total || inv.total_amount)}</td>
+                            <td className="center">
+                              <button className={`small-btn ${active ? "amber" : "green"}`} type="button" onClick={() => handleInvoiceDetails(inv.id)} disabled={invoiceLoading}>
+                                {active ? t.hideDetails : t.showDetails}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
             <div className="section-head"><span>{t.invoiceRecord}</span></div>
             <div className="form-section">
               {!selectedInvoice ? (
-                <div className="empty-box">{t.noInvoice}</div>
+                <div className="empty-box">{t.clickDetails}</div>
               ) : (
-                <>
-                  <div className="invoice-info-grid">
-                    <Info label={t.invoiceNo} value={getInvoiceNo(selectedInvoice)} />
-                    <Info label={t.customer} value={getPartyName(selectedInvoice)} />
-                    <Info label={t.customerType} value={getPartyType(selectedInvoice)} />
-                    <Info label={t.invoiceDate} value={formatDate(getInvoiceDate(selectedInvoice), lang)} />
-                    <Info label={t.shipTo} value={selectedInvoice.shipment_to || "-"} />
-                    <Info label={t.invoiceTotal} value={money(selectedInvoice.invoice_total || selectedInvoice.total_amount)} />
-                    <Info label={t.previousBalance} value={money(selectedInvoice.previous_balance)} />
-                    <Info label={t.deliveryCharges} value={money(selectedInvoice.delivery_charges)} />
-                    <Info label={t.discount} value={money(selectedInvoice.discount)} />
-                    <Info label={t.grandTotal} value={money(selectedInvoice.grand_total)} strong />
-                  </div>
-                </>
+                <div className="invoice-info-grid">
+                  <Info label={t.invoiceNo} value={getInvoiceNo(selectedInvoice)} />
+                  <Info label={t.customer} value={getPartyName(selectedInvoice)} />
+                  <Info label={t.customerType} value={getPartyType(selectedInvoice)} />
+                  <Info label={t.invoiceDate} value={formatDate(getInvoiceDate(selectedInvoice), lang)} />
+                  <Info label={t.shipTo} value={selectedInvoice.shipment_to || "-"} />
+                  <Info label={t.invoiceTotal} value={money(selectedInvoice.invoice_total || selectedInvoice.total_amount)} />
+                  <Info label={t.previousBalance} value={money(selectedInvoice.previous_balance)} />
+                  <Info label={t.deliveryCharges} value={money(selectedInvoice.delivery_charges)} />
+                  <Info label={t.discount} value={money(selectedInvoice.discount)} />
+                  <Info label={t.grandTotal} value={money(selectedInvoice.grand_total)} strong />
+                </div>
               )}
             </div>
 
+            {selectedInvoice && (
+              <>
             <div className="section-head"><span>{t.products}</span></div>
             <div className="table-panel">
               <table className="product-table">
@@ -808,6 +897,8 @@ export default function SalesReturnPage() {
                 <button className="btn btn-soft" onClick={closeForm} disabled={saving}>{t.cancel}</button>
               </div>
             </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -929,9 +1020,10 @@ function pageCss(isUrdu) {
     .btn{border:none;border-radius:12px;padding:10px 15px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s}.btn:hover{transform:translateY(-1px)}.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}.btn-primary{background:#4f46e5;color:white;box-shadow:0 12px 25px rgba(79,70,229,.22)}.btn-soft{background:white;color:#475569;border:1px solid #cbd5e1}.btn-active{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
     .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(480px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.search:focus,.input:focus,.textarea:focus,.table-input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}
     .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.total-box{border:1px solid #dbe3ee;background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 8px 18px rgba(15,23,42,.04)}.total-box label{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:950;text-transform:uppercase}.total-box b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:20px}.grand{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
+    .invoice-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.invoice-search-input{width:min(360px,100%)}.filter-btn{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 12px;font-weight:900;color:#475569;cursor:pointer}.filter-btn.active{background:#4f46e5;color:white;border-color:#4f46e5}.date-filter-label{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;display:flex!important;align-items:center;gap:8px;margin:0!important;font-size:12px;color:#475569}.date-filter-label input{border:none;outline:none;font-weight:900;background:transparent;color:#0f172a}.showing-date-pill{height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:12px;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;font-weight:900;font-size:12px}.invoice-list-wrap{margin-top:12px;border:1px solid #dbe3ee;border-radius:18px;overflow:auto}.invoice-select-table{width:100%;min-width:900px;border-collapse:collapse}.invoice-select-table th{background:#111827;color:white;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 10px;text-align:${isUrdu ? "right" : "left"}}.invoice-select-table td{padding:11px 10px;border-bottom:1px solid #eef2f7;font-size:13px}.invoice-select-table tr:hover td{background:#f8fafc}.active-invoice-row td{background:#eef2ff!important}.num-head{text-align:right!important}
     .card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}.list-table{width:100%;border-collapse:collapse;min-width:1120px}.list-table th{background:#111827;color:rgba(255,255,255,.82);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px;text-align:${isUrdu ? "right" : "left"}}.list-table td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}.list-table tr:hover td{background:#f8fafc}.center{text-align:center!important}.num{text-align:right!important;font-family:monospace}.strong{font-weight:900}.mono{font-family:monospace}.muted{color:#64748b;font-size:11px}.blue-text{color:#1d4ed8}.truncate-cell{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empty-cell{padding:40px!important;color:#94a3b8}.row-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.small-btn{border:none;border-radius:10px;padding:7px 9px;font-size:11px;font-weight:900;cursor:pointer}.green{background:#dcfce7;color:#166534}.amber{background:#fef3c7;color:#92400e}.red{background:#fee2e2;color:#991b1b}
-    .input-page-card{background:#fff;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.10);overflow:hidden}.input-title{background:#111827;color:white;padding:17px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.input-title h2{margin:0;font-size:20px;font-weight:950}.input-title p{margin:4px 0 0;color:rgba(255,255,255,.72);font-size:12px}.form-section{background:white;border:1px solid #dbe3ee;border-top:none;padding:12px;overflow:auto}.no-radius-top{border-top:none}.section-head{height:40px;background:#e9eef8;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-weight:950;color:#0f172a;font-size:17px}.form-grid{display:grid;gap:10px;align-items:end}.top-grid{grid-template-columns:150px 150px 1fr 1.5fr}.bottom-grid{display:grid;grid-template-columns:1fr 1fr 190px 220px;gap:12px;align-items:end}.span-2{grid-column:span 2}label{display:block;font-size:11px;color:#334155;margin-bottom:5px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.textarea,.table-input{width:100%;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:6px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.input{height:34px}.textarea{min-height:70px;resize:vertical}.empty-box{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:14px;padding:22px;text-align:center;color:#64748b;font-weight:900}.invoice-info-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.info-box{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.info-box small{display:block;color:#64748b;font-size:10.5px;font-weight:950;margin-bottom:5px;text-transform:uppercase}.info-box b{font-size:13px}.strong-box{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.table-panel{background:white;border:1px solid #dbe3ee;border-top:none;padding:8px;overflow:auto}.product-table{width:100%;min-width:1180px;border-collapse:collapse;background:white}.product-table th,.product-table td{border:1px solid #dbe3ee;padding:6px;font-size:12px}.product-table th{background:#dbe3ee;text-align:center;color:#334155;font-weight:900}.table-input{height:32px;text-align:right}.selected-row td{background:#eef2ff!important}.form-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;position:sticky;bottom:0;background:white;padding-top:10px}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
-    @media(max-width:1100px){.top-grid,.bottom-grid{grid-template-columns:repeat(2,1fr)}.invoice-info-grid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:1fr 1fr}.span-2{grid-column:span 2}}
-    @media(max-width:700px){.sales-return-page{padding:10px}.top-grid,.bottom-grid,.invoice-info-grid,.summary-grid{grid-template-columns:1fr}.span-2{grid-column:span 1}.form-footer{flex-direction:column}.btn{width:100%}.input-title{align-items:flex-start}.top-card{align-items:flex-start}.title{font-size:24px}}
+    .input-page-card{background:#fff;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.10);overflow:hidden}.input-title{background:#111827;color:white;padding:17px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.input-title h2{margin:0;font-size:20px;font-weight:950}.input-title p{margin:4px 0 0;color:rgba(255,255,255,.72);font-size:12px}.form-section{background:white;border:1px solid #dbe3ee;border-top:none;padding:12px;overflow:auto}.no-radius-top{border-top:none}.section-head{height:40px;background:#e9eef8;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-weight:950;color:#0f172a;font-size:17px}.form-grid{display:grid;gap:10px;align-items:end}.top-grid{grid-template-columns:150px 150px 1fr 1.5fr}.return-head-grid{grid-template-columns:170px 170px 1fr}.bottom-grid{display:grid;grid-template-columns:1fr 1fr 190px 220px;gap:12px;align-items:end}.span-2{grid-column:span 2}label{display:block;font-size:11px;color:#334155;margin-bottom:5px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.textarea,.table-input{width:100%;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:6px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.input{height:34px}.textarea{min-height:70px;resize:vertical}.empty-box{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:14px;padding:22px;text-align:center;color:#64748b;font-weight:900}.invoice-info-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.info-box{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px}.info-box small{display:block;color:#64748b;font-size:10.5px;font-weight:950;margin-bottom:5px;text-transform:uppercase}.info-box b{font-size:13px}.strong-box{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.table-panel{background:white;border:1px solid #dbe3ee;border-top:none;padding:8px;overflow:auto}.product-table{width:100%;min-width:1180px;border-collapse:collapse;background:white}.product-table th,.product-table td{border:1px solid #dbe3ee;padding:6px;font-size:12px}.product-table th{background:#dbe3ee;text-align:center;color:#334155;font-weight:900}.table-input{height:32px;text-align:right}.selected-row td{background:#eef2ff!important}.form-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;position:sticky;bottom:0;background:white;padding-top:10px}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+    @media(max-width:1100px){.top-grid,.return-head-grid,.bottom-grid{grid-template-columns:repeat(2,1fr)}.invoice-info-grid{grid-template-columns:repeat(2,1fr)}.summary-grid{grid-template-columns:1fr 1fr}.span-2{grid-column:span 2}}
+    @media(max-width:700px){.sales-return-page{padding:10px}.top-grid,.return-head-grid,.bottom-grid,.invoice-info-grid,.summary-grid{grid-template-columns:1fr}.span-2{grid-column:span 1}.form-footer{flex-direction:column}.btn{width:100%}.input-title{align-items:flex-start}.top-card{align-items:flex-start}.title{font-size:24px}}
   `;
 }
