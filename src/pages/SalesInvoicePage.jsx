@@ -263,12 +263,23 @@ const money = (v) =>
 const getRecordId = (o) =>
   o?.id ??
   o?.value ??
+  o?.ID ??
+  o?.Id ??
   o?.customer_id ??
+  o?.CustomerID ??
   o?.employee_id ??
+  o?.EmployeeID ??
   o?.supplier_id ??
+  o?.SupplierID ??
   o?.general_ledger_id ??
   o?.ledger_id ??
   o?.account_id ??
+  o?.category_id ??
+  o?.CategoryID ??
+  o?.unit_id ??
+  o?.UnitID ??
+  o?.product_id ??
+  o?.ProductID ??
   "";
 
 const pickText = (o, keys) => {
@@ -308,16 +319,58 @@ const makePartyOption = (row, nameGetter) => ({
   name: nameGetter(row),
   previous_balance: getPreviousBalance(row),
 });
-const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "name", "name_en", "title"]);
-const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "item_name", "name", "name_en", "title"]);
-const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "name", "name_en", "symbol", "title"]);
-const getProductDesc = (o) => pickText(o, ["product_description", "description", "details", "remarks"]);
+const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "CategoryName", "name", "name_en", "title"]);
+const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "ProductName", "item_name", "ItemName", "name", "name_en", "title"]);
+const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "UnitName", "name", "name_en", "symbol", "title"]);
+const getProductDesc = (o) => pickText(o, ["product_description", "ProductDescription", "description", "Description", "details", "remarks"]);
 
-const getProductCatId = (p) => p?.category_id ?? p?.categoryId ?? p?.cat_id ?? p?.product_category_id ?? p?.category?.id ?? "";
-const getProductUnitId = (p) => p?.unit_id ?? p?.unitId ?? p?.unit?.id ?? "";
-const getProductPieceRate = (p) => p?.piece_rate ?? p?.pieceRate ?? p?.sale_rate ?? p?.saleRate ?? p?.rate ?? p?.price ?? p?.sale_price ?? 0;
-const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || "single").toLowerCase();
-const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? 0);
+const getCategoryId = (o) =>
+  o?.id ?? o?.value ?? o?.category_id ?? o?.categoryId ?? o?.CategoryID ?? o?.cat_id ?? o?.CatID ?? "";
+
+const getProductId = (o) =>
+  o?.id ?? o?.value ?? o?.product_id ?? o?.productId ?? o?.ProductID ?? o?.item_id ?? o?.ItemID ?? "";
+
+const getUnitId = (o) =>
+  o?.id ?? o?.value ?? o?.unit_id ?? o?.unitId ?? o?.UnitID ?? "";
+
+const sameId = (a, b) => String(a ?? "") !== "" && String(a ?? "") === String(b ?? "");
+
+const getProductCatId = (p) =>
+  p?.category_id ??
+  p?.categoryId ??
+  p?.CategoryID ??
+  p?.cat_id ??
+  p?.CatID ??
+  p?.product_category_id ??
+  p?.productCategoryId ??
+  p?.ProductCategoryID ??
+  p?.category?.id ??
+  p?.category?.category_id ??
+  p?.category?.CategoryID ??
+  "";
+
+const getProductUnitId = (p) =>
+  p?.unit_id ?? p?.unitId ?? p?.UnitID ?? p?.unit?.id ?? p?.unit?.unit_id ?? p?.unit?.UnitID ?? "";
+
+const getProductPieceRate = (p) =>
+  p?.piece_rate ??
+  p?.pieceRate ??
+  p?.PieceRate ??
+  p?.sale_rate ??
+  p?.saleRate ??
+  p?.SaleRate ??
+  p?.rate ??
+  p?.Rate ??
+  p?.price ??
+  p?.Price ??
+  p?.sale_price ??
+  p?.SalePrice ??
+  p?.retail_price ??
+  p?.RetailPrice ??
+  0;
+
+const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
+const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
 
 const getPartyNameByType = (type, row) => {
   if (type === "employee") return getEmployeeName(row);
@@ -763,7 +816,7 @@ export default function SalesInvoicePage() {
 
   const calcRow = useCallback(
     (row) => {
-      const prod = products.find((p) => String(p.id) === String(row.product_id));
+      const prod = products.find((p) => sameId(getProductId(p), row.product_id));
       const saleUnit = getProductSaleUnit(prod || {});
       const pcsCtn = toNum(row.pieces_per_carton || getProductPcsCtn(prod || {}));
       const rate = toNum(row.rate || getProductPieceRate(prod || {}));
@@ -800,12 +853,32 @@ export default function SalesInvoicePage() {
         let next = { ...row, [field]: value };
 
         if (field === "category_id") {
-          next = { ...next, product_id: "", product_description: "", unit_id: "", sale_type: "single", carton_qty: "", pieces_qty: "", qty: "", pieces_per_carton: "0", rate: "0", amount: "0" };
+          const selectedProduct = products.find((p) => sameId(getProductId(p), next.product_id));
+          const selectedProductCatId = selectedProduct ? getProductCatId(selectedProduct) : "";
+
+          // Category change par product/amount ko force zero nahi karna.
+          // Sirf tab reset karo jab already selected product new category se match na kare.
+          if (next.product_id && selectedProductCatId && value && !sameId(selectedProductCatId, value)) {
+            next = {
+              ...next,
+              product_id: "",
+              product_description: "",
+              unit_id: "",
+              sale_type: "single",
+              carton_qty: "",
+              pieces_qty: "",
+              qty: "",
+              pieces_per_carton: "0",
+              rate: "0",
+              amount: "0",
+            };
+          }
+
           return next;
         }
 
         if (field === "product_id") {
-          const prod = products.find((p) => String(p.id) === String(value));
+          const prod = products.find((p) => sameId(getProductId(p), value));
           if (prod) {
             const saleUnit = getProductSaleUnit(prod);
             next.category_id = String(getProductCatId(prod) || next.category_id || "");
@@ -1207,7 +1280,7 @@ export default function SalesInvoicePage() {
                   </thead>
                   <tbody>
                     {items.map((row, idx) => {
-                      const product = products.find((p) => String(p.id) === String(row.product_id));
+                      const product = products.find((p) => sameId(getProductId(p), row.product_id));
                       const saleUnit = getProductSaleUnit(product || {});
                       const isCartonProduct = saleUnit === "carton";
                       return (
@@ -1216,9 +1289,19 @@ export default function SalesInvoicePage() {
                           <td>
                             <select className="productInput" value={row.product_id} onChange={(e) => handleItemChange(idx, "product_id", e.target.value)}>
                               <option value="">{t.select}</option>
-                              {products
-                                .filter((p) => !row.category_id || String(getProductCatId(p) || "") === String(row.category_id))
-                                .map((p) => <option key={p.id} value={p.id}>{getProductName(p)}</option>)}
+                              {(() => {
+                                const selectedCategory = String(row.category_id || "");
+                                const matchedProducts = products.filter((p) => {
+                                  const productCatId = getProductCatId(p);
+                                  if (!selectedCategory) return true;
+                                  if (!productCatId) return true;
+                                  return sameId(productCatId, selectedCategory);
+                                });
+                                const list = selectedCategory && matchedProducts.length === 0 ? products : matchedProducts;
+                                return list.map((p) => (
+                                  <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>
+                                ));
+                              })()}
                             </select>
                           </td>
                           <td>
@@ -1227,13 +1310,13 @@ export default function SalesInvoicePage() {
                           <td>
                             <select className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
                               <option value="">{t.select}</option>
-                              {categories.map((c) => <option key={c.id} value={c.id}>{getCategoryName(c)}</option>)}
+                              {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
                             </select>
                           </td>
                           <td>
                             <select className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
                               <option value="">{t.select}</option>
-                              {units.map((u) => <option key={u.id} value={u.id}>{getUnitName(u)}</option>)}
+                              {units.map((u) => <option key={getUnitId(u)} value={getUnitId(u)}>{getUnitName(u)}</option>)}
                             </select>
                           </td>
                           <td>
