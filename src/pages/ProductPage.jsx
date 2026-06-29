@@ -28,40 +28,44 @@ async function translateText(text) {
 const LANG = {
   en: {
     title: "Product Management",
-    subtitle: "Manage your products",
-    addBtn: "Add Product",
+    subtitle: "Manage products with type, category, unit and master packing",
+    addBtn: "New Product",
     summaryBtn: "View Summary",
     summaryTitle: "Products Summary",
     summarySubtitle: "Overview of visible product records",
     totalProducts: "Total Products",
-    singleProducts: "Single Products",
-    cartonProducts: "Carton Products",
-    totalRateValue: "Total Rate Value",
     activeProducts: "Active Products",
     inactiveProducts: "Inactive Products",
+    withMasterPacking: "With Master Packing",
+    withoutMasterPacking: "Without Master Packing",
     status: "Status",
     active: "Active",
     inactive: "Inactive",
-    searchPlaceholder: "Search by product name, type, category, unit, rate or status…",
+    searchPlaceholder:
+      "Search by product, description, type, category, unit or quantity…",
     productName: "Product Name",
-    productType: "Product Type",
+    description: "Description",
+    autoDescription: "Auto Description",
+    productType: "Type",
     category: "Category",
-    allTypes: "All Product Types",
+    unit: "Unit",
+    quantity: "Quantity",
+    masterPackingUnit: "Master Packing Unit",
+    masterPackingPieces: "Pieces",
+    allTypes: "All Types",
     allCategories: "All Categories",
-    selectType: "Select product type",
+    allUnits: "All Units",
+    selectType: "Select type",
     selectCategory: "Select category",
-    saleUnit: "Sale Unit",
-    single: "Single",
-    carton: "Carton",
-    piecesPerCarton: "Pieces Per Carton",
-    pieceRate: "Piece Rate",
+    selectUnit: "Select unit",
+    selectMasterPackingUnit: "Select master packing unit",
     activeInactive: "Active / Inactive",
     save: "Save",
     saving: "Saving…",
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",
-    actions: "Actions",
+    actions: "Action",
     noRecords: "No products found.",
     loading: "Loading products...",
     toggleLang: "اردو",
@@ -71,61 +75,63 @@ const LANG = {
     reportHeader: "Products List",
     printedOn: "Printed On",
     errorMsg: "Product name is required.",
-    cartonValidation:
-      "For carton products, pieces per carton and piece rate are required.",
+    masterPackingValidation:
+      "Master packing unit and pieces both are required.",
     successSave: "Saved successfully!",
     successDelete: "Deleted successfully!",
     fetchError: "Failed to load records.",
     saveError: "Failed to save.",
     deleteError: "Failed to delete.",
     deleteConfirm: "Are you sure you want to delete this product?",
-    namePlaceholder: "e.g. Steel Wire 18g",
-    piecesPlaceholder: "e.g. 20",
-    ratePlaceholder: "e.g. 15",
+    namePlaceholder: "e.g. Cotton Bundle",
+    piecesPlaceholder: "e.g. 12",
     records: "Records",
     required: "Required",
     formSubtitle:
-      "Product name, product type, category, sale unit, carton quantity, piece rate and status",
+      "Select product, type, category, unit, master packing unit and pieces",
     companyName: "Ali Cages",
     savePdfHint: 'Choose "Save as PDF" in print dialog',
   },
   ur: {
     title: "پروڈکٹ مینجمنٹ",
-    subtitle: "اپنی مصنوعات کا انتظام کریں",
-    addBtn: "نیا پروڈکٹ شامل کریں",
+    subtitle: "پروڈکٹ، ٹائپ، کیٹیگری، یونٹ اور ماسٹر پیکنگ مینج کریں",
+    addBtn: "نیا پروڈکٹ",
     summaryBtn: "سمری دیکھیں",
     summaryTitle: "پروڈکٹس سمری",
     summarySubtitle: "نظر آنے والے پروڈکٹس کا خلاصہ",
     totalProducts: "کل پروڈکٹس",
-    singleProducts: "سنگل پروڈکٹس",
-    cartonProducts: "کارٹن پروڈکٹس",
-    totalRateValue: "کل ریٹ ویلیو",
     activeProducts: "ایکٹو پروڈکٹس",
     inactiveProducts: "ان ایکٹو پروڈکٹس",
+    withMasterPacking: "ماسٹر پیکنگ والے",
+    withoutMasterPacking: "بغیر ماسٹر پیکنگ",
     status: "اسٹیٹس",
     active: "ایکٹو",
     inactive: "ان ایکٹو",
     searchPlaceholder:
-      "پروڈکٹ نام، ٹائپ، کیٹیگری، یونٹ، ریٹ یا اسٹیٹس سے تلاش کریں…",
-    productName: "پروڈکٹ کا نام",
-    productType: "پروڈکٹ ٹائپ",
+      "پروڈکٹ، ڈسکرپشن، ٹائپ، کیٹیگری، یونٹ یا مقدار سے تلاش کریں…",
+    productName: "پروڈکٹ نام",
+    description: "ڈسکرپشن",
+    autoDescription: "آٹو ڈسکرپشن",
+    productType: "ٹائپ",
     category: "کیٹیگری",
-    allTypes: "تمام پروڈکٹ ٹائپس",
+    unit: "یونٹ",
+    quantity: "مقدار",
+    masterPackingUnit: "ماسٹر پیکنگ یونٹ",
+    masterPackingPieces: "پیسز",
+    allTypes: "تمام ٹائپس",
     allCategories: "تمام کیٹیگریز",
-    selectType: "پروڈکٹ ٹائپ منتخب کریں",
+    allUnits: "تمام یونٹس",
+    selectType: "ٹائپ منتخب کریں",
     selectCategory: "کیٹیگری منتخب کریں",
-    saleUnit: "فروخت کی قسم",
-    single: "سنگل",
-    carton: "کارٹن",
-    piecesPerCarton: "فی کارٹن پیسز",
-    pieceRate: "فی پیس ریٹ",
+    selectUnit: "یونٹ منتخب کریں",
+    selectMasterPackingUnit: "ماسٹر پیکنگ یونٹ منتخب کریں",
     activeInactive: "ایکٹو / ان ایکٹو",
     save: "محفوظ کریں",
     saving: "محفوظ ہو رہا ہے…",
     cancel: "منسوخ",
     edit: "ترمیم",
     delete: "حذف",
-    actions: "اقدامات",
+    actions: "عمل",
     noRecords: "کوئی پروڈکٹ نہیں ملا۔",
     loading: "پروڈکٹس لوڈ ہو رہے ہیں...",
     toggleLang: "English",
@@ -135,21 +141,20 @@ const LANG = {
     reportHeader: "مصنوعات کی فہرست",
     printedOn: "پرنٹ کی تاریخ",
     errorMsg: "پروڈکٹ کا نام ضروری ہے۔",
-    cartonValidation:
-      "کارٹن پروڈکٹ کے لیے پیسز فی کارٹن اور فی پیس ریٹ ضروری ہیں۔",
+    masterPackingValidation:
+      "ماسٹر پیکنگ یونٹ اور پیسز دونوں ضروری ہیں۔",
     successSave: "کامیابی سے محفوظ ہو گیا!",
     successDelete: "حذف ہو گیا!",
     fetchError: "ریکارڈ لوڈ نہیں ہو سکے۔",
     saveError: "محفوظ نہیں ہو سکا۔",
     deleteError: "حذف نہیں ہو سکا۔",
     deleteConfirm: "کیا آپ واقعی اس پروڈکٹ کو حذف کرنا چاہتے ہیں؟",
-    namePlaceholder: "مثلاً Steel Wire 18g",
-    piecesPlaceholder: "مثلاً 20",
-    ratePlaceholder: "مثلاً 15",
+    namePlaceholder: "مثلاً Cotton Bundle",
+    piecesPlaceholder: "مثلاً 12",
     records: "ریکارڈز",
     required: "ضروری",
     formSubtitle:
-      "پروڈکٹ نام، پروڈکٹ ٹائپ، کیٹیگری، سیل یونٹ، کارٹن مقدار، فی پیس ریٹ اور اسٹیٹس",
+      "پروڈکٹ، ٹائپ، کیٹیگری، یونٹ، ماسٹر پیکنگ یونٹ اور پیسز",
     companyName: "علی کیجز",
     savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
   },
@@ -161,18 +166,11 @@ const defaultForm = {
   product_name: "",
   product_type_id: "",
   category_id: "",
-  sale_unit: "single",
-  pieces_per_carton: "",
-  piece_rate: "",
+  unit_id: "",
+  master_packing_unit_id: "",
+  master_packing_pieces: "",
   is_active: "1",
 };
-
-function formatMoney(v) {
-  return Number(v || 0).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
 
 function isRecordActive(record) {
   const value = record?.is_active ?? record?.active ?? record?.status;
@@ -181,7 +179,9 @@ function isRecordActive(record) {
   if (typeof value === "boolean") return value;
 
   const text = String(value).trim().toLowerCase();
-  return !["0", "false", "inactive", "in-active", "disabled", "no"].includes(text);
+  return !["0", "false", "inactive", "in-active", "disabled", "no"].includes(
+    text
+  );
 }
 
 function getProductTypeName(item) {
@@ -198,6 +198,10 @@ function getCategoryName(item) {
   return item?.category_name || item?.name || "";
 }
 
+function getUnitName(item) {
+  return item?.unit_name || item?.name || item?.symbol || "";
+}
+
 const ProductPage = () => {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
@@ -208,6 +212,7 @@ const ProductPage = () => {
   const [records, setRecords] = useState([]);
   const [productTypes, setProductTypes] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [units, setUnits] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -217,6 +222,7 @@ const ProductPage = () => {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [unitFilter, setUnitFilter] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -248,6 +254,15 @@ const ProductPage = () => {
     [categories]
   );
 
+  const getUnitNameById = useCallback(
+    (id) => {
+      if (!id) return "";
+      const found = units.find((x) => String(x.id) === String(id));
+      return getUnitName(found);
+    },
+    [units]
+  );
+
   const getRecordTypeName = useCallback(
     (r) => {
       return (
@@ -268,26 +283,96 @@ const ProductPage = () => {
     [getCategoryNameById]
   );
 
+  const getRecordUnitName = useCallback(
+    (r) => {
+      return r.unit_name || getUnitNameById(r.unit_id) || "-";
+    },
+    [getUnitNameById]
+  );
+
+  const getRecordMasterPackingUnitName = useCallback(
+    (r) => {
+      return (
+        r.master_packing_unit_name ||
+        getUnitNameById(r.master_packing_unit_id) ||
+        "-"
+      );
+    },
+    [getUnitNameById]
+  );
+
+  const getRecordQuantity = useCallback((r) => {
+    const value =
+      r.quantity ??
+      r.qty ??
+      r.stock_quantity ??
+      r.master_packing_pieces ??
+      r.pieces_per_carton;
+
+    if (value === undefined || value === null || value === "") return "-";
+
+    return value;
+  }, []);
+
+  const buildAutoDescription = useCallback(
+    (data) => {
+      const productName = String(data.product_name || "").trim();
+      const typeName = getTypeNameById(data.product_type_id);
+      const categoryName = getCategoryNameById(data.category_id);
+      const unitName = getUnitNameById(data.unit_id);
+      const masterUnitName = getUnitNameById(data.master_packing_unit_id);
+      const pieces = Number(data.master_packing_pieces || 0);
+
+      const parts = [];
+
+      if (productName) parts.push(productName);
+      if (typeName) parts.push(`Type: ${typeName}`);
+      if (categoryName) parts.push(`Category: ${categoryName}`);
+      if (unitName) parts.push(`Unit: ${unitName}`);
+
+      if (masterUnitName && pieces > 0) {
+        parts.push(`Master Packing: ${masterUnitName} - ${pieces} Pieces`);
+      }
+
+      return parts.join(" | ");
+    },
+    [getTypeNameById, getCategoryNameById, getUnitNameById]
+  );
+
+  const autoDescription = useMemo(() => {
+    return buildAutoDescription(form);
+  }, [form, buildAutoDescription]);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const [productsRes, typesRes, categoriesRes] = await Promise.all([
-        axios.get(`${API_BASE}/api/products`),
-        axios.get(`${API_BASE}/api/product-types`).catch(() => ({ data: [] })),
-        axios.get(`${API_BASE}/api/categories`).catch(() => ({ data: [] })),
-      ]);
+      const [productsRes, typesRes, categoriesRes, unitsRes] =
+        await Promise.all([
+          axios.get(`${API_BASE}/api/products`),
+          axios.get(`${API_BASE}/api/product-types`).catch(() => ({ data: [] })),
+          axios.get(`${API_BASE}/api/categories`).catch(() => ({ data: [] })),
+          axios.get(`${API_BASE}/api/units`).catch(() => ({ data: [] })),
+        ]);
 
       setRecords(
-        Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.data || []
+        Array.isArray(productsRes.data)
+          ? productsRes.data
+          : productsRes.data?.data || []
       );
+
       setProductTypes(
         Array.isArray(typesRes.data) ? typesRes.data : typesRes.data?.data || []
       );
+
       setCategories(
         Array.isArray(categoriesRes.data)
           ? categoriesRes.data
           : categoriesRes.data?.data || []
+      );
+
+      setUnits(
+        Array.isArray(unitsRes.data) ? unitsRes.data : unitsRes.data?.data || []
       );
     } catch {
       showToast("error", t.fetchError);
@@ -334,11 +419,29 @@ const ProductPage = () => {
   };
 
   const getProductName = (r) =>
-    isUrdu ? urduCache[`prod:${r.id}`] || r.product_name || "-" : r.product_name || "-";
+    isUrdu
+      ? urduCache[`prod:${r.id}`] || r.product_name || "-"
+      : r.product_name || "-";
 
-  const getSaleUnitText = (r) => {
-    const unit = (r.sale_unit || "single").toLowerCase();
-    return unit === "carton" ? t.carton : t.single;
+  const getRecordDescription = (r) => {
+    if (r.description) return r.description;
+
+    const parts = [];
+
+    if (r.product_name) parts.push(r.product_name);
+    if (getRecordTypeName(r) !== "-") parts.push(`Type: ${getRecordTypeName(r)}`);
+    if (getRecordCategoryName(r) !== "-")
+      parts.push(`Category: ${getRecordCategoryName(r)}`);
+    if (getRecordUnitName(r) !== "-") parts.push(`Unit: ${getRecordUnitName(r)}`);
+
+    const masterUnit = getRecordMasterPackingUnitName(r);
+    const pieces = Number(r.master_packing_pieces || r.pieces_per_carton || 0);
+
+    if (masterUnit !== "-" && pieces > 0) {
+      parts.push(`Master Packing: ${masterUnit} - ${pieces} Pieces`);
+    }
+
+    return parts.join(" | ");
   };
 
   const openAdd = () => {
@@ -352,14 +455,15 @@ const ProductPage = () => {
       product_name: r.product_name || "",
       product_type_id: r.product_type_id ? String(r.product_type_id) : "",
       category_id: r.category_id ? String(r.category_id) : "",
-      sale_unit: r.sale_unit || "single",
-      pieces_per_carton:
-        r.pieces_per_carton !== null && r.pieces_per_carton !== undefined
+      unit_id: r.unit_id ? String(r.unit_id) : "",
+      master_packing_unit_id: r.master_packing_unit_id
+        ? String(r.master_packing_unit_id)
+        : "",
+      master_packing_pieces:
+        r.master_packing_pieces !== null && r.master_packing_pieces !== undefined
+          ? String(r.master_packing_pieces)
+          : r.pieces_per_carton !== null && r.pieces_per_carton !== undefined
           ? String(r.pieces_per_carton)
-          : "",
-      piece_rate:
-        r.piece_rate !== null && r.piece_rate !== undefined
-          ? String(r.piece_rate)
           : "",
       is_active: isRecordActive(r) ? "1" : "0",
     });
@@ -374,23 +478,31 @@ const ProductPage = () => {
       return;
     }
 
-    if (
-      form.sale_unit === "carton" &&
-      (!Number(form.pieces_per_carton) || !Number(form.piece_rate))
-    ) {
-      showToast("error", t.cartonValidation);
+    const hasMasterUnit = Boolean(form.master_packing_unit_id);
+    const hasPieces = Number(form.master_packing_pieces || 0) > 0;
+
+    if ((hasMasterUnit && !hasPieces) || (!hasMasterUnit && hasPieces)) {
+      showToast("error", t.masterPackingValidation);
       return;
     }
 
     const payload = {
       product_name: form.product_name.trim(),
-      product_type_id: form.product_type_id ? Number(form.product_type_id) : null,
+      description: autoDescription,
+      product_type_id: form.product_type_id
+        ? Number(form.product_type_id)
+        : null,
       category_id: form.category_id ? Number(form.category_id) : null,
-      sale_unit: form.sale_unit,
-      pieces_per_carton:
-        form.sale_unit === "carton" ? Number(form.pieces_per_carton || 0) : 0,
-      piece_rate: Number(form.piece_rate || 0),
+      unit_id: form.unit_id ? Number(form.unit_id) : null,
+      master_packing_unit_id: form.master_packing_unit_id
+        ? Number(form.master_packing_unit_id)
+        : null,
+      master_packing_pieces: Number(form.master_packing_pieces || 0),
       is_active: Number(form.is_active),
+
+      sale_unit: form.master_packing_unit_id ? "carton" : "single",
+      pieces_per_carton: Number(form.master_packing_pieces || 0),
+      piece_rate: 0,
     };
 
     try {
@@ -446,6 +558,8 @@ const ProductPage = () => {
     return records.filter((r) => {
       const typeName = getRecordTypeName(r);
       const categoryName = getRecordCategoryName(r);
+      const unitName = getRecordUnitName(r);
+      const description = getRecordDescription(r);
 
       const matchesType =
         !typeFilter || String(r.product_type_id || "") === String(typeFilter);
@@ -453,43 +567,52 @@ const ProductPage = () => {
       const matchesCategory =
         !categoryFilter || String(r.category_id || "") === String(categoryFilter);
 
+      const matchesUnit = !unitFilter || String(r.unit_id || "") === String(unitFilter);
+
       const searchText = [
         r.product_name,
         urduCache[`prod:${r.id}`] || "",
+        description,
         typeName,
         categoryName,
-        r.sale_unit || "",
-        String(r.pieces_per_carton || ""),
-        String(r.piece_rate || ""),
-        isRecordActive(r) ? "active" : "inactive",
+        unitName,
+        getRecordQuantity(r),
       ]
         .join(" ")
         .toLowerCase();
 
       const matchesSearch = !q || searchText.includes(q);
 
-      return matchesType && matchesCategory && matchesSearch;
+      return matchesType && matchesCategory && matchesUnit && matchesSearch;
     });
   }, [
     records,
     search,
     typeFilter,
     categoryFilter,
+    unitFilter,
     urduCache,
     getRecordTypeName,
     getRecordCategoryName,
+    getRecordUnitName,
+    getRecordQuantity,
   ]);
 
   const summary = useMemo(
     () => ({
       totalProducts: filtered.length,
-      singleProducts: filtered.filter((r) => (r.sale_unit || "single") !== "carton")
-        .length,
-      cartonProducts: filtered.filter((r) => (r.sale_unit || "single") === "carton")
-        .length,
       activeProducts: filtered.filter((r) => isRecordActive(r)).length,
       inactiveProducts: filtered.filter((r) => !isRecordActive(r)).length,
-      totalRateValue: filtered.reduce((s, r) => s + Number(r.piece_rate || 0), 0),
+      withMasterPacking: filtered.filter(
+        (r) =>
+          r.master_packing_unit_id ||
+          Number(r.master_packing_pieces || r.pieces_per_carton || 0) > 0
+      ).length,
+      withoutMasterPacking: filtered.filter(
+        (r) =>
+          !r.master_packing_unit_id &&
+          Number(r.master_packing_pieces || r.pieces_per_carton || 0) <= 0
+      ).length,
     }),
     [filtered]
   );
@@ -500,25 +623,20 @@ const ProductPage = () => {
       : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
 
     const rows = filtered
-      .map(
-        (r, i) => `
-        <tr>
-          <td class="center">${i + 1}</td>
-          <td><strong>${getProductName(r)}</strong></td>
-          <td>${getRecordTypeName(r)}</td>
-          <td>${getRecordCategoryName(r)}</td>
-          <td><span class="badge ${
-            r.sale_unit === "carton" ? "amber" : "green"
-          }">${getSaleUnitText(r)}</span></td>
-          <td class="center">${
-            r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"
-          }</td>
-          <td class="num">${formatMoney(r.piece_rate)}</td>
-          <td class="center"><span class="badge ${
-            isRecordActive(r) ? "green" : "rose"
-          }">${isRecordActive(r) ? t.active : t.inactive}</span></td>
-        </tr>`
-      )
+      .map((r) => {
+        return `
+          <tr>
+            <td class="product-cell" dir="${isUrdu ? "rtl" : "ltr"}">
+              <strong>${getProductName(r)}</strong>
+              <div class="desc">${getRecordDescription(r)}</div>
+            </td>
+            <td>${getRecordTypeName(r)}</td>
+            <td>${getRecordCategoryName(r)}</td>
+            <td>${getRecordUnitName(r)}</td>
+            <td class="center">${getRecordQuantity(r)}</td>
+          </tr>
+        `;
+      })
       .join("");
 
     const html = `<!DOCTYPE html>
@@ -538,15 +656,12 @@ const ProductPage = () => {
     .content{padding:18px;}
     .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
     table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
-    th{background:#111827;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:11px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
-    td{border-bottom:1px solid #f1f5f9;padding:10px 11px;color:#334155;}
+    th{background:#111827;color:#fff;text-align:left;padding:11px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
+    td{border-bottom:1px solid #f1f5f9;padding:10px 11px;color:#334155;vertical-align:top;text-align:left;}
     tr:nth-child(even) td{background:#f8fafc;}
     .center{text-align:center!important;}
-    .num{text-align:${isUrdu ? "left" : "right"}!important;font-family:monospace;font-weight:800;color:#0f172a;}
-    .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;}
-    .green{background:#dcfce7;color:#166534;}
-    .amber{background:#fef3c7;color:#92400e;}
-    .rose{background:#ffe4e6;color:#be123c;}
+    .product-cell{text-align:${isUrdu ? "right" : "left"};}
+    .desc{font-size:10.5px;color:#64748b;margin-top:4px;line-height:1.5;}
     @media print{body{padding:0;background:white}.sheet{box-shadow:none;border-radius:0;border:0}.print-inst{display:none}}
   </style>
 </head>
@@ -563,24 +678,21 @@ const ProductPage = () => {
     </div>
     <div class="content">
       ${isPdf ? `<div class="print-inst">${t.savePdfHint}</div>` : ""}
-      <table>
+      <table dir="ltr">
         <thead>
           <tr>
-            <th class="center">#</th>
             <th>${t.productName}</th>
             <th>${t.productType}</th>
             <th>${t.category}</th>
-            <th>${t.saleUnit}</th>
-            <th class="center">${t.piecesPerCarton}</th>
-            <th class="num">${t.pieceRate}</th>
-            <th class="center">${t.status}</th>
+            <th>${t.unit}</th>
+            <th class="center">${t.quantity}</th>
           </tr>
         </thead>
         <tbody>
           ${
             filtered.length
               ? rows
-              : `<tr><td colspan="8" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
+              : `<tr><td colspan="5" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
           }
         </tbody>
       </table>
@@ -625,11 +737,13 @@ const ProductPage = () => {
 
       <style>{`
         * { box-sizing: border-box; }
+
         .same-btn { transition: all .15s ease; }
         .same-btn:hover { transform: translateY(-1px); }
+
         .same-field {
           width:100%;
-          height:38px;
+          min-height:38px;
           border:1.5px solid #dbe3ef;
           border-radius:10px;
           background:#fff;
@@ -639,12 +753,15 @@ const ProductPage = () => {
           outline:none;
           transition:border-color .15s ease, box-shadow .15s ease;
         }
+
         .same-field:focus {
           border-color:#6366f1;
           box-shadow:0 0 0 3px rgba(99,102,241,.12);
         }
+
         .same-field-icon-left { padding-left:34px; }
         .same-field-icon-right { padding-right:34px; }
+
         .same-label {
           display:block;
           font-size:10.5px;
@@ -655,6 +772,7 @@ const ProductPage = () => {
           color:#64748b;
           margin-bottom:7px;
         }
+
         .same-section {
           background:#fff;
           border:1px solid #e2e8f0;
@@ -662,6 +780,7 @@ const ProductPage = () => {
           overflow:hidden;
           box-shadow:0 1px 3px rgba(15,23,42,.05);
         }
+
         .same-section-head {
           padding:13px 16px;
           border-bottom:1px solid #eef2f7;
@@ -671,6 +790,7 @@ const ProductPage = () => {
           gap:12px;
           background:#fff;
         }
+
         .same-section-icon {
           width:36px;
           height:36px;
@@ -681,6 +801,7 @@ const ProductPage = () => {
           background:#eef2ff;
           color:#4f46e5;
         }
+
         .same-dark-table th {
           background:#111827!important;
           color:#fff!important;
@@ -690,9 +811,11 @@ const ProductPage = () => {
           padding:11px 14px!important;
           white-space:nowrap;
         }
+
         .same-dark-table td {
           padding:12px 14px!important;
           border-bottom:1px solid #f1f5f9!important;
+          vertical-align:top;
         }
       `}</style>
 
@@ -732,7 +855,11 @@ const ProductPage = () => {
               <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
             </div>
 
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
+            <div
+              className={`flex gap-2 flex-wrap ${
+                isUrdu ? "flex-row-reverse" : ""
+              }`}
+            >
               <button
                 onClick={handleLangToggle}
                 disabled={translating}
@@ -787,18 +914,19 @@ const ProductPage = () => {
           {showSummary && (
             <div className="mt-5 pt-5 border-t border-slate-200">
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-slate-950">{t.summaryTitle}</h3>
+                <h3 className="text-lg font-bold text-slate-950">
+                  {t.summaryTitle}
+                </h3>
                 <p className="text-sm text-slate-500">{t.summarySubtitle}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 {[
                   [t.totalProducts, summary.totalProducts, "bi-box-seam-fill"],
-                  [t.singleProducts, summary.singleProducts, "bi-box"],
-                  [t.cartonProducts, summary.cartonProducts, "bi-boxes"],
                   [t.activeProducts, summary.activeProducts, "bi-check-circle-fill"],
                   [t.inactiveProducts, summary.inactiveProducts, "bi-x-circle-fill"],
-                  [t.totalRateValue, formatMoney(summary.totalRateValue), "bi-cash-stack"],
+                  [t.withMasterPacking, summary.withMasterPacking, "bi-boxes"],
+                  [t.withoutMasterPacking, summary.withoutMasterPacking, "bi-box"],
                 ].map(([label, value, icon]) => (
                   <div
                     key={label}
@@ -808,7 +936,9 @@ const ProductPage = () => {
                       <i className={`bi ${icon}`}></i>
                     </div>
                     <p className="text-xs text-slate-500 mb-1">{label}</p>
-                    <p className="text-2xl font-extrabold text-slate-950">{value}</p>
+                    <p className="text-2xl font-extrabold text-slate-950">
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -819,13 +949,14 @@ const ProductPage = () => {
 
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-[18px] border border-slate-200 shadow-sm p-3 mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="relative">
               <i
                 className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
                   isUrdu ? "right-4" : "left-4"
                 }`}
               ></i>
+
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -861,34 +992,32 @@ const ProductPage = () => {
                 </option>
               ))}
             </select>
+
+            <select
+              value={unitFilter}
+              onChange={(e) => setUnitFilter(e.target.value)}
+              className={`same-field ${isUrdu ? "text-right" : ""}`}
+            >
+              <option value="">{t.allUnits}</option>
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {getUnitName(unit)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="same-dark-table w-full text-sm text-slate-600">
+            <table dir="ltr" className="same-dark-table w-full text-sm text-slate-600">
               <thead>
                 <tr>
-                  <th className={`${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
-                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.productName}
-                  </th>
-                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.productType}
-                  </th>
-                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.category}
-                  </th>
-                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.saleUnit}
-                  </th>
-                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
-                    {t.piecesPerCarton}
-                  </th>
-                  <th className={`${isUrdu ? "text-left" : "text-right"}`}>
-                    {t.pieceRate}
-                  </th>
-                  <th className="text-center">{t.status}</th>
+                  <th className="text-left">{t.productName}</th>
+                  <th className="text-left">{t.productType}</th>
+                  <th className="text-left">{t.category}</th>
+                  <th className="text-left">{t.unit}</th>
+                  <th className="text-center">{t.quantity}</th>
                   <th className="text-center">{t.actions}</th>
                 </tr>
               </thead>
@@ -896,78 +1025,74 @@ const ProductPage = () => {
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((r, i) => {
-                    const isCarton = (r.sale_unit || "single") === "carton";
-
+                  filtered.map((r) => {
                     return (
                       <tr key={r.id} className="hover:bg-slate-50/70 transition">
-                        <td className="text-slate-400 font-mono text-xs">{i + 1}</td>
-
-                        <td className={`font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+                        <td
+                          className={`font-bold text-slate-950 ${
+                            isUrdu ? "text-right" : "text-left"
+                          }`}
+                          dir={isUrdu ? "rtl" : "ltr"}
+                        >
                           <div
-                            className={`flex items-center gap-3 ${
+                            className={`flex items-start gap-3 ${
                               isUrdu ? "flex-row-reverse" : ""
                             }`}
                           >
                             <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
                               <i className="bi bi-box-seam-fill"></i>
                             </div>
-                            <span className={translating ? "opacity-40" : ""}>
-                              {getProductName(r)}
-                            </span>
+
+                            <div>
+                              <span className={translating ? "opacity-40" : ""}>
+                                {getProductName(r)}
+                              </span>
+
+                              <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                                {getRecordDescription(r)}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
-                        <td className={`font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
+                        <td
+                          className={`font-semibold text-slate-700 ${
+                            isUrdu ? "text-right" : "text-left"
+                          }`}
+                        >
                           {getRecordTypeName(r)}
                         </td>
 
-                        <td className={`font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
+                        <td
+                          className={`font-semibold text-slate-700 ${
+                            isUrdu ? "text-right" : "text-left"
+                          }`}
+                        >
                           {getRecordCategoryName(r)}
                         </td>
 
-                        <td className={`font-semibold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                              isCarton
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-emerald-100 text-emerald-700"
-                            }`}
-                          >
-                            {getSaleUnitText(r)}
-                          </span>
+                        <td
+                          className={`font-semibold text-slate-700 ${
+                            isUrdu ? "text-right" : "text-left"
+                          }`}
+                        >
+                          {getRecordUnitName(r)}
                         </td>
 
-                        <td className={`font-mono font-bold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
-                          {isCarton ? r.pieces_per_carton || 0 : "-"}
-                        </td>
-
-                        <td className={`font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>
-                          {formatMoney(r.piece_rate)}
-                        </td>
-
-                        <td className="text-center">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                              isRecordActive(r)
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-rose-100 text-rose-700"
-                            }`}
-                          >
-                            {isRecordActive(r) ? t.active : t.inactive}
-                          </span>
+                        <td className="text-center font-mono font-bold text-slate-950">
+                          {getRecordQuantity(r)}
                         </td>
 
                         <td>
@@ -1009,7 +1134,11 @@ const ProductPage = () => {
               dir={dir}
             >
               <div className="flex items-center justify-between gap-3 mb-4 border-b border-slate-200 pb-4">
-                <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                <div
+                  className={`flex items-center gap-3 ${
+                    isUrdu ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <div className="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center">
                     <i className="bi bi-box-seam-fill text-indigo-700 text-lg"></i>
                   </div>
@@ -1017,7 +1146,9 @@ const ProductPage = () => {
                     <h2 className="text-xl font-extrabold text-slate-950">
                       {editingId ? t.edit : t.addBtn}
                     </h2>
-                    <p className="text-sm text-slate-500 mt-0.5">{t.formSubtitle}</p>
+                    <p className="text-sm text-slate-500 mt-0.5">
+                      {t.formSubtitle}
+                    </p>
                   </div>
                 </div>
 
@@ -1032,7 +1163,11 @@ const ProductPage = () => {
 
               <div className="same-section mb-4">
                 <div className="same-section-head">
-                  <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
+                  <div
+                    className={`flex items-center gap-3 ${
+                      isUrdu ? "flex-row-reverse" : ""
+                    }`}
+                  >
                     <div className="same-section-icon">
                       <i className="bi bi-card-checklist"></i>
                     </div>
@@ -1040,7 +1175,9 @@ const ProductPage = () => {
                       <h3 className="text-sm font-extrabold text-slate-950 m-0">
                         Product Information
                       </h3>
-                      <p className="text-xs text-slate-500 m-0">{t.formSubtitle}</p>
+                      <p className="text-xs text-slate-500 m-0">
+                        {t.formSubtitle}
+                      </p>
                     </div>
                   </div>
 
@@ -1055,12 +1192,14 @@ const ProductPage = () => {
                     <label className="same-label">
                       {t.productName} <span className="text-rose-500">*</span>
                     </label>
+
                     <div className="relative">
                       <i
                         className={`bi bi-box-seam absolute top-1/2 -translate-y-1/2 text-slate-400 ${
                           isUrdu ? "right-3" : "left-3"
                         }`}
                       ></i>
+
                       <input
                         type="text"
                         value={form.product_name}
@@ -1070,7 +1209,9 @@ const ProductPage = () => {
                         placeholder={t.namePlaceholder}
                         autoFocus
                         className={`same-field ${
-                          isUrdu ? "same-field-icon-right text-right" : "same-field-icon-left"
+                          isUrdu
+                            ? "same-field-icon-right text-right"
+                            : "same-field-icon-left"
                         }`}
                       />
                     </div>
@@ -1113,45 +1254,65 @@ const ProductPage = () => {
                   </div>
 
                   <div>
-                    <label className="same-label">
-                      {t.saleUnit} <span className="text-rose-500">*</span>
-                    </label>
+                    <label className="same-label">{t.unit}</label>
                     <select
-                      value={form.sale_unit}
+                      value={form.unit_id}
                       onChange={(e) =>
-                        setForm({
-                          ...form,
-                          sale_unit: e.target.value,
-                          pieces_per_carton:
-                            e.target.value === "single" ? "" : form.pieces_per_carton,
-                        })
+                        setForm({ ...form, unit_id: e.target.value })
                       }
                       className={`same-field ${isUrdu ? "text-right" : ""}`}
                     >
-                      <option value="single">{t.single}</option>
-                      <option value="carton">{t.carton}</option>
+                      <option value="">{t.selectUnit}</option>
+                      {units.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                          {getUnitName(unit)}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="same-label">
-                      {t.pieceRate} <span className="text-rose-500">*</span>
-                    </label>
+                    <label className="same-label">{t.masterPackingUnit}</label>
+                    <select
+                      value={form.master_packing_unit_id}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          master_packing_unit_id: e.target.value,
+                        })
+                      }
+                      className={`same-field ${isUrdu ? "text-right" : ""}`}
+                    >
+                      <option value="">{t.selectMasterPackingUnit}</option>
+                      {units.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                          {getUnitName(unit)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="same-label">{t.masterPackingPieces}</label>
+
                     <div className="relative">
                       <i
-                        className={`bi bi-cash-stack absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                        className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
                           isUrdu ? "right-3" : "left-3"
                         }`}
                       ></i>
+
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
-                        value={form.piece_rate}
+                        value={form.master_packing_pieces}
                         onChange={(e) =>
-                          setForm({ ...form, piece_rate: e.target.value })
+                          setForm({
+                            ...form,
+                            master_packing_pieces: e.target.value,
+                          })
                         }
-                        placeholder={t.ratePlaceholder}
+                        placeholder={t.piecesPlaceholder}
                         className={`same-field font-mono font-bold ${
                           isUrdu
                             ? "same-field-icon-right text-right"
@@ -1165,6 +1326,7 @@ const ProductPage = () => {
                     <label className="same-label">
                       {t.activeInactive} <span className="text-rose-500">*</span>
                     </label>
+
                     <select
                       value={form.is_active}
                       onChange={(e) =>
@@ -1177,37 +1339,23 @@ const ProductPage = () => {
                     </select>
                   </div>
 
-                  {form.sale_unit === "carton" && (
-                    <div>
-                      <label className="same-label">
-                        {t.piecesPerCarton} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <i
-                          className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                            isUrdu ? "right-3" : "left-3"
-                          }`}
-                        ></i>
-                        <input
-                          type="number"
-                          min="1"
-                          value={form.pieces_per_carton}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              pieces_per_carton: e.target.value,
-                            })
-                          }
-                          placeholder={t.piecesPlaceholder}
-                          className={`same-field font-mono font-bold ${
-                            isUrdu
-                              ? "same-field-icon-right text-right"
-                              : "same-field-icon-left text-right"
-                          }`}
-                        />
-                      </div>
+                  <div className="md:col-span-2">
+                    <label className="same-label">{t.autoDescription}</label>
+
+                    <div
+                      className={`min-h-[52px] rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 leading-relaxed ${
+                        isUrdu ? "text-right" : ""
+                      }`}
+                    >
+                      {autoDescription || "-"}
                     </div>
-                  )}
+
+                    <p className="text-xs text-slate-500 mt-2">
+                      Cotton Bundle ko master packing unit select karoge aur pieces
+                      likhoge to description auto ban jayegi, jaise:
+                      <b> Master Packing: Cotton Bundle - 12 Pieces</b>
+                    </p>
+                  </div>
                 </div>
               </div>
 
