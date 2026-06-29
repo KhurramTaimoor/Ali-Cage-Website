@@ -1,31 +1,30 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CLIENT-SIDE TRANSLATION — MyMemory Free API
-// ═══════════════════════════════════════════════════════════════════════════════
 async function translateText(text) {
   if (!text || !text.trim()) return text;
+
   try {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
       text.trim()
     )}&langpair=en|ur`;
+
     const res = await fetch(url);
     if (!res.ok) return text;
+
     const data = await res.json();
     const translated = data?.responseData?.translatedText;
+
     if (!translated || translated.toLowerCase() === text.trim().toLowerCase()) {
       return text;
     }
+
     return translated;
   } catch {
     return text;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// i18n
-// ═══════════════════════════════════════════════════════════════════════════════
 const LANG = {
   en: {
     title: "Product Management",
@@ -43,8 +42,14 @@ const LANG = {
     status: "Status",
     active: "Active",
     inactive: "Inactive",
-    searchPlaceholder: "Search by product name…",
+    searchPlaceholder: "Search by product name, type, category, unit, rate or status…",
     productName: "Product Name",
+    productType: "Product Type",
+    category: "Category",
+    allTypes: "All Product Types",
+    allCategories: "All Categories",
+    selectType: "Select product type",
+    selectCategory: "Select category",
     saleUnit: "Sale Unit",
     single: "Single",
     carton: "Carton",
@@ -66,7 +71,8 @@ const LANG = {
     reportHeader: "Products List",
     printedOn: "Printed On",
     errorMsg: "Product name is required.",
-    cartonValidation: "For carton products, pieces per carton and piece rate are required.",
+    cartonValidation:
+      "For carton products, pieces per carton and piece rate are required.",
     successSave: "Saved successfully!",
     successDelete: "Deleted successfully!",
     fetchError: "Failed to load records.",
@@ -74,13 +80,12 @@ const LANG = {
     deleteError: "Failed to delete.",
     deleteConfirm: "Are you sure you want to delete this product?",
     namePlaceholder: "e.g. Steel Wire 18g",
-    unitPlaceholder: "Select unit",
     piecesPlaceholder: "e.g. 20",
     ratePlaceholder: "e.g. 15",
     records: "Records",
     required: "Required",
-    formSubtitle: "Product name, sale unit, carton quantity, piece rate and status",
-    generated: "Generated",
+    formSubtitle:
+      "Product name, product type, category, sale unit, carton quantity, piece rate and status",
     companyName: "Ali Cages",
     savePdfHint: 'Choose "Save as PDF" in print dialog',
   },
@@ -100,8 +105,15 @@ const LANG = {
     status: "اسٹیٹس",
     active: "ایکٹو",
     inactive: "ان ایکٹو",
-    searchPlaceholder: "پروڈکٹ نام سے تلاش کریں…",
+    searchPlaceholder:
+      "پروڈکٹ نام، ٹائپ، کیٹیگری، یونٹ، ریٹ یا اسٹیٹس سے تلاش کریں…",
     productName: "پروڈکٹ کا نام",
+    productType: "پروڈکٹ ٹائپ",
+    category: "کیٹیگری",
+    allTypes: "تمام پروڈکٹ ٹائپس",
+    allCategories: "تمام کیٹیگریز",
+    selectType: "پروڈکٹ ٹائپ منتخب کریں",
+    selectCategory: "کیٹیگری منتخب کریں",
     saleUnit: "فروخت کی قسم",
     single: "سنگل",
     carton: "کارٹن",
@@ -123,7 +135,8 @@ const LANG = {
     reportHeader: "مصنوعات کی فہرست",
     printedOn: "پرنٹ کی تاریخ",
     errorMsg: "پروڈکٹ کا نام ضروری ہے۔",
-    cartonValidation: "کارٹن پروڈکٹ کے لیے پیسز فی کارٹن اور فی پیس ریٹ ضروری ہیں۔",
+    cartonValidation:
+      "کارٹن پروڈکٹ کے لیے پیسز فی کارٹن اور فی پیس ریٹ ضروری ہیں۔",
     successSave: "کامیابی سے محفوظ ہو گیا!",
     successDelete: "حذف ہو گیا!",
     fetchError: "ریکارڈ لوڈ نہیں ہو سکے۔",
@@ -131,13 +144,12 @@ const LANG = {
     deleteError: "حذف نہیں ہو سکا۔",
     deleteConfirm: "کیا آپ واقعی اس پروڈکٹ کو حذف کرنا چاہتے ہیں؟",
     namePlaceholder: "مثلاً Steel Wire 18g",
-    unitPlaceholder: "قسم منتخب کریں",
     piecesPlaceholder: "مثلاً 20",
     ratePlaceholder: "مثلاً 15",
     records: "ریکارڈز",
     required: "ضروری",
-    formSubtitle: "پروڈکٹ نام، سیل یونٹ، کارٹن مقدار، فی پیس ریٹ اور اسٹیٹس",
-    generated: "تیار کردہ",
+    formSubtitle:
+      "پروڈکٹ نام، پروڈکٹ ٹائپ، کیٹیگری، سیل یونٹ، کارٹن مقدار، فی پیس ریٹ اور اسٹیٹس",
     companyName: "علی کیجز",
     savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
   },
@@ -147,6 +159,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const defaultForm = {
   product_name: "",
+  product_type_id: "",
+  category_id: "",
   sale_unit: "single",
   pieces_per_carton: "",
   piece_rate: "",
@@ -164,30 +178,51 @@ function isRecordActive(record) {
   const value = record?.is_active ?? record?.active ?? record?.status;
 
   if (value === undefined || value === null || value === "") return true;
-
   if (typeof value === "boolean") return value;
 
   const text = String(value).trim().toLowerCase();
-
   return !["0", "false", "inactive", "in-active", "disabled", "no"].includes(text);
+}
+
+function getProductTypeName(item) {
+  return (
+    item?.product_type_en ||
+    item?.type_name ||
+    item?.product_type_name ||
+    item?.name ||
+    ""
+  );
+}
+
+function getCategoryName(item) {
+  return item?.category_name || item?.name || "";
 }
 
 const ProductPage = () => {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
+
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
   const [records, setRecords] = useState([]);
+  const [productTypes, setProductTypes] = useState([]);
+  const [categories, setCategories] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [urduCache, setUrduCache] = useState({});
+
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultForm);
+
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const showToast = useCallback((type, text) => {
@@ -195,12 +230,65 @@ const ProductPage = () => {
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   }, []);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
+  const getTypeNameById = useCallback(
+    (id) => {
+      if (!id) return "";
+      const found = productTypes.find((x) => String(x.id) === String(id));
+      return getProductTypeName(found);
+    },
+    [productTypes]
+  );
+
+  const getCategoryNameById = useCallback(
+    (id) => {
+      if (!id) return "";
+      const found = categories.find((x) => String(x.id) === String(id));
+      return getCategoryName(found);
+    },
+    [categories]
+  );
+
+  const getRecordTypeName = useCallback(
+    (r) => {
+      return (
+        r.product_type_en ||
+        r.type_name ||
+        r.product_type_name ||
+        getTypeNameById(r.product_type_id) ||
+        "-"
+      );
+    },
+    [getTypeNameById]
+  );
+
+  const getRecordCategoryName = useCallback(
+    (r) => {
+      return r.category_name || getCategoryNameById(r.category_id) || "-";
+    },
+    [getCategoryNameById]
+  );
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE}/api/products`);
-      setRecords(Array.isArray(res.data) ? res.data : res.data?.data || []);
+
+      const [productsRes, typesRes, categoriesRes] = await Promise.all([
+        axios.get(`${API_BASE}/api/products`),
+        axios.get(`${API_BASE}/api/product-types`).catch(() => ({ data: [] })),
+        axios.get(`${API_BASE}/api/categories`).catch(() => ({ data: [] })),
+      ]);
+
+      setRecords(
+        Array.isArray(productsRes.data) ? productsRes.data : productsRes.data?.data || []
+      );
+      setProductTypes(
+        Array.isArray(typesRes.data) ? typesRes.data : typesRes.data?.data || []
+      );
+      setCategories(
+        Array.isArray(categoriesRes.data)
+          ? categoriesRes.data
+          : categoriesRes.data?.data || []
+      );
     } catch {
       showToast("error", t.fetchError);
     } finally {
@@ -212,16 +300,17 @@ const ProductPage = () => {
     fetchData();
   }, [fetchData]);
 
-  // ── Language toggle ───────────────────────────────────────────────────────
   const handleLangToggle = async () => {
     const newLang = lang === "en" ? "ur" : "en";
     setLang(newLang);
+
     if (newLang !== "ur" || records.length === 0) return;
 
     const untranslated = records.filter((r) => !urduCache[`prod:${r.id}`]);
     if (!untranslated.length) return;
 
     setTranslating(true);
+
     try {
       const results = await Promise.all(
         untranslated.map(async (r) => ({
@@ -249,11 +338,9 @@ const ProductPage = () => {
 
   const getSaleUnitText = (r) => {
     const unit = (r.sale_unit || "single").toLowerCase();
-    if (unit === "carton") return t.carton;
-    return t.single;
+    return unit === "carton" ? t.carton : t.single;
   };
 
-  // ── Form ──────────────────────────────────────────────────────────────────
   const openAdd = () => {
     setForm(defaultForm);
     setEditingId(null);
@@ -263,6 +350,8 @@ const ProductPage = () => {
   const openEdit = (r) => {
     setForm({
       product_name: r.product_name || "",
+      product_type_id: r.product_type_id ? String(r.product_type_id) : "",
+      category_id: r.category_id ? String(r.category_id) : "",
       sale_unit: r.sale_unit || "single",
       pieces_per_carton:
         r.pieces_per_carton !== null && r.pieces_per_carton !== undefined
@@ -274,6 +363,7 @@ const ProductPage = () => {
           : "",
       is_active: isRecordActive(r) ? "1" : "0",
     });
+
     setEditingId(r.id);
     setShowForm(true);
   };
@@ -294,11 +384,11 @@ const ProductPage = () => {
 
     const payload = {
       product_name: form.product_name.trim(),
+      product_type_id: form.product_type_id ? Number(form.product_type_id) : null,
+      category_id: form.category_id ? Number(form.category_id) : null,
       sale_unit: form.sale_unit,
       pieces_per_carton:
-        form.sale_unit === "carton"
-          ? Number(form.pieces_per_carton || 0)
-          : 0,
+        form.sale_unit === "carton" ? Number(form.pieces_per_carton || 0) : 0,
       piece_rate: Number(form.piece_rate || 0),
       is_active: Number(form.is_active),
     };
@@ -308,10 +398,11 @@ const ProductPage = () => {
 
       if (editingId) {
         await axios.put(`${API_BASE}/api/products/${editingId}`, payload);
+
         setUrduCache((prev) => {
-          const n = { ...prev };
-          delete n[`prod:${editingId}`];
-          return n;
+          const next = { ...prev };
+          delete next[`prod:${editingId}`];
+          return next;
         });
       } else {
         await axios.post(`${API_BASE}/api/products`, payload);
@@ -322,8 +413,9 @@ const ProductPage = () => {
       setEditingId(null);
       setForm(defaultForm);
       fetchData();
-    } catch {
-      showToast("error", t.saveError);
+    } catch (err) {
+      console.error(err);
+      showToast("error", err?.response?.data?.message || t.saveError);
     } finally {
       setSubmitting(false);
     }
@@ -331,13 +423,16 @@ const ProductPage = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm(t.deleteConfirm)) return;
+
     try {
       await axios.delete(`${API_BASE}/api/products/${id}`);
+
       setUrduCache((prev) => {
-        const n = { ...prev };
-        delete n[`prod:${id}`];
-        return n;
+        const next = { ...prev };
+        delete next[`prod:${id}`];
+        return next;
       });
+
       showToast("success", t.successDelete);
       fetchData();
     } catch {
@@ -345,31 +440,53 @@ const ProductPage = () => {
     }
   };
 
-  // ── Search ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return records;
 
-    return records.filter((r) =>
-      [
+    return records.filter((r) => {
+      const typeName = getRecordTypeName(r);
+      const categoryName = getRecordCategoryName(r);
+
+      const matchesType =
+        !typeFilter || String(r.product_type_id || "") === String(typeFilter);
+
+      const matchesCategory =
+        !categoryFilter || String(r.category_id || "") === String(categoryFilter);
+
+      const searchText = [
         r.product_name,
         urduCache[`prod:${r.id}`] || "",
+        typeName,
+        categoryName,
         r.sale_unit || "",
         String(r.pieces_per_carton || ""),
         String(r.piece_rate || ""),
         isRecordActive(r) ? "active" : "inactive",
       ]
         .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [records, search, urduCache]);
+        .toLowerCase();
+
+      const matchesSearch = !q || searchText.includes(q);
+
+      return matchesType && matchesCategory && matchesSearch;
+    });
+  }, [
+    records,
+    search,
+    typeFilter,
+    categoryFilter,
+    urduCache,
+    getRecordTypeName,
+    getRecordCategoryName,
+  ]);
 
   const summary = useMemo(
     () => ({
       totalProducts: filtered.length,
-      singleProducts: filtered.filter((r) => (r.sale_unit || "single") !== "carton").length,
-      cartonProducts: filtered.filter((r) => (r.sale_unit || "single") === "carton").length,
+      singleProducts: filtered.filter((r) => (r.sale_unit || "single") !== "carton")
+        .length,
+      cartonProducts: filtered.filter((r) => (r.sale_unit || "single") === "carton")
+        .length,
       activeProducts: filtered.filter((r) => isRecordActive(r)).length,
       inactiveProducts: filtered.filter((r) => !isRecordActive(r)).length,
       totalRateValue: filtered.reduce((s, r) => s + Number(r.piece_rate || 0), 0),
@@ -377,7 +494,6 @@ const ProductPage = () => {
     [filtered]
   );
 
-  // ── Print / PDF ───────────────────────────────────────────────────────────
   const generatePrint = (isPdf = false) => {
     const font = isUrdu
       ? "'Noto Nastaliq Urdu', serif"
@@ -386,14 +502,22 @@ const ProductPage = () => {
     const rows = filtered
       .map(
         (r, i) => `
-      <tr>
-        <td class="center">${i + 1}</td>
-        <td><strong>${getProductName(r)}</strong></td>
-        <td><span class="badge ${r.sale_unit === "carton" ? "amber" : "green"}">${getSaleUnitText(r)}</span></td>
-        <td class="center">${r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"}</td>
-        <td class="num">${formatMoney(r.piece_rate)}</td>
-        <td class="center"><span class="badge ${isRecordActive(r) ? "green" : "rose"}">${isRecordActive(r) ? t.active : t.inactive}</span></td>
-      </tr>`
+        <tr>
+          <td class="center">${i + 1}</td>
+          <td><strong>${getProductName(r)}</strong></td>
+          <td>${getRecordTypeName(r)}</td>
+          <td>${getRecordCategoryName(r)}</td>
+          <td><span class="badge ${
+            r.sale_unit === "carton" ? "amber" : "green"
+          }">${getSaleUnitText(r)}</span></td>
+          <td class="center">${
+            r.sale_unit === "carton" ? r.pieces_per_carton || 0 : "-"
+          }</td>
+          <td class="num">${formatMoney(r.piece_rate)}</td>
+          <td class="center"><span class="badge ${
+            isRecordActive(r) ? "green" : "rose"
+          }">${isRecordActive(r) ? t.active : t.inactive}</span></td>
+        </tr>`
       )
       .join("");
 
@@ -403,28 +527,28 @@ const ProductPage = () => {
   <meta charset="UTF-8"/>
   <title>${t.title}</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:24px;}
-  .sheet{max-width:1150px;margin:0 auto;background:white;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 14px 40px rgba(15,23,42,.10);}
-  .header{background:#111827;color:#fff;padding:22px 26px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;}
-  .brand{font-size:26px;font-weight:800;letter-spacing:-.3px;}
-  .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
-  .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;}
-  .content{padding:18px;}
-  .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
-  table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
-  th{background:#111827;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
-  td{border-bottom:1px solid #f1f5f9;padding:11px 12px;color:#334155;}
-  tr:nth-child(even) td{background:#f8fafc;}
-  .center{text-align:center!important;}
-  .num{text-align:${isUrdu ? "left" : "right"}!important;font-family:monospace;font-weight:800;color:#0f172a;}
-  .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;}
-  .green{background:#dcfce7;color:#166534;}
-  .amber{background:#fef3c7;color:#92400e;}
-  .rose{background:#ffe4e6;color:#be123c;}
-  @media print{body{padding:0;background:white}.sheet{box-shadow:none;border-radius:0;border:0}.print-inst{display:none}}
-</style>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:${font};background:#f8fafc;color:#0f172a;padding:24px;}
+    .sheet{max-width:1200px;margin:0 auto;background:white;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 14px 40px rgba(15,23,42,.10);}
+    .header{background:#111827;color:#fff;padding:22px 26px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;}
+    .brand{font-size:26px;font-weight:800;}
+    .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
+    .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;}
+    .content{padding:18px;}
+    .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
+    table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
+    th{background:#111827;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:11px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
+    td{border-bottom:1px solid #f1f5f9;padding:10px 11px;color:#334155;}
+    tr:nth-child(even) td{background:#f8fafc;}
+    .center{text-align:center!important;}
+    .num{text-align:${isUrdu ? "left" : "right"}!important;font-family:monospace;font-weight:800;color:#0f172a;}
+    .badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;}
+    .green{background:#dcfce7;color:#166534;}
+    .amber{background:#fef3c7;color:#92400e;}
+    .rose{background:#ffe4e6;color:#be123c;}
+    @media print{body{padding:0;background:white}.sheet{box-shadow:none;border-radius:0;border:0}.print-inst{display:none}}
+  </style>
 </head>
 <body>
   <div class="sheet">
@@ -442,8 +566,10 @@ const ProductPage = () => {
       <table>
         <thead>
           <tr>
-            <th style="width:60px" class="center">#</th>
+            <th class="center">#</th>
             <th>${t.productName}</th>
+            <th>${t.productType}</th>
+            <th>${t.category}</th>
             <th>${t.saleUnit}</th>
             <th class="center">${t.piecesPerCarton}</th>
             <th class="num">${t.pieceRate}</th>
@@ -454,7 +580,7 @@ const ProductPage = () => {
           ${
             filtered.length
               ? rows
-              : `<tr><td colspan="6" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
+              : `<tr><td colspan="8" style="text-align:center;padding:34px">${t.noRecords}</td></tr>`
           }
         </tbody>
       </table>
@@ -499,21 +625,8 @@ const ProductPage = () => {
 
       <style>{`
         * { box-sizing: border-box; }
-
-        .same-page-card {
-          background:#fff;
-          border:1px solid #e2e8f0;
-          box-shadow:0 1px 4px rgba(15,23,42,.06);
-        }
-
-        .same-btn {
-          transition: all .15s ease;
-        }
-
-        .same-btn:hover {
-          transform: translateY(-1px);
-        }
-
+        .same-btn { transition: all .15s ease; }
+        .same-btn:hover { transform: translateY(-1px); }
         .same-field {
           width:100%;
           height:38px;
@@ -526,20 +639,12 @@ const ProductPage = () => {
           outline:none;
           transition:border-color .15s ease, box-shadow .15s ease;
         }
-
         .same-field:focus {
           border-color:#6366f1;
           box-shadow:0 0 0 3px rgba(99,102,241,.12);
         }
-
-        .same-field-icon-left {
-          padding-left:34px;
-        }
-
-        .same-field-icon-right {
-          padding-right:34px;
-        }
-
+        .same-field-icon-left { padding-left:34px; }
+        .same-field-icon-right { padding-right:34px; }
         .same-label {
           display:block;
           font-size:10.5px;
@@ -550,7 +655,6 @@ const ProductPage = () => {
           color:#64748b;
           margin-bottom:7px;
         }
-
         .same-section {
           background:#fff;
           border:1px solid #e2e8f0;
@@ -558,7 +662,6 @@ const ProductPage = () => {
           overflow:hidden;
           box-shadow:0 1px 3px rgba(15,23,42,.05);
         }
-
         .same-section-head {
           padding:13px 16px;
           border-bottom:1px solid #eef2f7;
@@ -568,7 +671,6 @@ const ProductPage = () => {
           gap:12px;
           background:#fff;
         }
-
         .same-section-icon {
           width:36px;
           height:36px;
@@ -579,7 +681,6 @@ const ProductPage = () => {
           background:#eef2ff;
           color:#4f46e5;
         }
-
         .same-dark-table th {
           background:#111827!important;
           color:#fff!important;
@@ -589,28 +690,12 @@ const ProductPage = () => {
           padding:11px 14px!important;
           white-space:nowrap;
         }
-
         .same-dark-table td {
           padding:12px 14px!important;
           border-bottom:1px solid #f1f5f9!important;
         }
-
-        .same-scroll::-webkit-scrollbar {
-          width:7px;
-          height:7px;
-        }
-
-        .same-scroll::-webkit-scrollbar-track {
-          background:#f1f5f9;
-        }
-
-        .same-scroll::-webkit-scrollbar-thumb {
-          background:#cbd5e1;
-          border-radius:999px;
-        }
       `}</style>
 
-      {/* Toast */}
       {message.text && (
         <div
           className={`fixed bottom-6 ${
@@ -630,7 +715,6 @@ const ProductPage = () => {
         </div>
       )}
 
-      {/* Translating indicator */}
       {translating && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-lg shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
           <i className="bi bi-arrow-repeat animate-spin"></i>
@@ -638,7 +722,6 @@ const ProductPage = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="max-w-7xl mx-auto mb-4">
         <div className="bg-white rounded-[22px] border border-slate-200 shadow-sm px-4 py-3">
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -653,7 +736,7 @@ const ProductPage = () => {
               <button
                 onClick={handleLangToggle}
                 disabled={translating}
-                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60"
               >
                 <i
                   className={`bi ${
@@ -673,7 +756,6 @@ const ProductPage = () => {
               >
                 <i className="bi bi-bar-chart-line-fill"></i>
                 {t.summaryBtn}
-                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
               </button>
 
               <button
@@ -710,65 +792,25 @@ const ProductPage = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-box-seam-fill"></i>
+                {[
+                  [t.totalProducts, summary.totalProducts, "bi-box-seam-fill"],
+                  [t.singleProducts, summary.singleProducts, "bi-box"],
+                  [t.cartonProducts, summary.cartonProducts, "bi-boxes"],
+                  [t.activeProducts, summary.activeProducts, "bi-check-circle-fill"],
+                  [t.inactiveProducts, summary.inactiveProducts, "bi-x-circle-fill"],
+                  [t.totalRateValue, formatMoney(summary.totalRateValue), "bi-cash-stack"],
+                ].map(([label, value, icon]) => (
+                  <div
+                    key={label}
+                    className="bg-slate-50 rounded-lg border border-slate-200 p-4"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
+                      <i className={`bi ${icon}`}></i>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-1">{label}</p>
+                    <p className="text-2xl font-extrabold text-slate-950">{value}</p>
                   </div>
-                  <p className="text-xs text-slate-500 mb-1">{t.totalProducts}</p>
-                  <p className="text-3xl font-extrabold text-slate-950">
-                    {summary.totalProducts}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-emerald-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-box"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">{t.singleProducts}</p>
-                  <p className="text-3xl font-extrabold text-slate-950">
-                    {summary.singleProducts}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-amber-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-boxes"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">{t.cartonProducts}</p>
-                  <p className="text-3xl font-extrabold text-slate-950">
-                    {summary.cartonProducts}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-emerald-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-check-circle-fill"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">{t.activeProducts}</p>
-                  <p className="text-3xl font-extrabold text-slate-950">
-                    {summary.activeProducts}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-rose-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-x-circle-fill"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">{t.inactiveProducts}</p>
-                  <p className="text-3xl font-extrabold text-slate-950">
-                    {summary.inactiveProducts}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-cash-stack"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">{t.totalRateValue}</p>
-                  <p className="text-2xl font-extrabold text-slate-950">
-                    {formatMoney(summary.totalRateValue)}
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           )}
@@ -776,24 +818,52 @@ const ProductPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        {/* Search */}
-        <div className="relative mb-4 max-w-md">
-          <i
-            className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-              isUrdu ? "right-4" : "left-4"
-            }`}
-          ></i>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm ${
-              isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
-            }`}
-          />
+        <div className="bg-white rounded-[18px] border border-slate-200 shadow-sm p-3 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="relative">
+              <i
+                className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                  isUrdu ? "right-4" : "left-4"
+                }`}
+              ></i>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm ${
+                  isUrdu ? "pr-11 pl-4 text-right" : "pl-11 pr-4"
+                }`}
+              />
+            </div>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className={`same-field ${isUrdu ? "text-right" : ""}`}
+            >
+              <option value="">{t.allTypes}</option>
+              {productTypes.map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {getProductTypeName(pt)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className={`same-field ${isUrdu ? "text-right" : ""}`}
+            >
+              <option value="">{t.allCategories}</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {getCategoryName(cat)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="same-dark-table w-full text-sm text-slate-600">
@@ -802,6 +872,12 @@ const ProductPage = () => {
                   <th className={`${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
                   <th className={`${isUrdu ? "text-right" : "text-left"}`}>
                     {t.productName}
+                  </th>
+                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
+                    {t.productType}
+                  </th>
+                  <th className={`${isUrdu ? "text-right" : "text-left"}`}>
+                    {t.category}
                   </th>
                   <th className={`${isUrdu ? "text-right" : "text-left"}`}>
                     {t.saleUnit}
@@ -820,14 +896,14 @@ const ProductPage = () => {
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={9} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={9} className="px-6 py-10 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
@@ -852,6 +928,14 @@ const ProductPage = () => {
                               {getProductName(r)}
                             </span>
                           </div>
+                        </td>
+
+                        <td className={`font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
+                          {getRecordTypeName(r)}
+                        </td>
+
+                        <td className={`font-semibold text-slate-700 ${isUrdu ? "text-right" : ""}`}>
+                          {getRecordCategoryName(r)}
                         </td>
 
                         <td className={`font-semibold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
@@ -918,11 +1002,10 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* Modal Form */}
         {showForm && (
           <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div
-              className="bg-white rounded-[22px] shadow-2xl w-full max-w-2xl p-4 flex flex-col"
+              className="bg-white rounded-[22px] shadow-2xl w-full max-w-3xl p-4 flex flex-col"
               dir={dir}
             >
               <div className="flex items-center justify-between gap-3 mb-4 border-b border-slate-200 pb-4">
@@ -994,6 +1077,42 @@ const ProductPage = () => {
                   </div>
 
                   <div>
+                    <label className="same-label">{t.productType}</label>
+                    <select
+                      value={form.product_type_id}
+                      onChange={(e) =>
+                        setForm({ ...form, product_type_id: e.target.value })
+                      }
+                      className={`same-field ${isUrdu ? "text-right" : ""}`}
+                    >
+                      <option value="">{t.selectType}</option>
+                      {productTypes.map((pt) => (
+                        <option key={pt.id} value={pt.id}>
+                          {getProductTypeName(pt)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="same-label">{t.category}</label>
+                    <select
+                      value={form.category_id}
+                      onChange={(e) =>
+                        setForm({ ...form, category_id: e.target.value })
+                      }
+                      className={`same-field ${isUrdu ? "text-right" : ""}`}
+                    >
+                      <option value="">{t.selectCategory}</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {getCategoryName(cat)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="same-label">
                       {t.saleUnit} <span className="text-rose-500">*</span>
                     </label>
@@ -1034,7 +1153,9 @@ const ProductPage = () => {
                         }
                         placeholder={t.ratePlaceholder}
                         className={`same-field font-mono font-bold ${
-                          isUrdu ? "same-field-icon-right text-right" : "same-field-icon-left text-right"
+                          isUrdu
+                            ? "same-field-icon-right text-right"
+                            : "same-field-icon-left text-right"
                         }`}
                       />
                     </div>
@@ -1057,7 +1178,7 @@ const ProductPage = () => {
                   </div>
 
                   {form.sale_unit === "carton" && (
-                    <div className="md:col-span-2">
+                    <div>
                       <label className="same-label">
                         {t.piecesPerCarton} <span className="text-rose-500">*</span>
                       </label>
@@ -1072,11 +1193,16 @@ const ProductPage = () => {
                           min="1"
                           value={form.pieces_per_carton}
                           onChange={(e) =>
-                            setForm({ ...form, pieces_per_carton: e.target.value })
+                            setForm({
+                              ...form,
+                              pieces_per_carton: e.target.value,
+                            })
                           }
                           placeholder={t.piecesPlaceholder}
                           className={`same-field font-mono font-bold ${
-                            isUrdu ? "same-field-icon-right text-right" : "same-field-icon-left text-right"
+                            isUrdu
+                              ? "same-field-icon-right text-right"
+                              : "same-field-icon-left text-right"
                           }`}
                         />
                       </div>
@@ -1085,7 +1211,11 @@ const ProductPage = () => {
                 </div>
               </div>
 
-              <div className={`flex gap-3 pt-4 border-t border-slate-200 ${isUrdu ? "flex-row-reverse" : ""}`}>
+              <div
+                className={`flex gap-3 pt-4 border-t border-slate-200 ${
+                  isUrdu ? "flex-row-reverse" : ""
+                }`}
+              >
                 <button
                   onClick={handleSave}
                   disabled={submitting}
