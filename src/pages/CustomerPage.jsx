@@ -90,6 +90,32 @@ function formatMoney(value) {
   return Number(value || 0).toLocaleString("en-PK");
 }
 
+function formatDebit(value) {
+  const amount = Number(value || 0);
+  if (amount <= 0) return "-";
+  return `${formatMoney(amount)} Dr`;
+}
+
+function formatCredit(value) {
+  const amount = Number(value || 0);
+  if (amount <= 0) return "-";
+  return `${formatMoney(amount)} Cr`;
+}
+
+function formatBalanceWithSide(value) {
+  const amount = Number(value || 0);
+
+  if (amount > 0) {
+    return `${formatMoney(amount)} Dr`;
+  }
+
+  if (amount < 0) {
+    return `${formatMoney(Math.abs(amount))} Cr`;
+  }
+
+  return "0";
+}
+
 function todayInputValue() {
   const now = new Date();
   const tzOffset = now.getTimezoneOffset() * 60000;
@@ -184,7 +210,6 @@ const LANG = {
     manual: "Manual",
     invoice: "Sales Invoice",
     salesReturn: "Sales Return",
-    autoEntryHint: "Auto-generated entry",
     deleteNotAllowed: "This entry cannot be deleted from ledger directly.",
     editNotAllowed: "This entry cannot be edited from ledger directly.",
   },
@@ -276,7 +301,6 @@ const LANG = {
     manual: "مینول",
     invoice: "سیل انوائس",
     salesReturn: "سیل ریٹرن",
-    autoEntryHint: "خودکار اندراج",
     deleteNotAllowed: "یہ انٹری لیجر سے براہِ راست حذف نہیں کی جا سکتی۔",
     editNotAllowed: "یہ انٹری لیجر سے براہِ راست ایڈٹ نہیں کی جا سکتی۔",
   },
@@ -326,7 +350,6 @@ function getSourceInfo(source, t) {
         label: t.invoice,
         bg: "bg-amber-100",
         text: "text-amber-700",
-        isManual: false,
       };
 
     case "return":
@@ -334,7 +357,6 @@ function getSourceInfo(source, t) {
         label: t.salesReturn,
         bg: "bg-violet-100",
         text: "text-violet-700",
-        isManual: false,
       };
 
     case "ledger":
@@ -343,7 +365,6 @@ function getSourceInfo(source, t) {
         label: t.manual,
         bg: "bg-indigo-50",
         text: "text-indigo-700",
-        isManual: true,
       };
   }
 }
@@ -416,8 +437,8 @@ function downloadAllPdf(customers, lang, cache) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.setTextColor(15, 23, 42);
-  doc.text(`PKR ${formatMoney(totalBalance)}`, 106, 61);
+  doc.setTextColor(totalBalance < 0 ? 190 : 15, totalBalance < 0 ? 18 : 23, totalBalance < 0 ? 60 : 42);
+  doc.text(formatBalanceWithSide(totalBalance), 106, 61);
 
   const rows = customers.map((customer, index) => [
     index + 1,
@@ -428,7 +449,7 @@ function downloadAllPdf(customers, lang, cache) {
     lang === "ur"
       ? cache[`city:${customer.id}`] || customer.city_en
       : customer.city_en,
-    `PKR ${formatMoney(customer.current_balance)}`,
+    formatBalanceWithSide(customer.current_balance),
   ]);
 
   autoTable(doc, {
@@ -436,15 +457,7 @@ function downloadAllPdf(customers, lang, cache) {
     margin: { left: 10, right: 10 },
     head: [["#", t.name, t.phone, t.city, t.amount]],
     body: rows,
-    foot: [
-      [
-        "",
-        "",
-        "",
-        `── ${t.totalLabel} ──`,
-        `PKR ${formatMoney(totalBalance)}`,
-      ],
-    ],
+    foot: [["", "", "", `── ${t.totalLabel} ──`, formatBalanceWithSide(totalBalance)]],
     theme: "grid",
 
     headStyles: {
@@ -1072,7 +1085,7 @@ const CustomerPage = () => {
                       summary.totalBalance
                     )}`}
                   >
-                    {formatMoney(summary.totalBalance)}
+                    {formatBalanceWithSide(summary.totalBalance)}
                   </p>
                 </div>
               </div>
@@ -1215,7 +1228,7 @@ const CustomerPage = () => {
                           customer.current_balance
                         )} ${isUrdu ? "text-left" : "text-right"}`}
                       >
-                        {formatMoney(customer.current_balance)}
+                        {formatBalanceWithSide(customer.current_balance)}
                       </td>
 
                       <td className="px-4 py-3">
@@ -1447,15 +1460,18 @@ const CustomerPage = () => {
               <div className="p-4 overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                   <InfoCard label={t.name} value={getName(selectedCustomer)} />
+
                   <InfoCard
                     label={t.phone}
                     value={selectedCustomer.phone || "-"}
                     mono
                   />
+
                   <InfoCard label={t.city} value={getCity(selectedCustomer)} />
+
                   <InfoCard
                     label={t.amount}
-                    value={formatMoney(selectedCurrentBalance)}
+                    value={formatBalanceWithSide(selectedCurrentBalance)}
                     mono
                     highlight
                     valueClass={getBalanceTextClass(selectedCurrentBalance)}
@@ -1722,7 +1738,7 @@ const CustomerPage = () => {
                                       : "text-slate-400"
                                   }`}
                                 >
-                                  {row.debit > 0 ? formatMoney(row.debit) : "-"}
+                                  {formatDebit(row.debit)}
                                 </td>
 
                                 <td
@@ -1732,9 +1748,7 @@ const CustomerPage = () => {
                                       : "text-slate-400"
                                   }`}
                                 >
-                                  {row.credit > 0
-                                    ? formatMoney(row.credit)
-                                    : "-"}
+                                  {formatCredit(row.credit)}
                                 </td>
 
                                 <td
@@ -1742,7 +1756,7 @@ const CustomerPage = () => {
                                     row.balance
                                   )}`}
                                 >
-                                  {formatMoney(row.balance)}
+                                  {formatBalanceWithSide(row.balance)}
                                 </td>
 
                                 <td className="px-4 py-3">
@@ -1814,7 +1828,13 @@ const CustomerPage = () => {
   );
 };
 
-const InfoCard = ({ label, value, mono = false, highlight = false, valueClass = "" }) => {
+const InfoCard = ({
+  label,
+  value,
+  mono = false,
+  highlight = false,
+  valueClass = "",
+}) => {
   return (
     <div
       className={`border rounded-lg p-4 shadow-sm ${
