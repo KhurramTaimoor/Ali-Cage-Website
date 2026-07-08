@@ -54,11 +54,12 @@ const LANG = {
     subtitle: "Manage sale orders, products, payments and summaries",
     newOrder: "New Order",
     refresh: "Refresh",
-    search: "Search order, party, product, payment...",
+    search: "Search order, name, ship to, product...",
     urdu: "اردو",
     english: "English",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
+
     totalOrders: "Total Orders",
     pendingOrders: "Pending",
     completedOrders: "Completed",
@@ -76,12 +77,12 @@ const LANG = {
     shipTo: "Ship To",
     orderStatus: "Status",
 
-    products: "Products",
+    products: "Order Items",
     addRow: "+ Add Row",
     productType: "Product Type",
     category: "Category",
-    product: "Product",
-    productDescription: "Product Description",
+    product: "Order Item",
+    productDescription: "Description",
     unit: "Unit",
     qty: "Qty",
     rate: "Rate",
@@ -89,9 +90,7 @@ const LANG = {
 
     payment: "Payment",
     paymentMethod: "Payment Method",
-    advanceReceive: "Advance Receive",
     paidAmount: "Payment Received",
-    paymentReceived: "Payment Received",
     paymentStatus: "Payment Status",
     paymentNote: "Payment Note",
     previousBalance: "Previous Balance",
@@ -103,7 +102,7 @@ const LANG = {
 
     save: "Save",
     update: "Update",
-    saving: "Saving",
+    saving: "Saving...",
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",
@@ -113,6 +112,7 @@ const LANG = {
     action: "Action",
     actions: "Action",
     orderDetails: "Order Details",
+
     noOrders: "No orders found",
     loading: "Loading orders...",
     select: "-- Select --",
@@ -145,7 +145,6 @@ const LANG = {
     updated: "Order updated",
     deleted: "Order deleted",
 
-    printOptions: "Print Options",
     saleOrderPrint: "Sales Order",
     orderInvoicePrint: "Order Invoice",
     withAmount: "With Amount",
@@ -165,11 +164,12 @@ const LANG = {
     subtitle: "سیل آرڈرز، پروڈکٹس، پیمنٹ اور خلاصہ مینج کریں",
     newOrder: "نیا آرڈر",
     refresh: "ری فریش",
-    search: "آرڈر، نام، پروڈکٹ یا پیمنٹ تلاش کریں...",
+    search: "آرڈر، نام، شپ ٹو یا پروڈکٹ تلاش کریں...",
     urdu: "اردو",
     english: "English",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
+
     totalOrders: "کل آرڈرز",
     pendingOrders: "زیر التواء",
     completedOrders: "مکمل",
@@ -187,12 +187,12 @@ const LANG = {
     shipTo: "شپ ٹو",
     orderStatus: "حالت",
 
-    products: "پروڈکٹس",
+    products: "آرڈر آئٹمز",
     addRow: "+ نئی لائن",
     productType: "پروڈکٹ ٹائپ",
     category: "کیٹیگری",
-    product: "پروڈکٹ",
-    productDescription: "پروڈکٹ تفصیل",
+    product: "آرڈر آئٹم",
+    productDescription: "تفصیل",
     unit: "یونٹ",
     qty: "مقدار",
     rate: "ریٹ",
@@ -200,9 +200,7 @@ const LANG = {
 
     payment: "پیمنٹ",
     paymentMethod: "پیمنٹ طریقہ",
-    advanceReceive: "ایڈوانس وصول",
     paidAmount: "پیمنٹ وصول",
-    paymentReceived: "پیمنٹ وصول",
     paymentStatus: "پیمنٹ حالت",
     paymentNote: "پیمنٹ نوٹ",
     previousBalance: "سابقہ بیلنس",
@@ -214,7 +212,7 @@ const LANG = {
 
     save: "محفوظ کریں",
     update: "اپڈیٹ",
-    saving: "محفوظ ہو رہا ہے",
+    saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
     edit: "ترمیم",
     delete: "حذف",
@@ -224,6 +222,7 @@ const LANG = {
     action: "ایکشن",
     actions: "ایکشن",
     orderDetails: "آرڈر تفصیل",
+
     noOrders: "کوئی آرڈر نہیں ملا",
     loading: "آرڈرز لوڈ ہو رہے ہیں...",
     select: "-- منتخب کریں --",
@@ -256,7 +255,6 @@ const LANG = {
     updated: "آرڈر اپڈیٹ ہو گیا",
     deleted: "آرڈر حذف ہو گیا",
 
-    printOptions: "پرنٹ آپشنز",
     saleOrderPrint: "سیلز آرڈر",
     orderInvoicePrint: "آرڈر انوائس",
     withAmount: "رقم کے ساتھ",
@@ -451,7 +449,13 @@ const getProductUnitId = (row) =>
   row?.unit_id ?? row?.unitId ?? row?.unit?.id ?? row?.unit ?? "";
 
 const getCategoryName = (row) =>
-  firstText(row, ["category_name", "category_name_en", "name", "name_en", "title"]);
+  firstText(row, [
+    "category_name",
+    "category_name_en",
+    "name",
+    "name_en",
+    "title",
+  ]);
 
 const getUnitName = (row) =>
   firstText(row, ["unit_name", "unit_name_en", "name", "name_en", "symbol", "title"]);
@@ -501,7 +505,9 @@ const getLedgerName = (row) =>
 
 const getDefaultFmsTypeId = (list = []) => {
   const found =
-    list.find((row) => String(getTypeName(row)).trim().toLowerCase() === "fms") ||
+    list.find(
+      (row) => String(getTypeName(row)).trim().toLowerCase() === "fms"
+    ) ||
     list.find((row) =>
       String(getTypeName(row)).trim().toLowerCase().includes("fms")
     );
@@ -540,8 +546,8 @@ const getPreviousBalance = (row) => {
 
   for (const key of keys) {
     if (
-      row[key] !== undefined &&
-      row[key] !== null &&
+      row?.[key] !== undefined &&
+      row?.[key] !== null &&
       String(row[key]).trim() !== ""
     ) {
       return num(row[key]);
@@ -573,7 +579,6 @@ function normalizeItems(order) {
   let items =
     order?.order_items ??
     order?.items ??
-    order?.invoice_items ??
     order?.sale_order_items ??
     order?.sales_order_items ??
     order?.products ??
@@ -687,7 +692,11 @@ function generateInvoiceNoFromOrder(order) {
 }
 
 function pickOrderPartyType(order) {
-  return order.party_type || order.customer_type || (order.customer_id ? "customer" : "customer");
+  return (
+    order.party_type ||
+    order.customer_type ||
+    (order.customer_id ? "customer" : "customer")
+  );
 }
 
 function pickOrderPartyId(order) {
@@ -785,10 +794,19 @@ export default function SaleOrderPage() {
   const [detailsOrder, setDetailsOrder] = useState(null);
   const [form, setForm] = useState(emptyForm());
 
-  const productMap = useMemo(() => makeMap(products, getProductName), [products]);
-  const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
+  const productMap = useMemo(
+    () => makeMap(products, getProductName),
+    [products]
+  );
+
+  const categoryMap = useMemo(
+    () => makeMap(categories, getCategoryName),
+    [categories]
+  );
+
   const typeMap = useMemo(() => makeMap(types, getTypeName), [types]);
   const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
+
   const defaultFmsTypeId = useMemo(() => getDefaultFmsTypeId(types), [types]);
 
   const partyOptions = useMemo(() => {
@@ -821,17 +839,25 @@ export default function SaleOrderPage() {
   );
 
   const remaining = remainingAmount(grandTotal, form.paid_amount);
-  const payStatus = form.payment_status || paymentStatus(grandTotal, form.paid_amount);
+  const payStatus =
+    form.payment_status || paymentStatus(grandTotal, form.paid_amount);
 
   const getOrderPartyName = useCallback(
     (order) => {
       const type = pickOrderPartyType(order);
       const id = pickOrderPartyId(order);
+
       const fallback =
         order.party_name || order.customer_name_en || order.customer_name || "";
 
-      if (type === "employee") return makeMap(employees, getEmployeeName)[id] || fallback;
-      if (type === "supplier") return makeMap(suppliers, getSupplierName)[id] || fallback;
+      if (type === "employee") {
+        return makeMap(employees, getEmployeeName)[id] || fallback;
+      }
+
+      if (type === "supplier") {
+        return makeMap(suppliers, getSupplierName)[id] || fallback;
+      }
+
       if (type === "general_ledger") {
         return makeMap(generalLedgers, getLedgerName)[id] || fallback;
       }
@@ -896,13 +922,16 @@ export default function SaleOrderPage() {
       (acc, order) => {
         const items = normalizeItems(order);
         const total = num(order.total_amount) || orderTotal(items);
+
         const grand =
           num(order.grand_total) ||
           total +
             num(order.previous_balance) +
             num(order.delivery_charges) -
             num(order.discount);
+
         const paid = num(order.paid_amount);
+
         const remain =
           order.remaining_balance !== undefined
             ? num(order.remaining_balance)
@@ -985,36 +1014,53 @@ export default function SaleOrderPage() {
     setShowForm(true);
   };
 
-  const openEdit = (order) => {
-    const partyType = pickOrderPartyType(order);
-    const partyId = pickOrderPartyId(order);
-    const items = normalizeItems(order);
+  const openEdit = async (order) => {
+    let fullOrder = order;
+    let items = normalizeItems(fullOrder);
 
-    setEditingId(order.id);
+    if (!items.length && order?.id) {
+      try {
+        const detailRes = await getSaleOrderById(order.id);
+        fullOrder = detailRes?.data || detailRes?.order || detailRes;
+        items = normalizeItems(fullOrder);
+      } catch {
+        fullOrder = order;
+      }
+    }
+
+    const partyType = pickOrderPartyType(fullOrder);
+    const partyId = pickOrderPartyId(fullOrder);
+
+    setEditingId(fullOrder.id);
 
     setForm({
-      order_no: order.order_no || "",
-      reference_no: order.reference_no || "",
+      order_no: fullOrder.order_no || "",
+      reference_no: fullOrder.reference_no || "",
       party_type: partyType,
       party_id: partyId,
-      party_name: order.party_name || order.customer_name_en || getOrderPartyName(order) || "",
+      party_name:
+        fullOrder.party_name ||
+        fullOrder.customer_name_en ||
+        getOrderPartyName(fullOrder) ||
+        "",
       customer_type: partyType,
       customer_id: partyType === "customer" ? partyId : "",
       employee_id: partyType === "employee" ? partyId : "",
       supplier_id: partyType === "supplier" ? partyId : "",
       general_ledger_id: partyType === "general_ledger" ? partyId : "",
-      order_date: order.order_date || today(),
-      delivery_date: order.delivery_date || "",
-      shipment_to: order.shipment_to || "",
-      previous_balance: String(order.previous_balance || 0),
-      delivery_charges: String(order.delivery_charges || 0),
-      discount: String(order.discount || 0),
-      payment_method: order.payment_method || "Cash",
-      paid_amount: String(order.paid_amount || 0),
+      order_date: fullOrder.order_date || today(),
+      delivery_date: fullOrder.delivery_date || "",
+      shipment_to: fullOrder.shipment_to || "",
+      previous_balance: String(fullOrder.previous_balance || 0),
+      delivery_charges: String(fullOrder.delivery_charges || 0),
+      discount: String(fullOrder.discount || 0),
+      payment_method: fullOrder.payment_method || "Cash",
+      paid_amount: String(fullOrder.paid_amount || 0),
       payment_status:
-        order.payment_status || paymentStatus(order.grand_total || 0, order.paid_amount || 0),
-      payment_note: order.payment_note || "",
-      status: order.status || "Pending",
+        fullOrder.payment_status ||
+        paymentStatus(fullOrder.grand_total || 0, fullOrder.paid_amount || 0),
+      payment_note: fullOrder.payment_note || "",
+      status: fullOrder.status || "Pending",
       order_items: items.length
         ? items.map((item) => ({
             ...item,
@@ -1092,9 +1138,7 @@ export default function SaleOrderPage() {
             category_id: String(
               getProductCategoryId(selectedProduct) || item.category_id || ""
             ),
-            unit_id: String(
-              getProductUnitId(selectedProduct) || item.unit_id || ""
-            ),
+            unit_id: String(getProductUnitId(selectedProduct) || item.unit_id || ""),
             rate: String(productRate || ""),
           };
         }
@@ -1137,7 +1181,9 @@ export default function SaleOrderPage() {
         product_id: Number(item.product_id) || 0,
         unit_id: Number(item.unit_id) || 0,
         order_qty: num(item.order_qty),
+        qty: num(item.order_qty),
         rate: num(item.rate),
+        amount: lineTotal(item),
         debit: num(item.debit),
         credit: num(item.credit),
       }))
@@ -1235,16 +1281,12 @@ export default function SaleOrderPage() {
       );
 
       if (!items.length && order?.id) {
-        try {
-          const detailRes = await getSaleOrderById(order.id);
-          fullOrder = detailRes?.data || detailRes?.order || detailRes;
+        const detailRes = await getSaleOrderById(order.id);
+        fullOrder = detailRes?.data || detailRes?.order || detailRes;
 
-          items = normalizeItems(fullOrder).filter(
-            (item) => Number(item.product_id) > 0 && num(item.order_qty) > 0
-          );
-        } catch {
-          fullOrder = order;
-        }
+        items = normalizeItems(fullOrder).filter(
+          (item) => Number(item.product_id) > 0 && num(item.order_qty) > 0
+        );
       }
 
       if (!items.length) {
@@ -1356,170 +1398,87 @@ export default function SaleOrderPage() {
     }
   };
 
-  const printOrderDocument = (order, documentType = "sale_order", showAmount = true) => {
+  const printOrderDocument = (order) => {
     const items = normalizeItems(order);
 
-    const total = num(order.total_amount) || orderTotal(items);
-
-    const grand =
-      num(order.grand_total) ||
-      total +
-        num(order.previous_balance) +
-        num(order.delivery_charges) -
-        num(order.discount);
-
-    const paid = num(order.paid_amount);
-
-    const remain =
-      order.remaining_balance !== undefined
-        ? num(order.remaining_balance)
-        : remainingAmount(grand, paid);
-
-    const documentTitle =
-      documentType === "order_invoice" ? t.orderInvoicePrint : t.saleOrderPrint;
-
-    const amountHead = showAmount ? `<th>${t.rate}</th><th>${t.amount}</th>` : "";
-
     const rows = items
-      .map((item, idx) => {
-        const amountCells = showAmount
-          ? `<td class="num">${fmt(item.rate)}</td><td class="num strong">${fmt(
-              lineTotal(item)
-            )}</td>`
-          : "";
-
-        return `
-          <tr>
-            <td class="center">${idx + 1}</td>
-            <td>
-              ${productMap[item.product_id] || item.product_id}
-              ${
-                item.product_description
-                  ? `<div style="font-size:10px;color:#64748b;margin-top:3px">${item.product_description}</div>`
-                  : ""
-              }
-            </td>
-            <td>${categoryMap[item.category_id] || item.category_id}</td>
-            <td>${typeMap[item.product_type_id] || item.product_type_id}</td>
-            <td>${unitMap[item.unit_id] || item.unit_id}</td>
-            <td class="num">${fmt(item.order_qty)}</td>
-            ${amountCells}
-          </tr>
-        `;
-      })
+      .map(
+        (item, idx) => `
+        <tr>
+          <td class="center">${idx + 1}</td>
+          <td>${productMap[item.product_id] || item.product_id || "-"}</td>
+          <td>${item.product_description || "-"}</td>
+          <td>${categoryMap[item.category_id] || item.category_id || "-"}</td>
+          <td>${typeMap[item.product_type_id] || item.product_type_id || "-"}</td>
+          <td>${unitMap[item.unit_id] || item.unit_id || "-"}</td>
+          <td class="num">${fmt(item.order_qty)}</td>
+        </tr>
+      `
+      )
       .join("");
 
-    const totalsHtml = showAmount
-      ? `
-        <div class="totals">
-          <div class="box"><small>${t.totalAmount}</small><b>${fmt(total)}</b></div>
-          <div class="box"><small>${t.previousBalance}</small><b>${fmt(
-            order.previous_balance
-          )}</b></div>
-          <div class="box"><small>${t.deliveryCharges}</small><b>${fmt(
-            order.delivery_charges
-          )}</b></div>
-          <div class="box"><small>${t.discount}</small><b>${fmt(order.discount)}</b></div>
-          <div class="box grand"><small>${t.grandTotal}</small><b>${fmt(grand)}</b></div>
-          <div class="box"><small>${t.paidAmount}</small><b>${fmt(paid)}</b></div>
-          <div class="box"><small>${t.remaining}</small><b>${fmt(remain)}</b></div>
-        </div>
-      `
-      : `<div class="note">${
-          isUrdu ? "یہ پرنٹ رقم کے بغیر ہے۔" : "This print is without amount."
-        }</div>`;
-
     const html = `<!doctype html>
-<html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
+<html>
 <head>
-<title>${documentTitle} - ${order.order_no || ""}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<title>${t.saleOrderPrint}</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:${
-      isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial,sans-serif"
-    };margin:0;background:#f8fafc;color:#0f172a}
+body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
 .page{padding:18px}
-.sheet{background:#fff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08)}
-.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
-.head h1{margin:0;font-size:24px;font-weight:900}
-.head p{margin:5px 0 0;color:rgba(255,255,255,.75);font-size:12px}
-.meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;line-height:1.9}
+.sheet{background:#fff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden}
+.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}
+.head h1{margin:0;font-size:24px}
 .body{padding:16px}
-.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .box{border:1px solid #dbe3ee;border-radius:10px;padding:9px;background:#fff}
-.box small{display:block;color:#64748b;margin-bottom:5px;font-size:10px;font-weight:900;text-transform:uppercase}
-.box b{font-size:13px;font-weight:900}
+.box small{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}
+.box b{display:block;margin-top:5px}
 table{width:100%;border-collapse:collapse}
-th{background:#1f2937;color:white;text-align:${
-      isUrdu ? "right" : "left"
-    };font-size:11px;text-transform:uppercase}
+th{background:#1f2937;color:white;text-align:left;font-size:11px;text-transform:uppercase}
 th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 .center{text-align:center}
-.num{text-align:${isUrdu ? "left" : "right"};font-family:monospace;white-space:nowrap}
-.strong{font-weight:900}
-.totals{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px}
-.totals .grand{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
-.note{margin-top:12px;border:1px dashed #cbd5e1;border-radius:12px;padding:10px;background:#f8fafc;color:#475569;font-weight:800}
-.footer{padding:10px 16px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#64748b}
-@media print{@page{size:A4 landscape;margin:8mm}body{background:white}.page{padding:0}.sheet{border:none;border-radius:0;box-shadow:none}.footer{position:fixed;bottom:0;left:0;right:0}}
+.num{text-align:right;font-family:monospace}
+@media print{@page{size:A4 landscape;margin:8mm}.page{padding:0}.sheet{border:none;border-radius:0}}
 </style>
 </head>
 <body>
-<div class="page"><div class="sheet">
+<div class="page">
+<div class="sheet">
 <div class="head">
-<div><h1>Ali Cages</h1><p>${documentTitle}</p></div>
-<div class="meta">
-<div>${t.invoiceNo}: <b>${order.order_no || "-"}</b></div>
-<div>${t.date}: ${order.order_date || "-"}</div>
-<div>${t.deliveryDate}: ${order.delivery_date || "-"}</div>
-</div>
+<div><h1>Ali Cages</h1><p>${t.saleOrderPrint}</p></div>
+<div>${t.invoiceNo}: <b>${order.order_no || "-"}</b><br/>${t.date}: ${
+      order.order_date || "-"
+    }</div>
 </div>
 <div class="body">
-<div class="grid">
+<div class="info">
 <div class="box"><small>${t.name}</small><b>${getOrderPartyName(order) || "-"}</b></div>
-<div class="box"><small>${t.customerType}</small><b>${
-      t[PARTY_TYPES.find((x) => x.value === pickOrderPartyType(order))?.labelKey || "customer"]
-    }</b></div>
-<div class="box"><small>${t.referenceNo}</small><b>${order.reference_no || "-"}</b></div>
 <div class="box"><small>${t.shipTo}</small><b>${order.shipment_to || "-"}</b></div>
-<div class="box"><small>${t.orderStatus}</small><b>${
-      t[
-        ORDER_STATUSES.find((x) => x.value === (order.status || "Pending"))
-          ?.labelKey || "pending"
-      ]
-    }</b></div>
-<div class="box"><small>${t.paymentStatus}</small><b>${
-      t[
-        PAYMENT_STATUSES.find(
-          (x) => x.value === (order.payment_status || paymentStatus(grand, paid))
-        )?.labelKey || "unpaid"
-      ]
-    }</b></div>
+<div class="box"><small>${t.orderStatus}</small><b>${order.status || "-"}</b></div>
+<div class="box"><small>${t.grandTotal}</small><b>${fmt(
+      getGrandTotal(order)
+    )}</b></div>
 </div>
 <table>
 <thead>
 <tr>
 <th class="center">#</th>
 <th>${t.product}</th>
+<th>${t.productDescription}</th>
 <th>${t.category}</th>
 <th>${t.productType}</th>
 <th>${t.unit}</th>
 <th>${t.qty}</th>
-${amountHead}
 </tr>
 </thead>
 <tbody>${rows}</tbody>
 </table>
-${totalsHtml}
 </div>
-<div class="footer">
-<span>${documentTitle}</span>
-<span>${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</span>
 </div>
-</div></div>
+</div>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
-</body></html>`;
+</body>
+</html>`;
 
     const w = window.open("", "_blank", "width=1200,height=850");
     if (!w) return;
@@ -1535,119 +1494,49 @@ ${totalsHtml}
       return;
     }
 
-    const totalValue = orders.reduce((sum, order) => {
-      const items = normalizeItems(order);
-      const total = num(order.total_amount) || orderTotal(items);
-
-      const grand =
-        num(order.grand_total) ||
-        total +
-          num(order.previous_balance) +
-          num(order.delivery_charges) -
-          num(order.discount);
-
-      return sum + grand;
-    }, 0);
-
     const rows = orders
-      .map((order, idx) => {
-        const items = normalizeItems(order);
-        const total = num(order.total_amount) || orderTotal(items);
-
-        const grand =
-          num(order.grand_total) ||
-          total +
-            num(order.previous_balance) +
-            num(order.delivery_charges) -
-            num(order.discount);
-
-        const paid = num(order.paid_amount);
-        const pStatus = order.payment_status || paymentStatus(grand, paid);
-
-        return `
-          <tr>
-            <td class="center">${idx + 1}</td>
-            <td>${order.order_date || "-"}</td>
-            <td>${order.order_no || "-"}</td>
-            <td>${getOrderPartyName(order) || "-"}</td>
-            <td>${order.shipment_to || "-"}</td>
-            <td class="num">${fmt(grand)}</td>
-            <td>${
-              t[
-                PAYMENT_STATUSES.find((x) => x.value === pStatus)?.labelKey ||
-                  "unpaid"
-              ]
-            }</td>
-            <td>${
-              t[
-                ORDER_STATUSES.find((x) => x.value === (order.status || "Pending"))
-                  ?.labelKey || "pending"
-              ]
-            }</td>
-          </tr>
-        `;
-      })
+      .map(
+        (order, index) => `
+        <tr>
+          <td>${order.order_date || "-"}</td>
+          <td>${order.order_no || "-"}</td>
+          <td>${getOrderPartyName(order) || "-"}</td>
+          <td>${order.shipment_to || "-"}</td>
+          <td class="num">${fmt(getGrandTotal(order))}</td>
+          <td>${order.status || "Pending"}</td>
+        </tr>
+      `
+      )
       .join("");
 
     const html = `<!doctype html>
-<html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
+<html>
 <head>
 <title>${t.allSaleOrders}</title>
 <style>
-*{box-sizing:border-box}
-body{font-family:${isUrdu ? "serif" : "Arial,sans-serif"};margin:0;background:#f8fafc;color:#111827}
-.page{padding:18px}
-.sheet{background:#fff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden}
-.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}
-.head h1{margin:0;font-size:24px;font-weight:900}
-.head p{margin:5px 0 0;color:rgba(255,255,255,.75);font-size:12px}
-.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
-.box{border:1px solid #dbe3ee;border-radius:10px;padding:9px;background:#fff}
-.box small{display:block;color:#64748b;margin-bottom:5px;font-size:10px;font-weight:900;text-transform:uppercase}
-.box b{font-size:13px;font-weight:900}
-.body{padding:14px}
+body{font-family:Arial,sans-serif;margin:20px}
 table{width:100%;border-collapse:collapse}
-th{background:#1f2937;color:white;text-align:${isUrdu ? "right" : "left"};font-size:11px;text-transform:uppercase}
 th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
-.center{text-align:center}
-.num{text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-weight:900}
-.footer{padding:10px 16px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#64748b}
-@media print{@page{size:A4 landscape;margin:8mm}body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
+th{background:#111827;color:white;text-align:left}
+.num{text-align:right;font-family:monospace;font-weight:900}
+@media print{@page{size:A4 landscape;margin:8mm}}
 </style>
 </head>
 <body>
-<div class="page">
-<div class="sheet">
-<div class="head">
-<div><h1>Ali Cages</h1><p>${t.allSaleOrders}</p></div>
-<div>${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
-</div>
-<div class="summary">
-<div class="box"><small>${t.totalOrders}</small><b>${orders.length}</b></div>
-<div class="box"><small>${t.totalValue}</small><b>${fmt(totalValue)}</b></div>
-<div class="box"><small>${t.totalPaid}</small><b>${fmt(summary.paid)}</b></div>
-<div class="box"><small>${t.totalRemaining}</small><b>${fmt(summary.remaining)}</b></div>
-</div>
-<div class="body">
+<h2>Ali Cages - ${t.allSaleOrders}</h2>
 <table>
 <thead>
 <tr>
-<th class="center">#</th>
 <th>${t.date}</th>
 <th>${t.invoiceNo}</th>
 <th>${t.name}</th>
 <th>${t.shipTo}</th>
 <th>${t.grandTotal}</th>
-<th>${t.paymentStatus}</th>
 <th>${t.orderStatus}</th>
 </tr>
 </thead>
 <tbody>${rows}</tbody>
 </table>
-</div>
-<div class="footer"><span>${t.allSaleOrders}</span><span>Ali Cages</span></div>
-</div>
-</div>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body>
 </html>`;
@@ -1658,6 +1547,19 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
     w.document.open();
     w.document.write(html);
     w.document.close();
+  };
+
+  const getGrandTotal = (order) => {
+    const items = normalizeItems(order);
+    const total = num(order.total_amount) || orderTotal(items);
+
+    return (
+      num(order.grand_total) ||
+      total +
+        num(order.previous_balance) +
+        num(order.delivery_charges) -
+        num(order.discount)
+    );
   };
 
   const renderStatusText = (status) =>
@@ -1684,7 +1586,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
         }
 
         .top-card {
-          background: rgba(255,255,255,.92);
+          background: rgba(255,255,255,.94);
           border: 1px solid #dbe3ee;
           border-radius: 22px;
           padding: 20px 22px;
@@ -1856,25 +1758,36 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
           overflow-x: auto;
         }
 
+        .orders-desktop {
+          display: block;
+        }
+
+        .orders-mobile {
+          display: none;
+        }
+
         table.orders {
           width: 100%;
+          min-width: 1050px;
           border-collapse: collapse;
           table-layout: fixed;
         }
 
         table.orders th {
           background: #0f172a;
-          color: rgba(255,255,255,.78);
-          font-size: 10px;
+          color: rgba(255,255,255,.82);
+          font-size: 11px;
           text-transform: uppercase;
           letter-spacing: .5px;
-          padding: 12px 9px;
+          padding: 15px 14px;
+          white-space: nowrap;
         }
 
         table.orders td {
-          padding: 12px 9px;
+          padding: 13px 14px;
           border-bottom: 1px solid #eef2f7;
           font-size: 13px;
+          vertical-align: middle;
         }
 
         table.orders tr:hover td {
@@ -1892,14 +1805,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
         .order-action-row .btn {
           padding: 7px 9px;
           font-size: 12px;
-        }
-
-        .orders-desktop {
-          display: block;
-        }
-
-        .orders-mobile {
-          display: none;
         }
 
         .order-mobile-list {
@@ -1999,7 +1904,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
         }
 
         .inputModalBox {
-          width: min(1060px, 100%);
+          width: min(1120px, 100%);
           background: #f8fafc;
           border: 1px solid #cbd5e1;
           border-radius: 18px;
@@ -2014,9 +1919,10 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 18px;
+          padding: 12px 18px;
           font-size: 17px;
           font-weight: 900;
+          gap: 12px;
         }
 
         .closeBtn {
@@ -2037,7 +1943,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 
         .formTopLine {
           display: grid;
-          grid-template-columns: 160px 260px 140px 120px 140px 140px;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 10px;
           align-items: end;
           margin-bottom: 10px;
@@ -2045,7 +1951,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 
         .formSecondLine {
           display: grid;
-          grid-template-columns: 160px 150px;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
           gap: 10px;
           align-items: end;
           margin-bottom: 14px;
@@ -2126,7 +2032,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 
         .basicProductTable {
           width: 100%;
-          min-width: 920px;
+          min-width: 930px;
           border-collapse: collapse;
           background: white;
         }
@@ -2134,7 +2040,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
         .basicProductTable th,
         .basicProductTable td {
           border: 1px solid #dbe3ee;
-          padding: 5px;
+          padding: 6px;
           font-size: 12px;
         }
 
@@ -2309,18 +2215,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
           font-weight: 800;
         }
 
-        .formPageWrap {
-          margin-top: 0;
-          max-width: 1280px !important;
-        }
-
-        .formPageBox {
-          width: 100% !important;
-          max-width: 1280px !important;
-          margin: 0 auto;
-          box-shadow: 0 18px 50px rgba(15,23,42,.08) !important;
-        }
-
         .chargeStepper {
           display: grid;
           grid-template-columns: 36px 1fr 36px;
@@ -2472,7 +2366,12 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
         </div>
       )}
 
-      <div className="page-wrap" style={{ display: showForm ? "none" : "block" }}>
+      <div
+        className="page-wrap"
+        style={{
+          display: showForm ? "none" : "block",
+        }}
+      >
         <div className="top-card">
           <div>
             <h1 className="title">{t.title}</h1>
@@ -2548,34 +2447,33 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
         <div className="card">
           <div className="orders-desktop table-wrap">
             <table className="orders">
+              <colgroup>
+                <col style={{ width: 120 }} />
+                <col style={{ width: 135 }} />
+                <col style={{ width: 210 }} />
+                <col style={{ width: 190 }} />
+                <col style={{ width: 145 }} />
+                <col style={{ width: 125 }} />
+                <col style={{ width: 135 }} />
+                <col style={{ width: 210 }} />
+              </colgroup>
+
               <thead>
                 <tr>
-                  <th style={{ width: 115 }}>{t.date}</th>
-                  <th
-                    style={{
-                      width: 130,
-                      textAlign: isUrdu ? "right" : "left",
-                    }}
-                  >
+                  <th>{t.date}</th>
+                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
                     {t.invoiceNo}
                   </th>
                   <th style={{ textAlign: isUrdu ? "right" : "left" }}>
                     {t.name}
                   </th>
-                  <th
-                    style={{
-                      width: 160,
-                      textAlign: isUrdu ? "right" : "left",
-                    }}
-                  >
+                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
                     {t.shipTo}
                   </th>
-                  <th style={{ width: 135, textAlign: "right" }}>
-                    {t.grandTotal}
-                  </th>
-                  <th style={{ width: 120 }}>{t.orderStatus}</th>
-                  <th style={{ width: 125 }}>{t.seeDetails}</th>
-                  <th style={{ width: 220 }}>{t.actions}</th>
+                  <th style={{ textAlign: "right" }}>{t.grandTotal}</th>
+                  <th>{t.orderStatus}</th>
+                  <th>{t.seeDetails}</th>
+                  <th>{t.actions}</th>
                 </tr>
               </thead>
 
@@ -2608,16 +2506,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                   </tr>
                 ) : (
                   filteredOrders.map((order, index) => {
-                    const items = normalizeItems(order);
-                    const total = num(order.total_amount) || orderTotal(items);
-
-                    const grand =
-                      num(order.grand_total) ||
-                      total +
-                        num(order.previous_balance) +
-                        num(order.delivery_charges) -
-                        num(order.discount);
-
+                    const grand = getGrandTotal(order);
                     const orderStatus = order.status || "Pending";
 
                     return (
@@ -2643,9 +2532,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                           >
                             {order.order_no || "-"}
                           </div>
-                          <div style={{ color: "#94a3b8", fontSize: 11 }}>
-                            {items.length} {t.products}
-                          </div>
                         </td>
 
                         <td>
@@ -2659,15 +2545,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                           >
                             {getOrderPartyName(order) || "-"}
                           </div>
-                          <div style={{ color: "#64748b", fontSize: 11 }}>
-                            {
-                              t[
-                                PARTY_TYPES.find(
-                                  (x) => x.value === pickOrderPartyType(order)
-                                )?.labelKey || "customer"
-                              ]
-                            }
-                          </div>
                         </td>
 
                         <td
@@ -2675,6 +2552,9 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                             color: "#475569",
                             fontSize: 12,
                             fontWeight: 800,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
                           {order.shipment_to || "-"}
@@ -2764,16 +2644,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
             ) : (
               <div className="order-mobile-list">
                 {filteredOrders.map((order, index) => {
-                  const items = normalizeItems(order);
-                  const total = num(order.total_amount) || orderTotal(items);
-
-                  const grand =
-                    num(order.grand_total) ||
-                    total +
-                      num(order.previous_balance) +
-                      num(order.delivery_charges) -
-                      num(order.discount);
-
+                  const grand = getGrandTotal(order);
                   const orderStatus = order.status || "Pending";
 
                   return (
@@ -2794,7 +2665,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                           </div>
 
                           <div style={{ color: "#94a3b8", fontSize: 11 }}>
-                            #{index + 1} • {items.length} {t.products}
+                            #{index + 1}
                           </div>
                         </div>
 
@@ -2867,8 +2738,8 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
       </div>
 
       {showForm && (
-        <div className="page-wrap formPageWrap">
-          <div className="inputModalBox formPageBox">
+        <div className="page-wrap">
+          <div className="inputModalBox">
             <div className="inputModalTitle">
               <span>{editingId ? t.update : t.newOrder}</span>
 
@@ -2950,7 +2821,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                 </Field>
               </div>
 
-              <div className="formTopLine">
+              <div className="formSecondLine">
                 <Field label={t.referenceNo}>
                   <input
                     className="basicInput"
@@ -3004,29 +2875,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                     </button>
                   </div>
                 </Field>
-
-                <Field label={t.discount}>
-                  <input
-                    className="basicInput"
-                    type="number"
-                    value={form.discount}
-                    onChange={(e) => updateForm("discount", e.target.value)}
-                  />
-                </Field>
-
-                <Field label={t.paymentMethod}>
-                  <select
-                    className="basicSelect"
-                    value={form.payment_method}
-                    onChange={(e) => updateForm("payment_method", e.target.value)}
-                  >
-                    {PAYMENT_METHODS.map((method) => (
-                      <option key={method.value} value={method.value}>
-                        {t[method.labelKey]}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
               </div>
 
               <div className="sectionHead">
@@ -3042,14 +2890,13 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                   <thead>
                     <tr>
                       <th style={{ width: 40 }}>#</th>
-                      <th>{t.productType}</th>
-                      <th>{t.category}</th>
                       <th>{t.product}</th>
                       <th>{t.productDescription}</th>
+                      <th>{t.productType}</th>
+                      <th>{t.category}</th>
                       <th>{t.unit}</th>
                       <th>{t.qty}</th>
                       <th>{t.rate}</th>
-                      <th>{t.amount}</th>
                       <th>{t.action}</th>
                     </tr>
                   </thead>
@@ -3059,6 +2906,38 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                       <tr key={index}>
                         <td style={{ textAlign: "center", fontWeight: 900 }}>
                           {index + 1}
+                        </td>
+
+                        <td>
+                          <select
+                            className="productInput"
+                            value={item.product_id}
+                            onChange={(e) =>
+                              updateItem(index, "product_id", e.target.value)
+                            }
+                          >
+                            <option value="">{t.select}</option>
+
+                            {products.map((product) => (
+                              <option key={getId(product)} value={getId(product)}>
+                                {getProductName(product)}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+
+                        <td>
+                          <input
+                            className="productInput"
+                            value={item.product_description}
+                            onChange={(e) =>
+                              updateItem(
+                                index,
+                                "product_description",
+                                e.target.value
+                              )
+                            }
+                          />
                         </td>
 
                         <td>
@@ -3095,38 +2974,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                               </option>
                             ))}
                           </select>
-                        </td>
-
-                        <td>
-                          <select
-                            className="productInput"
-                            value={item.product_id}
-                            onChange={(e) =>
-                              updateItem(index, "product_id", e.target.value)
-                            }
-                          >
-                            <option value="">{t.select}</option>
-
-                            {products.map((product) => (
-                              <option key={getId(product)} value={getId(product)}>
-                                {getProductName(product)}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-
-                        <td>
-                          <input
-                            className="productInput"
-                            value={item.product_description}
-                            onChange={(e) =>
-                              updateItem(
-                                index,
-                                "product_description",
-                                e.target.value
-                              )
-                            }
-                          />
                         </td>
 
                         <td>
@@ -3169,17 +3016,6 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
                           />
                         </td>
 
-                        <td
-                          style={{
-                            fontFamily: "monospace",
-                            fontWeight: 900,
-                            textAlign: "right",
-                            color: "#1d4ed8",
-                          }}
-                        >
-                          {fmt(lineTotal(item))}
-                        </td>
-
                         <td style={{ textAlign: "center" }}>
                           <button
                             className="basicBtn basicBtnRed"
@@ -3200,6 +3036,27 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 
               <div className="paymentPanel">
                 <div className="paymentTopGrid">
+                  <label>{t.discount}</label>
+                  <input
+                    className="basicInput"
+                    type="number"
+                    value={form.discount}
+                    onChange={(e) => updateForm("discount", e.target.value)}
+                  />
+
+                  <label>{t.paymentMethod}</label>
+                  <select
+                    className="basicSelect"
+                    value={form.payment_method}
+                    onChange={(e) => updateForm("payment_method", e.target.value)}
+                  >
+                    {PAYMENT_METHODS.map((method) => (
+                      <option key={method.value} value={method.value}>
+                        {t[method.labelKey]}
+                      </option>
+                    ))}
+                  </select>
+
                   <label>{t.paidAmount}</label>
                   <input
                     className="basicInput"
@@ -3360,15 +3217,7 @@ function OrderDetailsModal({
             <DetailBox label={t.name} value={getOrderPartyName(order) || "-"} />
             <DetailBox label={t.shipTo} value={order.shipment_to || "-"} />
             <DetailBox label={t.grandTotal} value={fmt(grand)} strong />
-            <DetailBox
-              label={t.orderStatus}
-              value={
-                t[
-                  ORDER_STATUSES.find((x) => x.value === orderStatus)?.labelKey ||
-                    "pending"
-                ]
-              }
-            />
+            <DetailBox label={t.orderStatus} value={orderStatus} />
           </div>
 
           <div className="table-wrap">
@@ -3377,12 +3226,11 @@ function OrderDetailsModal({
                 <tr>
                   <th>#</th>
                   <th>{t.product}</th>
+                  <th>{t.productDescription}</th>
                   <th>{t.category}</th>
                   <th>{t.productType}</th>
                   <th>{t.unit}</th>
                   <th>{t.qty}</th>
-                  <th>{t.rate}</th>
-                  <th>{t.amount}</th>
                 </tr>
               </thead>
 
@@ -3390,7 +3238,7 @@ function OrderDetailsModal({
                 {items.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={7}
                       style={{
                         textAlign: "center",
                         padding: 18,
@@ -3404,22 +3252,20 @@ function OrderDetailsModal({
                   items.map((item, index) => (
                     <tr key={index}>
                       <td style={{ textAlign: "center" }}>{index + 1}</td>
+
                       <td>
                         <b>{productMap[item.product_id] || item.product_id}</b>
-                        {item.product_description ? (
-                          <div style={{ color: "#64748b", fontSize: 11 }}>
-                            {item.product_description}
-                          </div>
-                        ) : null}
                       </td>
+
+                      <td>{item.product_description || "-"}</td>
+
                       <td>{categoryMap[item.category_id] || item.category_id}</td>
+
                       <td>{typeMap[item.product_type_id] || item.product_type_id}</td>
+
                       <td>{unitMap[item.unit_id] || item.unit_id}</td>
+
                       <td style={{ textAlign: "center" }}>{fmt(item.order_qty)}</td>
-                      <td style={{ textAlign: "right" }}>{fmt(item.rate)}</td>
-                      <td style={{ textAlign: "right", fontWeight: 900 }}>
-                        {fmt(lineTotal(item))}
-                      </td>
                     </tr>
                   ))
                 )}
@@ -3450,36 +3296,11 @@ function OrderDetailsModal({
           </div>
 
           <div className="printOptionGrid">
-            <button
-              className="printOptionBtn"
-              onClick={() => onPrint(order, "sale_order", true)}
-            >
-              <span className="printIcon">₨</span>
+            <button className="printOptionBtn" onClick={() => onPrint(order)}>
+              <span className="printIcon">🖨</span>
               <span className="printText">
                 <b>{t.saleOrderPrint}</b>
-                <small>{t.withAmount}</small>
-              </span>
-            </button>
-
-            <button
-              className="printOptionBtn"
-              onClick={() => onPrint(order, "sale_order", false)}
-            >
-              <span className="printIcon">—</span>
-              <span className="printText">
-                <b>{t.saleOrderPrint}</b>
-                <small>{t.withoutAmount}</small>
-              </span>
-            </button>
-
-            <button
-              className="printOptionBtn"
-              onClick={() => onPrint(order, "order_invoice", true)}
-            >
-              <span className="printIcon">🧾</span>
-              <span className="printText">
-                <b>{t.orderInvoicePrint}</b>
-                <small>{t.withAmount}</small>
+                <small>{t.products}</small>
               </span>
             </button>
 
@@ -3494,17 +3315,25 @@ function OrderDetailsModal({
                 <small>{t.invoiceCreated}</small>
               </span>
             </button>
+
+            <button className="printOptionBtn" onClick={() => onEdit(order)}>
+              <span className="printIcon">✎</span>
+              <span className="printText">
+                <b>{t.edit}</b>
+                <small>{t.orderDetails}</small>
+              </span>
+            </button>
+
+            <button className="printOptionBtn" onClick={() => onDelete(order.id)}>
+              <span className="printIcon">×</span>
+              <span className="printText">
+                <b>{t.delete}</b>
+                <small>{t.orderDetails}</small>
+              </span>
+            </button>
           </div>
 
           <div className="modalFooterBasic">
-            <button className="btn btn-soft" onClick={() => onEdit(order)}>
-              {t.edit}
-            </button>
-
-            <button className="btn btn-red" onClick={() => onDelete(order.id)}>
-              {t.delete}
-            </button>
-
             <button className="btn btn-soft" onClick={onClose}>
               {t.close}
             </button>
