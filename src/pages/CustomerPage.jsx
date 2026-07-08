@@ -105,13 +105,8 @@ function formatCredit(value) {
 function formatBalanceWithSide(value) {
   const amount = Number(value || 0);
 
-  if (amount > 0) {
-    return `${formatMoney(amount)} Dr`;
-  }
-
-  if (amount < 0) {
-    return `${formatMoney(Math.abs(amount))} Cr`;
-  }
+  if (amount > 0) return `${formatMoney(amount)} Dr`;
+  if (amount < 0) return `${formatMoney(Math.abs(amount))} Cr`;
 
   return "0";
 }
@@ -136,7 +131,6 @@ const LANG = {
     summarySubtitle: "Overview of visible customer records",
     totalCustomers: "Total Customers",
     totalBalance: "Total Current Balance",
-    totalOpeningBalance: "Total Opening Balance",
 
     searchPlaceholder: "Search by name, phone, city, balance…",
     name: "Customer Name",
@@ -146,6 +140,7 @@ const LANG = {
     cityEn: "City",
     amount: "Current Balance",
     openingBalance: "Opening Balance",
+    side: "Side",
 
     ledger: "Ledger",
     ledgerTitle: "Customer Ledger",
@@ -158,7 +153,6 @@ const LANG = {
     debit: "Debit",
     credit: "Credit",
     balance: "Balance",
-    openingEntry: "Opening Balance",
 
     close: "Close",
     save: "Save",
@@ -185,7 +179,6 @@ const LANG = {
 
     generated: "Generated",
     totalLabel: "Total",
-    customersLabel: "customers",
     companyName: "Ali Cages",
     reportTitle: "Customer Report",
 
@@ -227,7 +220,6 @@ const LANG = {
     summarySubtitle: "نظر آنے والے گاہکوں کے ریکارڈ کا خلاصہ",
     totalCustomers: "کل گاہک",
     totalBalance: "کل موجودہ بیلنس",
-    totalOpeningBalance: "کل اوپننگ بیلنس",
 
     searchPlaceholder: "نام، فون، شہر، بیلنس سے تلاش کریں…",
     name: "گاہک کا نام",
@@ -237,6 +229,7 @@ const LANG = {
     cityEn: "شہر",
     amount: "موجودہ بیلنس",
     openingBalance: "اوپننگ بیلنس",
+    side: "سائیڈ",
 
     ledger: "لیجر",
     ledgerTitle: "گاہک کا لیجر",
@@ -249,7 +242,6 @@ const LANG = {
     debit: "ڈیبٹ",
     credit: "کریڈٹ",
     balance: "بیلنس",
-    openingEntry: "اوپننگ بیلنس",
 
     close: "بند کریں",
     save: "محفوظ کریں",
@@ -276,7 +268,6 @@ const LANG = {
 
     generated: "تیار کردہ",
     totalLabel: "کل",
-    customersLabel: "گاہک",
     companyName: "علی کیجز",
     reportTitle: "گاہک رپورٹ",
 
@@ -315,6 +306,7 @@ const defaultForm = {
   phone: "",
   city_en: "",
   opening_balance: "",
+  opening_balance_type: "dr",
 };
 
 const defaultLedgerForm = {
@@ -371,6 +363,11 @@ function getSourceInfo(source, t) {
         text: "text-indigo-700",
       };
   }
+}
+
+function getSignedOpeningBalance(value, type) {
+  const amount = Number(value || 0);
+  return type === "cr" ? -Math.abs(amount) : Math.abs(amount);
 }
 
 function downloadAllPdf(customers, lang, cache) {
@@ -650,11 +647,14 @@ const CustomerPage = () => {
   };
 
   const openEdit = (customer) => {
+    const openingBalance = Number(customer.opening_balance || 0);
+
     setForm({
       customer_name_en: customer.customer_name_en || "",
       phone: customer.phone || "",
       city_en: customer.city_en || "",
-      opening_balance: customer.opening_balance ?? "",
+      opening_balance: Math.abs(openingBalance) || "",
+      opening_balance_type: openingBalance < 0 ? "cr" : "dr",
     });
 
     setEditingId(customer.id);
@@ -672,7 +672,9 @@ const CustomerPage = () => {
       phone: form.phone.trim(),
       city_en: form.city_en.trim(),
       opening_balance:
-        form.opening_balance !== "" ? Number(form.opening_balance) : 0,
+        form.opening_balance !== ""
+          ? getSignedOpeningBalance(form.opening_balance, form.opening_balance_type)
+          : 0,
     };
 
     try {
@@ -1067,33 +1069,14 @@ const CustomerPage = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-people-fill"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">
-                    {t.totalCustomers}
-                  </p>
-                  <p className="text-3xl font-extrabold text-slate-950">
-                    {summary.totalCustomers}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                  <div className="w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
-                    <i className="bi bi-cash-stack"></i>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-1">
-                    {t.totalBalance}
-                  </p>
-                  <p
-                    className={`text-2xl money-font ${getBalanceTextClass(
-                      summary.totalBalance
-                    )}`}
-                  >
-                    {formatBalanceWithSide(summary.totalBalance)}
-                  </p>
-                </div>
+                <InfoCard label={t.totalCustomers} value={summary.totalCustomers} />
+                <InfoCard
+                  label={t.totalBalance}
+                  value={formatBalanceWithSide(summary.totalBalance)}
+                  mono
+                  highlight
+                  valueClass={getBalanceTextClass(summary.totalBalance)}
+                />
               </div>
             </div>
           )}
@@ -1123,46 +1106,21 @@ const CustomerPage = () => {
             <table className="w-full text-sm text-slate-600">
               <thead>
                 <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
-                  <th
-                    className={`px-4 py-3 ${
-                      isUrdu ? "text-right" : "text-left"
-                    } w-12`}
-                  >
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>
                     #
                   </th>
-
-                  <th
-                    className={`px-4 py-3 ${
-                      isUrdu ? "text-right" : "text-left"
-                    }`}
-                  >
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.name}
                   </th>
-
-                  <th
-                    className={`px-4 py-3 ${
-                      isUrdu ? "text-right" : "text-left"
-                    }`}
-                  >
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.phone}
                   </th>
-
-                  <th
-                    className={`px-4 py-3 ${
-                      isUrdu ? "text-right" : "text-left"
-                    }`}
-                  >
+                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.city}
                   </th>
-
-                  <th
-                    className={`px-4 py-3 ${
-                      isUrdu ? "text-left" : "text-right"
-                    }`}
-                  >
+                  <th className={`px-4 py-3 ${isUrdu ? "text-left" : "text-right"}`}>
                     {t.amount}
                   </th>
-
                   <th className="px-4 py-3 text-center">{t.actions}</th>
                 </tr>
               </thead>
@@ -1170,105 +1128,32 @@ const CustomerPage = () => {
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-10 text-center text-slate-400"
-                    >
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-10 text-center text-slate-400"
-                    >
+                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
                 ) : (
                   filtered.map((customer, index) => (
-                    <tr
+                    <CustomerDesktopRow
                       key={customer.id}
-                      className="hover:bg-slate-50/70 transition"
-                    >
-                      <td className="px-4 py-3 text-slate-400 font-mono text-xs">
-                        {index + 1}
-                      </td>
-
-                      <td
-                        className={`px-4 py-3 font-bold text-slate-950 ${
-                          isUrdu ? "text-right" : ""
-                        }`}
-                      >
-                        <div
-                          className={`flex items-center gap-3 ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
-                        >
-                          <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
-                            <i className="bi bi-person-fill"></i>
-                          </div>
-
-                          <span className={translating ? "opacity-40" : ""}>
-                            {getName(customer)}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">
-                        {customer.phone || "-"}
-                      </td>
-
-                      <td
-                        className={`px-4 py-3 text-slate-950 font-semibold ${
-                          translating ? "opacity-40" : ""
-                        }`}
-                      >
-                        {getCity(customer)}
-                      </td>
-
-                      <td
-                        className={`px-4 py-3 money-font ${getBalanceTextClass(
-                          customer.current_balance
-                        )} ${isUrdu ? "text-left" : "text-right"}`}
-                      >
-                        {formatBalanceWithSide(customer.current_balance)}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <div
-                          className={`flex items-center justify-center gap-2 flex-wrap ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
-                        >
-                          <button
-                            onClick={() => openEdit(customer)}
-                            className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center justify-center"
-                            title={t.edit}
-                          >
-                            <i className="bi bi-pencil-square"></i>
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(customer.id)}
-                            className="w-9 h-9 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center"
-                            title={t.delete}
-                          >
-                            <i className="bi bi-trash3-fill"></i>
-                          </button>
-
-                          <button
-                            onClick={() => openLedger(customer)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition"
-                          >
-                            <i className="bi bi-journal-text"></i>
-                            {t.ledger}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      customer={customer}
+                      index={index}
+                      t={t}
+                      isUrdu={isUrdu}
+                      translating={translating}
+                      getName={getName}
+                      getCity={getCity}
+                      openEdit={openEdit}
+                      handleDelete={handleDelete}
+                      openLedger={openLedger}
+                    />
                   ))
                 )}
               </tbody>
@@ -1410,13 +1295,78 @@ const CustomerPage = () => {
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-indigo-700 mb-1.5">
+                    {t.openingBalance}
+                  </label>
+
+                  <input
+                    type="number"
+                    value={form.opening_balance}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        opening_balance: event.target.value,
+                      })
+                    }
+                    placeholder={t.amountPlaceholder}
+                    className={`w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-slate-50/30 focus:outline-none focus:ring-4 focus:ring-indigo-100 money-font ${
+                      form.opening_balance_type === "cr"
+                        ? "text-rose-700"
+                        : "text-slate-950"
+                    } ${isUrdu ? "text-right" : ""}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                    {t.side}
+                  </label>
+
+                  <select
+                    value={form.opening_balance_type}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        opening_balance_type: event.target.value,
+                      })
+                    }
+                    className={`w-full border rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-4 font-bold ${
+                      form.opening_balance_type === "cr"
+                        ? "border-rose-200 text-rose-700 focus:ring-rose-100"
+                        : "border-slate-200 text-slate-950 focus:ring-indigo-100"
+                    }`}
+                  >
+                    <option value="dr">Dr</option>
+                    <option value="cr">Cr</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-bold text-slate-500">
+                      {t.openingBalance}
+                    </span>
+
+                    <span
+                      className={`text-sm money-font ${
+                        form.opening_balance_type === "cr"
+                          ? "text-rose-700"
+                          : "text-slate-950"
+                      }`}
+                    >
+                      {form.opening_balance
+                        ? form.opening_balance_type === "cr"
+                          ? `${formatMoney(form.opening_balance)} Cr`
+                          : `${formatMoney(form.opening_balance)} Dr`
+                        : "0"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div
-                className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-200 ${
-                  isUrdu ? "sm:flex-row-reverse" : ""
-                }`}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-200">
                 <button
                   onClick={handleSave}
                   disabled={submitting}
@@ -1618,11 +1568,7 @@ const CustomerPage = () => {
                       </div>
                     </div>
 
-                    <div
-                      className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 ${
-                        isUrdu ? "sm:flex-row-reverse" : ""
-                      }`}
-                    >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5">
                       <button
                         onClick={handleLedgerSave}
                         disabled={ledgerSubmitting}
@@ -1653,221 +1599,16 @@ const CustomerPage = () => {
                   </div>
                 )}
 
-                <div className="bg-white rounded-[18px] sm:rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-sm text-slate-600">
-                      <thead>
-                        <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
-                          <th
-                            className={`px-4 py-3 ${
-                              isUrdu ? "text-right" : "text-left"
-                            }`}
-                          >
-                            #
-                          </th>
-
-                          <th
-                            className={`px-4 py-3 ${
-                              isUrdu ? "text-right" : "text-left"
-                            }`}
-                          >
-                            {t.date}
-                          </th>
-
-                          <th
-                            className={`px-4 py-3 ${
-                              isUrdu ? "text-right" : "text-left"
-                            }`}
-                          >
-                            {t.source}
-                          </th>
-
-                          <th
-                            className={`px-4 py-3 ${
-                              isUrdu ? "text-right" : "text-left"
-                            }`}
-                          >
-                            {t.details}
-                          </th>
-
-                          <th className="px-4 py-3 text-right">{t.debit}</th>
-                          <th className="px-4 py-3 text-right">{t.credit}</th>
-                          <th className="px-4 py-3 text-right">{t.balance}</th>
-                          <th className="px-4 py-3 text-center">
-                            {t.actions}
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody className="divide-y divide-sky-50">
-                        {ledgerLoading ? (
-                          <tr>
-                            <td
-                              colSpan={8}
-                              className="px-6 py-10 text-center text-slate-400"
-                            >
-                              <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                              <p className="mt-2">{t.ledgerLoading}</p>
-                            </td>
-                          </tr>
-                        ) : ledgerRows.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={8}
-                              className="px-6 py-10 text-center text-slate-400"
-                            >
-                              {t.ledgerEmpty}
-                            </td>
-                          </tr>
-                        ) : (
-                          ledgerRows.map((row, index) => {
-                            const srcInfo = getSourceInfo(row.source, t);
-
-                            const editDisabled = !row.can_edit;
-                            const deleteDisabled = !row.can_delete;
-
-                            const rowBg =
-                              row.source === "invoice"
-                                ? "bg-amber-50/40 hover:bg-amber-50/70"
-                                : row.source === "return"
-                                ? "bg-violet-50/40 hover:bg-violet-50/70"
-                                : "hover:bg-slate-50/40";
-
-                            return (
-                              <tr
-                                key={`${row.source}-${row.id}-${index}`}
-                                className={`transition ${rowBg}`}
-                              >
-                                <td className="px-4 py-3 text-slate-400 font-mono text-xs">
-                                  {index + 1}
-                                </td>
-
-                                <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">
-                                  {getEntryDate(row) || "-"}
-                                </td>
-
-                                <td className="px-4 py-3">
-                                  <span
-                                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${srcInfo.bg} ${srcInfo.text}`}
-                                  >
-                                    {srcInfo.label}
-                                  </span>
-                                </td>
-
-                                <td className="px-4 py-3 font-semibold text-slate-950">
-                                  {row.source === "invoice"
-                                    ? `Sale Invoice No: ${
-                                        row.invoice_no || "-"
-                                      }`
-                                    : row.source === "return"
-                                    ? `Sales Return No: ${row.return_no || "-"}`
-                                    : getEntryDescription(row)}
-                                </td>
-
-                                <td
-                                  className={`px-4 py-3 text-right money-font ${
-                                    Number(row.debit || 0) > 0
-                                      ? "text-slate-950"
-                                      : "text-slate-400"
-                                  }`}
-                                >
-                                  {formatDebit(row.debit)}
-                                </td>
-
-                                <td
-                                  className={`px-4 py-3 text-right money-font ${
-                                    Number(row.credit || 0) > 0
-                                      ? "text-rose-700"
-                                      : "text-slate-400"
-                                  }`}
-                                >
-                                  {formatCredit(row.credit)}
-                                </td>
-
-                                <td
-                                  className={`px-4 py-3 text-right money-font ${getBalanceTextClass(
-                                    row.balance
-                                  )}`}
-                                >
-                                  {formatBalanceWithSide(row.balance)}
-                                </td>
-
-                                <td className="px-4 py-3">
-                                  <div
-                                    className={`flex items-center justify-center gap-2 ${
-                                      isUrdu ? "flex-row-reverse" : ""
-                                    }`}
-                                  >
-                                    <button
-                                      onClick={() => openEditLedgerForm(row)}
-                                      disabled={editDisabled}
-                                      className={`w-9 h-9 rounded-lg transition flex items-center justify-center ${
-                                        editDisabled
-                                          ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                                          : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                                      }`}
-                                      title={
-                                        editDisabled ? t.editNotAllowed : t.edit
-                                      }
-                                    >
-                                      <i className="bi bi-pencil-square"></i>
-                                    </button>
-
-                                    <button
-                                      onClick={() => handleLedgerDelete(row)}
-                                      disabled={deleteDisabled}
-                                      className={`w-9 h-9 rounded-lg transition flex items-center justify-center ${
-                                        deleteDisabled
-                                          ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                                          : "bg-rose-100 text-rose-700 hover:bg-rose-200"
-                                      }`}
-                                      title={
-                                        deleteDisabled
-                                          ? t.deleteNotAllowed
-                                          : t.delete
-                                      }
-                                    >
-                                      <i className="bi bi-trash3-fill"></i>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="md:hidden">
-                    {ledgerLoading ? (
-                      <div className="px-6 py-10 text-center text-slate-400">
-                        <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                        <p className="mt-2">{t.ledgerLoading}</p>
-                      </div>
-                    ) : ledgerRows.length === 0 ? (
-                      <div className="px-6 py-10 text-center text-slate-400">
-                        {t.ledgerEmpty}
-                      </div>
-                    ) : (
-                      <div className="p-3 space-y-3">
-                        {ledgerRows.map((row, index) => (
-                          <LedgerMobileCard
-                            key={`${row.source}-${row.id}-${index}`}
-                            row={row}
-                            index={index}
-                            t={t}
-                            isUrdu={isUrdu}
-                            getEntryDate={getEntryDate}
-                            getEntryDescription={getEntryDescription}
-                            openEditLedgerForm={openEditLedgerForm}
-                            handleLedgerDelete={handleLedgerDelete}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <LedgerTable
+                  ledgerLoading={ledgerLoading}
+                  ledgerRows={ledgerRows}
+                  t={t}
+                  isUrdu={isUrdu}
+                  getEntryDate={getEntryDate}
+                  getEntryDescription={getEntryDescription}
+                  openEditLedgerForm={openEditLedgerForm}
+                  handleLedgerDelete={handleLedgerDelete}
+                />
               </div>
 
               <div
@@ -1887,6 +1628,99 @@ const CustomerPage = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const CustomerDesktopRow = ({
+  customer,
+  index,
+  t,
+  isUrdu,
+  translating,
+  getName,
+  getCity,
+  openEdit,
+  handleDelete,
+  openLedger,
+}) => {
+  return (
+    <tr className="hover:bg-slate-50/70 transition">
+      <td className="px-4 py-3 text-slate-400 font-mono text-xs">
+        {index + 1}
+      </td>
+
+      <td
+        className={`px-4 py-3 font-bold text-slate-950 ${
+          isUrdu ? "text-right" : ""
+        }`}
+      >
+        <div
+          className={`flex items-center gap-3 ${
+            isUrdu ? "flex-row-reverse" : ""
+          }`}
+        >
+          <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+            <i className="bi bi-person-fill"></i>
+          </div>
+
+          <span className={translating ? "opacity-40" : ""}>
+            {getName(customer)}
+          </span>
+        </div>
+      </td>
+
+      <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">
+        {customer.phone || "-"}
+      </td>
+
+      <td
+        className={`px-4 py-3 text-slate-950 font-semibold ${
+          translating ? "opacity-40" : ""
+        }`}
+      >
+        {getCity(customer)}
+      </td>
+
+      <td
+        className={`px-4 py-3 money-font ${getBalanceTextClass(
+          customer.current_balance
+        )} ${isUrdu ? "text-left" : "text-right"}`}
+      >
+        {formatBalanceWithSide(customer.current_balance)}
+      </td>
+
+      <td className="px-4 py-3">
+        <div
+          className={`flex items-center justify-center gap-2 flex-wrap ${
+            isUrdu ? "flex-row-reverse" : ""
+          }`}
+        >
+          <button
+            onClick={() => openEdit(customer)}
+            className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center justify-center"
+            title={t.edit}
+          >
+            <i className="bi bi-pencil-square"></i>
+          </button>
+
+          <button
+            onClick={() => handleDelete(customer.id)}
+            className="w-9 h-9 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center"
+            title={t.delete}
+          >
+            <i className="bi bi-trash3-fill"></i>
+          </button>
+
+          <button
+            onClick={() => openLedger(customer)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition"
+          >
+            <i className="bi bi-journal-text"></i>
+            {t.ledger}
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 };
 
@@ -2039,6 +1873,217 @@ const CustomerMobileCard = ({
   );
 };
 
+const LedgerTable = ({
+  ledgerLoading,
+  ledgerRows,
+  t,
+  isUrdu,
+  getEntryDate,
+  getEntryDescription,
+  openEditLedgerForm,
+  handleLedgerDelete,
+}) => {
+  return (
+    <div className="bg-white rounded-[18px] sm:rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm text-slate-600">
+          <thead>
+            <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
+              <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
+                #
+              </th>
+              <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
+                {t.date}
+              </th>
+              <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
+                {t.source}
+              </th>
+              <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
+                {t.details}
+              </th>
+              <th className="px-4 py-3 text-right">{t.debit}</th>
+              <th className="px-4 py-3 text-right">{t.credit}</th>
+              <th className="px-4 py-3 text-right">{t.balance}</th>
+              <th className="px-4 py-3 text-center">{t.actions}</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-sky-50">
+            {ledgerLoading ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-10 text-center text-slate-400">
+                  <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                  <p className="mt-2">{t.ledgerLoading}</p>
+                </td>
+              </tr>
+            ) : ledgerRows.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-10 text-center text-slate-400">
+                  {t.ledgerEmpty}
+                </td>
+              </tr>
+            ) : (
+              ledgerRows.map((row, index) => (
+                <LedgerDesktopRow
+                  key={`${row.source}-${row.id}-${index}`}
+                  row={row}
+                  index={index}
+                  t={t}
+                  isUrdu={isUrdu}
+                  getEntryDate={getEntryDate}
+                  getEntryDescription={getEntryDescription}
+                  openEditLedgerForm={openEditLedgerForm}
+                  handleLedgerDelete={handleLedgerDelete}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="md:hidden">
+        {ledgerLoading ? (
+          <div className="px-6 py-10 text-center text-slate-400">
+            <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+            <p className="mt-2">{t.ledgerLoading}</p>
+          </div>
+        ) : ledgerRows.length === 0 ? (
+          <div className="px-6 py-10 text-center text-slate-400">
+            {t.ledgerEmpty}
+          </div>
+        ) : (
+          <div className="p-3 space-y-3">
+            {ledgerRows.map((row, index) => (
+              <LedgerMobileCard
+                key={`${row.source}-${row.id}-${index}`}
+                row={row}
+                index={index}
+                t={t}
+                isUrdu={isUrdu}
+                getEntryDate={getEntryDate}
+                getEntryDescription={getEntryDescription}
+                openEditLedgerForm={openEditLedgerForm}
+                handleLedgerDelete={handleLedgerDelete}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const LedgerDesktopRow = ({
+  row,
+  index,
+  t,
+  isUrdu,
+  getEntryDate,
+  getEntryDescription,
+  openEditLedgerForm,
+  handleLedgerDelete,
+}) => {
+  const srcInfo = getSourceInfo(row.source, t);
+  const editDisabled = !row.can_edit;
+  const deleteDisabled = !row.can_delete;
+
+  const rowBg =
+    row.source === "invoice"
+      ? "bg-amber-50/40 hover:bg-amber-50/70"
+      : row.source === "return"
+      ? "bg-violet-50/40 hover:bg-violet-50/70"
+      : "hover:bg-slate-50/40";
+
+  const detail =
+    row.source === "invoice"
+      ? `Sale Invoice No: ${row.invoice_no || "-"}`
+      : row.source === "return"
+      ? `Sales Return No: ${row.return_no || "-"}`
+      : getEntryDescription(row);
+
+  return (
+    <tr className={`transition ${rowBg}`}>
+      <td className="px-4 py-3 text-slate-400 font-mono text-xs">
+        {index + 1}
+      </td>
+
+      <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">
+        {getEntryDate(row) || "-"}
+      </td>
+
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${srcInfo.bg} ${srcInfo.text}`}
+        >
+          {srcInfo.label}
+        </span>
+      </td>
+
+      <td className={`px-4 py-3 font-semibold text-slate-950 ${isUrdu ? "text-right" : ""}`}>
+        {detail}
+      </td>
+
+      <td
+        className={`px-4 py-3 text-right money-font ${
+          Number(row.debit || 0) > 0 ? "text-slate-950" : "text-slate-400"
+        }`}
+      >
+        {formatDebit(row.debit)}
+      </td>
+
+      <td
+        className={`px-4 py-3 text-right money-font ${
+          Number(row.credit || 0) > 0 ? "text-rose-700" : "text-slate-400"
+        }`}
+      >
+        {formatCredit(row.credit)}
+      </td>
+
+      <td
+        className={`px-4 py-3 text-right money-font ${getBalanceTextClass(
+          row.balance
+        )}`}
+      >
+        {formatBalanceWithSide(row.balance)}
+      </td>
+
+      <td className="px-4 py-3">
+        <div
+          className={`flex items-center justify-center gap-2 ${
+            isUrdu ? "flex-row-reverse" : ""
+          }`}
+        >
+          <button
+            onClick={() => openEditLedgerForm(row)}
+            disabled={editDisabled}
+            className={`w-9 h-9 rounded-lg transition flex items-center justify-center ${
+              editDisabled
+                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+            }`}
+            title={editDisabled ? t.editNotAllowed : t.edit}
+          >
+            <i className="bi bi-pencil-square"></i>
+          </button>
+
+          <button
+            onClick={() => handleLedgerDelete(row)}
+            disabled={deleteDisabled}
+            className={`w-9 h-9 rounded-lg transition flex items-center justify-center ${
+              deleteDisabled
+                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+            }`}
+            title={deleteDisabled ? t.deleteNotAllowed : t.delete}
+          >
+            <i className="bi bi-trash3-fill"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 const LedgerMobileCard = ({
   row,
   index,
@@ -2120,11 +2165,7 @@ const LedgerMobileCard = ({
         </div>
       </div>
 
-      <div
-        className={`mt-4 grid grid-cols-2 gap-2 ${
-          isUrdu ? "text-right" : ""
-        }`}
-      >
+      <div className={`mt-4 grid grid-cols-2 gap-2 ${isUrdu ? "text-right" : ""}`}>
         <button
           onClick={() => openEditLedgerForm(row)}
           disabled={editDisabled}
