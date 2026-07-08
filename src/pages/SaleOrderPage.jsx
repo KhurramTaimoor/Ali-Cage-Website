@@ -1752,14 +1752,19 @@ th{background:#111827;color:white;text-align:left}
           border-radius: 18px;
           box-shadow: 0 8px 24px rgba(15,23,42,.05);
           overflow: hidden;
+          width: 100%;
+          max-width: 100%;
         }
 
         .table-wrap {
-          overflow-x: auto;
+          width: 100%;
+          max-width: 100%;
+          overflow-x: hidden !important;
         }
 
         .orders-desktop {
           display: block;
+          width: 100%;
         }
 
         .orders-mobile {
@@ -1767,44 +1772,84 @@ th{background:#111827;color:white;text-align:left}
         }
 
         table.orders {
-          width: 100%;
-          min-width: 1050px;
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
           border-collapse: collapse;
           table-layout: fixed;
         }
 
         table.orders th {
           background: #0f172a;
-          color: rgba(255,255,255,.82);
-          font-size: 11px;
+          color: rgba(255,255,255,.9);
+          font-size: 10.5px;
           text-transform: uppercase;
-          letter-spacing: .5px;
-          padding: 15px 14px;
+          letter-spacing: .35px;
+          padding: 15px 8px;
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         table.orders td {
-          padding: 13px 14px;
+          padding: 13px 8px;
           border-bottom: 1px solid #eef2f7;
-          font-size: 13px;
+          font-size: 12px;
           vertical-align: middle;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        table.orders td:not(.actionCell) {
+          white-space: nowrap;
         }
 
         table.orders tr:hover td {
           background: #f8fafc;
         }
 
+        .tableText {
+          min-width: 0;
+          max-width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .emptyOrderCell {
+          text-align: center !important;
+          padding: 55px 14px !important;
+          color: #94a3b8 !important;
+          font-size: 15px !important;
+          font-weight: 600 !important;
+        }
+
+        .detailsBtnCell {
+          text-align: center;
+        }
+
+        .detailsBtnCell .btn {
+          padding: 7px 8px;
+          font-size: 10px;
+          border-radius: 9px;
+          min-height: 30px;
+        }
+
         .order-action-row {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
+          gap: 5px;
           flex-wrap: wrap;
         }
 
         .order-action-row .btn {
-          padding: 7px 9px;
-          font-size: 12px;
+          padding: 6px 7px;
+          font-size: 10px;
+          border-radius: 9px;
+          min-height: 30px;
+          line-height: 1.1;
+          max-width: 100%;
         }
 
         .order-mobile-list {
@@ -1889,6 +1934,24 @@ th{background:#111827;color:white;text-align:left}
           width: 100%;
           padding: 9px 8px;
           font-size: 12px;
+        }
+
+        @media(max-width: 1180px) {
+          table.orders th {
+            font-size: 9.8px;
+            padding: 13px 6px;
+          }
+
+          table.orders td {
+            font-size: 11px;
+            padding: 12px 6px;
+          }
+
+          .order-action-row .btn,
+          .detailsBtnCell .btn {
+            padding: 6px 6px;
+            font-size: 9.5px;
+          }
         }
 
         .modal-bg {
@@ -2448,14 +2511,14 @@ th{background:#111827;color:white;text-align:left}
           <div className="orders-desktop table-wrap">
             <table className="orders">
               <colgroup>
-                <col style={{ width: 120 }} />
-                <col style={{ width: 135 }} />
-                <col style={{ width: 210 }} />
-                <col style={{ width: 190 }} />
-                <col style={{ width: 145 }} />
-                <col style={{ width: 125 }} />
-                <col style={{ width: 135 }} />
-                <col style={{ width: 210 }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "17%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "15%" }} />
               </colgroup>
 
               <thead>
@@ -2480,27 +2543,13 @@ th{background:#111827;color:white;text-align:left}
               <tbody>
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      style={{
-                        textAlign: "center",
-                        padding: 44,
-                        color: "#94a3b8",
-                      }}
-                    >
+                    <td colSpan={8} className="emptyOrderCell">
                       {t.loading}
                     </td>
                   </tr>
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      style={{
-                        textAlign: "center",
-                        padding: 44,
-                        color: "#94a3b8",
-                      }}
-                    >
+                    <td colSpan={8} className="emptyOrderCell">
                       {t.noOrders}
                     </td>
                   </tr>
@@ -2512,55 +2561,57 @@ th{background:#111827;color:white;text-align:left}
                     return (
                       <tr key={order.id || index}>
                         <td
+                          title={order.order_date || "-"}
                           style={{
                             textAlign: "center",
                             fontFamily: "monospace",
                             color: "#475569",
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: 800,
                           }}
                         >
                           {order.order_date || "-"}
                         </td>
 
-                        <td>
-                          <div
-                            style={{
-                              fontFamily: "monospace",
-                              fontWeight: 900,
-                            }}
-                          >
-                            {order.order_no || "-"}
-                          </div>
+                        <td
+                          title={order.order_no || "-"}
+                          style={{
+                            fontFamily: "monospace",
+                            fontWeight: 900,
+                            color: "#0f172a",
+                            textAlign: isUrdu ? "right" : "left",
+                          }}
+                        >
+                          <div className="tableText">{order.order_no || "-"}</div>
                         </td>
 
-                        <td>
-                          <div
-                            style={{
-                              fontWeight: 850,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
+                        <td
+                          title={getOrderPartyName(order) || "-"}
+                          style={{
+                            fontWeight: 850,
+                            color: "#0f172a",
+                            textAlign: isUrdu ? "right" : "left",
+                          }}
+                        >
+                          <div className="tableText">
                             {getOrderPartyName(order) || "-"}
                           </div>
                         </td>
 
                         <td
+                          title={order.shipment_to || "-"}
                           style={{
                             color: "#475569",
                             fontSize: 12,
                             fontWeight: 800,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            textAlign: isUrdu ? "right" : "left",
                           }}
                         >
-                          {order.shipment_to || "-"}
+                          <div className="tableText">{order.shipment_to || "-"}</div>
                         </td>
 
                         <td
+                          title={fmt(grand)}
                           style={{
                             textAlign: "right",
                             color: "#1d4ed8",
@@ -2577,17 +2628,16 @@ th{background:#111827;color:white;text-align:left}
                           </span>
                         </td>
 
-                        <td style={{ textAlign: "center" }}>
+                        <td className="detailsBtnCell">
                           <button
                             className="btn btn-soft"
                             onClick={() => setDetailsOrder(order)}
-                            style={{ padding: "7px 10px" }}
                           >
                             {t.seeDetails}
                           </button>
                         </td>
 
-                        <td style={{ textAlign: "center" }}>
+                        <td className="actionCell">
                           <div className="order-action-row">
                             <button
                               className="btn btn-green"
@@ -2622,24 +2672,12 @@ th{background:#111827;color:white;text-align:left}
 
           <div className="orders-mobile">
             {loading ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: 36,
-                  color: "#94a3b8",
-                }}
-              >
-                {t.loading}
+              <div className="order-mobile-list">
+                <div className="emptyOrderCell">{t.loading}</div>
               </div>
             ) : filteredOrders.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: 36,
-                  color: "#94a3b8",
-                }}
-              >
-                {t.noOrders}
+              <div className="order-mobile-list">
+                <div className="emptyOrderCell">{t.noOrders}</div>
               </div>
             ) : (
               <div className="order-mobile-list">
@@ -2707,18 +2745,18 @@ th{background:#111827;color:white;text-align:left}
                         </button>
 
                         <button
+                          className="btn btn-green"
+                          onClick={() => openEdit(order)}
+                        >
+                          {t.edit}
+                        </button>
+
+                        <button
                           className="btn convertAction"
                           onClick={() => handleConvertToInvoice(order)}
                           disabled={submitting}
                         >
                           {t.convertToInvoice}
-                        </button>
-
-                        <button
-                          className="btn btn-green"
-                          onClick={() => openEdit(order)}
-                        >
-                          {t.edit}
                         </button>
 
                         <button
