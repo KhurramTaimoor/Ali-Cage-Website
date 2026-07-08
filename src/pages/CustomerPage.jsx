@@ -116,6 +116,10 @@ function formatBalanceWithSide(value) {
   return "0";
 }
 
+function getBalanceTextClass(value) {
+  return Number(value || 0) < 0 ? "text-rose-700" : "text-slate-950";
+}
+
 function todayInputValue() {
   const now = new Date();
   const tzOffset = now.getTimezoneOffset() * 60000;
@@ -369,10 +373,6 @@ function getSourceInfo(source, t) {
   }
 }
 
-function getBalanceTextClass(value) {
-  return Number(value || 0) < 0 ? "text-rose-700" : "text-slate-950";
-}
-
 function downloadAllPdf(customers, lang, cache) {
   const t = LANG[lang];
 
@@ -437,7 +437,11 @@ function downloadAllPdf(customers, lang, cache) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.setTextColor(totalBalance < 0 ? 190 : 15, totalBalance < 0 ? 18 : 23, totalBalance < 0 ? 60 : 42);
+  doc.setTextColor(
+    totalBalance < 0 ? 190 : 15,
+    totalBalance < 0 ? 18 : 23,
+    totalBalance < 0 ? 60 : 42
+  );
   doc.text(formatBalanceWithSide(totalBalance), 106, 61);
 
   const rows = customers.map((customer, index) => [
@@ -457,7 +461,9 @@ function downloadAllPdf(customers, lang, cache) {
     margin: { left: 10, right: 10 },
     head: [["#", t.name, t.phone, t.city, t.amount]],
     body: rows,
-    foot: [["", "", "", `── ${t.totalLabel} ──`, formatBalanceWithSide(totalBalance)]],
+    foot: [
+      ["", "", "", `── ${t.totalLabel} ──`, formatBalanceWithSide(totalBalance)],
+    ],
     theme: "grid",
 
     headStyles: {
@@ -987,24 +993,24 @@ const CustomerPage = () => {
       )}
 
       <div className="max-w-7xl mx-auto mb-4">
-        <div className="bg-white rounded-[22px] border border-slate-200 shadow-sm px-4 py-3">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-white rounded-[18px] sm:rounded-[22px] border border-slate-200 shadow-sm px-4 py-3">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
-              <h1 className="text-[26px] font-extrabold tracking-tight text-slate-950">
+              <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight text-slate-950">
                 {t.title}
               </h1>
               <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
             </div>
 
             <div
-              className={`flex gap-2 flex-wrap ${
-                isUrdu ? "flex-row-reverse" : ""
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:flex gap-2 w-full lg:w-auto ${
+                isUrdu ? "lg:flex-row-reverse" : ""
               }`}
             >
               <button
                 onClick={handleLangToggle}
                 disabled={translating}
-                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="same-btn w-full lg:w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <i
                   className={`bi ${
@@ -1018,7 +1024,7 @@ const CustomerPage = () => {
 
               <button
                 onClick={() => setShowSummary((value) => !value)}
-                className={`same-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm ${
+                className={`same-btn w-full lg:w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm ${
                   showSummary
                     ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
@@ -1035,7 +1041,7 @@ const CustomerPage = () => {
 
               <button
                 onClick={() => downloadAllPdf(filtered, lang, urduCache)}
-                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
+                className="same-btn w-full lg:w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 text-indigo-700 text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
               >
                 <i className="bi bi-file-earmark-pdf-fill"></i>
                 {t.downloadPdf}
@@ -1043,7 +1049,7 @@ const CustomerPage = () => {
 
               <button
                 onClick={openAdd}
-                className="same-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+                className="same-btn w-full lg:w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
               >
                 <i className="bi bi-person-plus-fill"></i>
                 {t.addBtn}
@@ -1112,8 +1118,8 @@ const CustomerPage = () => {
           />
         </div>
 
-        <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-[18px] sm:rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-slate-600">
               <thead>
                 <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
@@ -1268,12 +1274,43 @@ const CustomerPage = () => {
               </tbody>
             </table>
           </div>
+
+          <div className="md:hidden">
+            {loading ? (
+              <div className="px-6 py-10 text-center text-slate-400">
+                <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                <p className="mt-2">{t.loading}</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="px-6 py-10 text-center text-slate-400">
+                {t.noRecords}
+              </div>
+            ) : (
+              <div className="p-3 space-y-3">
+                {filtered.map((customer, index) => (
+                  <CustomerMobileCard
+                    key={customer.id}
+                    customer={customer}
+                    index={index}
+                    t={t}
+                    isUrdu={isUrdu}
+                    translating={translating}
+                    getName={getName}
+                    getCity={getCity}
+                    openEdit={openEdit}
+                    handleDelete={handleDelete}
+                    openLedger={openLedger}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
             <div
-              className="bg-white rounded-[22px] shadow-2xl w-full max-w-2xl p-4 flex flex-col"
+              className="bg-white rounded-[18px] sm:rounded-[22px] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-4 flex flex-col"
               dir={dir}
             >
               <div className="flex items-center gap-3 mb-4 border-b border-slate-200 pb-4">
@@ -1376,14 +1413,14 @@ const CustomerPage = () => {
               </div>
 
               <div
-                className={`flex gap-3 pt-4 border-t border-slate-200 ${
-                  isUrdu ? "flex-row-reverse" : ""
+                className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-200 ${
+                  isUrdu ? "sm:flex-row-reverse" : ""
                 }`}
               >
                 <button
                   onClick={handleSave}
                   disabled={submitting}
-                  className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="bg-indigo-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <i
                     className={`bi ${
@@ -1396,7 +1433,7 @@ const CustomerPage = () => {
                 <button
                   onClick={() => setShowForm(false)}
                   disabled={submitting}
-                  className="flex-1 bg-white border border-slate-300 text-indigo-700 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-60"
+                  className="bg-white border border-slate-300 text-indigo-700 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-60"
                 >
                   {t.cancel}
                 </button>
@@ -1406,12 +1443,12 @@ const CustomerPage = () => {
         )}
 
         {showLedger && selectedCustomer && (
-          <div className="fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm">
             <div
-              className="bg-white rounded-[22px] shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-white rounded-none sm:rounded-[22px] shadow-2xl w-full sm:max-w-6xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col"
               dir={dir}
             >
-              <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-200 bg-slate-50/80">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200 bg-slate-50/80">
                 <div
                   className={`flex items-center gap-3 ${
                     isUrdu ? "flex-row-reverse" : ""
@@ -1421,12 +1458,12 @@ const CustomerPage = () => {
                     <i className="bi bi-journal-text text-indigo-700 text-lg"></i>
                   </div>
 
-                  <div>
-                    <h2 className="text-xl font-extrabold text-slate-950">
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-950">
                       {t.ledgerTitle}
                     </h2>
 
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 truncate">
                       {getName(selectedCustomer)}
                       {selectedCustomer.phone
                         ? ` • ${selectedCustomer.phone}`
@@ -1436,13 +1473,13 @@ const CustomerPage = () => {
                 </div>
 
                 <div
-                  className={`flex items-center gap-2 ${
-                    isUrdu ? "flex-row-reverse" : ""
+                  className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto ${
+                    isUrdu ? "sm:flex-row-reverse" : ""
                   }`}
                 >
                   <button
                     onClick={openAddLedgerForm}
-                    className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition flex items-center gap-2"
+                    className="w-full sm:w-auto justify-center px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition flex items-center gap-2"
                   >
                     <i className="bi bi-plus-circle-fill"></i>
                     {t.addLedgerEntry}
@@ -1450,15 +1487,15 @@ const CustomerPage = () => {
 
                   <button
                     onClick={closeLedger}
-                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
                   >
                     {t.close}
                   </button>
                 </div>
               </div>
 
-              <div className="p-4 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+              <div className="p-3 sm:p-4 overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
                   <InfoCard label={t.name} value={getName(selectedCustomer)} />
 
                   <InfoCard
@@ -1479,7 +1516,7 @@ const CustomerPage = () => {
                 </div>
 
                 {showLedgerForm && (
-                  <div className="mb-4 bg-slate-50/70 border border-slate-200 rounded-[22px] p-5">
+                  <div className="mb-4 bg-slate-50/70 border border-slate-200 rounded-[18px] sm:rounded-[22px] p-4 sm:p-5">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
                         <i className="bi bi-journal-plus text-indigo-700"></i>
@@ -1487,7 +1524,9 @@ const CustomerPage = () => {
 
                       <div>
                         <h3 className="font-bold text-slate-950">
-                          {ledgerEditingId ? t.editLedgerEntry : t.addLedgerEntry}
+                          {ledgerEditingId
+                            ? t.editLedgerEntry
+                            : t.addLedgerEntry}
                         </h3>
 
                         <p className="text-xs text-slate-500">
@@ -1580,14 +1619,14 @@ const CustomerPage = () => {
                     </div>
 
                     <div
-                      className={`flex gap-3 pt-5 ${
-                        isUrdu ? "flex-row-reverse" : ""
+                      className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 ${
+                        isUrdu ? "sm:flex-row-reverse" : ""
                       }`}
                     >
                       <button
                         onClick={handleLedgerSave}
                         disabled={ledgerSubmitting}
-                        className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2"
+                        className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
                       >
                         <i
                           className={`bi ${
@@ -1614,8 +1653,8 @@ const CustomerPage = () => {
                   </div>
                 )}
 
-                <div className="bg-white rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="overflow-x-auto">
+                <div className="bg-white rounded-[18px] sm:rounded-[22px] shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm text-slate-600">
                       <thead>
                         <tr className="bg-slate-950 text-white text-[11px] font-extrabold uppercase tracking-wide border-b border-slate-900">
@@ -1716,19 +1755,13 @@ const CustomerPage = () => {
                                 </td>
 
                                 <td className="px-4 py-3 font-semibold text-slate-950">
-                                  <div className="flex flex-col">
-                                    <span>
-                                      {row.source === "invoice"
-                                        ? `Sale Invoice No: ${
-                                            row.invoice_no || "-"
-                                          }`
-                                        : row.source === "return"
-                                        ? `Sales Return No: ${
-                                            row.return_no || "-"
-                                          }`
-                                        : getEntryDescription(row)}
-                                    </span>
-                                  </div>
+                                  {row.source === "invoice"
+                                    ? `Sale Invoice No: ${
+                                        row.invoice_no || "-"
+                                      }`
+                                    : row.source === "return"
+                                    ? `Sales Return No: ${row.return_no || "-"}`
+                                    : getEntryDescription(row)}
                                 </td>
 
                                 <td
@@ -1805,17 +1838,46 @@ const CustomerPage = () => {
                       </tbody>
                     </table>
                   </div>
+
+                  <div className="md:hidden">
+                    {ledgerLoading ? (
+                      <div className="px-6 py-10 text-center text-slate-400">
+                        <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                        <p className="mt-2">{t.ledgerLoading}</p>
+                      </div>
+                    ) : ledgerRows.length === 0 ? (
+                      <div className="px-6 py-10 text-center text-slate-400">
+                        {t.ledgerEmpty}
+                      </div>
+                    ) : (
+                      <div className="p-3 space-y-3">
+                        {ledgerRows.map((row, index) => (
+                          <LedgerMobileCard
+                            key={`${row.source}-${row.id}-${index}`}
+                            row={row}
+                            index={index}
+                            t={t}
+                            isUrdu={isUrdu}
+                            getEntryDate={getEntryDate}
+                            getEntryDescription={getEntryDescription}
+                            openEditLedgerForm={openEditLedgerForm}
+                            handleLedgerDelete={handleLedgerDelete}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div
-                className={`px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex ${
+                className={`px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex ${
                   isUrdu ? "justify-start" : "justify-end"
                 }`}
               >
                 <button
                   onClick={closeLedger}
-                  className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
                 >
                   {t.close}
                 </button>
@@ -1856,6 +1918,239 @@ const InfoCard = ({
       >
         {value}
       </p>
+    </div>
+  );
+};
+
+const CustomerMobileCard = ({
+  customer,
+  index,
+  t,
+  isUrdu,
+  translating,
+  getName,
+  getCity,
+  openEdit,
+  handleDelete,
+  openLedger,
+}) => {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+      <div
+        className={`flex items-start justify-between gap-3 ${
+          isUrdu ? "flex-row-reverse" : ""
+        }`}
+      >
+        <div
+          className={`flex items-center gap-3 min-w-0 ${
+            isUrdu ? "flex-row-reverse" : ""
+          }`}
+        >
+          <div className="w-11 h-11 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
+            <i className="bi bi-person-fill"></i>
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-400 font-bold">
+              #{index + 1}
+            </p>
+
+            <h3
+              className={`font-extrabold text-slate-950 text-sm truncate ${
+                translating ? "opacity-40" : ""
+              }`}
+            >
+              {getName(customer)}
+            </h3>
+
+            <p
+              className={`text-xs text-slate-500 mt-0.5 truncate ${
+                translating ? "opacity-40" : ""
+              }`}
+            >
+              {getCity(customer)}
+            </p>
+          </div>
+        </div>
+
+        <div
+          className={`text-xs font-bold money-font ${getBalanceTextClass(
+            customer.current_balance
+          )}`}
+        >
+          {formatBalanceWithSide(customer.current_balance)}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+          <span className="text-xs text-slate-500 font-semibold">
+            {t.phone}
+          </span>
+          <span className="text-xs text-slate-950 font-mono font-bold">
+            {customer.phone || "-"}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+          <span className="text-xs text-slate-500 font-semibold">
+            {t.amount}
+          </span>
+          <span
+            className={`text-xs money-font ${getBalanceTextClass(
+              customer.current_balance
+            )}`}
+          >
+            {formatBalanceWithSide(customer.current_balance)}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className={`mt-4 grid grid-cols-3 gap-2 ${
+          isUrdu ? "text-right" : ""
+        }`}
+      >
+        <button
+          onClick={() => openEdit(customer)}
+          className="h-10 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center justify-center gap-1 text-xs font-bold"
+        >
+          <i className="bi bi-pencil-square"></i>
+          {t.edit}
+        </button>
+
+        <button
+          onClick={() => handleDelete(customer.id)}
+          className="h-10 rounded-xl bg-rose-100 text-rose-700 hover:bg-rose-200 transition flex items-center justify-center gap-1 text-xs font-bold"
+        >
+          <i className="bi bi-trash3-fill"></i>
+          {t.delete}
+        </button>
+
+        <button
+          onClick={() => openLedger(customer)}
+          className="h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center justify-center gap-1 text-xs font-bold"
+        >
+          <i className="bi bi-journal-text"></i>
+          {t.ledger}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const LedgerMobileCard = ({
+  row,
+  index,
+  t,
+  isUrdu,
+  getEntryDate,
+  getEntryDescription,
+  openEditLedgerForm,
+  handleLedgerDelete,
+}) => {
+  const srcInfo = getSourceInfo(row.source, t);
+  const editDisabled = !row.can_edit;
+  const deleteDisabled = !row.can_delete;
+
+  const detail =
+    row.source === "invoice"
+      ? `Sale Invoice No: ${row.invoice_no || "-"}`
+      : row.source === "return"
+      ? `Sales Return No: ${row.return_no || "-"}`
+      : getEntryDescription(row);
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+      <div
+        className={`flex items-start justify-between gap-3 ${
+          isUrdu ? "flex-row-reverse" : ""
+        }`}
+      >
+        <div>
+          <p className="text-[11px] text-slate-400 font-bold">#{index + 1}</p>
+          <p className="text-sm font-extrabold text-slate-950 mt-0.5">
+            {getEntryDate(row) || "-"}
+          </p>
+        </div>
+
+        <span
+          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${srcInfo.bg} ${srcInfo.text}`}
+        >
+          {srcInfo.label}
+        </span>
+      </div>
+
+      <p
+        className={`mt-3 text-sm font-semibold text-slate-950 ${
+          isUrdu ? "text-right" : ""
+        }`}
+      >
+        {detail}
+      </p>
+
+      <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="rounded-xl bg-slate-50 px-3 py-2">
+          <p className="text-[10px] text-slate-500 font-bold">{t.debit}</p>
+          <p
+            className={`text-xs money-font ${
+              Number(row.debit || 0) > 0 ? "text-slate-950" : "text-slate-400"
+            }`}
+          >
+            {formatDebit(row.debit)}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-rose-50 px-3 py-2">
+          <p className="text-[10px] text-rose-500 font-bold">{t.credit}</p>
+          <p
+            className={`text-xs money-font ${
+              Number(row.credit || 0) > 0 ? "text-rose-700" : "text-slate-400"
+            }`}
+          >
+            {formatCredit(row.credit)}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-slate-50 px-3 py-2">
+          <p className="text-[10px] text-slate-500 font-bold">{t.balance}</p>
+          <p className={`text-xs money-font ${getBalanceTextClass(row.balance)}`}>
+            {formatBalanceWithSide(row.balance)}
+          </p>
+        </div>
+      </div>
+
+      <div
+        className={`mt-4 grid grid-cols-2 gap-2 ${
+          isUrdu ? "text-right" : ""
+        }`}
+      >
+        <button
+          onClick={() => openEditLedgerForm(row)}
+          disabled={editDisabled}
+          className={`h-10 rounded-xl transition flex items-center justify-center gap-1 text-xs font-bold ${
+            editDisabled
+              ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+              : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+          }`}
+        >
+          <i className="bi bi-pencil-square"></i>
+          {t.edit}
+        </button>
+
+        <button
+          onClick={() => handleLedgerDelete(row)}
+          disabled={deleteDisabled}
+          className={`h-10 rounded-xl transition flex items-center justify-center gap-1 text-xs font-bold ${
+            deleteDisabled
+              ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+              : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+          }`}
+        >
+          <i className="bi bi-trash3-fill"></i>
+          {t.delete}
+        </button>
+      </div>
     </div>
   );
 };
