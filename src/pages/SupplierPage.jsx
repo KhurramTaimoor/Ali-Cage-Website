@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// API CONFIG
-// ═══════════════════════════════════════════════════════════════════════════════
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
     ...options,
   });
 
@@ -21,27 +21,42 @@ async function apiFetch(path, options = {}) {
 }
 
 const fetchAllSuppliers = () => apiFetch("/api/suppliers");
-const createSupplier = (data) =>
-  apiFetch("/api/suppliers", { method: "POST", body: JSON.stringify(data) });
-const updateSupplier = (id, data) =>
-  apiFetch(`/api/suppliers/${id}`, { method: "PUT", body: JSON.stringify(data) });
-const deleteSupplier = (id) =>
-  apiFetch(`/api/suppliers/${id}`, { method: "DELETE" });
 
-// ── MyMemory translation ──────────────────────────────────────────────────────
+const createSupplier = (data) =>
+  apiFetch("/api/suppliers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+const updateSupplier = (id, data) =>
+  apiFetch(`/api/suppliers/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+const deleteSupplier = (id) =>
+  apiFetch(`/api/suppliers/${id}`, {
+    method: "DELETE",
+  });
+
 async function translateText(text) {
-  if (!text || !text.trim()) return text;
+  if (!text || !String(text).trim()) return text;
 
   try {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-      text.trim()
+      String(text).trim()
     )}&langpair=en|ur`;
+
     const res = await fetch(url);
     if (!res.ok) return text;
+
     const data = await res.json();
     const translated = data?.responseData?.translatedText;
 
-    if (!translated || translated.toLowerCase() === text.trim().toLowerCase()) {
+    if (
+      !translated ||
+      translated.toLowerCase() === String(text).trim().toLowerCase()
+    ) {
       return text;
     }
 
@@ -51,16 +66,14 @@ async function translateText(text) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// i18n
-// ═══════════════════════════════════════════════════════════════════════════════
 const LANG = {
   en: {
     title: "Supplier Management",
     subtitle: "Manage your suppliers",
     addBtn: "Add Supplier",
-    summaryBtn: "Summary",
-    searchPlaceholder: "Search supplier name or phone...",
+    summaryBtn: "View Summary",
+    hideSummary: "Hide Summary",
+    searchPlaceholder: "Search supplier name, phone or balance...",
     supplierName: "Supplier Name",
     supplierNameLabel: "Supplier Name",
     phone: "Phone No",
@@ -72,11 +85,12 @@ const LANG = {
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",
-    actions: "Actions",
+    actions: "Action",
     noRecords: "No suppliers found.",
     toggleLang: "اردو",
     translating: "Translating to Urdu...",
     loading: "Loading suppliers...",
+    refresh: "Refresh",
     fetchError: "Failed to load suppliers.",
     saveError: "Failed to save supplier.",
     deleteError: "Failed to delete supplier.",
@@ -85,6 +99,7 @@ const LANG = {
     deleteConfirm: "Are you sure you want to delete this supplier?",
     errorMsg: "Supplier name is required.",
     totalSuppliers: "Total Suppliers",
+    visibleRecords: "Visible Records",
     supplierPlaceholder: "e.g. Ali Traders",
     phonePlaceholder: "03XX-XXXXXXX",
     printBtn: "Print",
@@ -94,13 +109,16 @@ const LANG = {
     formTitleAdd: "New Supplier",
     formTitleEdit: "Edit Supplier",
     formSubtitle: "Supplier name, phone and opening balance information",
+    details: "Details",
   },
+
   ur: {
     title: "سپلائر مینجمنٹ",
     subtitle: "اپنے سپلائرز کا انتظام کریں",
     addBtn: "سپلائر شامل کریں",
-    summaryBtn: "سمری",
-    searchPlaceholder: "سپلائر نام یا فون سے تلاش کریں...",
+    summaryBtn: "سمری دیکھیں",
+    hideSummary: "سمری بند کریں",
+    searchPlaceholder: "سپلائر نام، فون یا بیلنس سے تلاش کریں...",
     supplierName: "سپلائر کا نام",
     supplierNameLabel: "سپلائر کا نام",
     phone: "فون نمبر",
@@ -112,11 +130,12 @@ const LANG = {
     cancel: "منسوخ",
     edit: "ترمیم",
     delete: "حذف",
-    actions: "اقدامات",
+    actions: "ایکشن",
     noRecords: "کوئی سپلائر نہیں ملا۔",
     toggleLang: "English",
     translating: "اردو میں ترجمہ ہو رہا ہے...",
     loading: "سپلائرز لوڈ ہو رہے ہیں...",
+    refresh: "ری فریش",
     fetchError: "سپلائرز لوڈ نہیں ہو سکے۔",
     saveError: "سپلائر محفوظ نہیں ہو سکا۔",
     deleteError: "سپلائر حذف نہیں ہو سکا۔",
@@ -125,6 +144,7 @@ const LANG = {
     deleteConfirm: "کیا آپ واقعی اس سپلائر کو حذف کرنا چاہتے ہیں؟",
     errorMsg: "سپلائر کا نام ضروری ہے۔",
     totalSuppliers: "کل سپلائرز",
+    visibleRecords: "نظر آنے والے ریکارڈز",
     supplierPlaceholder: "مثلاً Ali Traders",
     phonePlaceholder: "03XX-XXXXXXX",
     printBtn: "پرنٹ کریں",
@@ -134,14 +154,20 @@ const LANG = {
     formTitleAdd: "نیا سپلائر",
     formTitleEdit: "سپلائر ترمیم",
     formSubtitle: "سپلائر نام، فون اور اوپننگ بیلنس معلومات",
+    details: "تفصیل",
   },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════════════════════════════════════════
-const getSupplierName = (s, isUrdu, cache) =>
-  isUrdu ? cache[`name:${s.id}`] || s.supplier_name || "—" : s.supplier_name || "—";
+const defaultForm = {
+  supplier_name: "",
+  phone: "",
+  opening_balance: "",
+};
+
+const getSupplierName = (supplier, isUrdu, cache) =>
+  isUrdu
+    ? cache[`name:${supplier.id}`] || supplier.supplier_name || "—"
+    : supplier.supplier_name || "—";
 
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-PK", {
@@ -149,25 +175,31 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-// ── Print / PDF ───────────────────────────────────────────────────────────────
 function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
   const t = LANG[lang];
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
   const font = isUrdu
     ? "'Noto Nastaliq Urdu', serif"
-    : "'Inter', Arial, sans-serif";
+    : "Inter, Arial, sans-serif";
+
+  const totalOpening = suppliers.reduce(
+    (sum, supplier) => sum + Number(supplier.opening_balance || 0),
+    0
+  );
 
   const rowsHtml = suppliers
-    .map((s, i) => {
-      const nameDisplay = getSupplierName(s, isUrdu, urduCache);
+    .map((supplier, index) => {
+      const nameDisplay = getSupplierName(supplier, isUrdu, urduCache);
+
       return `
-      <tr>
-        <td class="center">${i + 1}</td>
-        <td class="strong">${nameDisplay}</td>
-        <td class="mono">${s.phone || "—"}</td>
-        <td class="mono num">PKR ${formatMoney(s.opening_balance)}</td>
-      </tr>`;
+        <tr>
+          <td class="center">${index + 1}</td>
+          <td class="strong">${nameDisplay}</td>
+          <td class="mono">${supplier.phone || "—"}</td>
+          <td class="mono num">PKR ${formatMoney(supplier.opening_balance)}</td>
+        </tr>
+      `;
     })
     .join("");
 
@@ -178,33 +210,33 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
 <title>${t.title}</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:20px;}
-  .page{width:100%;min-height:100vh;background:linear-gradient(135deg,#eff6ff 0%,#ffffff 45%,#f8fafc 100%);padding:20px;}
-  .sheet{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #dbeafe;box-shadow:0 12px 40px rgba(15,23,42,.08);border-radius:24px;overflow:hidden;}
-  .header{background:linear-gradient(135deg,#0f4c97 0%,#155eaf 65%,#3b82f6 100%);color:#fff;padding:26px 28px 22px;}
-  .header-row{display:flex;justify-content:space-between;align-items:center;gap:20px;}
-  .brand{display:flex;align-items:center;gap:14px;}
-  .logo{width:52px;height:52px;border-radius:18px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;}
-  h1{font-size:28px;font-weight:800;margin:0;}
-  .subtitle{font-size:13px;color:rgba(255,255,255,.82);margin-top:5px;}
-  .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:rgba(255,255,255,.88);line-height:1.8;}
-  .content{padding:18px;display:flex;flex-direction:column;gap:14px;}
-  .hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px;}
-  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-  .card{border-radius:16px;padding:14px 16px;border:1px solid #dbeafe;background:#f8fafc;}
-  .card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px;}
-  .card .value{font-size:22px;font-weight:800;color:#0f172a;}
-  table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:14px;}
-  thead th{background:#0f172a;color:#fff;font-size:12px;padding:12px 10px;text-align:${isUrdu ? "right" : "left"};text-transform:uppercase;letter-spacing:.5px;}
-  tbody td{border:1px solid #e5e7eb;padding:12px 10px;font-size:13px;color:#334155;}
-  tbody tr:nth-child(even) td{background:#f8fafc;}
-  .center{text-align:center!important;}
-  .strong{font-weight:800;color:#0f172a;}
-  .mono{font-family:Inter,Arial,sans-serif;font-weight:700;}
-  .num{text-align:${isUrdu ? "left" : "right"}!important;}
-  .footer{background:#0f172a;color:rgba(255,255,255,.8);padding:10px 16px;display:flex;justify-content:space-between;font-size:11px;}
-  @media print{@page{size:A4;margin:10mm}body{background:white;padding:0}.page{padding:0;background:white}.sheet{box-shadow:none;border:none;border-radius:0;max-width:none}.hint{display:none}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:${font};background:#f8fafc;color:#0f172a;padding:20px}
+.page{width:100%;min-height:100vh;background:#f8fafc;padding:20px}
+.sheet{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #dbe3ee;box-shadow:0 12px 40px rgba(15,23,42,.08);border-radius:20px;overflow:hidden}
+.header{background:#0f172a;color:#fff;padding:24px 28px}
+.header-row{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+h1{font-size:28px;font-weight:900;margin:0}
+.subtitle{font-size:13px;color:rgba(255,255,255,.72);margin-top:5px}
+.meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:rgba(255,255,255,.85);line-height:1.8}
+.content{padding:18px;display:flex;flex-direction:column;gap:14px}
+.hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{border-radius:16px;padding:14px 16px;border:1px solid #dbe3ee;background:#f8fafc}
+.card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px}
+.card .value{font-size:22px;font-weight:900;color:#0f172a}
+table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:14px}
+thead th{background:#0f172a;color:#fff;font-size:12px;padding:12px 10px;text-align:${isUrdu ? "right" : "left"};text-transform:uppercase;letter-spacing:.5px}
+tbody td{border:1px solid #e5e7eb;padding:12px 10px;font-size:13px;color:#334155}
+tbody tr:nth-child(even) td{background:#f8fafc}
+.center{text-align:center!important}
+.strong{font-weight:800;color:#0f172a}
+.mono{font-family:Inter,Arial,sans-serif;font-weight:700}
+.num{text-align:${isUrdu ? "left" : "right"}!important}
+.footer{background:#0f172a;color:rgba(255,255,255,.8);padding:10px 16px;display:flex;justify-content:space-between;font-size:11px}
+@media print{@page{size:A4;margin:10mm}body{background:white;padding:0}.page{padding:0;background:white}.sheet{box-shadow:none;border:none;border-radius:0;max-width:none}.hint{display:none}}
 </style>
 </head>
 <body>
@@ -220,23 +252,40 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
           </div>
         </div>
         <div class="meta">
-          <div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
-          <div>${t.totalSuppliers}: <strong style="color:white">${suppliers.length}</strong></div>
+          <div>${t.printedOn}: ${new Date().toLocaleString(
+    isUrdu ? "ur-PK" : "en-PK"
+  )}</div>
+          <div>${t.totalSuppliers}: <strong style="color:white">${
+    suppliers.length
+  }</strong></div>
           <div>${t.totalOpeningBalance}: <strong style="color:white">PKR ${formatMoney(
-            suppliers.reduce((sum, s) => sum + Number(s.opening_balance || 0), 0)
-          )}</strong></div>
+    totalOpening
+  )}</strong></div>
         </div>
       </div>
     </div>
+
     <div class="content">
-      ${isPdf ? `<div class="hint">Choose <strong>Save as PDF</strong> in print dialog.</div>` : ""}
+      ${
+        isPdf
+          ? `<div class="hint">Choose <strong>Save as PDF</strong> in print dialog.</div>`
+          : ""
+      }
+
       <div class="summary">
-        <div class="card"><small>${t.totalSuppliers}</small><div class="value">${suppliers.length}</div></div>
+        <div class="card"><small>${t.totalSuppliers}</small><div class="value">${
+    suppliers.length
+  }</div></div>
         <div class="card"><small>${t.totalOpeningBalance}</small><div class="value">PKR ${formatMoney(
-          suppliers.reduce((sum, s) => sum + Number(s.opening_balance || 0), 0)
-        )}</div></div>
-        <div class="card"><small>${t.reportHeader}</small><div class="value">${new Date().toLocaleDateString(isUrdu ? "ur-PK" : "en-PK")}</div></div>
+    totalOpening
+  )}</div></div>
+        <div class="card"><small>${
+          t.reportHeader
+        }</small><div class="value">${new Date().toLocaleDateString(
+    isUrdu ? "ur-PK" : "en-PK"
+  )}</div></div>
       </div>
+
       <table>
         <thead>
           <tr>
@@ -255,28 +304,30 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
         </tbody>
       </table>
     </div>
+
     <div class="footer">
       <span>Ali Cages — ${t.reportHeader}</span>
       <span>Page 1 / 1</span>
     </div>
   </div>
 </div>
+
 <script>
-window.onload=()=>{setTimeout(()=>{window.print();${!isPdf ? "window.onafterprint=()=>window.close();" : ""}},300);};
+window.onload=()=>{setTimeout(()=>{window.print();${
+    !isPdf ? "window.onafterprint=()=>window.close();" : ""
+  }},300);};
 </script>
 </body>
 </html>`;
 
   const w = window.open("", "_blank", "width=1200,height=850");
   if (!w) return;
+
   w.document.open();
   w.document.write(html);
   w.document.close();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 const SupplierPage = () => {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
@@ -287,31 +338,32 @@ const SupplierPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [translating, setTranslating] = useState(false);
+
   const [urduCache, setUrduCache] = useState({});
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [message, setMessage] = useState({ type: "", text: "" });
 
-  const [form, setForm] = useState({
-    supplier_name: "",
-    phone: "",
-    opening_balance: "",
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
   });
 
-  const pageFont = isUrdu
-    ? "'Noto Nastaliq Urdu', serif"
-    : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
+  const [form, setForm] = useState(defaultForm);
 
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+
+    setTimeout(() => {
+      setMessage({ type: "", text: "" });
+    }, 3000);
   }, []);
 
   const loadSuppliers = useCallback(async () => {
     try {
       setLoading(true);
+
       const data = await fetchAllSuppliers();
       setSuppliers(Array.isArray(data) ? data : data?.data || []);
     } catch (err) {
@@ -331,23 +383,29 @@ const SupplierPage = () => {
 
     if (newLang !== "ur" || suppliers.length === 0) return;
 
-    const untranslated = suppliers.filter((s) => !urduCache[`name:${s.id}`]);
+    const untranslated = suppliers.filter(
+      (supplier) => !urduCache[`name:${supplier.id}`]
+    );
+
     if (!untranslated.length) return;
 
     setTranslating(true);
+
     try {
       const results = await Promise.all(
-        untranslated.map(async (s) => {
-          const nameUr = await translateText(s.supplier_name || "");
-          return { id: s.id, nameUr };
+        untranslated.map(async (supplier) => {
+          const nameUr = await translateText(supplier.supplier_name || "");
+          return { id: supplier.id, nameUr };
         })
       );
 
       setUrduCache((prev) => {
         const next = { ...prev };
+
         results.forEach(({ id, nameUr }) => {
           next[`name:${id}`] = nameUr;
         });
+
         return next;
       });
     } catch (err) {
@@ -358,21 +416,23 @@ const SupplierPage = () => {
   };
 
   const openAdd = () => {
-    setForm({ supplier_name: "", phone: "", opening_balance: "" });
+    setForm(defaultForm);
     setEditingId(null);
     setShowForm(true);
   };
 
-  const openEdit = (s) => {
+  const openEdit = (supplier) => {
     setForm({
-      supplier_name: s.supplier_name || "",
-      phone: s.phone || "",
+      supplier_name: supplier.supplier_name || "",
+      phone: supplier.phone || "",
       opening_balance:
-        s.opening_balance !== undefined && s.opening_balance !== null
-          ? String(s.opening_balance)
+        supplier.opening_balance !== undefined &&
+        supplier.opening_balance !== null
+          ? String(supplier.opening_balance)
           : "",
     });
-    setEditingId(s.id);
+
+    setEditingId(supplier.id);
     setShowForm(true);
   };
 
@@ -395,7 +455,11 @@ const SupplierPage = () => {
         const res = await updateSupplier(editingId, payload);
         const updated = res?.data || res;
 
-        setSuppliers((prev) => prev.map((s) => (s.id === editingId ? updated : s)));
+        setSuppliers((prev) =>
+          prev.map((supplier) =>
+            supplier.id === editingId ? updated : supplier
+          )
+        );
 
         setUrduCache((prev) => {
           const next = { ...prev };
@@ -405,13 +469,14 @@ const SupplierPage = () => {
       } else {
         const res = await createSupplier(payload);
         const created = res?.data || res;
+
         setSuppliers((prev) => [created, ...prev]);
       }
 
       showToast("success", t.successSave);
       setShowForm(false);
       setEditingId(null);
-      setForm({ supplier_name: "", phone: "", opening_balance: "" });
+      setForm(defaultForm);
     } catch (err) {
       showToast("error", err.message || t.saveError);
     } finally {
@@ -425,7 +490,8 @@ const SupplierPage = () => {
     try {
       await deleteSupplier(id);
 
-      setSuppliers((prev) => prev.filter((s) => s.id !== id));
+      setSuppliers((prev) => prev.filter((supplier) => supplier.id !== id));
+
       setUrduCache((prev) => {
         const next = { ...prev };
         delete next[`name:${id}`];
@@ -440,23 +506,24 @@ const SupplierPage = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+
     if (!q) return suppliers;
 
     return suppliers.filter(
-      (s) =>
-        (s.supplier_name || "").toLowerCase().includes(q) ||
-        (s.phone || "").toLowerCase().includes(q) ||
-        String(s.opening_balance || "").toLowerCase().includes(q) ||
-        (urduCache[`name:${s.id}`] || "").toLowerCase().includes(q)
+      (supplier) =>
+        (supplier.supplier_name || "").toLowerCase().includes(q) ||
+        (supplier.phone || "").toLowerCase().includes(q) ||
+        String(supplier.opening_balance || "").toLowerCase().includes(q) ||
+        (urduCache[`name:${supplier.id}`] || "").toLowerCase().includes(q)
     );
   }, [suppliers, search, urduCache]);
 
   const summary = useMemo(
     () => ({
       totalSuppliers: suppliers.length,
-      visibleSuppliers: filtered.length,
+      visibleRecords: filtered.length,
       totalOpeningBalance: filtered.reduce(
-        (sum, s) => sum + Number(s.opening_balance || 0),
+        (sum, supplier) => sum + Number(supplier.opening_balance || 0),
         0
       ),
     }),
@@ -464,27 +531,712 @@ const SupplierPage = () => {
   );
 
   return (
-    <div
-      dir={dir}
-      style={{ fontFamily: pageFont }}
-      className="min-h-screen bg-slate-50 p-0 pb-16"
-    >
+    <div className="supplier-page" dir={dir}>
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
       />
+
       <link
         href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
         rel="stylesheet"
       />
 
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .supplier-page {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
+          padding: 18px;
+          color: #0f172a;
+          font-family: ${
+            isUrdu
+              ? "'Noto Nastaliq Urdu', Arial, sans-serif"
+              : "Inter, Helvetica, Arial, sans-serif"
+          };
+        }
+
+        .page-wrap {
+          max-width: 1220px;
+          margin: 0 auto;
+        }
+
+        .top-card {
+          background: rgba(255,255,255,.94);
+          border: 1px solid #dbe3ee;
+          border-radius: 22px;
+          padding: 20px 22px;
+          box-shadow: 0 18px 50px rgba(15,23,42,.08);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+        }
+
+        .title {
+          margin: 0;
+          font-size: 30px;
+          font-weight: 950;
+          letter-spacing: -.8px;
+        }
+
+        .subtitle {
+          margin: 5px 0 0;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .btn {
+          border: none;
+          border-radius: 12px;
+          padding: 10px 15px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: .15s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          text-decoration: none;
+          white-space: nowrap;
+          font-size: 13px;
+        }
+
+        .btn:hover {
+          transform: translateY(-1px);
+          filter: brightness(.98);
+        }
+
+        .btn:disabled {
+          opacity: .65;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .btn-primary {
+          background: #4f46e5;
+          color: white;
+          box-shadow: 0 12px 25px rgba(79,70,229,.28);
+        }
+
+        .btn-summary {
+          background: #eef2ff;
+          color: #3730a3;
+          border: 1px solid #c7d2fe;
+        }
+
+        .btn-summary-active {
+          background: #4f46e5;
+          color: white;
+          border: 1px solid #4f46e5;
+          box-shadow: 0 12px 25px rgba(79,70,229,.25);
+        }
+
+        .btn-soft {
+          background: white;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+        }
+
+        .btn-green {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .btn-red {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+
+        .headerPrintBtn {
+          background: #0f172a !important;
+          color: white !important;
+          border: 1px solid #0f172a !important;
+          box-shadow: 0 10px 22px rgba(15,23,42,.18) !important;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          margin: 14px 0;
+        }
+
+        .summary-card {
+          background: white;
+          border: 1px solid #dbe3ee;
+          border-radius: 18px;
+          padding: 14px;
+          box-shadow: 0 8px 22px rgba(15,23,42,.05);
+        }
+
+        .summary-card-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 13px;
+          background: #eef2ff;
+          color: #4f46e5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 10px;
+          font-size: 18px;
+        }
+
+        .summary-card small {
+          display: block;
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .4px;
+        }
+
+        .summary-card b {
+          display: block;
+          margin-top: 7px;
+          font-size: 22px;
+          font-weight: 950;
+          color: #0f172a;
+          font-family: monospace;
+        }
+
+        .toolbar {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+          margin: 14px 0 12px;
+        }
+
+        .search {
+          width: min(440px, 100%);
+          height: 42px;
+          border: 1px solid #cbd5e1;
+          border-radius: 14px;
+          padding: 0 13px;
+          font-size: 13px;
+          outline: none;
+          background: white;
+        }
+
+        .search:focus,
+        .input-field:focus {
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 3px rgba(79,70,229,.10);
+        }
+
+        .card {
+          background: white;
+          border: 1px solid #dbe3ee;
+          border-radius: 18px;
+          box-shadow: 0 8px 24px rgba(15,23,42,.05);
+          overflow: hidden;
+        }
+
+        .table-wrap {
+          overflow-x: auto;
+        }
+
+        .suppliers-desktop {
+          display: block;
+        }
+
+        .suppliers-mobile {
+          display: none;
+        }
+
+        table.suppliers-table {
+          width: 100%;
+          min-width: 860px;
+          border-collapse: collapse;
+          table-layout: fixed;
+        }
+
+        table.suppliers-table th {
+          background: #0f172a;
+          color: rgba(255,255,255,.82);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: .5px;
+          padding: 15px 14px;
+          white-space: nowrap;
+        }
+
+        table.suppliers-table td {
+          padding: 13px 14px;
+          border-bottom: 1px solid #eef2f7;
+          font-size: 13px;
+          vertical-align: middle;
+        }
+
+        table.suppliers-table tr:hover td {
+          background: #f8fafc;
+        }
+
+        .supplier-name-cell {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .supplier-avatar {
+          width: 38px;
+          height: 38px;
+          border-radius: 13px;
+          background: #eef2ff;
+          color: #4f46e5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+        }
+
+        .supplier-title {
+          font-weight: 900;
+          color: #0f172a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .money {
+          font-family: monospace;
+          font-weight: 950;
+          color: #1d4ed8;
+        }
+
+        .action-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .action-row .btn {
+          padding: 7px 10px;
+          font-size: 12px;
+        }
+
+        .supplier-mobile-list {
+          padding: 12px;
+          display: grid;
+          gap: 12px;
+        }
+
+        .supplier-mobile-card {
+          background: #ffffff;
+          border: 1px solid #dbe3ee;
+          border-radius: 18px;
+          padding: 14px;
+          box-shadow: 0 8px 24px rgba(15,23,42,.06);
+        }
+
+        .supplier-mobile-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .supplier-mobile-title {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .supplier-mobile-index {
+          color: #94a3b8;
+          font-size: 11px;
+          font-weight: 900;
+          font-family: monospace;
+        }
+
+        .supplier-mobile-name {
+          margin-top: 3px;
+          font-size: 15px;
+          font-weight: 950;
+          color: #0f172a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .supplier-mobile-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .supplier-info-line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          background: #f8fafc;
+          border: 1px solid #eef2f7;
+          border-radius: 13px;
+          padding: 9px 10px;
+        }
+
+        .supplier-info-line small {
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        .supplier-info-line b {
+          color: #0f172a;
+          font-size: 12px;
+          font-weight: 950;
+          text-align: right;
+        }
+
+        .supplier-mobile-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .supplier-mobile-actions .btn {
+          width: 100%;
+          padding: 10px 8px;
+          font-size: 12px;
+        }
+
+        .modal-bg {
+          position: fixed;
+          inset: 0;
+          background: rgba(15,23,42,.45);
+          z-index: 50;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 12px;
+          overflow: auto;
+          backdrop-filter: blur(3px);
+        }
+
+        .inputModalBox {
+          width: min(760px, 100%);
+          background: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 18px;
+          box-shadow: 0 30px 90px rgba(15,23,42,.28);
+          overflow: hidden;
+        }
+
+        .inputModalTitle {
+          min-height: 58px;
+          background: linear-gradient(135deg,#0f172a,#1e293b);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 13px 18px;
+          font-size: 17px;
+          font-weight: 900;
+          gap: 12px;
+        }
+
+        .modal-title-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .modal-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          background: rgba(255,255,255,.10);
+          border: 1px solid rgba(255,255,255,.20);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          flex: 0 0 auto;
+        }
+
+        .modal-title-main {
+          font-size: 17px;
+          font-weight: 950;
+        }
+
+        .modal-title-sub {
+          margin-top: 2px;
+          font-size: 11px;
+          color: rgba(255,255,255,.70);
+          font-weight: 700;
+        }
+
+        .closeBtn {
+          border: 1px solid rgba(255,255,255,.25);
+          background: rgba(255,255,255,.08);
+          color: white;
+          min-width: 36px;
+          height: 34px;
+          border-radius: 10px;
+          cursor: pointer;
+          padding: 0 12px;
+          font-weight: 900;
+        }
+
+        .inputModalBody {
+          padding: 14px;
+        }
+
+        .form-section {
+          background: white;
+          border: 1px solid #dbe3ee;
+          border-radius: 18px;
+          overflow: hidden;
+        }
+
+        .form-section-head {
+          background: linear-gradient(135deg,#eef2ff,#f8fafc);
+          border-bottom: 1px solid #e2e8f0;
+          padding: 12px 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .form-section-head-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          background: white;
+          color: #4f46e5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 18px rgba(15,23,42,.06);
+        }
+
+        .form-section-head h3 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 950;
+          color: #0f172a;
+        }
+
+        .form-section-head p {
+          margin: 2px 0 0;
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .form-grid {
+          padding: 14px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .field {
+          min-width: 0;
+        }
+
+        .field-full {
+          grid-column: 1 / -1;
+        }
+
+        .label {
+          font-size: 11px;
+          color: #334155;
+          margin-bottom: 6px;
+          display: block;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .35px;
+        }
+
+        .input-wrap {
+          position: relative;
+        }
+
+        .input-icon {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
+          font-size: 14px;
+        }
+
+        .input-icon-left {
+          left: 12px;
+        }
+
+        .input-icon-right {
+          right: 12px;
+        }
+
+        .input-field {
+          width: 100%;
+          height: 42px;
+          border: 1px solid #cbd5e1;
+          background: white;
+          color: #0f172a;
+          padding: 7px 12px;
+          font-size: 13px;
+          border-radius: 12px;
+          outline: none;
+          font-weight: 750;
+        }
+
+        .input-field-with-left {
+          padding-left: 38px;
+        }
+
+        .input-field-with-right {
+          padding-right: 38px;
+        }
+
+        .modalFooterBasic {
+          padding: 14px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          background: white;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .toast {
+          position: fixed;
+          right: 18px;
+          bottom: 18px;
+          z-index: 90;
+          color: white;
+          padding: 12px 16px;
+          border-radius: 14px;
+          font-weight: 900;
+          box-shadow: 0 20px 50px rgba(15,23,42,.25);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+        }
+
+        .translating-toast {
+          position: fixed;
+          left: 50%;
+          transform: translateX(-50%);
+          bottom: 18px;
+          z-index: 90;
+          color: white;
+          background: #0f172a;
+          padding: 12px 16px;
+          border-radius: 14px;
+          font-weight: 900;
+          box-shadow: 0 20px 50px rgba(15,23,42,.25);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+        }
+
+        @media(max-width: 1100px) {
+          .summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media(max-width: 768px) {
+          .supplier-page {
+            padding: 12px;
+          }
+
+          .top-card {
+            align-items: stretch;
+          }
+
+          .top-card > div:last-child {
+            width: 100%;
+          }
+
+          .top-card .btn {
+            width: 100%;
+          }
+
+          .toolbar {
+            width: 100%;
+          }
+
+          .search {
+            width: 100%;
+          }
+
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .suppliers-desktop {
+            display: none;
+          }
+
+          .suppliers-mobile {
+            display: block;
+          }
+
+          .modal-bg {
+            padding: 0;
+          }
+
+          .inputModalBox {
+            min-height: 100vh;
+            border-radius: 0;
+            width: 100%;
+          }
+
+          .inputModalTitle {
+            min-height: 58px;
+            padding: 12px 14px;
+          }
+
+          .inputModalBody {
+            padding: 10px;
+          }
+
+          .form-grid {
+            grid-template-columns: 1fr;
+            padding: 12px;
+          }
+
+          .modalFooterBasic {
+            display: grid;
+            grid-template-columns: 1fr;
+          }
+
+          .modalFooterBasic .btn {
+            width: 100%;
+          }
+
+          .title {
+            font-size: 24px;
+          }
+        }
+      `}</style>
+
       {message.text && (
         <div
-          className={`fixed bottom-6 ${
-            isUrdu ? "left-6" : "right-6"
-          } z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${
-            message.type === "error" ? "bg-rose-600" : "bg-emerald-600"
-          }`}
+          className="toast"
+          style={{
+            background: message.type === "error" ? "#dc2626" : "#16a34a",
+            left: isUrdu ? 18 : "auto",
+            right: isUrdu ? "auto" : 18,
+          }}
         >
           <i
             className={`bi ${
@@ -498,378 +1250,245 @@ const SupplierPage = () => {
       )}
 
       {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
-          <i className="bi bi-arrow-repeat animate-spin"></i>
+        <div className="translating-toast">
+          <i className="bi bi-arrow-repeat"></i>
           {t.translating}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white border border-slate-200 shadow-sm px-5 sm:px-6 py-5 mb-5 rounded-b-3xl">
+      <div className="page-wrap">
+        <div className="top-card">
+          <div>
+            <h1 className="title">{t.title}</h1>
+            <p className="subtitle">{t.subtitle}</p>
+          </div>
+
           <div
-            className={`flex items-center justify-between flex-wrap gap-4 ${
-              isUrdu ? "flex-row-reverse" : ""
-            }`}
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              flexDirection: isUrdu ? "row-reverse" : "row",
+            }}
           >
-            <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                {t.title}
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
-            </div>
-
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <button
-                onClick={handleLangToggle}
-                disabled={translating}
-                className="h-10 flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <i
-                  className={`bi ${
-                    translating ? "bi-arrow-repeat animate-spin" : "bi-translate"
-                  }`}
-                ></i>
-                {t.toggleLang}
-              </button>
-
-              <button
-                onClick={() => setShowSummary((v) => !v)}
-                className={`h-10 flex items-center gap-2 px-4 rounded-xl text-sm font-semibold transition shadow-sm ${
-                  showSummary
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <i className="bi bi-bar-chart-fill"></i>
-                {t.summaryBtn}
-                <i className={`bi bi-chevron-${showSummary ? "up" : "down"} text-xs`}></i>
-              </button>
-
-              <button
-                onClick={() => generatePrintDocument(filtered, lang, urduCache, false)}
-                className="h-10 flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
-              >
-                <i className="bi bi-printer"></i>
-                {t.printBtn}
-              </button>
-
-              <button
-                onClick={() => generatePrintDocument(filtered, lang, urduCache, true)}
-                className="h-10 flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
-              >
-                <i className="bi bi-file-earmark-pdf-fill text-rose-500"></i>
-                {t.pdfBtn}
-              </button>
-
-              <button
-                onClick={openAdd}
-                className="h-10 flex items-center gap-2 px-4 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
-              >
-                <i className="bi bi-plus-square-fill"></i>
-                {t.addBtn}
-              </button>
-            </div>
-          </div>
-
-          {showSummary && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-slate-200">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="w-10 h-10 rounded-xl bg-white text-indigo-600 flex items-center justify-center shadow-sm mb-3">
-                  <i className="bi bi-people-fill"></i>
-                </div>
-                <p className="text-xs text-slate-500 mb-1">{t.totalSuppliers}</p>
-                <p className="text-3xl font-extrabold text-slate-950">
-                  {summary.totalSuppliers}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="w-10 h-10 rounded-xl bg-white text-emerald-600 flex items-center justify-center shadow-sm mb-3">
-                  <i className="bi bi-filter-circle-fill"></i>
-                </div>
-                <p className="text-xs text-slate-500 mb-1">Visible Records</p>
-                <p className="text-3xl font-extrabold text-slate-950">
-                  {summary.visibleSuppliers}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="w-10 h-10 rounded-xl bg-white text-amber-600 flex items-center justify-center shadow-sm mb-3">
-                  <i className="bi bi-wallet2"></i>
-                </div>
-                <p className="text-xs text-slate-500 mb-1">{t.totalOpeningBalance}</p>
-                <p className="text-2xl font-extrabold text-slate-950 font-mono">
-                  {formatMoney(summary.totalOpeningBalance)}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Search */}
-        <div className="flex flex-wrap items-center gap-3 mb-4 px-0">
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                isUrdu ? "right-3" : "left-3"
-              }`}
-            ></i>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t.searchPlaceholder}
-              className={`w-full h-10 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 shadow-sm ${
-                isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
-              }`}
-            />
-          </div>
-        </div>
-
-        {/* Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-slate-950/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden border border-white/60 flex flex-col"
-              dir={dir}
+            <button
+              className="btn btn-soft"
+              onClick={handleLangToggle}
+              disabled={translating}
             >
-              <div
-                className={`sticky top-0 z-10 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between gap-3 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <i className="bi bi-truck text-lg"></i>
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-extrabold text-slate-950">
-                      {editingId ? t.formTitleEdit : t.formTitleAdd}
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">{t.formSubtitle}</p>
-                  </div>
-                </div>
+              <i className="bi bi-translate"></i>
+              {t.toggleLang}
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  disabled={submitting}
-                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition flex items-center justify-center disabled:opacity-60"
-                >
-                  <i className="bi bi-x-lg"></i>
-                </button>
+            <button
+              className={`btn ${
+                showSummary ? "btn-summary-active" : "btn-summary"
+              }`}
+              onClick={() => setShowSummary((v) => !v)}
+            >
+              <i className="bi bi-bar-chart-fill"></i>
+              {showSummary ? t.hideSummary : t.summaryBtn}
+            </button>
+
+            <button
+              className="btn headerPrintBtn"
+              onClick={() => generatePrintDocument(filtered, lang, urduCache, false)}
+            >
+              <i className="bi bi-printer"></i>
+              {t.printBtn}
+            </button>
+
+            <button
+              className="btn btn-soft"
+              onClick={() => generatePrintDocument(filtered, lang, urduCache, true)}
+            >
+              <i className="bi bi-file-earmark-pdf-fill"></i>
+              {t.pdfBtn}
+            </button>
+
+            <button className="btn btn-soft" onClick={loadSuppliers}>
+              <i className="bi bi-arrow-clockwise"></i>
+              {loading ? t.loading : t.refresh}
+            </button>
+
+            <button className="btn btn-primary" onClick={openAdd}>
+              <i className="bi bi-plus-circle-fill"></i>
+              {t.addBtn}
+            </button>
+          </div>
+        </div>
+
+        {showSummary && (
+          <div className="summary-grid">
+            <div className="summary-card">
+              <div className="summary-card-icon">
+                <i className="bi bi-people-fill"></i>
               </div>
+              <small>{t.totalSuppliers}</small>
+              <b>{summary.totalSuppliers}</b>
+            </div>
 
-              <div className="p-5 overflow-y-auto bg-slate-50">
-                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div
-                    className={`px-4 py-3 border-b border-slate-100 flex items-center gap-2 ${
-                      isUrdu ? "flex-row-reverse text-right" : ""
-                    }`}
-                  >
-                    <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                      <i className="bi bi-info-circle-fill"></i>
-                    </span>
-                    <div>
-                      <h3 className="text-sm font-extrabold text-slate-950">
-                        Supplier Information
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Name and contact details
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-black uppercase tracking-wide text-slate-600 mb-2 whitespace-nowrap">
-                        {t.supplierNameLabel} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <i
-                          className={`bi bi-person-fill absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                            isUrdu ? "right-3" : "left-3"
-                          }`}
-                        ></i>
-                        <input
-                          type="text"
-                          value={form.supplier_name}
-                          onChange={(e) =>
-                            setForm((prev) => ({ ...prev, supplier_name: e.target.value }))
-                          }
-                          placeholder={t.supplierPlaceholder}
-                          className={`w-full h-10 border border-slate-300 rounded-xl bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm ${
-                            isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-black uppercase tracking-wide text-slate-600 mb-2 whitespace-nowrap">
-                        {t.phone}
-                      </label>
-                      <div className="relative">
-                        <i
-                          className={`bi bi-telephone-fill absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                            isUrdu ? "right-3" : "left-3"
-                          }`}
-                        ></i>
-                        <input
-                          type="text"
-                          value={form.phone}
-                          onChange={(e) =>
-                            setForm((prev) => ({ ...prev, phone: e.target.value }))
-                          }
-                          placeholder={t.phonePlaceholder}
-                          className={`w-full h-10 border border-slate-300 rounded-xl bg-white text-sm font-mono font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm ${
-                            isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-[11px] font-black uppercase tracking-wide text-indigo-700 mb-2 whitespace-nowrap">
-                        {t.openingBalance}
-                      </label>
-                      <div className="relative">
-                        <i
-                          className={`bi bi-wallet2 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                            isUrdu ? "right-3" : "left-3"
-                          }`}
-                        ></i>
-                        <input
-                          type="number"
-                          value={form.opening_balance}
-                          onChange={(e) =>
-                            setForm((prev) => ({ ...prev, opening_balance: e.target.value }))
-                          }
-                          placeholder={t.balancePlaceholder}
-                          className={`w-full h-10 border border-slate-300 rounded-xl bg-white text-sm font-mono font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm ${
-                            isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </section>
+            <div className="summary-card">
+              <div className="summary-card-icon">
+                <i className="bi bi-filter-circle-fill"></i>
               </div>
+              <small>{t.visibleRecords}</small>
+              <b>{summary.visibleRecords}</b>
+            </div>
 
-              <div
-                className={`sticky bottom-0 bg-white border-t border-slate-200 px-5 py-4 flex gap-3 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <button
-                  onClick={handleSave}
-                  disabled={submitting}
-                  className="flex-1 h-11 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <i className={`bi ${submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"}`}></i>
-                  {submitting ? t.saving : t.save}
-                </button>
-
-                <button
-                  onClick={() => setShowForm(false)}
-                  disabled={submitting}
-                  className="flex-1 h-11 bg-white border border-slate-300 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-60"
-                >
-                  {t.cancel}
-                </button>
+            <div className="summary-card">
+              <div className="summary-card-icon">
+                <i className="bi bi-wallet2"></i>
               </div>
+              <small>{t.totalOpeningBalance}</small>
+              <b>{formatMoney(summary.totalOpeningBalance)}</b>
             </div>
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-sm text-slate-600">
+        <div className="toolbar">
+          <input
+            className="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t.searchPlaceholder}
+          />
+        </div>
+
+        <div className="card">
+          <div className="suppliers-desktop table-wrap">
+            <table className="suppliers-table">
+              <colgroup>
+                <col style={{ width: 70 }} />
+                <col style={{ width: 330 }} />
+                <col style={{ width: 220 }} />
+                <col style={{ width: 210 }} />
+                <col style={{ width: 190 }} />
+              </colgroup>
+
               <thead>
-                <tr className="bg-slate-950 text-white text-[11px] font-bold uppercase tracking-wide whitespace-nowrap">
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>
-                    #
-                  </th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
+                <tr>
+                  <th style={{ textAlign: "center" }}>#</th>
+
+                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
                     {t.supplierName}
                   </th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
+
+                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
                     {t.phone}
                   </th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-left" : "text-right"}`}>
+
+                  <th style={{ textAlign: isUrdu ? "left" : "right" }}>
                     {t.openingBalance}
                   </th>
-                  <th className="px-4 py-3 text-center">{t.actions}</th>
+
+                  <th>{t.actions}</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
-                      <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                      <p className="mt-2">{t.loading}</p>
+                    <td
+                      colSpan={5}
+                      style={{
+                        textAlign: "center",
+                        padding: 44,
+                        color: "#94a3b8",
+                      }}
+                    >
+                      {t.loading}
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                    <td
+                      colSpan={5}
+                      style={{
+                        textAlign: "center",
+                        padding: 44,
+                        color: "#94a3b8",
+                      }}
+                    >
                       {t.noRecords}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((s, i) => (
-                    <tr key={s.id} className="hover:bg-slate-50 transition align-middle">
-                      <td className="px-4 py-3 text-slate-400 font-mono text-xs">{i + 1}</td>
+                  filtered.map((supplier, index) => (
+                    <tr key={supplier.id || index}>
+                      <td
+                        style={{
+                          textAlign: "center",
+                          color: "#94a3b8",
+                          fontFamily: "monospace",
+                          fontWeight: 900,
+                        }}
+                      >
+                        {index + 1}
+                      </td>
 
-                      <td className="px-4 py-3">
+                      <td>
                         <div
-                          className={`flex items-center gap-2.5 ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
+                          className="supplier-name-cell"
+                          style={{
+                            flexDirection: isUrdu ? "row-reverse" : "row",
+                          }}
                         >
-                          <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                            <i className="bi bi-truck text-indigo-600"></i>
+                          <div className="supplier-avatar">
+                            <i className="bi bi-truck"></i>
                           </div>
-                          <span
-                            className={`font-bold text-slate-950 ${
-                              translating ? "opacity-40" : ""
-                            }`}
+
+                          <div
+                            className="supplier-title"
+                            style={{
+                              opacity: translating ? 0.45 : 1,
+                            }}
                           >
-                            {getSupplierName(s, isUrdu, urduCache)}
-                          </span>
+                            {getSupplierName(supplier, isUrdu, urduCache)}
+                          </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 font-mono text-xs text-slate-700 font-semibold">
-                        {s.phone || "—"}
+                      <td
+                        style={{
+                          fontFamily: "monospace",
+                          fontWeight: 800,
+                          color: "#475569",
+                        }}
+                      >
+                        {supplier.phone || "—"}
                       </td>
 
-                      <td className={`px-4 py-3 font-mono text-sm text-indigo-700 font-bold ${isUrdu ? "text-left" : "text-right"}`}>
-                        {formatMoney(s.opening_balance)}
+                      <td
+                        className="money"
+                        style={{
+                          textAlign: isUrdu ? "left" : "right",
+                        }}
+                      >
+                        {formatMoney(supplier.opening_balance)}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td style={{ textAlign: "center" }}>
                         <div
-                          className={`flex items-center justify-center gap-1.5 ${
-                            isUrdu ? "flex-row-reverse" : ""
-                          }`}
+                          className="action-row"
+                          style={{
+                            flexDirection: isUrdu ? "row-reverse" : "row",
+                          }}
                         >
                           <button
-                            onClick={() => openEdit(s)}
-                            className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition flex items-center justify-center"
-                            title={t.edit}
+                            className="btn btn-green"
+                            onClick={() => openEdit(supplier)}
                           >
-                            <i className="bi bi-pencil-square text-sm"></i>
+                            <i className="bi bi-pencil-square"></i>
+                            {t.edit}
                           </button>
 
                           <button
-                            onClick={() => handleDelete(s.id)}
-                            className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition flex items-center justify-center"
-                            title={t.delete}
+                            className="btn btn-red"
+                            onClick={() => handleDelete(supplier.id)}
                           >
-                            <i className="bi bi-trash3-fill text-sm"></i>
+                            <i className="bi bi-trash3-fill"></i>
+                            {t.delete}
                           </button>
                         </div>
                       </td>
@@ -879,8 +1498,317 @@ const SupplierPage = () => {
               </tbody>
             </table>
           </div>
+
+          <div className="suppliers-mobile">
+            {loading ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: 36,
+                  color: "#94a3b8",
+                }}
+              >
+                {t.loading}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: 36,
+                  color: "#94a3b8",
+                }}
+              >
+                {t.noRecords}
+              </div>
+            ) : (
+              <div className="supplier-mobile-list">
+                {filtered.map((supplier, index) => (
+                  <div className="supplier-mobile-card" key={supplier.id || index}>
+                    <div
+                      className="supplier-mobile-top"
+                      style={{
+                        flexDirection: isUrdu ? "row-reverse" : "row",
+                      }}
+                    >
+                      <div
+                        className="supplier-mobile-title"
+                        style={{
+                          flexDirection: isUrdu ? "row-reverse" : "row",
+                        }}
+                      >
+                        <div className="supplier-avatar">
+                          <i className="bi bi-truck"></i>
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <div className="supplier-mobile-index">#{index + 1}</div>
+
+                          <div
+                            className="supplier-mobile-name"
+                            style={{
+                              opacity: translating ? 0.45 : 1,
+                            }}
+                          >
+                            {getSupplierName(supplier, isUrdu, urduCache)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          background: "#eef2ff",
+                          color: "#3730a3",
+                          border: "1px solid #c7d2fe",
+                          fontSize: 11,
+                          fontWeight: 900,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        SUP
+                      </span>
+                    </div>
+
+                    <div className="supplier-mobile-grid">
+                      <div className="supplier-info-line">
+                        <small>{t.phone}</small>
+                        <b style={{ fontFamily: "monospace" }}>
+                          {supplier.phone || "—"}
+                        </b>
+                      </div>
+
+                      <div className="supplier-info-line">
+                        <small>{t.openingBalance}</small>
+                        <b
+                          style={{
+                            color: "#1d4ed8",
+                            fontFamily: "monospace",
+                          }}
+                        >
+                          {formatMoney(supplier.opening_balance)}
+                        </b>
+                      </div>
+                    </div>
+
+                    <div className="supplier-mobile-actions">
+                      <button
+                        className="btn btn-green"
+                        onClick={() => openEdit(supplier)}
+                      >
+                        <i className="bi bi-pencil-square"></i>
+                        {t.edit}
+                      </button>
+
+                      <button
+                        className="btn btn-red"
+                        onClick={() => handleDelete(supplier.id)}
+                      >
+                        <i className="bi bi-trash3-fill"></i>
+                        {t.delete}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {showForm && (
+        <div className="modal-bg">
+          <div className="inputModalBox" dir={dir}>
+            <div className="inputModalTitle">
+              <div
+                className="modal-title-left"
+                style={{
+                  flexDirection: isUrdu ? "row-reverse" : "row",
+                  textAlign: isUrdu ? "right" : "left",
+                }}
+              >
+                <div className="modal-icon">
+                  <i className="bi bi-truck"></i>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div className="modal-title-main">
+                    {editingId ? t.formTitleEdit : t.formTitleAdd}
+                  </div>
+
+                  <div className="modal-title-sub">{t.formSubtitle}</div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="closeBtn"
+                onClick={() => setShowForm(false)}
+                disabled={submitting}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="inputModalBody">
+              <div className="form-section">
+                <div
+                  className="form-section-head"
+                  style={{
+                    flexDirection: isUrdu ? "row-reverse" : "row",
+                    textAlign: isUrdu ? "right" : "left",
+                  }}
+                >
+                  <div className="form-section-head-icon">
+                    <i className="bi bi-info-circle-fill"></i>
+                  </div>
+
+                  <div>
+                    <h3>{t.details}</h3>
+                    <p>{t.formSubtitle}</p>
+                  </div>
+                </div>
+
+                <div className="form-grid">
+                  <div className="field field-full">
+                    <label className="label">
+                      {t.supplierNameLabel}{" "}
+                      <span style={{ color: "#dc2626" }}>*</span>
+                    </label>
+
+                    <div className="input-wrap">
+                      <i
+                        className={`bi bi-person-fill input-icon ${
+                          isUrdu ? "input-icon-right" : "input-icon-left"
+                        }`}
+                      ></i>
+
+                      <input
+                        type="text"
+                        value={form.supplier_name}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            supplier_name: e.target.value,
+                          }))
+                        }
+                        placeholder={t.supplierPlaceholder}
+                        className={`input-field ${
+                          isUrdu
+                            ? "input-field-with-right"
+                            : "input-field-with-left"
+                        }`}
+                        style={{
+                          textAlign: isUrdu ? "right" : "left",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field">
+                    <label className="label">{t.phone}</label>
+
+                    <div className="input-wrap">
+                      <i
+                        className={`bi bi-telephone-fill input-icon ${
+                          isUrdu ? "input-icon-right" : "input-icon-left"
+                        }`}
+                      ></i>
+
+                      <input
+                        type="text"
+                        value={form.phone}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        placeholder={t.phonePlaceholder}
+                        className={`input-field ${
+                          isUrdu
+                            ? "input-field-with-right"
+                            : "input-field-with-left"
+                        }`}
+                        style={{
+                          fontFamily: "monospace",
+                          textAlign: isUrdu ? "right" : "left",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field">
+                    <label className="label" style={{ color: "#3730a3" }}>
+                      {t.openingBalance}
+                    </label>
+
+                    <div className="input-wrap">
+                      <i
+                        className={`bi bi-wallet2 input-icon ${
+                          isUrdu ? "input-icon-right" : "input-icon-left"
+                        }`}
+                      ></i>
+
+                      <input
+                        type="number"
+                        value={form.opening_balance}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            opening_balance: e.target.value,
+                          }))
+                        }
+                        placeholder={t.balancePlaceholder}
+                        className={`input-field ${
+                          isUrdu
+                            ? "input-field-with-right"
+                            : "input-field-with-left"
+                        }`}
+                        style={{
+                          fontFamily: "monospace",
+                          fontWeight: 900,
+                          color: "#1d4ed8",
+                          textAlign: isUrdu ? "right" : "left",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="modalFooterBasic"
+              style={{
+                flexDirection: isUrdu ? "row-reverse" : "row",
+              }}
+            >
+              <button
+                className="btn btn-soft"
+                onClick={() => setShowForm(false)}
+                disabled={submitting}
+              >
+                {t.cancel}
+              </button>
+
+              <button
+                className="btn btn-primary"
+                onClick={handleSave}
+                disabled={submitting}
+              >
+                <i
+                  className={`bi ${
+                    submitting ? "bi-arrow-repeat" : "bi-save-fill"
+                  }`}
+                ></i>
+                {submitting ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
