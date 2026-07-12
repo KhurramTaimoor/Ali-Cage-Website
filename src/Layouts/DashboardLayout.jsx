@@ -133,21 +133,31 @@ const DashboardLayout = () => {
               label={text("customer", "Customer")}
               onNavigate={closeMobileSidebar}
             />
+
+            <SidebarSubItem
+              to="/app/sales/customer-ledger"
+              label={text("customerLedger", "Customer Ledger")}
+              onNavigate={closeMobileSidebar}
+            />
+
             <SidebarSubItem
               to="/app/sales/rate-list"
               label={text("rateList", "Rate List")}
               onNavigate={closeMobileSidebar}
             />
+
             <SidebarSubItem
               to="/app/sales/sale-order"
               label={text("saleOrder", "Sale Order")}
               onNavigate={closeMobileSidebar}
             />
+
             <SidebarSubItem
               to="/app/sales/invoice"
               label={text("salesInvoice", "Sales Invoice")}
               onNavigate={closeMobileSidebar}
             />
+
             <SidebarSubItem
               to="/app/sales/return"
               label={text("salesReturn", "Sales Return")}
