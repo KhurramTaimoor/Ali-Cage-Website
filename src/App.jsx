@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
@@ -7,7 +12,9 @@ import AdminLogin from "./pages/AdminLogin";
 import DashboardLayout from "./Layouts/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
 import ProtectedRoute from "./components/ProtectedRoute";
-import CustomerSalesLedgerPage from './pages/CustomerSalesLedgerPage'
+
+import CustomerSalesLedgerPage from "./pages/CustomerSalesLedgerPage";
+
 import ProductTypePage from "./pages/ProductTypePage";
 import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
@@ -17,8 +24,6 @@ import StockReceivePage from "./pages/StockReceivePage";
 import StockIssuePage from "./pages/StockIssuePage";
 import InventoryReportPage from "./pages/InventoryReportPage";
 import ProductLedgerPage from "./pages/ProductLedgerPage";
-
-/* NEW */
 import StockDemandPage from "./pages/StockDemandPage";
 import ProductProfitLossReportPage from "./pages/ProductProfitLossReportPage";
 
@@ -65,13 +70,13 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
-        
-
         <Route path="/login" element={<AuthPage initialTab="login" />} />
         <Route path="/register" element={<AuthPage initialTab="signup" />} />
         <Route path="/sys-admin/secure-gateway" element={<AdminLogin />} />
 
+        {/* Protected App */}
         <Route element={<ProtectedRoute allowedRoles={["admin", "employee"]} />}>
           <Route path="/app" element={<DashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -81,8 +86,11 @@ function App() {
 
             {/* Sales */}
             <Route path="sales/customer" element={<CustomerPage />} />
+            <Route
+              path="sales/customer-ledger"
+              element={<CustomerSalesLedgerPage />}
+            />
             <Route path="sales/salesman" element={<SalesmanPage />} />
-            <Route path="/sales/customer-ledger" element={<CustomerSalesLedgerPage />} />
             <Route path="sales/retailer" element={<RetailerPage />} />
             <Route path="sales/area" element={<AreaPage />} />
             <Route path="sales/rate-list" element={<RateListPage />} />
@@ -96,23 +104,35 @@ function App() {
             <Route path="purchase/rate" element={<PurchaseRatePage />} />
             <Route path="purchase/invoice" element={<PurchaseInvoicePage />} />
             <Route path="purchase/return" element={<PurchaseReturnPage />} />
-            <Route path="purchase/supplier-ledger" element={<SupplierLedgerPage />} />
+            <Route
+              path="purchase/supplier-ledger"
+              element={<SupplierLedgerPage />}
+            />
             <Route path="purchase/reports" element={<PurchaseReportPage />} />
 
             {/* Inventory */}
-            <Route path="inventory/product-type" element={<ProductTypePage />} />
+            <Route
+              path="inventory/product-type"
+              element={<ProductTypePage />}
+            />
             <Route path="inventory/category" element={<CategoryPage />} />
             <Route path="inventory/product" element={<ProductPage />} />
             <Route path="inventory/unit" element={<UnitPage />} />
             <Route path="inventory/opening" element={<OpeningStockPage />} />
             <Route path="inventory/receive" element={<StockReceivePage />} />
             <Route path="inventory/issue" element={<StockIssuePage />} />
-
-            {/* NEW: Stock Demand */}
-            <Route path="inventory/stock-demand" element={<StockDemandPage />} />
-
-            <Route path="inventory/reports" element={<InventoryReportPage />} />
-            <Route path="inventory/product-ledger" element={<ProductLedgerPage />} />
+            <Route
+              path="inventory/stock-demand"
+              element={<StockDemandPage />}
+            />
+            <Route
+              path="inventory/reports"
+              element={<InventoryReportPage />}
+            />
+            <Route
+              path="inventory/product-ledger"
+              element={<ProductLedgerPage />}
+            />
 
             {/* Accounts */}
             <Route path="accounts/groups" element={<AccountGroupsPage />} />
@@ -121,7 +141,10 @@ function App() {
             <Route path="accounts/journal" element={<JournalVoucherPage />} />
             <Route path="accounts/cashbook" element={<CashBookPage />} />
             <Route path="accounts/gl-report" element={<GeneralLedgerPage />} />
-            <Route path="accounts/cash-report" element={<CashBookReportPage />} />
+            <Route
+              path="accounts/cash-report"
+              element={<CashBookReportPage />}
+            />
 
             {/* Reports */}
             <Route
@@ -139,18 +162,25 @@ function App() {
             {/* Production */}
             <Route path="production/bom" element={<BOMPage />} />
             <Route path="production/assembly" element={<AssemblyPage />} />
-            <Route path="production/invoice" element={<ProductionInvoicePage />} />
+            <Route
+              path="production/invoice"
+              element={<ProductionInvoicePage />}
+            />
             <Route
               path="production/return-invoice"
               element={<ProductionReturnInvoicePage />}
             />
-            <Route path="production/reports" element={<ProductionReportsPage />} />
+            <Route
+              path="production/reports"
+              element={<ProductionReportsPage />}
+            />
 
             {/* Permissions */}
             <Route path="permissions" element={<PermissionsPage />} />
           </Route>
         </Route>
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
