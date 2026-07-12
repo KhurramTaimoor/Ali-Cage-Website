@@ -7,7 +7,7 @@ import AdminLogin from "./pages/AdminLogin";
 import DashboardLayout from "./Layouts/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import CustomerSalesLedgerPage from './pages/CustomerSalesLedgerPage'
 import ProductTypePage from "./pages/ProductTypePage";
 import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
@@ -66,6 +66,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        
 
         <Route path="/login" element={<AuthPage initialTab="login" />} />
         <Route path="/register" element={<AuthPage initialTab="signup" />} />
@@ -81,6 +82,7 @@ function App() {
             {/* Sales */}
             <Route path="sales/customer" element={<CustomerPage />} />
             <Route path="sales/salesman" element={<SalesmanPage />} />
+            <Route path="/sales/customer-ledger" element={<CustomerSalesLedgerPage />} />
             <Route path="sales/retailer" element={<RetailerPage />} />
             <Route path="sales/area" element={<AreaPage />} />
             <Route path="sales/rate-list" element={<RateListPage />} />
