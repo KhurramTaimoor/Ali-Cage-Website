@@ -36,7 +36,7 @@ import SaleOrderPage from "./pages/SaleOrderPage";
 import SalesInvoicePage from "./pages/SalesInvoicePage";
 import SalesReturnPage from "./pages/SalesReturnPage";
 import SalesReportPage from "./pages/SalesReportPage";
-
+import AllLedgerSummaryPage from "./pages/AllLedgerSummaryPage";
 import SupplierPage from "./pages/SupplierPage";
 import PurchaseRatePage from "./pages/PurchaseRatePage";
 import PurchaseInvoicePage from "./pages/PurchaseInvoicePage";
@@ -174,7 +174,10 @@ function App() {
               path="production/reports"
               element={<ProductionReportsPage />}
             />
-
+<Route
+  path="accounts/ledger-summary"
+  element={<AllLedgerSummaryPage />}
+/>
             {/* Permissions */}
             <Route path="permissions" element={<PermissionsPage />} />
           </Route>
@@ -183,6 +186,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      
     </Router>
   );
 }
