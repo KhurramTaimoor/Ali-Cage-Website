@@ -61,7 +61,7 @@ const LANG = {
     customers: "Customers",
     suppliers: "Suppliers",
     employees: "Employees",
-    generalAccount: "General Account",
+    ledgerSummary: "Ledger Summary",
     open: "Open",
 
     todayTransactions: "Today Transactions",
@@ -110,7 +110,7 @@ const LANG = {
     customers: "گاہک",
     suppliers: "سپلائرز",
     employees: "ملازمین",
-    generalAccount: "جنرل اکاؤنٹ",
+    ledgerSummary: "تمام لیجرز",
     open: "کھولیں",
 
     todayTransactions: "آج کا لین دین",
@@ -618,9 +618,9 @@ const DashboardHome = () => {
           />
 
           <ShortcutCard
-            title={t.generalAccount}
-            to="/app/accounts/gl-report"
-            icon="bi-journal-text"
+            title={t.ledgerSummary}
+            to="/app/accounts/ledger-summary"
+            icon="bi-journals"
             openText={t.open}
           />
         </div>
