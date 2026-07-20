@@ -172,22 +172,70 @@ const mapSalesReturnItemToPurchase = (item) => {
     toNumber(item?.return_amount ?? item?.amount) || quantity * rate;
 
   return {
+    // Automatic Purchase Return ke liye exact invoice line identity preserve
+    // karna zaroori hai. In fields ko remove karne par backend ko sirf
+    // "Product #" milta tha aur valid item filter empty ho jata tha.
+    invoice_item_id:
+      item?.invoice_item_id ||
+      item?.purchase_invoice_item_id ||
+      item?.item_id ||
+      null,
+
+    product_id:
+      item?.product_id ||
+      product?.id ||
+      product?.product_id ||
+      null,
+
+    category_id:
+      item?.category_id ||
+      category?.id ||
+      category?.category_id ||
+      null,
+
+    unit_id:
+      item?.unit_id ||
+      unit?.id ||
+      unit?.unit_id ||
+      null,
+
+    product_type_id:
+      item?.product_type_id ||
+      productType?.id ||
+      productType?.product_type_id ||
+      null,
+
     product_name:
       item?.product_name ||
       item?.manual_product_name ||
       productName(product) ||
       String(item?.product_description || "").trim() ||
-      `Product #${item?.product_id || ""}`,
-    unit_name: item?.unit_name || unitName(unit),
-    category_name: item?.category_name || categoryName(category),
+      "",
+
+    product_description:
+      item?.product_description ||
+      item?.description ||
+      "",
+
+    unit_name:
+      item?.unit_name ||
+      unitName(unit),
+
+    category_name:
+      item?.category_name ||
+      categoryName(category),
+
     type_name:
       item?.type_name ||
       item?.product_type ||
       typeName(productType) ||
       typeName(product),
+
     quantity,
+    return_qty: quantity,
     rate,
     amount: Number(amount.toFixed(2)),
+    return_amount: Number(amount.toFixed(2)),
   };
 };
 
@@ -205,11 +253,19 @@ const mapSalesReturnPayload = (body) => {
     .map(mapSalesReturnItemToPurchase)
     .filter(
       (item) =>
-        item.product_name ||
-        item.quantity > 0 ||
-        item.rate > 0 ||
-        item.amount > 0
+        item.quantity > 0 &&
+        (
+          item.invoice_item_id ||
+          item.product_id ||
+          String(item.product_name || "").trim()
+        )
     );
+
+  if (!items.length) {
+    throw new Error(
+      "Return product identity missing hai. Invoice dobara select karke product tick karein."
+    );
+  }
 
   const total = items.reduce(
     (sum, item) => sum + toNumber(item.amount),
@@ -447,6 +503,73 @@ const parseSyntheticId = (value) => {
   };
 };
 
+const normalizeSupplierRecord = (supplier = {}) => {
+  const id =
+    supplier.id ??
+    supplier.supplier_id ??
+    supplier.value ??
+    supplier.ID ??
+    supplier.Id ??
+    "";
+
+  const name = String(
+    supplier.supplier_name ??
+      supplier.supplier_name_en ??
+      supplier.vendor_name ??
+      supplier.company_name ??
+      supplier.name ??
+      supplier.name_en ??
+      supplier.title ??
+      ""
+  ).trim();
+
+  return {
+    ...supplier,
+    id,
+    supplier_id: supplier.supplier_id ?? id,
+    supplier_name: name,
+    supplier_name_en: name,
+    customer_id: supplier.customer_id ?? id,
+    customer_name: name,
+    customer_name_en: name,
+    name,
+    name_en: name,
+    title: name,
+  };
+};
+
+const normalizeSupplierPayload = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeSupplierRecord);
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  const normalized = { ...payload };
+
+  if (Array.isArray(normalized.data)) {
+    normalized.data = normalized.data.map(normalizeSupplierRecord);
+  } else if (normalized.data && typeof normalized.data === "object") {
+    normalized.data = normalizeSupplierRecord(normalized.data);
+  }
+
+  if (Array.isArray(normalized.suppliers)) {
+    normalized.suppliers = normalized.suppliers.map(normalizeSupplierRecord);
+  }
+
+  if (
+    normalized.id &&
+    !Array.isArray(normalized.data) &&
+    !Array.isArray(normalized.suppliers)
+  ) {
+    return normalizeSupplierRecord(normalized);
+  }
+
+  return normalized;
+};
+
 const cacheMasterResponse = (url, responseData) => {
   const list = getList(responseData);
 
@@ -483,12 +606,24 @@ const makeManualInvoice = async (payload) => {
 
 const installPurchaseReturnApiAdapter = () => {
   const requestId = axios.interceptors.request.use((config) => {
-    const originalUrl = String(config.url || "");
+    const rawUrl = String(config.url || "");
+    const originalUrl = rawUrl.replace("/api/api/", "/api/");
+    config.url = originalUrl;
     const method = String(config.method || "get").toLowerCase();
     config.__purchaseReturnOriginalUrl = originalUrl;
 
+    // SalesReturnPage also starts from its customer lookup. Feed the supplier
+    // records into that lookup, otherwise the Supplier dropdown only contains
+    // its placeholder even though /api/suppliers has records.
+    if (originalUrl.includes("/api/customers")) {
+      config.url = originalUrl
+        .replace("/api/api/customers", "/api/suppliers")
+        .replace("/api/customers", "/api/suppliers");
+      config.__purchaseSupplierAlias = true;
+      return config;
+    }
+
     if (
-      originalUrl.includes("/api/customers") ||
       originalUrl.includes("/api/employees") ||
       originalUrl.includes("/api/general-ledgers")
     ) {
@@ -644,6 +779,11 @@ const installPurchaseReturnApiAdapter = () => {
       );
 
       cacheMasterResponse(originalUrl, response.data);
+
+      if (response?.config?.__purchaseSupplierAlias) {
+        response.data = normalizeSupplierPayload(response.data);
+        cache.suppliers = getList(response.data);
+      }
 
       if (originalUrl.includes("/api/sales-invoices")) {
         const rawList = getList(response.data);
