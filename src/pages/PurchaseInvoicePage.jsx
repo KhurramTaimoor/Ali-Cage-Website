@@ -211,7 +211,9 @@ const mapSalesPayloadToPurchase = (body) => {
   );
 
   return {
-    invoice_no: String(body?.invoice_no || "").trim(),
+    invoice_no: String(body?.invoice_no || "")
+      .trim()
+      .replace(/^sales-invoice/i, "purchase-invoice"),
     supplier_name:
       String(
         body?.party_name ||
@@ -499,7 +501,26 @@ const installPurchaseInvoiceApiAdapter = () => {
 
       const method = String(config.method || "get").toLowerCase();
       if (method === "post" || method === "put" || method === "patch") {
-        config.data = mapSalesPayloadToPurchase(parseData(config.data));
+        const purchasePayload = mapSalesPayloadToPurchase(
+          parseData(config.data)
+        );
+
+        if (method === "post") {
+          const requestedNo = normalizePurchaseInvoiceNo(
+            purchasePayload.invoice_no
+          );
+          const duplicateInCache = cache.invoices.some(
+            (invoice) =>
+              normalizePurchaseInvoiceNo(invoice?.invoice_no).toLowerCase() ===
+              requestedNo.toLowerCase()
+          );
+
+          purchasePayload.invoice_no = duplicateInCache
+            ? getNextPurchaseInvoiceNo()
+            : requestedNo;
+        }
+
+        config.data = purchasePayload;
       }
     }
 
@@ -568,6 +589,31 @@ const replacePurchaseText = (value) => {
   return result;
 };
 
+const normalizePurchaseInvoiceNo = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/^sales-invoice/i, "purchase-invoice");
+
+const getNextPurchaseInvoiceNo = () => {
+  let max = 0;
+  let width = 2;
+
+  cache.invoices.forEach((invoice) => {
+    const value = normalizePurchaseInvoiceNo(invoice?.invoice_no);
+
+    const standard = value.match(/^purchase-invoice(\d+)$/i);
+    const short = value.match(/^PI[- ]?(\d+)$/i);
+    const match = standard || short;
+
+    if (!match) return;
+
+    max = Math.max(max, Number(match[1]) || 0);
+    width = Math.max(width, String(match[1]).length);
+  });
+
+  return `purchase-invoice${String(max + 1).padStart(width, "0")}`;
+};
+
 const setNativeValue = (element, value) => {
   const prototype = Object.getPrototypeOf(element);
   const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
@@ -577,6 +623,38 @@ const setNativeValue = (element, value) => {
 
   element.dispatchEvent(new Event("input", { bubbles: true }));
   element.dispatchEvent(new Event("change", { bubbles: true }));
+};
+
+const fixNewPurchaseInvoiceNumber = (root) => {
+  const buttons = Array.from(root.querySelectorAll("button"));
+  const isUpdateMode = buttons.some((button) =>
+    /^(update|اپڈیٹ)$/i.test(String(button.textContent || "").trim())
+  );
+  const isCreateMode = buttons.some((button) =>
+    /^(save|محفوظ کریں)$/i.test(String(button.textContent || "").trim())
+  );
+
+  if (!isCreateMode || isUpdateMode) return;
+
+  const invoiceInputs = Array.from(root.querySelectorAll("input")).filter(
+    (input) =>
+      /^(sales-invoice|purchase-invoice)\d+$/i.test(
+        String(input.value || "").trim()
+      )
+  );
+
+  invoiceInputs.forEach((input) => {
+    const current = normalizePurchaseInvoiceNo(input.value);
+    const alreadyExists = cache.invoices.some(
+      (invoice) =>
+        normalizePurchaseInvoiceNo(invoice?.invoice_no).toLowerCase() ===
+        current.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      setNativeValue(input, getNextPurchaseInvoiceNo());
+    }
+  });
 };
 
 const forceSupplierOnly = (root) => {
@@ -667,6 +745,8 @@ const transformPurchaseDom = (root) => {
       );
     }
   });
+
+  fixNewPurchaseInvoiceNumber(root);
 };
 
 const installPrintTransformer = () => {
