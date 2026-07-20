@@ -355,6 +355,73 @@ const mapInvoiceResponse = (responseData) => {
   return next;
 };
 
+const normalizeSupplierRecord = (supplier = {}) => {
+  const id =
+    supplier.id ??
+    supplier.supplier_id ??
+    supplier.value ??
+    supplier.ID ??
+    supplier.Id ??
+    "";
+
+  const name = String(
+    supplier.supplier_name ??
+      supplier.supplier_name_en ??
+      supplier.vendor_name ??
+      supplier.company_name ??
+      supplier.name ??
+      supplier.name_en ??
+      supplier.title ??
+      ""
+  ).trim();
+
+  return {
+    ...supplier,
+    id,
+    supplier_id: supplier.supplier_id ?? id,
+    supplier_name: name,
+    supplier_name_en: name,
+    customer_id: supplier.customer_id ?? id,
+    customer_name: name,
+    customer_name_en: name,
+    name,
+    name_en: name,
+    title: name,
+  };
+};
+
+const normalizeSupplierPayload = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeSupplierRecord);
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  const normalized = { ...payload };
+
+  if (Array.isArray(normalized.data)) {
+    normalized.data = normalized.data.map(normalizeSupplierRecord);
+  } else if (normalized.data && typeof normalized.data === "object") {
+    normalized.data = normalizeSupplierRecord(normalized.data);
+  }
+
+  if (Array.isArray(normalized.suppliers)) {
+    normalized.suppliers = normalized.suppliers.map(normalizeSupplierRecord);
+  }
+
+  if (
+    normalized.id &&
+    !Array.isArray(normalized.data) &&
+    !Array.isArray(normalized.suppliers)
+  ) {
+    return normalizeSupplierRecord(normalized);
+  }
+
+  return normalized;
+};
+
 const cacheMasterResponse = (url, responseData) => {
   const list = getList(responseData);
 
@@ -450,6 +517,7 @@ const installPurchaseInvoiceApiAdapter = () => {
       cacheMasterResponse(originalUrl, response.data);
 
       if (response?.config?.__purchaseSupplierAlias) {
+        response.data = normalizeSupplierPayload(response.data);
         cache.suppliers = getList(response.data);
       }
 
