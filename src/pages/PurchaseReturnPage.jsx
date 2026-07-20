@@ -1,1715 +1,911 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import axios from "axios";
+import SalesReturnPage from "./SalesReturnPage";
 
-const LANG = {
-  en: {
-    title: "Purchase Return",
-    subtitle: "Manage your purchase returns and refunds",
-    addBtn: "New Return",
-    editBtn: "Edit",
-    newEntry: "New Purchase Return",
-    editEntry: "Edit Purchase Return",
-    searchPlaceholder: "Search by invoice, supplier, product or reason...",
-    invoice: "Purchase Invoice",
-    selectInvoice: "-- Select Invoice --",
-    returnDate: "Return Date",
-    totalAmount: "Total Amount (PKR)",
-    debit: "Debit (PKR)",
-    credit: "Credit (PKR)",
-    debitPlaceholder: "Debit amount",
-    creditPlaceholder: "Credit amount",
-    reason: "Reason",
-    invoiceNo: "Invoice No",
-    supplier: "Supplier",
-    items: "Return Items",
-    addItem: "Add Item",
-    removeItem: "Remove",
-    product: "Product",
-    unit: "Unit",
-    category: "Category",
-    type: "Type",
-    purchasedQty: "Purchased Qty",
-    returnedQty: "Returned Qty",
-    remainingQty: "Remaining Qty",
-    returnQty: "Return Qty",
-    rate: "Rate",
-    amount: "Amount",
-    balance: "Balance",
-    save: "Save Return",
-    update: "Update Return",
-    saving: "Saving...",
-    cancel: "Cancel",
-    delete: "Delete",
-    actions: "Actions",
-    records: "Records",
-    noRecords: "No records found.",
-    loading: "Loading purchase returns...",
-    toggleLang: "اردو",
-    printBtn: "Print",
-    pdfBtn: "Download PDF",
-    reportHeader: "Purchase Returns List",
-    printedOn: "Printed On",
-    errorInvoice: "Purchase invoice is required!",
-    itemErrorMsg:
-      "Return quantity must be greater than 0 and not exceed remaining quantity.",
-    fetchError: "Failed to load purchase returns.",
-    saveError: "Failed to save purchase return.",
-    updateError: "Failed to update purchase return.",
-    deleteError: "Failed to delete purchase return.",
-    successMsg: "Purchase return saved successfully!",
-    updateSuccess: "Purchase return updated successfully!",
-    deleteSuccess: "Purchase return deleted successfully!",
-    deleteConfirm: "Are you sure you want to delete this return?",
-    autoFilled: "Auto-filled from invoice",
-    translating: "Translating to Urdu…",
-    savePdfHint: 'Choose "Save as PDF" in print dialog',
-    companyName: "Ali Cages",
-    thankYou: "Thank you for your business!",
-  },
-  ur: {
-    title: "پرچیز ریٹرن",
-    subtitle: "اپنی خریداری کی واپسی اور ریفنڈز کا انتظام کریں",
-    addBtn: "نئی واپسی",
-    editBtn: "ترمیم",
-    newEntry: "نئی پرچیز ریٹرن",
-    editEntry: "پرچیز ریٹرن میں ترمیم",
-    searchPlaceholder: "انوائس، سپلائر، پروڈکٹ یا وجہ سے تلاش کریں...",
-    invoice: "پرچیز انوائس",
-    selectInvoice: "-- انوائس منتخب کریں --",
-    returnDate: "واپسی کی تاریخ",
-    totalAmount: "کل رقم (روپے)",
-    debit: "ڈیبٹ (روپے)",
-    credit: "کریڈٹ (روپے)",
-    debitPlaceholder: "ڈیبٹ رقم",
-    creditPlaceholder: "کریڈٹ رقم",
-    reason: "وجہ",
-    invoiceNo: "انوائس نمبر",
-    supplier: "سپلائر",
-    items: "واپسی کی اشیاء",
-    addItem: "آئٹم شامل کریں",
-    removeItem: "ہٹائیں",
-    product: "پروڈکٹ",
-    unit: "یونٹ",
-    category: "کیٹیگری",
-    type: "ٹائپ",
-    purchasedQty: "خریدی گئی مقدار",
-    returnedQty: "واپس کی گئی مقدار",
-    remainingQty: "باقی مقدار",
-    returnQty: "واپسی مقدار",
-    rate: "ریٹ",
-    amount: "رقم",
-    balance: "بیلنس",
-    save: "واپسی محفوظ کریں",
-    update: "واپسی اپڈیٹ کریں",
-    saving: "محفوظ ہو رہا ہے...",
-    cancel: "منسوخ",
-    delete: "حذف",
-    actions: "اقدامات",
-    records: "ریکارڈز",
-    noRecords: "کوئی ریکارڈ نہیں ملا۔",
-    loading: "پرچیز ریٹرنز لوڈ ہو رہی ہیں...",
-    toggleLang: "English",
-    printBtn: "پرنٹ کریں",
-    pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
-    reportHeader: "پرچیز ریٹرنز کی فہرست",
-    printedOn: "پرنٹ کی تاریخ",
-    errorInvoice: "پرچیز انوائس لازمی ہے!",
-    itemErrorMsg:
-      "واپسی کی مقدار 0 سے زیادہ ہو اور باقی مقدار سے زیادہ نہ ہو۔",
-    fetchError: "پرچیز ریٹرنز لوڈ نہیں ہو سکے۔",
-    saveError: "پرچیز ریٹرن محفوظ نہیں ہو سکا۔",
-    updateError: "پرچیز ریٹرن اپڈیٹ نہیں ہو سکا۔",
-    deleteError: "پرچیز ریٹرن حذف نہیں ہو سکا۔",
-    successMsg: "پرچیز ریٹرن کامیابی سے محفوظ ہو گیا!",
-    updateSuccess: "پرچیز ریٹرن کامیابی سے اپڈیٹ ہو گیا!",
-    deleteSuccess: "پرچیز ریٹرن کامیابی سے حذف ہو گیا!",
-    deleteConfirm: "کیا آپ واقعی یہ واپسی حذف کرنا چاہتے ہیں؟",
-    autoFilled: "انوائس سے خودکار بھرا گیا",
-    translating: "اردو میں ترجمہ ہو رہا ہے…",
-    savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
-    companyName: "علی کیجز",
-    thankYou: "آپ کے کاروبار کا شکریہ!",
-  },
+const API_ROOT = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+const rawAxios = axios.create();
+
+const getList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.rows)) return value.rows;
+  if (Array.isArray(value?.result)) return value.result;
+  if (Array.isArray(value?.returns)) return value.returns;
+  if (Array.isArray(value?.invoices)) return value.invoices;
+  if (Array.isArray(value?.products)) return value.products;
+  return [];
 };
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const toNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
 
-const emptyItem = () => ({
-  product_name: "",
-  unit_name: "",
-  category_name: "",
-  type_name: "",
-  purchased_qty: 0,
-  already_returned_qty: 0,
-  remaining_qty: 0,
-  quantity: "",
-  rate: "",
-  amount: "",
+const getRecordId = (row) =>
+  row?.id ??
+  row?.value ??
+  row?.product_id ??
+  row?.category_id ??
+  row?.unit_id ??
+  row?.supplier_id ??
+  row?.product_type_id ??
+  "";
+
+const pickText = (row, keys) => {
+  for (const key of keys) {
+    if (
+      row?.[key] !== undefined &&
+      row?.[key] !== null &&
+      String(row[key]).trim()
+    ) {
+      return String(row[key]).trim();
+    }
+  }
+  return "";
+};
+
+const cache = {
+  suppliers: [],
+  products: [],
+  categories: [],
+  units: [],
+  productTypes: [],
+  invoices: [],
+  purchaseReturns: [],
+  syntheticRows: new Map(),
+};
+
+const findById = (list, id) =>
+  list.find((row) => String(getRecordId(row)) === String(id));
+
+const supplierName = (row) =>
+  pickText(row, [
+    "supplier_name",
+    "supplier_name_en",
+    "vendor_name",
+    "company_name",
+    "name",
+    "name_en",
+    "title",
+  ]);
+
+const productName = (row) =>
+  pickText(row, [
+    "product_name",
+    "product_name_en",
+    "item_name",
+    "name",
+    "name_en",
+    "title",
+  ]);
+
+const categoryName = (row) =>
+  pickText(row, [
+    "category_name",
+    "category_name_en",
+    "name",
+    "name_en",
+    "title",
+  ]);
+
+const unitName = (row) =>
+  pickText(row, [
+    "unit_name",
+    "unit_name_en",
+    "symbol",
+    "name",
+    "name_en",
+    "title",
+  ]);
+
+const typeName = (row) =>
+  pickText(row, [
+    "product_type_en",
+    "product_type",
+    "product_type_name",
+    "type_name",
+    "type",
+    "name",
+    "name_en",
+    "title",
+  ]);
+
+const findIdByName = (list, name, getter) => {
+  const target = String(name || "").trim().toLowerCase();
+  if (!target) return "";
+
+  const found = list.find(
+    (row) => String(getter(row) || "").trim().toLowerCase() === target
+  );
+
+  return found ? String(getRecordId(found)) : "";
+};
+
+const parseData = (data) => {
+  if (typeof data !== "string") return data || {};
+  try {
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+};
+
+const makeAxiosResponse = (config, data, status = 200) => ({
+  data,
+  status,
+  statusText: status >= 200 && status < 300 ? "OK" : "Error",
+  headers: {},
+  config,
+  request: null,
 });
 
-const emptyForm = {
-  invoice_id: "",
-  invoice_no: "",
-  supplier_name: "",
-  return_date: "",
-  total_amount: "",
-  debit: "",
-  credit: "",
-  reason: "",
+const responseFromRawAxios = async (config, requestConfig) => {
+  const response = await rawAxios(requestConfig);
+  return makeAxiosResponse(
+    config,
+    response.data,
+    response.status
+  );
 };
 
-const money = (value) =>
-  Number(value || 0).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+const resolveProduct = (item) => findById(cache.products, item?.product_id);
+const resolveCategory = (item) =>
+  findById(cache.categories, item?.category_id);
+const resolveUnit = (item) => findById(cache.units, item?.unit_id);
+const resolveType = (item) =>
+  findById(cache.productTypes, item?.product_type_id);
 
-async function translateText(text) {
-  if (!text || !String(text).trim()) return text;
-  try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-      String(text).trim()
-    )}&langpair=en|ur`;
-    const res = await fetch(url);
-    if (!res.ok) return text;
-    const data = await res.json();
-    const translated = data?.responseData?.translatedText;
-    if (!translated || translated.toLowerCase() === String(text).trim().toLowerCase()) {
-      return text;
-    }
-    return translated;
-  } catch {
-    return text;
-  }
-}
+const mapSalesReturnItemToPurchase = (item) => {
+  const product = resolveProduct(item);
+  const category = resolveCategory(item);
+  const unit = resolveUnit(item);
+  const productType = resolveType(item);
 
-const PurchaseReturnPage = () => {
-  const [lang, setLang] = useState("en");
-  const t = LANG[lang];
-  const isUrdu = lang === "ur";
-  const dir = isUrdu ? "rtl" : "ltr";
+  const quantity = toNumber(
+    item?.return_qty ?? item?.qty ?? item?.quantity
+  );
+  const rate = toNumber(item?.rate);
+  const amount =
+    toNumber(item?.return_amount ?? item?.amount) || quantity * rate;
 
-  const baseFont = isUrdu
-    ? "'Noto Nastaliq Urdu', serif"
-    : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
-
-  const fmt = (v) => money(v);
-
-  const [records, setRecords] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [items, setItems] = useState([emptyItem()]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
-  const [translating, setTranslating] = useState(false);
-  const [urduCache, setUrduCache] = useState({});
-
-  const showMsg = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+  return {
+    product_name:
+      item?.product_name ||
+      item?.manual_product_name ||
+      productName(product) ||
+      String(item?.product_description || "").trim() ||
+      `Product #${item?.product_id || ""}`,
+    unit_name: item?.unit_name || unitName(unit),
+    category_name: item?.category_name || categoryName(category),
+    type_name:
+      item?.type_name ||
+      item?.product_type ||
+      typeName(productType) ||
+      typeName(product),
+    quantity,
+    rate,
+    amount: Number(amount.toFixed(2)),
   };
+};
 
-  const tr = (prefix, value) =>
-    isUrdu ? urduCache[`${prefix}:${value}`] || value || "-" : value || "-";
+const getReturnBodyItems = (body) => {
+  if (Array.isArray(body)) return body;
+  if (Array.isArray(body?.items)) return body.items;
+  if (Array.isArray(body?.returns)) return body.returns;
+  if (Array.isArray(body?.return_items)) return body.return_items;
+  return [body];
+};
 
-  const normalizeRecord = (r) => ({
-    id: r?.id,
-    invoice_id: r?.invoice_id || "",
-    invoice_no: r?.invoice_no || "",
-    supplier_name: r?.supplier_name || "",
-    return_date: r?.return_date || "",
-    reason: r?.reason || "",
-    total_amount: Number(r?.total_amount) || 0,
-    debit: Number(r?.debit) || 0,
-    credit: Number(r?.credit) || 0,
-    items: Array.isArray(r?.items)
-      ? r.items.map((item) => ({
-          id: item?.id,
-          return_id: item?.return_id,
-          product_id: item?.product_id,
-          product_name: item?.product_name || "",
-          unit_name: item?.unit_name || "",
-          category_name: item?.category_name || "",
-          type_name: item?.type_name || "",
-          purchased_qty: Number(item?.purchased_qty) || 0,
-          already_returned_qty: Number(item?.already_returned_qty) || 0,
-          remaining_qty: Number(item?.remaining_qty) || 0,
-          quantity: item?.quantity ?? "",
-          rate: item?.rate ?? "",
-          amount: item?.amount ?? "",
-        }))
-      : [],
-  });
-
-  const fetchInvoices = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/purchase-invoices`);
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-      setInvoices(list);
-    } catch {
-      setInvoices([]);
-    }
-  };
-
-  const fetchReturns = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE}/purchase-returns`);
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-      setRecords(list.map(normalizeRecord));
-    } catch (err) {
-      setRecords([]);
-      showMsg(
-        "error",
-        err?.response?.data?.error || err?.response?.data?.message || t.fetchError
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInvoices();
-    fetchReturns();
-  }, []);
-
-  const handleLangToggle = async () => {
-    const newLang = lang === "en" ? "ur" : "en";
-    setLang(newLang);
-
-    if (newLang !== "ur") return;
-
-    setTranslating(true);
-    try {
-      const nextCache = { ...urduCache };
-
-      const texts = new Set();
-
-      invoices.forEach((inv) => {
-        if (inv?.supplier_name) texts.add(`supplier:${inv.supplier_name}`);
-        if (Array.isArray(inv?.items)) {
-          inv.items.forEach((item) => {
-            if (item?.product_name) texts.add(`product:${item.product_name}`);
-            if (item?.unit_name) texts.add(`unit:${item.unit_name}`);
-            if (item?.category_name) texts.add(`category:${item.category_name}`);
-            if (item?.type_name) texts.add(`type:${item.type_name}`);
-          });
-        }
-      });
-
-      records.forEach((r) => {
-        if (r?.supplier_name) texts.add(`supplier:${r.supplier_name}`);
-        if (r?.reason) texts.add(`reason:${r.reason}`);
-        (r.items || []).forEach((item) => {
-          if (item?.product_name) texts.add(`product:${item.product_name}`);
-          if (item?.unit_name) texts.add(`unit:${item.unit_name}`);
-          if (item?.category_name) texts.add(`category:${item.category_name}`);
-          if (item?.type_name) texts.add(`type:${item.type_name}`);
-        });
-      });
-
-      await Promise.all(
-        [...texts].map(async (entry) => {
-          const [prefix, ...rest] = entry.split(":");
-          const value = rest.join(":");
-          if (value && !nextCache[`${prefix}:${value}`]) {
-            nextCache[`${prefix}:${value}`] = await translateText(value);
-          }
-        })
-      );
-
-      setUrduCache(nextCache);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setTranslating(false);
-    }
-  };
-
-  const ensureReturnTranslations = async (ret) => {
-    if (lang !== "ur") return urduCache;
-
-    const nextCache = { ...urduCache };
-
-    if (ret?.supplier_name && !nextCache[`supplier:${ret.supplier_name}`]) {
-      nextCache[`supplier:${ret.supplier_name}`] = await translateText(ret.supplier_name);
-    }
-    if (ret?.reason && !nextCache[`reason:${ret.reason}`]) {
-      nextCache[`reason:${ret.reason}`] = await translateText(ret.reason);
-    }
-
-    for (const item of ret.items || []) {
-      if (item.product_name && !nextCache[`product:${item.product_name}`]) {
-        nextCache[`product:${item.product_name}`] = await translateText(item.product_name);
-      }
-      if (item.unit_name && !nextCache[`unit:${item.unit_name}`]) {
-        nextCache[`unit:${item.unit_name}`] = await translateText(item.unit_name);
-      }
-      if (item.category_name && !nextCache[`category:${item.category_name}`]) {
-        nextCache[`category:${item.category_name}`] = await translateText(item.category_name);
-      }
-      if (item.type_name && !nextCache[`type:${item.type_name}`]) {
-        nextCache[`type:${item.type_name}`] = await translateText(item.type_name);
-      }
-    }
-
-    setUrduCache(nextCache);
-    return nextCache;
-  };
-
-  const resetForm = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setItems([emptyItem()]);
-    setMessage({ type: "", text: "" });
-  };
-
-  const getReturnedQtyMap = (invoiceId, excludeReturnId = null) => {
-    const map = {};
-
-    records.forEach((ret) => {
-      if (String(ret.invoice_id) !== String(invoiceId)) return;
-      if (excludeReturnId && String(ret.id) === String(excludeReturnId)) return;
-
-      (ret.items || []).forEach((item) => {
-        const key = [
-          item.product_name || "",
-          item.unit_name || "",
-          item.category_name || "",
-          item.type_name || "",
-        ].join("||");
-
-        map[key] = (map[key] || 0) + (Number(item.quantity) || 0);
-      });
-    });
-
-    return map;
-  };
-
-  const buildItemsFromInvoice = (invoice, excludeReturnId = null, currentEditItems = []) => {
-    const invoiceItems = Array.isArray(invoice?.items) ? invoice.items : [];
-    const returnedMap = getReturnedQtyMap(invoice?.id, excludeReturnId);
-
-    return invoiceItems.map((invItem) => {
-      const key = [
-        invItem.product_name || "",
-        invItem.unit_name || "",
-        invItem.category_name || "",
-        invItem.type_name || "",
-      ].join("||");
-
-      const alreadyReturned = Number(returnedMap[key] || 0);
-
-      const existingEditItem = currentEditItems.find(
-        (x) =>
-          (x.product_name || "") === (invItem.product_name || "") &&
-          (x.unit_name || "") === (invItem.unit_name || "") &&
-          (x.category_name || "") === (invItem.category_name || "") &&
-          (x.type_name || "") === (invItem.type_name || "")
-      );
-
-      const currentEditingQty = Number(existingEditItem?.quantity) || 0;
-      const purchasedQty = Number(invItem.quantity) || 0;
-      const effectiveReturned = excludeReturnId ? Math.max(alreadyReturned, 0) : alreadyReturned;
-
-      const remainingQty = Math.max(purchasedQty - effectiveReturned, 0);
-
-      return {
-        product_name: invItem.product_name || "",
-        unit_name: invItem.unit_name || "",
-        category_name: invItem.category_name || "",
-        type_name: invItem.type_name || "",
-        purchased_qty: purchasedQty,
-        already_returned_qty: effectiveReturned,
-        remaining_qty: excludeReturnId
-          ? Math.max(purchasedQty - effectiveReturned + currentEditingQty, 0)
-          : remainingQty,
-        quantity: existingEditItem ? currentEditingQty : "",
-        rate: existingEditItem?.rate ?? invItem.rate ?? "",
-        amount:
-          existingEditItem?.amount ??
-          (currentEditingQty && (invItem.rate || existingEditItem?.rate)
-            ? (
-                currentEditingQty *
-                Number(existingEditItem?.rate ?? invItem.rate ?? 0)
-              ).toFixed(2)
-            : ""),
-      };
-    });
-  };
-
-  const recalcTotals = (updatedItems) => {
-    const total = updatedItems.reduce(
-      (sum, item) => sum + (parseFloat(item.amount) || 0),
-      0
+const mapSalesReturnPayload = (body) => {
+  const sourceItems = getReturnBodyItems(body);
+  const items = sourceItems
+    .map(mapSalesReturnItemToPurchase)
+    .filter(
+      (item) =>
+        item.product_name ||
+        item.quantity > 0 ||
+        item.rate > 0 ||
+        item.amount > 0
     );
 
-    setForm((f) => ({
-      ...f,
-      total_amount: total ? total.toFixed(2) : "",
-      credit: total ? total.toFixed(2) : "",
-    }));
+  const total = items.reduce(
+    (sum, item) => sum + toNumber(item.amount),
+    0
+  );
+
+  return {
+    invoice_id: Number(
+      body?.invoice_id || sourceItems.find((item) => item?.invoice_id)?.invoice_id
+    ) || 0,
+    return_date:
+      body?.return_date ||
+      sourceItems.find((item) => item?.return_date)?.return_date ||
+      new Date().toISOString().slice(0, 10),
+    reason:
+      String(
+        body?.reason ||
+          sourceItems.find((item) => item?.reason)?.reason ||
+          ""
+      ).trim(),
+    total_amount: Number(total.toFixed(2)),
+    debit: toNumber(
+      body?.debit ??
+        sourceItems.reduce(
+          (sum, item) => sum + toNumber(item?.debit),
+          0
+        )
+    ),
+    credit:
+      toNumber(
+        body?.credit ??
+          sourceItems.reduce(
+            (sum, item) => sum + toNumber(item?.credit),
+            0
+          )
+      ) || Number(total.toFixed(2)),
+    items,
+    party_name:
+      body?.party_name ||
+      sourceItems.find((item) => item?.party_name)?.party_name ||
+      "",
+    return_no:
+      body?.return_no ||
+      sourceItems.find((item) => item?.return_no)?.return_no ||
+      "",
   };
+};
 
-  const handleInvoiceSelect = (invoiceId, currentEditItems = [], excludeReturnId = null) => {
-    const invoice = invoices.find((inv) => String(inv.id) === String(invoiceId));
+const mapPurchaseInvoiceItemToSales = (item, index) => {
+  const productId =
+    item?.product_id ||
+    findIdByName(cache.products, item?.product_name, productName);
+  const categoryId =
+    item?.category_id ||
+    findIdByName(cache.categories, item?.category_name, categoryName);
+  const unitId =
+    item?.unit_id ||
+    findIdByName(cache.units, item?.unit_name, unitName);
+  const productTypeId =
+    item?.product_type_id ||
+    findIdByName(cache.productTypes, item?.type_name, typeName);
 
-    if (!invoice) {
-      setForm((prev) => ({
-        ...prev,
-        invoice_id: "",
-        invoice_no: "",
-        supplier_name: "",
-        total_amount: "",
-        credit: "",
-      }));
-      setItems([emptyItem()]);
-      return;
+  const quantity = toNumber(item?.quantity ?? item?.qty);
+  const rate = toNumber(item?.rate);
+  const amount = toNumber(item?.amount) || quantity * rate;
+
+  return {
+    ...item,
+    id: item?.id || `${index + 1}`,
+    invoice_item_id: item?.id || "",
+    sr: index + 1,
+    product_id: productId || "",
+    category_id: categoryId || "",
+    unit_id: unitId || "",
+    product_type_id: productTypeId || "",
+    product_name: item?.product_name || "",
+    product_description: item?.product_description || "",
+    description: item?.product_description || "",
+    product_type: item?.type_name || "FMS",
+    sale_type: "single",
+    carton_qty: 0,
+    pieces_qty: quantity,
+    qty: quantity,
+    quantity,
+    pieces_per_carton: 0,
+    rate,
+    amount,
+    debit: 0,
+    credit: 0,
+  };
+};
+
+const mapPurchaseInvoiceToSales = (invoice) => {
+  if (!invoice || typeof invoice !== "object") return invoice;
+
+  const supplierId =
+    invoice?.supplier_id ||
+    invoice?.party_id ||
+    findIdByName(cache.suppliers, invoice?.supplier_name, supplierName);
+
+  const items = Array.isArray(invoice?.items)
+    ? invoice.items.map(mapPurchaseInvoiceItemToSales)
+    : [];
+
+  const total =
+    toNumber(invoice?.total_amount) ||
+    items.reduce((sum, item) => sum + toNumber(item.amount), 0);
+
+  return {
+    ...invoice,
+    party_type: "supplier",
+    customer_type: "supplier",
+    party_id: supplierId || "",
+    supplier_id: supplierId || "",
+    party_name: invoice?.supplier_name || "",
+    customer_name: invoice?.supplier_name || "",
+    customer_name_en: invoice?.supplier_name || "",
+    invoice_total: total,
+    grand_total: total,
+    items_count: items.length,
+    total_qty: items.reduce((sum, item) => sum + toNumber(item.qty), 0),
+    items,
+  };
+};
+
+const invoiceItemForReturn = (invoiceId, purchaseItem) => {
+  const invoice = cache.invoices.find(
+    (row) => String(row.id) === String(invoiceId)
+  );
+
+  return invoice?.items?.find(
+    (item) =>
+      String(item.product_name || "").trim().toLowerCase() ===
+        String(purchaseItem.product_name || "").trim().toLowerCase() &&
+      String(item.unit_name || "").trim().toLowerCase() ===
+        String(purchaseItem.unit_name || "").trim().toLowerCase()
+  );
+};
+
+const flattenPurchaseReturns = (records) => {
+  cache.syntheticRows.clear();
+  const rows = [];
+
+  records.forEach((record) => {
+    const sourceItems =
+      Array.isArray(record?.items) && record.items.length
+        ? record.items
+        : [{}];
+
+    sourceItems.forEach((item, itemIndex) => {
+      const invoiceItem = invoiceItemForReturn(record.invoice_id, item);
+      const syntheticId = `pr-${record.id}-${itemIndex}`;
+      const supplierId = findIdByName(
+        cache.suppliers,
+        record.supplier_name,
+        supplierName
+      );
+
+      const row = {
+        id: syntheticId,
+        _purchase_return_id: record.id,
+        _purchase_item_index: itemIndex,
+        return_no:
+          record.return_no ||
+          `purchase-return${String(record.id).padStart(2, "0")}`,
+        return_mode: record.invoice_id ? "auto" : "manual",
+        invoice_id: record.invoice_id || "",
+        invoice_ref: record.invoice_no || "",
+        invoice_no: record.invoice_no || "",
+        invoice_item_id: item?.id || "",
+        party_type: "supplier",
+        party_id: supplierId || "",
+        party_name: record.supplier_name || "",
+        customer_name: record.supplier_name || "",
+        supplier_name: record.supplier_name || "",
+        product_id:
+          item?.product_id ||
+          findIdByName(cache.products, item?.product_name, productName),
+        product_name: item?.product_name || "",
+        manual_product_name: item?.product_name || "",
+        product_description: item?.product_description || "",
+        product_type_id:
+          item?.product_type_id ||
+          findIdByName(cache.productTypes, item?.type_name, typeName),
+        product_type: item?.type_name || "FMS",
+        category_id:
+          item?.category_id ||
+          findIdByName(cache.categories, item?.category_name, categoryName),
+        category_name: item?.category_name || "",
+        unit_id:
+          item?.unit_id ||
+          findIdByName(cache.units, item?.unit_name, unitName),
+        unit_name: item?.unit_name || "",
+        return_date: record.return_date || "",
+        sale_order_date: invoiceItem?.invoice_date || "",
+        invoice_date: invoiceItem?.invoice_date || "",
+        sold_qty: toNumber(invoiceItem?.quantity ?? item?.quantity),
+        already_returned_qty: 0,
+        available_qty: Math.max(
+          toNumber(invoiceItem?.quantity ?? item?.quantity) -
+            toNumber(item?.quantity),
+          0
+        ),
+        return_qty: toNumber(item?.quantity),
+        rate: toNumber(item?.rate),
+        return_amount: toNumber(item?.amount),
+        debit:
+          itemIndex === 0 ? toNumber(record?.debit) : 0,
+        credit:
+          itemIndex === 0 ? toNumber(record?.credit) : toNumber(item?.amount),
+        reason: record?.reason || "",
+        status: "Saved",
+      };
+
+      cache.syntheticRows.set(syntheticId, row);
+      rows.push(row);
+    });
+  });
+
+  return rows;
+};
+
+const parseSyntheticId = (value) => {
+  const match = String(value || "").match(/^pr-(\d+)-(\d+)$/);
+  if (!match) {
+    return {
+      parentId: Number(value) || 0,
+      itemIndex: 0,
+    };
+  }
+
+  return {
+    parentId: Number(match[1]),
+    itemIndex: Number(match[2]),
+  };
+};
+
+const cacheMasterResponse = (url, responseData) => {
+  const list = getList(responseData);
+
+  if (url.includes("/api/suppliers")) cache.suppliers = list;
+  if (url.includes("/api/products")) cache.products = list;
+  if (url.includes("/api/categories")) cache.categories = list;
+  if (url.includes("/api/units")) cache.units = list;
+  if (url.includes("/api/product-types")) cache.productTypes = list;
+};
+
+const makeManualInvoice = async (payload) => {
+  const now = Date.now();
+  const total = payload.items.reduce(
+    (sum, item) => sum + toNumber(item.amount),
+    0
+  );
+
+  const response = await rawAxios.post(
+    `${API_ROOT}/api/purchase-invoices`,
+    {
+      invoice_no: `PR-MANUAL-${now}`,
+      supplier_name: payload.party_name || "Manual Supplier Return",
+      invoice_date: payload.return_date,
+      total_amount: Number(total.toFixed(2)),
+      debit: Number(total.toFixed(2)),
+      credit: 0,
+      status: "returned",
+      items: payload.items,
+    }
+  );
+
+  return response.data?.data || response.data;
+};
+
+const installPurchaseReturnApiAdapter = () => {
+  const requestId = axios.interceptors.request.use((config) => {
+    const originalUrl = String(config.url || "");
+    const method = String(config.method || "get").toLowerCase();
+    config.__purchaseReturnOriginalUrl = originalUrl;
+
+    if (
+      originalUrl.includes("/api/customers") ||
+      originalUrl.includes("/api/employees") ||
+      originalUrl.includes("/api/general-ledgers")
+    ) {
+      config.adapter = async (adapterConfig) =>
+        makeAxiosResponse(adapterConfig, []);
+      return config;
     }
 
-    const autoItems = buildItemsFromInvoice(invoice, excludeReturnId, currentEditItems);
+    if (originalUrl.includes("/api/sales-invoices")) {
+      config.url = originalUrl.replace(
+        "/api/sales-invoices",
+        "/api/purchase-invoices"
+      );
+      return config;
+    }
 
-    setForm((prev) => ({
-      ...prev,
-      invoice_id: String(invoice.id),
-      invoice_no: invoice.invoice_no || "",
-      supplier_name: invoice.supplier_name || "",
-    }));
+    if (!originalUrl.includes("/api/sales-returns")) {
+      return config;
+    }
 
-    setItems(autoItems.length ? autoItems : [emptyItem()]);
-    recalcTotals(autoItems);
-  };
+    const suffix = originalUrl.split("/api/sales-returns")[1] || "";
 
-  const openAdd = () => {
-    resetForm();
-    setShowForm(true);
-  };
+    if (method === "get" && (!suffix || suffix === "/")) {
+      config.adapter = async (adapterConfig) =>
+        responseFromRawAxios(adapterConfig, {
+          method: "get",
+          url: `${API_ROOT}/api/purchase-returns`,
+        });
+      return config;
+    }
 
-  const openEdit = async (id) => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE}/purchase-returns/${id}`);
-      const data = normalizeRecord(res.data?.data || res.data);
+    if (method === "get" && suffix && suffix !== "/") {
+      const requestedId = suffix.replace(/^\//, "").split("?")[0];
+      const { parentId, itemIndex } = parseSyntheticId(requestedId);
+      config.__purchaseReturnItemIndex = itemIndex;
+      config.adapter = async (adapterConfig) =>
+        responseFromRawAxios(adapterConfig, {
+          method: "get",
+          url: `${API_ROOT}/api/purchase-returns/${parentId}`,
+        });
+      return config;
+    }
 
-      if (lang === "ur") {
-        setTranslating(true);
-        try {
-          await ensureReturnTranslations(data);
-        } finally {
-          setTranslating(false);
+    if (method === "delete") {
+      const requestedId = suffix.replace(/^\//, "").split("?")[0];
+      const { parentId } = parseSyntheticId(requestedId);
+      config.adapter = async (adapterConfig) =>
+        responseFromRawAxios(adapterConfig, {
+          method: "delete",
+          url: `${API_ROOT}/api/purchase-returns/${parentId}`,
+        });
+      return config;
+    }
+
+    if (method === "post") {
+      const salesBody = parseData(config.data);
+      config.adapter = async (adapterConfig) => {
+        const payload = mapSalesReturnPayload(salesBody);
+
+        if (!payload.invoice_id) {
+          const createdInvoice = await makeManualInvoice(payload);
+          payload.invoice_id = Number(createdInvoice?.id) || 0;
         }
-      }
 
-      setEditingId(data.id);
-      setForm({
-        invoice_id: data.invoice_id || "",
-        invoice_no: data.invoice_no || "",
-        supplier_name: data.supplier_name || "",
-        return_date: data.return_date || "",
-        total_amount: data.total_amount || "",
-        debit: data.debit || "",
-        credit: data.credit || "",
-        reason: data.reason || "",
-      });
+        return responseFromRawAxios(adapterConfig, {
+          method: "post",
+          url: `${API_ROOT}/api/purchase-returns`,
+          data: {
+            invoice_id: payload.invoice_id,
+            return_date: payload.return_date,
+            reason: payload.reason,
+            total_amount: payload.total_amount,
+            debit: payload.debit,
+            credit: payload.credit,
+            items: payload.items,
+          },
+        });
+      };
+      return config;
+    }
 
-      const currentEditItems =
-        data.items?.length
-          ? data.items.map((item) => ({
+    if (method === "put" || method === "patch") {
+      const requestedId = suffix.replace(/^\//, "").split("?")[0];
+      const { parentId, itemIndex } = parseSyntheticId(requestedId);
+      const salesBody = parseData(config.data);
+
+      config.adapter = async (adapterConfig) => {
+        const payload = mapSalesReturnPayload(salesBody);
+        const current =
+          cache.purchaseReturns.find(
+            (record) => String(record.id) === String(parentId)
+          ) ||
+          (
+            await rawAxios.get(
+              `${API_ROOT}/api/purchase-returns/${parentId}`
+            )
+          ).data;
+
+        const currentItems = Array.isArray(current?.items)
+          ? current.items.map((item) => ({
               product_name: item.product_name || "",
               unit_name: item.unit_name || "",
               category_name: item.category_name || "",
               type_name: item.type_name || "",
-              quantity: item.quantity ?? "",
-              rate: item.rate ?? "",
-              amount: item.amount ?? "",
+              quantity: toNumber(item.quantity),
+              rate: toNumber(item.rate),
+              amount: toNumber(item.amount),
             }))
           : [];
 
-      const invoice = invoices.find((inv) => String(inv.id) === String(data.invoice_id));
+        const replacementItem = payload.items[0];
+        if (replacementItem) {
+          currentItems[itemIndex] = replacementItem;
+        }
 
-      if (invoice) {
-        const rebuilt = buildItemsFromInvoice(invoice, data.id, currentEditItems);
-        setItems(rebuilt.length ? rebuilt : [emptyItem()]);
-      } else {
-        setItems(
-          data.items?.length
-            ? data.items.map((item) => ({
-                ...emptyItem(),
-                product_name: item.product_name || "",
-                unit_name: item.unit_name || "",
-                category_name: item.category_name || "",
-                type_name: item.type_name || "",
-                quantity: item.quantity ?? "",
-                rate: item.rate ?? "",
-                amount: item.amount ?? "",
-              }))
-            : [emptyItem()]
+        const safeItems = currentItems.filter(Boolean);
+        const total = safeItems.reduce(
+          (sum, item) => sum + toNumber(item.amount),
+          0
         );
+
+        return responseFromRawAxios(adapterConfig, {
+          method: "put",
+          url: `${API_ROOT}/api/purchase-returns/${parentId}`,
+          data: {
+            invoice_id:
+              payload.invoice_id || Number(current?.invoice_id) || 0,
+            return_date:
+              payload.return_date || current?.return_date || "",
+            reason: payload.reason || current?.reason || "",
+            total_amount: Number(total.toFixed(2)),
+            debit: payload.debit || toNumber(current?.debit),
+            credit:
+              payload.credit ||
+              toNumber(current?.credit) ||
+              Number(total.toFixed(2)),
+            items: safeItems,
+          },
+        });
+      };
+      return config;
+    }
+
+    return config;
+  });
+
+  const responseId = axios.interceptors.response.use(
+    (response) => {
+      const originalUrl = String(
+        response?.config?.__purchaseReturnOriginalUrl ||
+          response?.config?.url ||
+          ""
+      );
+
+      cacheMasterResponse(originalUrl, response.data);
+
+      if (originalUrl.includes("/api/sales-invoices")) {
+        const rawList = getList(response.data);
+        const mapped = rawList.map(mapPurchaseInvoiceToSales);
+        cache.invoices = mapped;
+
+        if (Array.isArray(response.data)) {
+          response.data = mapped;
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          response.data = {
+            ...response.data,
+            data: mapped,
+            invoices: mapped,
+          };
+        } else if (response.data?.id) {
+          response.data = mapPurchaseInvoiceToSales(response.data);
+        }
       }
 
-      setMessage({ type: "", text: "" });
-      setShowForm(true);
-    } catch (err) {
-      showMsg(
-        "error",
-        err?.response?.data?.error || err?.response?.data?.message || t.fetchError
-      );
-    } finally {
-      setLoading(false);
-    }
+      if (originalUrl.includes("/api/sales-returns")) {
+        const method = String(response?.config?.method || "get").toLowerCase();
+        const data = response.data;
+
+        if (method === "get") {
+          const list = getList(data);
+
+          if (list.length) {
+            cache.purchaseReturns = list;
+            const rows = flattenPurchaseReturns(list);
+            response.data = {
+              success: true,
+              data: rows,
+              returns: rows,
+            };
+          } else {
+            const purchaseRecord = data?.data || data;
+            if (purchaseRecord?.id) {
+              const rows = flattenPurchaseReturns([purchaseRecord]);
+              const itemIndex =
+                response?.config?.__purchaseReturnItemIndex || 0;
+              const selected = rows[itemIndex] || rows[0] || null;
+              response.data = {
+                success: true,
+                data: selected,
+                return: selected,
+              };
+            }
+          }
+        } else {
+          const purchaseRecord = data?.data || data;
+          if (purchaseRecord?.id) {
+            const rows = flattenPurchaseReturns([purchaseRecord]);
+            response.data = {
+              success: true,
+              message:
+                data?.message ||
+                (method === "post"
+                  ? "Purchase return saved."
+                  : "Purchase return updated."),
+              data: rows.length === 1 ? rows[0] : rows,
+              returns: rows,
+            };
+          } else if (method === "delete") {
+            response.data = {
+              success: true,
+              message: data?.message || "Purchase return deleted.",
+            };
+          }
+        }
+      }
+
+      return response;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  return () => {
+    axios.interceptors.request.eject(requestId);
+    axios.interceptors.response.eject(responseId);
   };
+};
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+const TEXT_REPLACEMENTS = [
+  ["Manual Sales Return", "Manual Purchase Return"],
+  ["Automatic Sales Return", "Automatic Purchase Return"],
+  ["Sales Returns", "Purchase Returns"],
+  ["Sales Return", "Purchase Return"],
+  ["sales returns", "purchase returns"],
+  ["sales return", "purchase return"],
+  ["Sales Invoices", "Purchase Invoices"],
+  ["Sales Invoice", "Purchase Invoice"],
+  ["sales invoice", "purchase invoice"],
+  ["Sale Date", "Purchase Date"],
+  ["Sold Qty", "Purchased Qty"],
+  ["Customer Type", "Supplier"],
+  ["Select Name", "Select Supplier"],
+  ["Customer", "Supplier"],
+  ["سیلز ریٹرنز", "پرچیز ریٹرنز"],
+  ["سیلز ریٹرن", "پرچیز ریٹرن"],
+  ["سیلز انوائسز", "پرچیز انوائسز"],
+  ["سیلز انوائس", "پرچیز انوائس"],
+  ["سیل تاریخ", "پرچیز تاریخ"],
+  ["فروخت مقدار", "خریدی گئی مقدار"],
+  ["کسٹمر ٹائپ", "سپلائر"],
+  ["کسٹمر", "سپلائر"],
+];
 
-    if (name === "invoice_id") {
-      setForm((prev) => ({ ...prev, invoice_id: value }));
-      handleInvoiceSelect(value, [], editingId);
-      return;
-    }
+const replacePurchaseText = (value) => {
+  let result = String(value || "");
+  for (const [from, to] of TEXT_REPLACEMENTS) {
+    result = result.split(from).join(to);
+  }
+  return result;
+};
 
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+const setNativeValue = (element, value) => {
+  const prototype = Object.getPrototypeOf(element);
+  const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
 
-  const handleItemChange = (index, e) => {
-    const { name, value } = e.target;
+  if (descriptor?.set) descriptor.set.call(element, value);
+  else element.value = value;
 
-    setItems((prev) => {
-      const updated = prev.map((item, i) => {
-        if (i !== index) return item;
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+};
 
-        const next = { ...item, [name]: value };
-
-        const maxQty = Number(next.remaining_qty) || 0;
-        let qty = parseFloat(name === "quantity" ? value : next.quantity) || 0;
-        const rate = parseFloat(name === "rate" ? value : next.rate) || 0;
-
-        if (qty > maxQty) qty = maxQty;
-        if (qty < 0) qty = 0;
-
-        next.quantity = qty === 0 && String(value) === "" ? "" : qty;
-        next.amount = qty && rate ? (qty * rate).toFixed(2) : "";
-
-        return next;
-      });
-
-      recalcTotals(updated);
-      return updated;
-    });
-  };
-
-  const addItem = () => setItems((prev) => [...prev, emptyItem()]);
-
-  const removeItem = (index) => {
-    const updated = items.filter((_, i) => i !== index);
-    const safeItems = updated.length ? updated : [emptyItem()];
-    setItems(safeItems);
-    recalcTotals(safeItems);
-  };
-
-  const handleSave = async () => {
-    if (!form.invoice_id) {
-      showMsg("error", t.errorInvoice);
-      return;
-    }
-
-    const cleanedItems = items
-      .map((item) => ({
-        product_name: item.product_name?.trim() || "",
-        unit_name: item.unit_name?.trim() || "",
-        category_name: item.category_name?.trim() || "",
-        type_name: item.type_name?.trim() || "",
-        purchased_qty: Number(item.purchased_qty) || 0,
-        already_returned_qty: Number(item.already_returned_qty) || 0,
-        remaining_qty: Number(item.remaining_qty) || 0,
-        quantity: Number(item.quantity) || 0,
-        rate: Number(item.rate) || 0,
-        amount: Number(item.quantity || 0) * Number(item.rate || 0),
-      }))
-      .filter((item) => item.product_name || item.quantity > 0 || item.rate > 0);
-
-    const hasInvalid = cleanedItems.some(
-      (item) =>
-        !item.product_name ||
-        item.quantity <= 0 ||
-        item.quantity > item.remaining_qty
+const forceSupplierOnly = (root) => {
+  root.querySelectorAll("select").forEach((select) => {
+    const options = Array.from(select.options || []);
+    const supplierOption = options.find(
+      (option) =>
+        option.value === "supplier" ||
+        /^(supplier|سپلائر)$/i.test(option.textContent.trim())
     );
+    const isPartyTypeSelect =
+      supplierOption &&
+      options.some(
+        (option) =>
+          option.value === "customer" ||
+          option.value === "employee" ||
+          option.value === "general_ledger" ||
+          /customer|employee|general ledger|کسٹمر|ملازم|جنرل لیجر/i.test(
+            option.textContent
+          )
+      );
 
-    if (!cleanedItems.length || hasInvalid) {
-      showMsg("error", t.itemErrorMsg);
-      return;
+    if (!isPartyTypeSelect) return;
+
+    options.forEach((option) => {
+      const keep = option === supplierOption;
+      option.hidden = !keep;
+      option.disabled = !keep;
+    });
+
+    if (select.value !== supplierOption.value) {
+      setNativeValue(select, supplierOption.value);
+    }
+  });
+};
+
+const transformPurchaseDom = (root) => {
+  if (!root) return;
+
+  forceSupplierOnly(root);
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  textNodes.forEach((node) => {
+    const next = replacePurchaseText(node.nodeValue);
+    if (next !== node.nodeValue) node.nodeValue = next;
+  });
+
+  root.querySelectorAll("input, textarea").forEach((input) => {
+    if (input.placeholder) {
+      const nextPlaceholder = replacePurchaseText(input.placeholder);
+      if (nextPlaceholder !== input.placeholder) {
+        input.placeholder = nextPlaceholder;
+      }
     }
 
-    const totalAmount = cleanedItems.reduce((sum, item) => sum + item.amount, 0);
+    if (/^sales-return/i.test(input.value || "")) {
+      setNativeValue(
+        input,
+        String(input.value).replace(/^sales-return/i, "purchase-return")
+      );
+    }
+  });
+};
 
-    const payload = {
-      invoice_id: Number(form.invoice_id),
-      return_date: form.return_date || "",
-      total_amount: Number(totalAmount.toFixed(2)),
-      debit: Number(form.debit) || 0,
-      credit: Number(form.credit) || totalAmount,
-      reason: form.reason?.trim() || "",
-      items: cleanedItems.map((item) => ({
-        product_name: item.product_name,
-        unit_name: item.unit_name,
-        category_name: item.category_name,
-        type_name: item.type_name,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate) || 0,
-        amount: Number(item.amount.toFixed(2)),
-      })),
+const installPrintTransformer = () => {
+  const originalOpen = window.open;
+
+  const patchedOpen = function patchedWindowOpen(...args) {
+    const popup = originalOpen.apply(window, args);
+    if (!popup?.document) return popup;
+
+    const originalClose = popup.document.close.bind(popup.document);
+    popup.document.close = (...closeArgs) => {
+      const result = originalClose(...closeArgs);
+      window.setTimeout(() => {
+        try {
+          transformPurchaseDom(popup.document.body);
+        } catch {
+          // Print window may already be closed.
+        }
+      }, 0);
+      return result;
     };
 
-    try {
-      setSubmitting(true);
-      let res;
-      if (editingId) {
-        res = await axios.put(`${API_BASE}/purchase-returns/${editingId}`, payload);
-      } else {
-        res = await axios.post(`${API_BASE}/purchase-returns`, payload);
-      }
-
-      const saved = normalizeRecord(res?.data?.data || res?.data);
-      setRecords((prev) =>
-        editingId ? prev.map((r) => (r.id === editingId ? saved : r)) : [saved, ...prev]
-      );
-      showMsg(
-        "success",
-        res?.data?.message || (editingId ? t.updateSuccess : t.successMsg)
-      );
-      setShowForm(false);
-      resetForm();
-    } catch (err) {
-      showMsg(
-        "error",
-        err?.response?.data?.error ||
-          err?.response?.data?.message ||
-          (editingId ? t.updateError : t.saveError)
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    return popup;
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(t.deleteConfirm)) return;
-    try {
-      const res = await axios.delete(`${API_BASE}/purchase-returns/${id}`);
-      setRecords((prev) => prev.filter((r) => r.id !== id));
-      showMsg("success", res?.data?.message || t.deleteSuccess);
-    } catch (err) {
-      showMsg(
-        "error",
-        err?.response?.data?.error || err?.response?.data?.message || t.deleteError
-      );
-    }
+  window.open = patchedOpen;
+
+  return () => {
+    if (window.open === patchedOpen) window.open = originalOpen;
   };
+};
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return records;
-    return records.filter(
-      (r) =>
-        [r.invoice_no, r.supplier_name, r.reason, urduCache[`supplier:${r.supplier_name}`], urduCache[`reason:${r.reason}`]]
-          .some((v) => (v || "").toLowerCase().includes(q)) ||
-        (r.items || []).some((item) =>
-          [
-            item.product_name,
-            item.unit_name,
-            item.category_name,
-            item.type_name,
-            urduCache[`product:${item.product_name}`],
-            urduCache[`unit:${item.unit_name}`],
-            urduCache[`category:${item.category_name}`],
-            urduCache[`type:${item.type_name}`],
-          ].some((v) => (v || "").toLowerCase().includes(q))
-        )
-    );
-  }, [records, search, urduCache]);
+function PurchaseReturnPage() {
+  const rootRef = useRef(null);
+  const [ready, setReady] = useState(false);
 
-  const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu
-      ? "'Noto Nastaliq Urdu', serif"
-      : "Helvetica, 'Helvetica Neue', Arial, sans-serif";
+  useLayoutEffect(() => {
+    const removeApiAdapter = installPurchaseReturnApiAdapter();
+    const removePrintTransformer = installPrintTransformer();
+    setReady(true);
 
-    const totalAmountSum = filtered.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
-    const debitSum = filtered.reduce((sum, r) => sum + (Number(r.debit) || 0), 0);
-    const creditSum = filtered.reduce((sum, r) => sum + (Number(r.credit) || 0), 0);
-    const balanceSum = filtered.reduce(
-      (sum, r) => sum + ((Number(r.debit) || 0) - (Number(r.credit) || 0)),
-      0
-    );
+    return () => {
+      removeApiAdapter();
+      removePrintTransformer();
+    };
+  }, []);
 
-    const rowsHtml = filtered
-      .map((r, i) => {
-        const balance = (Number(r.debit) || 0) - (Number(r.credit) || 0);
-        const rowItems = Array.isArray(r.items) && r.items.length ? r.items : [emptyItem()];
+  useEffect(() => {
+    if (!ready || !rootRef.current) return undefined;
 
-        return rowItems
-          .map(
-            (item, itemIndex) => `
-          <tr>
-            ${
-              itemIndex === 0
-                ? `
-                <td rowspan="${rowItems.length}" class="center">${i + 1}</td>
-                <td rowspan="${rowItems.length}"><strong>${r.invoice_no || "-"}</strong></td>
-                <td rowspan="${rowItems.length}">${tr("supplier", r.supplier_name)}</td>
-                <td rowspan="${rowItems.length}" class="center">${r.return_date || "-"}</td>
-              `
-                : ""
-            }
-            <td>${tr("product", item.product_name)}</td>
-            <td>${tr("unit", item.unit_name)}</td>
-            <td>${tr("category", item.category_name)}</td>
-            <td>${tr("type", item.type_name)}</td>
-            <td class="center">${item.quantity || 0}</td>
-            <td class="num">${fmt(item.rate)}</td>
-            <td class="num strong violet">${fmt(item.amount)}</td>
-            ${
-              itemIndex === 0
-                ? `
-                <td rowspan="${rowItems.length}" class="num">${fmt(r.total_amount)}</td>
-                <td rowspan="${rowItems.length}" class="num">${fmt(r.debit)}</td>
-                <td rowspan="${rowItems.length}" class="num">${fmt(r.credit)}</td>
-                <td rowspan="${rowItems.length}" class="num">${fmt(Math.abs(balance))}</td>
-                <td rowspan="${rowItems.length}">${tr("reason", r.reason)}</td>
-              `
-                : ""
-            }
-          </tr>`
-          )
-          .join("");
-      })
-      .join("");
+    const root = rootRef.current;
+    transformPurchaseDom(root);
 
-    const html = `
-      <!DOCTYPE html>
-      <html lang="${lang}" dir="${dir}">
-        <head>
-          <meta charset="UTF-8" />
-          <title>${t.title}</title>
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              margin: 0;
-              background: #f8fafc;
-              color: #0f172a;
-              font-family: ${font};
-            }
-            .page {
-              width: 100%;
-              min-height: 100vh;
-              background: linear-gradient(135deg, #eff6ff 0%, #ffffff 45%, #f8fafc 100%);
-              padding: 20px;
-            }
-            .sheet {
-              max-width: 1500px;
-              margin: 0 auto;
-              background: white;
-              border: 1px solid #dbeafe;
-              box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
-              border-radius: 24px;
-              overflow: hidden;
-            }
-            .header {
-              position: relative;
-              background: linear-gradient(135deg, #0f4c97 0%, #155eaf 65%, #3b82f6 100%);
-              color: white;
-              padding: 26px 28px 22px;
-              overflow: hidden;
-            }
-            .header:before {
-              content: "";
-              position: absolute;
-              top: 0;
-              ${isUrdu ? "left" : "right"}: 0;
-              width: 240px;
-              height: 100%;
-              background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-              clip-path: polygon(35% 0, 100% 0, 100% 100%, 0 100%);
-            }
-            .header-row {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              gap: 20px;
-              position: relative;
-              z-index: 2;
-            }
-            .brand-wrap {
-              display: flex;
-              align-items: center;
-              gap: 14px;
-            }
-            .logo {
-              width: 58px;
-              height: 58px;
-              min-width: 58px;
-              border-radius: 999px;
-              border: 4px solid rgba(255,255,255,0.85);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: 800;
-              letter-spacing: 0.5px;
-              background: rgba(255,255,255,0.08);
-              color: white;
-              font-size: 13px;
-            }
-            .brand h1 {
-              margin: 0;
-              font-size: 30px;
-              line-height: 1.15;
-              font-weight: 800;
-            }
-            .brand p {
-              margin: 6px 0 0;
-              font-size: 13px;
-              color: rgba(255,255,255,0.82);
-            }
-            .meta {
-              text-align: ${isUrdu ? "left" : "right"};
-              font-size: 12px;
-              color: rgba(255,255,255,0.88);
-              line-height: 1.8;
-              white-space: nowrap;
-            }
-            .content { padding: 18px; }
-            .hint {
-              background: #eff6ff;
-              color: #1d4ed8;
-              border: 1px solid #bfdbfe;
-              border-radius: 14px;
-              padding: 12px 14px;
-              font-size: 13px;
-              margin-bottom: 14px;
-            }
-            .cards {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 14px;
-              margin-bottom: 16px;
-            }
-            .card {
-              border-radius: 18px;
-              border: 2px solid;
-              padding: 14px 16px;
-              min-height: 100px;
-              position: relative;
-              overflow: hidden;
-            }
-            .card:before {
-              content: "";
-              position: absolute;
-              top: 0;
-              ${isUrdu ? "right" : "left"}: 0;
-              width: 6px;
-              height: 100%;
-              background: currentColor;
-              opacity: 0.9;
-            }
-            .card small {
-              display: block;
-              font-size: 12px;
-              opacity: 0.9;
-              margin-bottom: 12px;
-            }
-            .pill {
-              position: absolute;
-              top: 12px;
-              ${isUrdu ? "left" : "right"}: 12px;
-              font-size: 10px;
-              font-weight: 800;
-              color: white;
-              padding: 5px 12px;
-              border-radius: 999px;
-            }
-            .card .value {
-              font-size: 24px;
-              font-weight: 800;
-              line-height: 1.2;
-              word-break: break-word;
-            }
-            .card.blue { background: #eff6ff; color: #0f4c97; border-color: #60a5fa; }
-            .card.blue .pill { background: #0f4c97; }
-            .card.green { background: #ecfdf5; color: #059669; border-color: #34d399; }
-            .card.green .pill { background: #059669; }
-            .card.orange { background: #fff7ed; color: #c2410c; border-color: #fb923c; }
-            .card.orange .pill { background: #c2410c; }
-            .card.violet { background: #f5f3ff; color: #7c3aed; border-color: #a78bfa; }
-            .card.violet .pill { background: #7c3aed; }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            thead th {
-              background: #0f4c97;
-              color: white;
-              font-size: 12px;
-              padding: 12px 10px;
-              border: 1px solid #1d4ed8;
-              text-align: ${isUrdu ? "right" : "left"};
-              white-space: nowrap;
-            }
-            tbody td, tfoot td {
-              border: 1px solid #dbeafe;
-              padding: 10px 10px;
-              font-size: 12px;
-              vertical-align: top;
-            }
-            tbody tr:nth-child(even) td { background: #f8fbff; }
-            .center { text-align: center !important; }
-            .num {
-              text-align: ${isUrdu ? "left" : "right"} !important;
-              white-space: nowrap;
-              font-weight: 700;
-              font-family: Helvetica, Arial, sans-serif;
-            }
-            .strong { font-weight: 800; }
-            .violet { color: #7c3aed; }
-            .foot-row td {
-              background: #eaf3ff;
-              font-weight: 800;
-              color: #0f172a;
-            }
-            .footer {
-              background: #0f4c97;
-              color: rgba(255,255,255,0.9);
-              padding: 10px 16px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 11px;
-            }
-            @media print {
-              @page { size: A4 landscape; margin: 10mm; }
-              body { background: white; }
-              .page { padding: 0; background: white; }
-              .sheet {
-                box-shadow: none;
-                border: none;
-                border-radius: 0;
-                max-width: none;
-              }
-              .hint { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="page">
-            <div class="sheet">
-              <div class="header">
-                <div class="header-row">
-                  <div class="brand-wrap">
-                    <div class="logo">PRTN</div>
-                    <div class="brand">
-                      <h1>${t.companyName}</h1>
-                      <p>${t.reportHeader}</p>
-                    </div>
-                  </div>
-                  <div class="meta">
-                    <div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
-                    <div>${t.records}: ${filtered.length}</div>
-                  </div>
-                </div>
-              </div>
+    const observer = new MutationObserver(() => {
+      transformPurchaseDom(root);
+    });
 
-              <div class="content">
-                ${isPdf ? `<div class="hint">${t.savePdfHint}</div>` : ""}
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
 
-                <div class="cards">
-                  <div class="card blue">
-                    <small>${t.records}</small>
-                    <div class="pill">REC</div>
-                    <div class="value">${filtered.length}</div>
-                  </div>
-                  <div class="card green">
-                    <small>${t.totalAmount}</small>
-                    <div class="pill">TOT</div>
-                    <div class="value">₨ ${fmt(totalAmountSum)}</div>
-                  </div>
-                  <div class="card orange">
-                    <small>${t.credit}</small>
-                    <div class="pill">CR</div>
-                    <div class="value">₨ ${fmt(creditSum)}</div>
-                  </div>
-                  <div class="card violet">
-                    <small>${t.balance}</small>
-                    <div class="pill">BAL</div>
-                    <div class="value">₨ ${fmt(Math.abs(balanceSum))}</div>
-                  </div>
-                </div>
+    return () => observer.disconnect();
+  }, [ready]);
 
-                <table>
-                  <thead>
-                    <tr>
-                      <th class="center">#</th>
-                      <th>${t.invoiceNo}</th>
-                      <th>${t.supplier}</th>
-                      <th class="center">${t.returnDate}</th>
-                      <th>${t.product}</th>
-                      <th>${t.unit}</th>
-                      <th>${t.category}</th>
-                      <th>${t.type}</th>
-                      <th class="center">${t.returnQty}</th>
-                      <th class="num">${t.rate}</th>
-                      <th class="num">${t.amount}</th>
-                      <th class="num">${t.totalAmount}</th>
-                      <th class="num">${t.debit}</th>
-                      <th class="num">${t.credit}</th>
-                      <th class="num">${t.balance}</th>
-                      <th>${t.reason}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${filtered.length ? rowsHtml : `<tr><td colspan="16" style="text-align:center">${t.noRecords}</td></tr>`}
-                  </tbody>
-                  <tfoot>
-                    <tr class="foot-row">
-                      <td colspan="11">${t.totalAmount}</td>
-                      <td class="num">${fmt(totalAmountSum)}</td>
-                      <td class="num">${fmt(debitSum)}</td>
-                      <td class="num">${fmt(creditSum)}</td>
-                      <td class="num">${fmt(Math.abs(balanceSum))}</td>
-                      <td></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              <div class="footer">
-                <span>${t.companyName} — ${t.thankYou}</span>
-                <span>Page 1 / 1</span>
-              </div>
-            </div>
-          </div>
-          <script>
-            window.onload = () => {
-              setTimeout(() => {
-                window.print();
-              }, 400);
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    const w = window.open("", "_blank", "width=1500,height=900");
-    if (!w) return;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  };
+  if (!ready) return null;
 
   return (
-    <div
-      dir={dir}
-      style={{ fontFamily: baseFont }}
-      className="min-h-screen bg-slate-100 pb-16"
-    >
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
-
-      {message.text && !showForm && (
-        <div
-          className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-50 px-5 py-3 rounded-2xl shadow-2xl text-white text-base font-semibold flex items-center gap-2 ${
-            message.type === "error" ? "bg-rose-600" : "bg-sky-600"
-          }`}
-        >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
-          {message.text}
-        </div>
-      )}
-
-      {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl bg-slate-800 text-white text-sm font-semibold flex items-center gap-2">
-          <i className="bi bi-arrow-repeat animate-spin"></i>
-          {t.translating}
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white border border-slate-200 shadow-sm rounded-b-2xl px-5 sm:px-6 py-5 mb-5">
-          <div className={`flex items-center justify-between gap-4 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <div>
-              <h1 className="text-[26px] sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight m-0">{t.title}</h1>
-              <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.subtitle}</p>
-            </div>
-
-            <div className={`flex gap-2 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-              <button
-                onClick={handleLangToggle}
-                className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-bold transition shadow-sm flex items-center gap-2"
-              >
-                <i className="bi bi-translate"></i>
-                {t.toggleLang}
-              </button>
-
-              <button
-                onClick={openAdd}
-                className="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black transition shadow-lg shadow-indigo-200 flex items-center gap-2"
-              >
-                <i className="bi bi-arrow-return-left"></i>
-                {t.addBtn}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="relative w-full max-w-md">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                isUrdu ? "right-4" : "left-4"
-              }`}
-            ></i>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t.searchPlaceholder}
-              className={`w-full h-9 rounded-lg border border-slate-300 bg-white text-[13px] text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 shadow-sm ${
-                isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"
-              }`}
-            />
-          </div>
-
-          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button
-              onClick={() => generatePrintDocument(false)}
-              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
-            >
-              <i className="bi bi-printer text-blue-600"></i>
-              {t.printBtn}
-            </button>
-            <button
-              onClick={() => generatePrintDocument(true)}
-              className="h-9 px-3 rounded-lg border bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-[13px] font-bold transition shadow-sm flex items-center gap-1.5"
-            >
-              <i className="bi bi-file-earmark-pdf text-red-600"></i>
-              {t.pdfBtn}
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-2">
-            <i className="bi bi-table text-slate-400"></i>
-            <h3 className="font-bold text-slate-700 text-sm">
-              {t.records}
-              <span className="mx-2 bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs px-2.5 py-0.5 rounded-full font-mono">
-                {filtered.length}
-              </span>
-            </h3>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-[13px] text-slate-700 min-w-[1500px]">
-              <thead className="bg-slate-950">
-                <tr className="text-white text-[11px] font-black uppercase tracking-wide">
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>#</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.invoiceNo}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.supplier}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.returnDate}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
-                  <th className="px-5 py-3 text-center">{t.returnQty}</th>
-                  <th className="px-5 py-3 text-right">{t.rate}</th>
-                  <th className="px-5 py-3 text-right">{t.amount}</th>
-                  <th className="px-5 py-3 text-right">{t.totalAmount}</th>
-                  <th className="px-5 py-3 text-right">{t.debit}</th>
-                  <th className="px-5 py-3 text-right">{t.credit}</th>
-                  <th className="px-5 py-3 text-right">{t.balance}</th>
-                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.reason}</th>
-                  <th className="px-5 py-3 text-center">{t.actions}</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-sky-50">
-                {loading ? (
-                  <tr>
-                    <td colSpan={17} className="px-6 py-10 text-center text-slate-400">
-                      {t.loading}
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={17} className="px-6 py-10 text-center text-slate-400">
-                      {t.noRecords}
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((r, i) => {
-                    const balance = (Number(r.debit) || 0) - (Number(r.credit) || 0);
-                    const rowItems = Array.isArray(r.items) && r.items.length ? r.items : [emptyItem()];
-
-                    return rowItems.map((item, itemIndex) => (
-                      <tr key={`${r.id}-${itemIndex}`} className="hover:bg-sky-50/60 transition align-top">
-                        {itemIndex === 0 && (
-                          <>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 text-slate-400 font-mono text-xs">
-                              {i + 1}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-100 text-slate-700 text-xs font-mono font-semibold border border-sky-200">
-                                <i className="bi bi-receipt text-xs"></i> {r.invoice_no || "—"}
-                              </span>
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 font-medium text-black">
-                              {tr("supplier", r.supplier_name)}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 text-slate-500 text-xs">
-                              {r.return_date || "—"}
-                            </td>
-                          </>
-                        )}
-
-                        <td className="px-5 py-3.5">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-semibold">
-                            {tr("product", item.product_name)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5">{tr("unit", item.unit_name)}</td>
-                        <td className="px-5 py-3.5">{tr("category", item.category_name)}</td>
-                        <td className="px-5 py-3.5">{tr("type", item.type_name)}</td>
-                        <td className="px-5 py-3.5 text-center font-mono font-bold text-sky-700">
-                          {item.quantity || 0}
-                        </td>
-                        <td className="px-5 py-3.5 text-right font-mono">₨ {fmt(item.rate)}</td>
-                        <td className="px-5 py-3.5 text-right font-mono font-bold text-slate-950">
-                          ₨ {fmt(item.amount)}
-                        </td>
-
-                        {itemIndex === 0 && (
-                          <>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 text-right font-mono font-bold text-slate-700">
-                              ₨ {fmt(r.total_amount)}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 text-right font-mono font-bold text-slate-700">
-                              ₨ {fmt(r.debit)}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 text-right font-mono font-bold text-slate-700">
-                              ₨ {fmt(r.credit)}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5 text-right font-mono font-bold text-slate-700">
-                              ₨ {fmt(Math.abs(balance))}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5">
-                              {r.reason ? (
-                                <span className="inline-flex items-center gap-1 text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded-full">
-                                  <i className="bi bi-chat-left-text text-xs opacity-60"></i>
-                                  {tr("reason", r.reason)}
-                                </span>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td rowSpan={rowItems.length} className="px-5 py-3.5">
-                              <div className="flex justify-center gap-2 flex-wrap">
-                                <button
-                                  onClick={() => openEdit(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 border border-indigo-100 transition"
-                                >
-                                  <i className="bi bi-pencil-square"></i>
-                                  {t.editBtn}
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(r.id)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 border border-rose-100 transition"
-                                >
-                                  <i className="bi bi-trash3"></i>
-                                  {t.delete}
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    ));
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {showForm && (
-          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 p-3 sm:p-4 overflow-y-auto">
-            <div className="mx-auto max-w-[1280px] max-h-[calc(100vh-32px)] bg-slate-50 rounded-2xl shadow-2xl border border-white/70 overflow-hidden flex flex-col">
-              <div
-                className={`sticky top-0 z-20 bg-white px-5 py-3 border-b border-slate-200 flex items-center justify-between gap-3 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <div className={`flex items-center gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
-                    <i className="bi bi-arrow-return-left text-lg"></i>
-                  </div>
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight m-0">
-                      {editingId ? t.editEntry : t.newEntry}
-                    </h2>
-                    <p className="text-[12px] text-slate-500 mt-0.5 m-0">{t.subtitle}</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setShowForm(false);
-                    resetForm();
-                  }}
-                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center"
-                >
-                  <i className="bi bi-x-lg"></i>
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {message.text && (
-                  <div
-                    className={`mb-5 text-sm font-bold px-4 py-3 rounded-2xl flex items-center gap-2 border ${
-                      message.type === "error"
-                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    }`}
-                  >
-                    <i
-                      className={`bi ${
-                        message.type === "error" ? "bi-exclamation-triangle" : "bi-check-circle"
-                      }`}
-                    ></i>
-                    {message.text}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
-                      {t.invoice}
-                    </label>
-                    <select
-                      name="invoice_id"
-                      value={form.invoice_id}
-                      onChange={handleChange}
-                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 appearance-none ${
-                        isUrdu ? "text-right" : ""
-                      }`}
-                    >
-                      <option value="">{t.selectInvoice}</option>
-                      {invoices.map((inv) => (
-                        <option key={inv.id} value={inv.id}>
-                          {inv.invoice_no} ({tr("supplier", inv.supplier_name || "No Supplier")})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
-                      {t.invoiceNo}
-                    </label>
-                    <input
-                      value={form.invoice_no}
-                      readOnly
-                      className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-mono font-black text-indigo-700 ${
-                        isUrdu ? "text-right" : ""
-                      }`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
-                      {t.supplier}
-                    </label>
-                    <input
-                      value={tr("supplier", form.supplier_name)}
-                      readOnly
-                      className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-mono font-black text-indigo-700 ${
-                        isUrdu ? "text-right" : ""
-                      }`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.08em] text-slate-500 mb-1.5 whitespace-nowrap">
-                      {t.returnDate}
-                    </label>
-                    <input
-                      type="date"
-                      name="return_date"
-                      value={form.return_date}
-                      onChange={handleChange}
-                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
-                        isUrdu ? "text-right" : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-[12px] text-indigo-700 font-bold">
-                  <i className="bi bi-info-circle me-2"></i>
-                  {t.autoFilled}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">
-                      {t.debit}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="debit"
-                      value={form.debit}
-                      onChange={handleChange}
-                      placeholder={t.debitPlaceholder}
-                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
-                        isUrdu ? "text-right" : "text-right"
-                      }`}
-                    />
-                  </div>
-
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">
-                      {t.credit}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="credit"
-                      value={form.credit}
-                      onChange={handleChange}
-                      placeholder={t.creditPlaceholder}
-                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
-                        isUrdu ? "text-right" : "text-right"
-                      }`}
-                    />
-                  </div>
-
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">
-                      {t.reason}
-                    </label>
-                    <input
-                      name="reason"
-                      value={form.reason}
-                      onChange={handleChange}
-                      placeholder={t.reason}
-                      className={`w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
-                        isUrdu ? "text-right" : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className={`flex items-center justify-between gap-3 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                    <div>
-                      <h3 className="text-sm font-black text-slate-950 m-0">{t.items}</h3>
-                    </div>
-
-                    <button
-                      onClick={addItem}
-                      type="button"
-                      className="h-9 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 text-white text-[12px] font-black transition shadow-sm flex items-center gap-2"
-                    >
-                      <i className="bi bi-plus-lg"></i>
-                      {t.addItem}
-                    </button>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white mt-3 shadow-sm">
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1500px] text-[13px] text-slate-700">
-                        <thead className="bg-slate-950">
-                          <tr className="text-white text-[11px] font-black uppercase tracking-wide border-b border-slate-800">
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.product}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.unit}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.category}</th>
-                            <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.type}</th>
-                            <th className="px-4 py-3 text-center">{t.purchasedQty}</th>
-                            <th className="px-4 py-3 text-center">{t.returnedQty}</th>
-                            <th className="px-4 py-3 text-center">{t.remainingQty}</th>
-                            <th className="px-4 py-3 text-center">{t.returnQty}</th>
-                            <th className="px-4 py-3 text-right">{t.rate}</th>
-                            <th className="px-4 py-3 text-right">{t.amount}</th>
-                            <th className="px-4 py-3 w-24 text-center"></th>
-                          </tr>
-                        </thead>
-
-                        <tbody className="divide-y divide-sky-50">
-                          {items.map((item, index) => (
-                            <tr key={index} className="hover:bg-sky-50/60">
-                              <td className="px-4 py-3">
-                                <input
-                                  value={tr("product", item.product_name)}
-                                  readOnly
-                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
-                                    isUrdu ? "text-right" : "text-left"
-                                  }`}
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  value={tr("unit", item.unit_name)}
-                                  readOnly
-                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
-                                    isUrdu ? "text-right" : "text-left"
-                                  }`}
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  value={tr("category", item.category_name)}
-                                  readOnly
-                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
-                                    isUrdu ? "text-right" : "text-left"
-                                  }`}
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  value={tr("type", item.type_name)}
-                                  readOnly
-                                  className={`w-full h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-[12px] font-semibold text-slate-700 ${
-                                    isUrdu ? "text-right" : "text-left"
-                                  }`}
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center font-mono font-bold text-slate-700">
-                                {item.purchased_qty || 0}
-                              </td>
-                              <td className="px-4 py-3 text-center font-mono font-bold text-amber-600">
-                                {item.already_returned_qty || 0}
-                              </td>
-                              <td className="px-4 py-3 text-center font-mono font-bold text-emerald-600">
-                                {item.remaining_qty || 0}
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  name="quantity"
-                                  value={item.quantity}
-                                  onChange={(e) => handleItemChange(index, e)}
-                                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-center text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                                  placeholder="0"
-                                  min="0"
-                                  max={item.remaining_qty || 0}
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  name="rate"
-                                  value={item.rate}
-                                  onChange={(e) => handleItemChange(index, e)}
-                                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[12px] font-mono font-bold text-right text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                                  placeholder="0.00"
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </td>
-                              <td className={`px-4 py-3 font-mono font-bold text-slate-950 ${isUrdu ? "text-left" : "text-right"}`}>
-                                ₨ {fmt(item.amount)}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                {items.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeItem(index)}
-                                    className="px-3 py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-sm font-semibold"
-                                  >
-                                    {t.removeItem}
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.totalAmount}</p>
-                    <div className="text-xl font-black text-slate-950 font-mono mt-1">
-                      ₨ {fmt(form.total_amount)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.debit}</p>
-                    <div className="text-xl font-black text-slate-950 font-mono mt-1">
-                      ₨ {fmt(form.debit)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.credit}</p>
-                    <div className="text-xl font-black text-slate-950 font-mono mt-1">
-                      ₨ {fmt(form.credit)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl bg-indigo-50 border border-indigo-200 p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 mb-1">{t.balance}</p>
-                    <div className="text-2xl font-black text-indigo-700 font-mono mt-1">
-                      ₨ {fmt(Math.abs((Number(form.debit) || 0) - (Number(form.credit) || 0)))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 -mx-4 -mb-4 px-5 py-3 flex gap-3 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                  <button
-                    onClick={handleSave}
-                    disabled={submitting}
-                    className="flex-1 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-black transition shadow-lg shadow-indigo-200"
-                  >
-                    {submitting ? t.saving : editingId ? t.update : t.save}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowForm(false);
-                      resetForm();
-                    }}
-                    disabled={submitting}
-                    className="flex-1 h-10 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black transition disabled:opacity-60"
-                  >
-                    {t.cancel}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+    <div ref={rootRef} data-page="purchase-return-exact-sales-layout">
+      <SalesReturnPage />
     </div>
   );
-};
+}
 
 export default PurchaseReturnPage;
