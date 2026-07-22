@@ -22,6 +22,18 @@ const toNumber = (value) => {
   return Number.isFinite(number) ? number : 0;
 };
 
+const firstPositiveNumber = (...values) => {
+  for (const value of values) {
+    const number = toNumber(value);
+
+    if (number > 0) {
+      return number;
+    }
+  }
+
+  return 0;
+};
+
 const getRecordId = (row) =>
   row?.id ??
   row?.value ??
@@ -152,30 +164,74 @@ const mapSalesItemToPurchase = (item) => {
   const unit = resolveUnit(item);
   const productType = resolveType(item);
 
-  const quantity = toNumber(
-    item?.qty ??
-      item?.quantity ??
-      item?.pieces_qty ??
-      item?.carton_qty ??
-      item?.order_qty
+  // `??` zero ko valid value samajhta hai. Sales form mein `qty` kabhi
+  // zero hota hai jabke actual quantity `pieces_qty` mein hoti hai.
+  // Isliye pehli positive quantity select karni zaroori hai.
+  const quantity = firstPositiveNumber(
+    item?.qty,
+    item?.quantity,
+    item?.pieces_qty,
+    item?.order_qty,
+    item?.carton_qty
   );
   const rate = toNumber(item?.rate);
   const amount = toNumber(item?.amount) || quantity * rate;
 
   return {
+    // IDs preserve karna zaroori hai, warna invoice/return mein sirf
+    // "Product #" nazar aata hai.
+    product_id:
+      item?.product_id ||
+      product?.id ||
+      product?.product_id ||
+      null,
+
+    category_id:
+      item?.category_id ||
+      category?.id ||
+      category?.category_id ||
+      null,
+
+    unit_id:
+      item?.unit_id ||
+      unit?.id ||
+      unit?.unit_id ||
+      null,
+
+    product_type_id:
+      item?.product_type_id ||
+      productType?.id ||
+      productType?.product_type_id ||
+      null,
+
     product_name:
       item?.product_name ||
       productName(product) ||
       String(item?.product_description || "").trim() ||
-      `Product #${item?.product_id || ""}`,
-    unit_name: item?.unit_name || unitName(unit),
-    category_name: item?.category_name || categoryName(category),
+      "",
+
+    product_description:
+      item?.product_description ||
+      item?.description ||
+      "",
+
+    unit_name:
+      item?.unit_name ||
+      unitName(unit),
+
+    category_name:
+      item?.category_name ||
+      categoryName(category),
+
     type_name:
       item?.type_name ||
       item?.product_type ||
       typeName(productType) ||
       typeName(product),
+
     quantity,
+    qty: quantity,
+    pieces_qty: quantity,
     rate,
     amount: Number(amount.toFixed(2)),
   };
@@ -188,10 +244,11 @@ const mapSalesPayloadToPurchase = (body) => {
     .map(mapSalesItemToPurchase)
     .filter(
       (item) =>
-        item.product_name ||
-        item.quantity > 0 ||
-        item.rate > 0 ||
-        item.amount > 0
+        item.quantity > 0 &&
+        (
+          item.product_id ||
+          String(item.product_name || "").trim()
+        )
     );
 
   const calculated = items.reduce(
