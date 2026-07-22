@@ -1032,8 +1032,20 @@ const populateSupplierDropdowns = (root) => {
   });
 };
 
-const markPurchaseReturnListTable = (root) => {
+const applyPurchaseReturnTableLayout = (root) => {
   if (!root) return;
+
+  const columnWidths = [
+    "4%",
+    "14%",
+    "14%",
+    "16%",
+    "10%",
+    "10%",
+    "8%",
+    "10%",
+    "14%",
+  ];
 
   root.querySelectorAll("table").forEach((table) => {
     const headerText = String(
@@ -1041,20 +1053,78 @@ const markPurchaseReturnListTable = (root) => {
     ).toLowerCase();
 
     if (
-      headerText.includes("return no") &&
-      headerText.includes("invoice ref")
+      !headerText.includes("return no") ||
+      !headerText.includes("invoice ref")
     ) {
-      table.classList.add("purchase-return-list-table");
-
-      const scrollContainer =
-        table.parentElement?.parentElement || table.parentElement;
-
-      scrollContainer?.classList.add(
-        "purchase-return-table-container"
-      );
+      return;
     }
+
+    table.classList.add("purchase-return-list-table");
+
+    table.style.setProperty("width", "100%", "important");
+    table.style.setProperty("min-width", "980px", "important");
+    table.style.setProperty("table-layout", "fixed", "important");
+    table.style.setProperty("border-collapse", "collapse", "important");
+
+    const parent = table.parentElement;
+
+    if (parent) {
+      parent.classList.add("purchase-return-table-container");
+      parent.style.setProperty("width", "100%", "important");
+      parent.style.setProperty("overflow-x", "auto", "important");
+      parent.style.setProperty("overflow-y", "visible", "important");
+    }
+
+    const rows = table.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      Array.from(row.children).forEach((cell, index) => {
+        const width = columnWidths[index];
+
+        if (!width) return;
+
+        cell.style.setProperty("width", width, "important");
+        cell.style.setProperty("max-width", width, "important");
+        cell.style.setProperty("box-sizing", "border-box", "important");
+        cell.style.setProperty("padding", "12px 8px", "important");
+        cell.style.setProperty("vertical-align", "middle", "important");
+        cell.style.setProperty("line-height", "1.35", "important");
+        cell.style.setProperty("word-break", "normal", "important");
+        cell.style.setProperty("overflow-wrap", "normal", "important");
+
+        if (cell.tagName === "TH") {
+          cell.style.setProperty("white-space", "nowrap", "important");
+          cell.style.setProperty("font-size", "11px", "important");
+        }
+
+        if (cell.tagName === "TD") {
+          cell.style.setProperty("font-size", "13px", "important");
+        }
+
+        // Name column: never break supplier name character-by-character.
+        if (index === 3) {
+          cell.style.setProperty("white-space", "nowrap", "important");
+          cell.style.setProperty("overflow", "hidden", "important");
+          cell.style.setProperty("text-overflow", "ellipsis", "important");
+          cell.style.setProperty("min-width", "150px", "important");
+        }
+
+        // Dates, quantities and amounts remain on one line.
+        if ([4, 5, 6, 7, 8].includes(index)) {
+          cell.style.setProperty("white-space", "nowrap", "important");
+          cell.style.setProperty("text-align", "center", "important");
+        }
+      });
+    });
+
+    table.querySelectorAll("td:last-child button").forEach((button) => {
+      button.style.setProperty("margin", "3px", "important");
+      button.style.setProperty("padding", "8px 11px", "important");
+      button.style.setProperty("white-space", "nowrap", "important");
+    });
   });
 };
+
 
 const forceSupplierOnly = (root) => {
   root.querySelectorAll("select").forEach((select) => {
@@ -1090,12 +1160,22 @@ const forceSupplierOnly = (root) => {
   });
 };
 
+const syncSupplierControls = (scope) => {
+  if (!scope) return;
+
+  forceSupplierOnly(scope);
+
+  // React needs one render after party_type changes from customer to supplier.
+  window.requestAnimationFrame(() => {
+    populateSupplierDropdowns(scope);
+  });
+};
+
 const transformPurchaseDom = (root) => {
   if (!root) return;
 
-  forceSupplierOnly(root);
-  populateSupplierDropdowns(root);
-  markPurchaseReturnListTable(root);
+  syncSupplierControls(root);
+  applyPurchaseReturnTableLayout(root);
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes = [];
@@ -1173,6 +1253,25 @@ function PurchaseReturnPage() {
 
     const root = rootRef.current;
     let cancelled = false;
+    let scheduled = false;
+
+    const runTransforms = () => {
+      if (cancelled || scheduled) return;
+
+      scheduled = true;
+
+      window.requestAnimationFrame(() => {
+        scheduled = false;
+
+        if (cancelled) return;
+
+        transformPurchaseDom(root);
+
+        // SalesReturnPage form/modal may be mounted outside root through a
+        // portal. Only supplier controls are touched on document.body.
+        syncSupplierControls(document.body);
+      });
+    };
 
     const loadSuppliers = async () => {
       try {
@@ -1184,7 +1283,8 @@ function PurchaseReturnPage() {
 
         const normalized = normalizeSupplierPayload(response.data);
         cache.suppliers = getList(normalized);
-        transformPurchaseDom(root);
+
+        runTransforms();
       } catch (error) {
         console.error(
           "Purchase Return suppliers load error:",
@@ -1194,21 +1294,42 @@ function PurchaseReturnPage() {
     };
 
     loadSuppliers();
-    transformPurchaseDom(root);
+    runTransforms();
 
-    const observer = new MutationObserver(() => {
-      transformPurchaseDom(root);
-    });
+    const rootObserver = new MutationObserver(runTransforms);
 
-    observer.observe(root, {
+    rootObserver.observe(root, {
       childList: true,
       subtree: true,
       characterData: true,
     });
 
+    const bodyObserver = new MutationObserver((mutations) => {
+      const modalRelatedChange = mutations.some((mutation) =>
+        Array.from(mutation.addedNodes || []).some(
+          (node) =>
+            node?.nodeType === Node.ELEMENT_NODE &&
+            (
+              node.matches?.("select, form, [role='dialog']") ||
+              node.querySelector?.("select")
+            )
+        )
+      );
+
+      if (modalRelatedChange) {
+        runTransforms();
+      }
+    });
+
+    bodyObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
     return () => {
       cancelled = true;
-      observer.disconnect();
+      rootObserver.disconnect();
+      bodyObserver.disconnect();
     };
   }, [ready]);
 
@@ -1222,20 +1343,17 @@ function PurchaseReturnPage() {
           min-width: 0;
         }
 
-        [data-page="purchase-return-exact-sales-layout"] select {
-          min-width: 0;
-        }
-
         [data-page="purchase-return-exact-sales-layout"]
           .purchase-return-table-container {
-          width: 100%;
-          overflow: visible !important;
+          width: 100% !important;
+          overflow-x: auto !important;
+          overflow-y: visible !important;
         }
 
         [data-page="purchase-return-exact-sales-layout"]
           .purchase-return-list-table {
           width: 100% !important;
-          min-width: 0 !important;
+          min-width: 980px !important;
           table-layout: fixed !important;
           border-collapse: collapse !important;
         }
@@ -1247,110 +1365,41 @@ function PurchaseReturnPage() {
           box-sizing: border-box !important;
           padding: 12px 8px !important;
           vertical-align: middle !important;
-          line-height: 1.3 !important;
+          line-height: 1.35 !important;
+          word-break: normal !important;
+          overflow-wrap: normal !important;
         }
 
         [data-page="purchase-return-exact-sales-layout"]
           .purchase-return-list-table th {
-          white-space: normal !important;
+          white-space: nowrap !important;
           font-size: 11px !important;
-          letter-spacing: 0.02em;
         }
 
         [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td {
-          white-space: normal !important;
-          overflow-wrap: anywhere !important;
-          word-break: normal !important;
-          font-size: 13px !important;
+          .purchase-return-list-table td:nth-child(4),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(4) {
+          min-width: 150px !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          word-break: keep-all !important;
+          overflow-wrap: normal !important;
         }
 
         [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(1),
+          .purchase-return-list-table td:nth-child(5),
         [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(1) {
-          width: 4%;
-          text-align: center;
-        }
-
+          .purchase-return-list-table td:nth-child(6),
         [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(2),
+          .purchase-return-list-table td:nth-child(7),
         [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(2) {
-          width: 14%;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(3),
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(3) {
-          width: 14%;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(4),
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(4) {
-          width: 12%;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(5),
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(5) {
-          width: 11%;
-          text-align: center;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(6),
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(6) {
-          width: 11%;
-          text-align: center;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(7),
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(7) {
-          width: 9%;
-          text-align: center;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(8),
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:nth-child(8) {
-          width: 11%;
-          text-align: center;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table th:nth-child(9),
+          .purchase-return-list-table td:nth-child(8),
         [data-page="purchase-return-exact-sales-layout"]
           .purchase-return-list-table td:nth-child(9) {
-          width: 14%;
-          text-align: center;
-        }
-
-        [data-page="purchase-return-exact-sales-layout"]
-          .purchase-return-list-table td:last-child button {
-          margin: 3px !important;
-          padding: 8px 11px !important;
           white-space: nowrap !important;
-        }
-
-        @media (max-width: 900px) {
-          [data-page="purchase-return-exact-sales-layout"]
-            .purchase-return-table-container {
-            overflow-x: auto !important;
-          }
-
-          [data-page="purchase-return-exact-sales-layout"]
-            .purchase-return-list-table {
-            min-width: 920px !important;
-          }
+          text-align: center !important;
         }
       `}</style>
 
