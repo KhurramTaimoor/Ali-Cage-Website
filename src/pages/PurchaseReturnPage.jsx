@@ -6,6 +6,14 @@ const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
 
+// Supports both:
+// VITE_API_BASE_URL=https://example.com
+// VITE_API_BASE_URL=https://example.com/api
+const API_ORIGIN = API_ROOT.replace(/\/api$/i, "");
+
+const apiUrl = (path) =>
+  `${API_ORIGIN}${String(path || "").startsWith("/") ? path : `/${path}`}`;
+
 const rawAxios = axios.create();
 
 const getList = (value) => {
@@ -391,18 +399,34 @@ const mapPurchaseInvoiceToSales = (invoice) => {
   };
 };
 
-const invoiceItemForReturn = (invoiceId, purchaseItem) => {
+const invoiceDataForReturn = (invoiceId, purchaseItem) => {
   const invoice = cache.invoices.find(
     (row) => String(row.id) === String(invoiceId)
   );
 
-  return invoice?.items?.find(
-    (item) =>
-      String(item.product_name || "").trim().toLowerCase() ===
-        String(purchaseItem.product_name || "").trim().toLowerCase() &&
-      String(item.unit_name || "").trim().toLowerCase() ===
-        String(purchaseItem.unit_name || "").trim().toLowerCase()
+  const item = invoice?.items?.find(
+    (invoiceItem) => {
+      if (
+        purchaseItem?.product_id &&
+        invoiceItem?.product_id &&
+        String(invoiceItem.product_id) === String(purchaseItem.product_id)
+      ) {
+        return true;
+      }
+
+      return (
+        String(invoiceItem.product_name || "").trim().toLowerCase() ===
+          String(purchaseItem.product_name || "").trim().toLowerCase() &&
+        String(invoiceItem.unit_name || "").trim().toLowerCase() ===
+          String(purchaseItem.unit_name || "").trim().toLowerCase()
+      );
+    }
   );
+
+  return {
+    invoice,
+    item,
+  };
 };
 
 const flattenPurchaseReturns = (records) => {
@@ -416,7 +440,8 @@ const flattenPurchaseReturns = (records) => {
         : [{}];
 
     sourceItems.forEach((item, itemIndex) => {
-      const invoiceItem = invoiceItemForReturn(record.invoice_id, item);
+      const { invoice: sourceInvoice, item: invoiceItem } =
+        invoiceDataForReturn(record.invoice_id, item);
       const syntheticId = `pr-${record.id}-${itemIndex}`;
       const supplierId = findIdByName(
         cache.suppliers,
@@ -460,8 +485,14 @@ const flattenPurchaseReturns = (records) => {
           findIdByName(cache.units, item?.unit_name, unitName),
         unit_name: item?.unit_name || "",
         return_date: record.return_date || "",
-        sale_order_date: invoiceItem?.invoice_date || "",
-        invoice_date: invoiceItem?.invoice_date || "",
+        sale_order_date:
+          sourceInvoice?.invoice_date ||
+          sourceInvoice?.sale_order_date ||
+          "",
+        invoice_date:
+          sourceInvoice?.invoice_date ||
+          sourceInvoice?.sale_order_date ||
+          "",
         sold_qty: toNumber(invoiceItem?.quantity ?? item?.quantity),
         already_returned_qty: 0,
         available_qty: Math.max(
@@ -588,7 +619,7 @@ const makeManualInvoice = async (payload) => {
   );
 
   const response = await rawAxios.post(
-    `${API_ROOT}/api/purchase-invoices`,
+    `${API_ORIGIN}/api/purchase-invoices`,
     {
       invoice_no: `PR-MANUAL-${now}`,
       supplier_name: payload.party_name || "Manual Supplier Return",
@@ -650,7 +681,7 @@ const installPurchaseReturnApiAdapter = () => {
       config.adapter = async (adapterConfig) =>
         responseFromRawAxios(adapterConfig, {
           method: "get",
-          url: `${API_ROOT}/api/purchase-returns`,
+          url: `${API_ORIGIN}/api/purchase-returns`,
         });
       return config;
     }
@@ -662,7 +693,7 @@ const installPurchaseReturnApiAdapter = () => {
       config.adapter = async (adapterConfig) =>
         responseFromRawAxios(adapterConfig, {
           method: "get",
-          url: `${API_ROOT}/api/purchase-returns/${parentId}`,
+          url: `${API_ORIGIN}/api/purchase-returns/${parentId}`,
         });
       return config;
     }
@@ -673,7 +704,7 @@ const installPurchaseReturnApiAdapter = () => {
       config.adapter = async (adapterConfig) =>
         responseFromRawAxios(adapterConfig, {
           method: "delete",
-          url: `${API_ROOT}/api/purchase-returns/${parentId}`,
+          url: `${API_ORIGIN}/api/purchase-returns/${parentId}`,
         });
       return config;
     }
@@ -690,7 +721,7 @@ const installPurchaseReturnApiAdapter = () => {
 
         return responseFromRawAxios(adapterConfig, {
           method: "post",
-          url: `${API_ROOT}/api/purchase-returns`,
+          url: `${API_ORIGIN}/api/purchase-returns`,
           data: {
             invoice_id: payload.invoice_id,
             return_date: payload.return_date,
@@ -718,7 +749,7 @@ const installPurchaseReturnApiAdapter = () => {
           ) ||
           (
             await rawAxios.get(
-              `${API_ROOT}/api/purchase-returns/${parentId}`
+              `${API_ORIGIN}/api/purchase-returns/${parentId}`
             )
           ).data;
 
@@ -747,7 +778,7 @@ const installPurchaseReturnApiAdapter = () => {
 
         return responseFromRawAxios(adapterConfig, {
           method: "put",
-          url: `${API_ROOT}/api/purchase-returns/${parentId}`,
+          url: `${API_ORIGIN}/api/purchase-returns/${parentId}`,
           data: {
             invoice_id:
               payload.invoice_id || Number(current?.invoice_id) || 0,
@@ -910,6 +941,121 @@ const setNativeValue = (element, value) => {
   element.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
+const supplierOptionsSignature = () =>
+  cache.suppliers
+    .map((supplier) => {
+      const id = getRecordId(supplier);
+      const name = supplierName(supplier);
+      return `${id}:${name}`;
+    })
+    .join("|");
+
+const isPartyTypeSelect = (select) => {
+  const options = Array.from(select.options || []);
+
+  return options.some(
+    (option) =>
+      option.value === "supplier" ||
+      /^(supplier|سپلائر)$/i.test(String(option.textContent || "").trim())
+  ) &&
+    options.some(
+      (option) =>
+        option.value === "customer" ||
+        option.value === "employee" ||
+        option.value === "general_ledger" ||
+        /customer|employee|general ledger|کسٹمر|ملازم|جنرل لیجر/i.test(
+          String(option.textContent || "")
+        )
+    );
+};
+
+const populateSupplierDropdowns = (root) => {
+  if (!root || !cache.suppliers.length) return;
+
+  const signature = supplierOptionsSignature();
+
+  root.querySelectorAll("select").forEach((select) => {
+    if (isPartyTypeSelect(select)) return;
+
+    const options = Array.from(select.options || []);
+    const placeholder = options.find((option) =>
+      /select supplier|select name|supplier select|سپلائر/i.test(
+        String(option.textContent || "")
+      )
+    );
+
+    if (!placeholder) return;
+
+    const currentValue = String(select.value || "");
+
+    const expectedValues = new Set(
+      cache.suppliers
+        .map((supplier) => String(getRecordId(supplier)))
+        .filter(Boolean)
+    );
+
+    const currentSupplierOptions = options.filter((option) =>
+      expectedValues.has(String(option.value))
+    );
+
+    const alreadyCorrect =
+      select.dataset.purchaseSupplierSignature === signature &&
+      currentSupplierOptions.length === cache.suppliers.length;
+
+    if (alreadyCorrect) return;
+
+    const fragment = document.createDocumentFragment();
+
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Select Supplier";
+    fragment.appendChild(placeholderOption);
+
+    cache.suppliers.forEach((supplier) => {
+      const id = getRecordId(supplier);
+      const name = supplierName(supplier);
+
+      if (!id || !name) return;
+
+      const option = document.createElement("option");
+      option.value = String(id);
+      option.textContent = name;
+      fragment.appendChild(option);
+    });
+
+    select.replaceChildren(fragment);
+    select.dataset.purchaseSupplierSignature = signature;
+
+    if (currentValue && expectedValues.has(currentValue)) {
+      select.value = currentValue;
+    }
+  });
+};
+
+const markPurchaseReturnListTable = (root) => {
+  if (!root) return;
+
+  root.querySelectorAll("table").forEach((table) => {
+    const headerText = String(
+      table.querySelector("thead")?.textContent || ""
+    ).toLowerCase();
+
+    if (
+      headerText.includes("return no") &&
+      headerText.includes("invoice ref")
+    ) {
+      table.classList.add("purchase-return-list-table");
+
+      const scrollContainer =
+        table.parentElement?.parentElement || table.parentElement;
+
+      scrollContainer?.classList.add(
+        "purchase-return-table-container"
+      );
+    }
+  });
+};
+
 const forceSupplierOnly = (root) => {
   root.querySelectorAll("select").forEach((select) => {
     const options = Array.from(select.options || []);
@@ -948,6 +1094,8 @@ const transformPurchaseDom = (root) => {
   if (!root) return;
 
   forceSupplierOnly(root);
+  populateSupplierDropdowns(root);
+  markPurchaseReturnListTable(root);
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes = [];
@@ -1024,6 +1172,28 @@ function PurchaseReturnPage() {
     if (!ready || !rootRef.current) return undefined;
 
     const root = rootRef.current;
+    let cancelled = false;
+
+    const loadSuppliers = async () => {
+      try {
+        const response = await rawAxios.get(
+          apiUrl("/api/suppliers")
+        );
+
+        if (cancelled) return;
+
+        const normalized = normalizeSupplierPayload(response.data);
+        cache.suppliers = getList(normalized);
+        transformPurchaseDom(root);
+      } catch (error) {
+        console.error(
+          "Purchase Return suppliers load error:",
+          error
+        );
+      }
+    };
+
+    loadSuppliers();
     transformPurchaseDom(root);
 
     const observer = new MutationObserver(() => {
@@ -1036,13 +1206,154 @@ function PurchaseReturnPage() {
       characterData: true,
     });
 
-    return () => observer.disconnect();
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
   }, [ready]);
 
   if (!ready) return null;
 
   return (
     <div ref={rootRef} data-page="purchase-return-exact-sales-layout">
+      <style>{`
+        [data-page="purchase-return-exact-sales-layout"] {
+          width: 100%;
+          min-width: 0;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"] select {
+          min-width: 0;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-table-container {
+          width: 100%;
+          overflow: visible !important;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table {
+          width: 100% !important;
+          min-width: 0 !important;
+          table-layout: fixed !important;
+          border-collapse: collapse !important;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th,
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td {
+          box-sizing: border-box !important;
+          padding: 12px 8px !important;
+          vertical-align: middle !important;
+          line-height: 1.3 !important;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th {
+          white-space: normal !important;
+          font-size: 11px !important;
+          letter-spacing: 0.02em;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td {
+          white-space: normal !important;
+          overflow-wrap: anywhere !important;
+          word-break: normal !important;
+          font-size: 13px !important;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(1),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(1) {
+          width: 4%;
+          text-align: center;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(2),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(2) {
+          width: 14%;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(3),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(3) {
+          width: 14%;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(4),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(4) {
+          width: 12%;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(5),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(5) {
+          width: 11%;
+          text-align: center;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(6),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(6) {
+          width: 11%;
+          text-align: center;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(7),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(7) {
+          width: 9%;
+          text-align: center;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(8),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(8) {
+          width: 11%;
+          text-align: center;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table th:nth-child(9),
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:nth-child(9) {
+          width: 14%;
+          text-align: center;
+        }
+
+        [data-page="purchase-return-exact-sales-layout"]
+          .purchase-return-list-table td:last-child button {
+          margin: 3px !important;
+          padding: 8px 11px !important;
+          white-space: nowrap !important;
+        }
+
+        @media (max-width: 900px) {
+          [data-page="purchase-return-exact-sales-layout"]
+            .purchase-return-table-container {
+            overflow-x: auto !important;
+          }
+
+          [data-page="purchase-return-exact-sales-layout"]
+            .purchase-return-list-table {
+            min-width: 920px !important;
+          }
+        }
+      `}</style>
+
       <SalesReturnPage />
     </div>
   );
