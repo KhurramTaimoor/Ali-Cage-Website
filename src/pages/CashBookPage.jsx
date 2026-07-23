@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import axios from "axios";
 import {
   Edit3,
@@ -21,8 +20,7 @@ import {
 } from "lucide-react";
 
 const API_ROOT = (
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000"
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
 )
   .replace(/\/$/, "")
   .replace(/\/api$/i, "");
@@ -55,8 +53,7 @@ const ACCOUNT_TYPES = [
 const LANG = {
   en: {
     title: "Cash Book",
-    subtitle:
-      "Create and manage cash receive and payment vouchers",
+    subtitle: "Create and manage cash receive and payment vouchers",
     toggleLang: "اردو",
     addAccount: "Add Account",
     newVoucher: "New Voucher",
@@ -94,26 +91,19 @@ const LANG = {
     select: "Select",
     enter: "Enter",
     optional: "Optional",
-    createMode: "Create Mode",
-    editMode: "Edit Mode",
     deleteConfirm: "Delete this voucher?",
-    accountModalTitle:
-      "Add General Ledger Account",
-    accountModalText:
-      "Create a new account. It will appear in the account dropdown immediately after saving.",
+    accountModalTitle: "Add General Ledger Account",
     accountCode: "Account Code",
     accountTitle: "Account Title",
     accountGroup: "Account Group",
     openingBalance: "Opening Balance",
-    autoCode:
-      "Leave blank for automatic code",
+    autoCode: "Leave blank for automatic code",
     saveAccount: "Save Account",
   },
 
   ur: {
     title: "کیش بک",
-    subtitle:
-      "کیش وصولی اور ادائیگی کے واؤچرز بنائیں اور منظم کریں",
+    subtitle: "کیش وصولی اور ادائیگی کے واؤچرز بنائیں اور منظم کریں",
     toggleLang: "English",
     addAccount: "اکاؤنٹ شامل کریں",
     newVoucher: "نیا واؤچر",
@@ -151,31 +141,38 @@ const LANG = {
     select: "منتخب کریں",
     enter: "درج کریں",
     optional: "اختیاری",
-    createMode: "نیا موڈ",
-    editMode: "ترمیم موڈ",
-    deleteConfirm:
-      "کیا یہ واؤچر حذف کرنا ہے؟",
-    accountModalTitle:
-      "جنرل لیجر اکاؤنٹ شامل کریں",
-    accountModalText:
-      "نیا اکاؤنٹ بنائیں۔ محفوظ ہونے کے بعد یہ فوراً ڈراپ ڈاؤن میں نظر آئے گا۔",
+    deleteConfirm: "کیا یہ واؤچر حذف کرنا ہے؟",
+    accountModalTitle: "جنرل لیجر اکاؤنٹ شامل کریں",
     accountCode: "اکاؤنٹ کوڈ",
     accountTitle: "اکاؤنٹ ٹائٹل",
     accountGroup: "اکاؤنٹ گروپ",
     openingBalance: "ابتدائی بیلنس",
-    autoCode:
-      "خالی چھوڑیں تو کوڈ خود بنے گا",
+    autoCode: "خالی چھوڑیں تو کوڈ خود بنے گا",
     saveAccount: "اکاؤنٹ محفوظ کریں",
   },
 };
 
-const today = () =>
-  new Date().toISOString().slice(0, 10);
+const today = () => {
+  const date = new Date();
+
+  const year = date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
 
 const emptyRow = () => ({
   local_id: `${Date.now()}-${Math.random()
     .toString(16)
     .slice(2)}`,
+
   account_type: "customer",
   account_id: "",
   description: "",
@@ -185,7 +182,9 @@ const emptyRow = () => ({
 
 const defaultRows = (count = 6) =>
   Array.from(
-    { length: count },
+    {
+      length: count,
+    },
     () => emptyRow()
   );
 
@@ -220,19 +219,27 @@ const getList = (
     return payload;
   }
 
-  if (Array.isArray(payload?.data)) {
+  if (
+    Array.isArray(payload?.data)
+  ) {
     return payload.data;
   }
 
-  if (Array.isArray(payload?.[key])) {
+  if (
+    Array.isArray(payload?.[key])
+  ) {
     return payload[key];
   }
 
-  if (Array.isArray(payload?.rows)) {
+  if (
+    Array.isArray(payload?.rows)
+  ) {
     return payload.rows;
   }
 
-  if (Array.isArray(payload?.result)) {
+  if (
+    Array.isArray(payload?.result)
+  ) {
     return payload.result;
   }
 
@@ -256,10 +263,9 @@ const getAccountName = (row) =>
   "-";
 
 const formatDate = (value) => {
-  const raw = String(value || "").slice(
-    0,
-    10
-  );
+  const raw = String(
+    value || ""
+  ).slice(0, 10);
 
   const match = raw.match(
     /^(\d{4})-(\d{2})-(\d{2})$/
@@ -291,8 +297,8 @@ export default function CashBookPage() {
   ] = useState(false);
 
   const [
-    showVoucherModal,
-    setShowVoucherModal,
+    showForm,
+    setShowForm,
   ] = useState(false);
 
   const [
@@ -389,29 +395,6 @@ export default function CashBookPage() {
     []
   );
 
-  useEffect(() => {
-    if (
-      !showVoucherModal &&
-      !showAccountModal
-    ) {
-      return undefined;
-    }
-
-    const oldOverflow =
-      document.body.style.overflow;
-
-    document.body.style.overflow =
-      "hidden";
-
-    return () => {
-      document.body.style.overflow =
-        oldOverflow;
-    };
-  }, [
-    showVoucherModal,
-    showAccountModal,
-  ]);
-
   const fetchLookups =
     useCallback(async () => {
       const response =
@@ -483,7 +466,9 @@ export default function CashBookPage() {
       setVoucher(
         (current) => ({
           ...current,
-          voucher_no: number,
+
+          voucher_no:
+            number,
         })
       );
     }, []);
@@ -537,41 +522,44 @@ export default function CashBookPage() {
     [rows]
   );
 
-  const summary = useMemo(() => {
-    const receive =
-      records.reduce(
-        (sum, row) =>
-          sum +
-          toNum(
-            row.total_receive
-          ),
-        0
-      );
+  const summary = useMemo(
+    () => {
+      const receive =
+        records.reduce(
+          (sum, row) =>
+            sum +
+            toNum(
+              row.total_receive
+            ),
+          0
+        );
 
-    const paid =
-      records.reduce(
-        (sum, row) =>
-          sum +
-          toNum(
-            row.total_paid
-          ),
-        0
-      );
+      const paid =
+        records.reduce(
+          (sum, row) =>
+            sum +
+            toNum(
+              row.total_paid
+            ),
+          0
+        );
 
-    return {
-      totalVouchers:
-        records.length,
+      return {
+        totalVouchers:
+          records.length,
 
-      totalReceive:
-        receive,
+        totalReceive:
+          receive,
 
-      totalPaid:
-        paid,
+        totalPaid:
+          paid,
 
-      netBalance:
-        receive - paid,
-    };
-  }, [records]);
+        netBalance:
+          receive - paid,
+      };
+    },
+    [records]
+  );
 
   const filteredRecords =
     useMemo(() => {
@@ -596,7 +584,10 @@ export default function CashBookPage() {
             .toLowerCase()
             .includes(query)
       );
-    }, [records, search]);
+    }, [
+      records,
+      search,
+    ]);
 
   const resetVoucher = () => {
     setEditingId(null);
@@ -613,7 +604,7 @@ export default function CashBookPage() {
   const openAdd = async () => {
     resetVoucher();
 
-    setShowVoucherModal(true);
+    setShowForm(true);
 
     try {
       await fetchNextNumber();
@@ -625,89 +616,103 @@ export default function CashBookPage() {
     }
   };
 
-  const openEdit = async (id) => {
-    try {
-      const response =
-        await axios.get(
-          `${API_BASE}/vouchers/${id}`
+  const openEdit =
+    async (id) => {
+      try {
+        const response =
+          await axios.get(
+            `${API_BASE}/vouchers/${id}`
+          );
+
+        const record =
+          response.data?.data ||
+          response.data?.voucher ||
+          response.data;
+
+        setEditingId(
+          record.id
         );
 
-      const record =
-        response.data?.data ||
-        response.data?.voucher ||
-        response.data;
-
-      setEditingId(
-        record.id
-      );
-
-      setVoucher({
-        voucher_no:
-          record.voucher_no ||
-          "",
-
-        voucher_date:
-          String(
-            record.voucher_date ||
-              ""
-          ).slice(0, 10) ||
-          today(),
-
-        notes:
-          record.notes || "",
-      });
-
-      const loadedRows =
-        (
-          record.items || []
-        ).map((item) => ({
-          local_id: `${item.id}-${Math.random()
-            .toString(16)
-            .slice(2)}`,
-
-          account_type:
-            item.account_type ||
-            "customer",
-
-          account_id:
-            String(
-              item.account_id ||
-                ""
-            ),
-
-          description:
-            item.description ||
+        setVoucher({
+          voucher_no:
+            record.voucher_no ||
             "",
 
-          receive:
-            toNum(
-              item.receive
-            ) > 0
-              ? String(
-                  item.receive
-                )
-              : "",
+          voucher_date:
+            String(
+              record.voucher_date ||
+                ""
+            ).slice(0, 10) ||
+            today(),
 
-          paid:
-            toNum(item.paid) >
-            0
-              ? String(item.paid)
-              : "",
-        }));
+          notes:
+            record.notes || "",
+        });
 
-      setRows(
-        loadedRows.length
-          ? loadedRows
-          : defaultRows()
-      );
+        const loadedRows =
+          (
+            record.items || []
+          ).map((item) => ({
+            local_id: `${item.id}-${Math.random()
+              .toString(16)
+              .slice(2)}`,
 
-      setShowVoucherModal(true);
-    } catch (error) {
-      toast(
-        "error",
-        getError(error)
-      );
+            account_type:
+              item.account_type ||
+              "customer",
+
+            account_id:
+              String(
+                item.account_id ||
+                  ""
+              ),
+
+            description:
+              item.description ||
+              "",
+
+            receive:
+              toNum(
+                item.receive
+              ) > 0
+                ? String(
+                    item.receive
+                  )
+                : "",
+
+            paid:
+              toNum(
+                item.paid
+              ) > 0
+                ? String(
+                    item.paid
+                  )
+                : "",
+          }));
+
+        setRows(
+          loadedRows.length
+            ? loadedRows
+            : defaultRows()
+        );
+
+        setShowForm(true);
+      } catch (error) {
+        toast(
+          "error",
+          getError(error)
+        );
+      }
+    };
+
+  const closeForm = () => {
+    if (saving) {
+      return;
     }
+
+    setShowForm(false);
+
+    resetVoucher();
   };
 
   const updateRow = (
@@ -738,7 +743,8 @@ export default function CashBookPage() {
         }
 
         if (
-          field === "account_id"
+          field ===
+          "account_id"
         ) {
           const selected =
             optionsFor(
@@ -779,11 +785,12 @@ export default function CashBookPage() {
     );
   };
 
-  const addRow = () =>
+  const addRow = () => {
     setRows((current) => [
       ...current,
       emptyRow(),
     ]);
+  };
 
   const removeRow = (
     localId
@@ -904,7 +911,9 @@ export default function CashBookPage() {
       try {
         const payload = {
           ...voucher,
-          items: prepareItems(),
+
+          items:
+            prepareItems(),
         };
 
         if (editingId) {
@@ -929,7 +938,7 @@ export default function CashBookPage() {
           );
         }
 
-        setShowVoucherModal(false);
+        setShowForm(false);
 
         resetVoucher();
 
@@ -990,6 +999,17 @@ export default function CashBookPage() {
     setShowAccountModal(true);
   };
 
+  const closeAccountModal =
+    () => {
+      if (accountSaving) {
+        return;
+      }
+
+      setShowAccountModal(false);
+
+      setAccountTargetRow(null);
+    };
+
   const saveAccount =
     async () => {
       if (
@@ -1035,7 +1055,9 @@ export default function CashBookPage() {
           })
         );
 
-        if (accountTargetRow) {
+        if (
+          accountTargetRow
+        ) {
           setRows((current) =>
             current.map((row) =>
               row.local_id ===
@@ -1103,44 +1125,54 @@ export default function CashBookPage() {
                 index
               ) => `
                 <tr>
-                  <td>${
-                    index + 1
-                  }</td>
+                  <td>
+                    ${index + 1}
+                  </td>
 
-                  <td>${
-                    item.account_type_label ||
-                    item.account_type
-                  }</td>
+                  <td>
+                    ${
+                      item.account_type_label ||
+                      item.account_type
+                    }
+                  </td>
 
-                  <td>${
-                    item.account_name ||
-                    "-"
-                  }</td>
+                  <td>
+                    ${
+                      item.account_name ||
+                      "-"
+                    }
+                  </td>
 
-                  <td>${
-                    item.description ||
-                    "-"
-                  }</td>
+                  <td>
+                    ${
+                      item.description ||
+                      "-"
+                    }
+                  </td>
 
-                  <td>${
-                    toNum(
-                      item.receive
-                    ) > 0
-                      ? money(
-                          item.receive
-                        )
-                      : "-"
-                  }</td>
+                  <td>
+                    ${
+                      toNum(
+                        item.receive
+                      ) > 0
+                        ? money(
+                            item.receive
+                          )
+                        : "-"
+                    }
+                  </td>
 
-                  <td>${
-                    toNum(
-                      item.paid
-                    ) > 0
-                      ? money(
-                          item.paid
-                        )
-                      : "-"
-                  }</td>
+                  <td>
+                    ${
+                      toNum(
+                        item.paid
+                      ) > 0
+                        ? money(
+                            item.paid
+                          )
+                        : "-"
+                    }
+                  </td>
                 </tr>
               `
             )
@@ -1238,10 +1270,18 @@ export default function CashBookPage() {
                     <th>
                       Account Type
                     </th>
-                    <th>Account</th>
-                    <th>Description</th>
-                    <th>Receive</th>
-                    <th>Paid</th>
+                    <th>
+                      Account
+                    </th>
+                    <th>
+                      Description
+                    </th>
+                    <th>
+                      Receive
+                    </th>
+                    <th>
+                      Paid
+                    </th>
                   </tr>
                 </thead>
 
@@ -1303,21 +1343,21 @@ export default function CashBookPage() {
 
         .invoice-page {
           min-height: 100vh;
+          padding: 18px;
+          overflow-x: hidden;
+          color: #0f172a;
           background:
             linear-gradient(
               135deg,
               #f8fafc,
               #eef2ff
             );
-          padding: 18px;
-          color: #0f172a;
           font-family:
             ${
               isUrdu
                 ? "'Noto Nastaliq Urdu', serif"
                 : "Arial, sans-serif"
             };
-          overflow-x: hidden;
         }
 
         @keyframes fadeSlide {
@@ -1353,12 +1393,29 @@ export default function CashBookPage() {
         }
 
         .page-wrap {
-          max-width: 1220px;
           width: 100%;
+          max-width: 1220px;
           margin: 0 auto;
         }
 
+        .form-page-wrap {
+          width: 100%;
+          max-width: 1220px;
+          margin: 0 auto;
+          animation:
+            fadeSlide
+            .22s ease-out both;
+        }
+
         .top-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding: 20px 22px;
+          border: 1px solid #dbe3ee;
+          border-radius: 22px;
           background:
             rgba(
               255,
@@ -1366,10 +1423,6 @@ export default function CashBookPage() {
               255,
               .94
             );
-          border:
-            1px solid #dbe3ee;
-          border-radius: 22px;
-          padding: 20px 22px;
           box-shadow:
             0 18px 48px
             rgba(
@@ -1378,12 +1431,6 @@ export default function CashBookPage() {
               42,
               .08
             );
-          display: flex;
-          justify-content:
-            space-between;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
         }
 
         .title {
@@ -1400,64 +1447,60 @@ export default function CashBookPage() {
         }
 
         .btn {
-          border:
-            1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
-          border-radius: 10px;
-          padding: 8px 12px;
-          font-weight: 800;
-          cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
+          padding: 8px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          background: white;
+          color: #0f172a;
+          font-weight: 800;
+          cursor: pointer;
           transition: .12s;
-          box-shadow: none;
         }
 
         .btn:hover {
           background: #f8fafc;
         }
 
-        .btn-primary {
-          background: white;
-          color: #0f172a;
-          border:
-            1px solid #cbd5e1;
+        .btn:disabled {
+          opacity: .6;
+          cursor: not-allowed;
         }
 
+        .btn-primary,
         .btn-soft {
-          background: white;
-          color: #0f172a;
           border:
             1px solid #cbd5e1;
+          background: white;
+          color: #0f172a;
         }
 
         .btn-active {
-          background: #f8fafc;
-          color: #0f172a;
           border:
             1px solid #94a3b8;
+          background: #f8fafc;
+          color: #0f172a;
         }
 
         .summary-grid {
-          animation:
-            fadeSlide
-            .24s ease-out both;
           display: grid;
           grid-template-columns:
             repeat(4, 1fr);
           gap: 10px;
           margin: 14px 0;
+          animation:
+            fadeSlide
+            .24s ease-out both;
         }
 
         .summary-card {
-          background: white;
-          border:
-            1px solid #dbe3ee;
-          border-radius: 18px;
           padding: 14px;
+          border: 1px solid #dbe3ee;
+          border-radius: 18px;
+          background: white;
           box-shadow:
             0 8px 22px
             rgba(
@@ -1476,40 +1519,48 @@ export default function CashBookPage() {
           color: #64748b;
           font-size: 10.5px;
           font-weight: 950;
-          text-transform:
-            uppercase;
+          text-transform: uppercase;
           letter-spacing: .5px;
         }
 
         .summary-card b {
           display: block;
           margin-top: 7px;
+          font-family: monospace;
           font-size: 18px;
           font-weight: 950;
-          font-family:
-            monospace;
         }
 
         .toolbar {
           display: flex;
-          gap: 10px;
           align-items: center;
           flex-wrap: wrap;
-          margin:
-            14px 0 12px;
+          gap: 10px;
+          margin: 14px 0 12px;
+        }
+
+        .search-wrap {
+          position: relative;
+          width:
+            min(430px, 100%);
+        }
+
+        .search-icon {
+          position: absolute;
+          top: 12px;
+          left: 13px;
+          color: #94a3b8;
         }
 
         .search {
-          width:
-            min(430px, 100%);
+          width: 100%;
           height: 40px;
-          border:
-            1px solid #cbd5e1;
+          padding: 0 13px 0 38px;
+          border: 1px solid #cbd5e1;
           border-radius: 14px;
-          padding: 0 13px;
-          font-size: 13px;
           outline: none;
           background: white;
+          font-size: 13px;
         }
 
         .search:focus {
@@ -1525,10 +1576,10 @@ export default function CashBookPage() {
         }
 
         .card {
-          background: white;
-          border:
-            1px solid #dbe3ee;
+          overflow: hidden;
+          border: 1px solid #dbe3ee;
           border-radius: 18px;
+          background: white;
           box-shadow:
             0 8px 24px
             rgba(
@@ -1537,7 +1588,6 @@ export default function CashBookPage() {
               42,
               .05
             );
-          overflow: hidden;
         }
 
         .table-wrap {
@@ -1546,13 +1596,13 @@ export default function CashBookPage() {
 
         table.list {
           width: 100%;
-          border-collapse:
-            collapse;
-          table-layout: fixed;
           min-width: 850px;
+          table-layout: fixed;
+          border-collapse: collapse;
         }
 
         table.list th {
+          padding: 12px 9px;
           background: #111827;
           color:
             rgba(
@@ -1562,10 +1612,8 @@ export default function CashBookPage() {
               .78
             );
           font-size: 10px;
-          text-transform:
-            uppercase;
+          text-transform: uppercase;
           letter-spacing: .5px;
-          padding: 12px 9px;
         }
 
         table.list td {
@@ -1588,9 +1636,9 @@ export default function CashBookPage() {
           }: 18px;
           bottom: 18px;
           z-index: 120;
-          color: white;
           padding: 12px 16px;
           border-radius: 14px;
+          color: white;
           font-weight: 900;
           box-shadow:
             0 20px 50px
@@ -1602,51 +1650,32 @@ export default function CashBookPage() {
             );
         }
 
-        .modal-back {
-          position: fixed;
-          inset: 0;
-          background:
-            rgba(
-              15,
-              23,
-              42,
-              .45
-            );
-          backdrop-filter:
-            blur(6px);
-          z-index: 80;
-          display: flex;
-          align-items:
-            flex-start;
-          justify-content:
-            center;
-          padding: 12px;
-          overflow: auto;
-        }
-
-        .invoice-modal {
-          width:
-            min(1060px, 100%);
-          background: #f8fafc;
-          border:
-            1px solid #cbd5e1;
+        .fullPageInputBox {
+          width: 100%;
+          max-width: 100%;
+          min-height:
+            calc(100vh - 36px);
+          overflow: hidden;
+          border: 1px solid #cbd5e1;
           border-radius: 18px;
+          background: #f8fafc;
           box-shadow:
             0 30px 90px
             rgba(
               15,
               23,
               42,
-              .28
+              .18
             );
-          overflow: hidden;
-          animation:
-            fadeSlide
-            .22s ease-out both;
         }
 
-        .modal-title {
-          min-height: 54px;
+        .inputModalTitle {
+          height: 54px;
+          display: flex;
+          align-items: center;
+          justify-content:
+            space-between;
+          padding: 0 18px;
           background:
             linear-gradient(
               135deg,
@@ -1654,54 +1683,16 @@ export default function CashBookPage() {
               #1e293b
             );
           color: white;
-          display: flex;
-          align-items: center;
-          justify-content:
-            space-between;
-          padding: 8px 18px;
-          gap: 12px;
-        }
-
-        .modal-title h2 {
-          margin: 0;
           font-size: 17px;
           font-weight: 900;
         }
 
-        .mode-pill {
+        .cancelTopBtn {
+          height: 34px;
           display: inline-flex;
           align-items: center;
-          gap: 7px;
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              .18
-            );
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              .10
-            );
-          border-radius: 999px;
-          padding: 3px 9px;
-          font-size: 9.5px;
-          font-weight: 900;
-          margin-bottom: 3px;
-        }
-
-        .modal-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .title-btn,
-        .close-btn {
+          gap: 6px;
+          padding: 0 12px;
           border:
             1px solid
             rgba(
@@ -1710,6 +1701,7 @@ export default function CashBookPage() {
               255,
               .25
             );
+          border-radius: 10px;
           background:
             rgba(
               255,
@@ -1718,33 +1710,14 @@ export default function CashBookPage() {
               .08
             );
           color: white;
-          border-radius: 10px;
+          font-weight: 900;
           cursor: pointer;
         }
 
-        .title-btn {
-          min-height: 32px;
-          padding: 5px 10px;
-          font-size: 11px;
-          font-weight: 850;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .close-btn {
-          width: 34px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-        }
-
-        .modal-body {
+        .inputModalBody {
+          overflow-x: hidden;
           padding: 14px;
           background: #f3f6fb;
-          max-height:
-            calc(100vh - 78px);
-          overflow: auto;
         }
 
         .formTopLine {
@@ -1753,19 +1726,18 @@ export default function CashBookPage() {
             180px
             180px
             minmax(260px, 1fr);
-          gap: 10px;
           align-items: end;
+          gap: 10px;
           margin-bottom: 10px;
         }
 
         .basicLabel {
-          font-size: 11px;
-          color: #334155;
-          margin-bottom: 5px;
           display: block;
+          margin-bottom: 5px;
+          color: #334155;
+          font-size: 11px;
           font-weight: 900;
-          text-transform:
-            uppercase;
+          text-transform: uppercase;
           letter-spacing: .35px;
         }
 
@@ -1774,14 +1746,13 @@ export default function CashBookPage() {
         .productInput {
           width: 100%;
           height: 34px;
-          border:
-            1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
           padding: 5px 9px;
-          font-size: 13px;
+          border: 1px solid #cbd5e1;
           border-radius: 10px;
           outline: none;
+          background: white;
+          color: #0f172a;
+          font-size: 13px;
           font-weight: 650;
         }
 
@@ -1801,42 +1772,39 @@ export default function CashBookPage() {
 
         .sectionHead {
           height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content:
+            space-between;
+          margin-top: 12px;
+          padding: 0 12px;
+          border: 1px solid #cbd5e1;
+          border-radius:
+            14px 14px 0 0;
           background:
             linear-gradient(
               135deg,
               #eef2ff,
               #f8fafc
             );
-          border:
-            1px solid #cbd5e1;
-          border-radius:
-            14px 14px 0 0;
-          display: flex;
-          align-items: center;
-          justify-content:
-            space-between;
-          padding: 0 12px;
-          margin-top: 12px;
-          font-weight: 950;
           color: #0f172a;
+          font-weight: 950;
         }
 
         .basicBtn {
           height: 32px;
-          border:
-            1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
-          padding: 5px 12px;
-          font-size: 12px;
-          cursor: pointer;
-          border-radius: 10px;
-          font-weight: 850;
           display: inline-flex;
           align-items: center;
-          justify-content:
-            center;
+          justify-content: center;
           gap: 6px;
+          padding: 5px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          background: white;
+          color: #0f172a;
+          font-size: 12px;
+          font-weight: 850;
+          cursor: pointer;
         }
 
         .basicBtn:hover {
@@ -1849,37 +1817,34 @@ export default function CashBookPage() {
         }
 
         .paymentPanel {
-          border:
-            1px solid #cbd5e1;
-          border-top: none;
+          overflow: auto;
           padding: 8px;
-          background: white;
+          border: 1px solid #cbd5e1;
+          border-top: none;
           border-radius:
             0 0 14px 14px;
-          overflow: auto;
+          background: white;
         }
 
         .basicProductTable {
           width: 100%;
-          border-collapse:
-            collapse;
-          background: white;
-          min-width: 960px;
+          min-width: 1000px;
           table-layout: fixed;
+          border-collapse: collapse;
+          background: white;
         }
 
         .basicProductTable th,
         .basicProductTable td {
-          border:
-            1px solid #dbe3ee;
           padding: 5px;
+          border: 1px solid #dbe3ee;
           font-size: 12px;
         }
 
         .basicProductTable th {
           background: #e2e8f0;
-          text-align: center;
           color: #334155;
+          text-align: center;
           font-weight: 900;
         }
 
@@ -1888,8 +1853,8 @@ export default function CashBookPage() {
           grid-template-columns:
             minmax(0, 1fr)
             auto;
-          gap: 5px;
           align-items: center;
+          gap: 5px;
         }
 
         .miniAdd {
@@ -1897,8 +1862,7 @@ export default function CashBookPage() {
           height: 30px;
           display: grid;
           place-items: center;
-          border:
-            1px solid #cbd5e1;
+          border: 1px solid #cbd5e1;
           border-radius: 9px;
           background: white;
           color: #0f172a;
@@ -1920,8 +1884,7 @@ export default function CashBookPage() {
         .rowDelete {
           width: 24px;
           height: 26px;
-          border:
-            1px solid #cbd5e1;
+          border: 1px solid #cbd5e1;
           border-radius: 8px;
           background: white;
           color: #0f172a;
@@ -1930,7 +1893,6 @@ export default function CashBookPage() {
         }
 
         .finalTotalBar {
-          margin-top: 0;
           display: grid;
           grid-template-columns:
             repeat(3, 1fr);
@@ -1938,18 +1900,17 @@ export default function CashBookPage() {
         }
 
         .totalBox {
-          border:
-            1px solid #dbe3ee;
-          background: #f8fafc;
-          border-radius: 14px;
           padding: 10px 12px;
+          border: 1px solid #dbe3ee;
+          border-radius: 14px;
+          background: #f8fafc;
         }
 
         .totalBox label {
           display: block;
-          font-size: 11px;
-          color: #64748b;
           margin-bottom: 6px;
+          color: #64748b;
+          font-size: 11px;
           font-weight: 900;
         }
 
@@ -1961,25 +1922,23 @@ export default function CashBookPage() {
                 ? "left"
                 : "right"
             };
-          font-family:
-            monospace;
+          font-family: monospace;
           font-size: 18px;
         }
 
         .grandBox {
-          background: #eef2ff;
           border-color: #c7d2fe;
+          background: #eef2ff;
           color: #3730a3;
         }
 
         .modalFooterBasic {
-          padding: 12px 0 0;
-          display: flex;
-          justify-content:
-            flex-end;
-          gap: 8px;
           position: sticky;
           bottom: 0;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          padding: 12px 0 0;
           background:
             linear-gradient(
               180deg,
@@ -1993,16 +1952,62 @@ export default function CashBookPage() {
             );
         }
 
-        .account-modal {
+        .accountModalBack {
+          position: fixed;
+          inset: 0;
           z-index: 100;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          overflow: auto;
+          padding: 12px;
+          background:
+            rgba(
+              15,
+              23,
+              42,
+              .45
+            );
+          backdrop-filter: blur(6px);
         }
 
-        .account-box {
+        .accountModalBox {
           width:
             min(680px, 100%);
+          overflow: hidden;
+          border: 1px solid #cbd5e1;
+          border-radius: 18px;
+          background: #f8fafc;
+          box-shadow:
+            0 30px 90px
+            rgba(
+              15,
+              23,
+              42,
+              .28
+            );
+          animation:
+            fadeSlide
+            .22s ease-out both;
         }
 
-        .account-grid {
+        .accountModalHead {
+          height: 54px;
+          display: flex;
+          align-items: center;
+          justify-content:
+            space-between;
+          padding: 0 18px;
+          background:
+            linear-gradient(
+              135deg,
+              #0f172a,
+              #1e293b
+            );
+          color: white;
+        }
+
+        .accountGrid {
           display: grid;
           grid-template-columns:
             1fr 1fr;
@@ -2013,7 +2018,9 @@ export default function CashBookPage() {
           grid-column: 1 / -1;
         }
 
-        @media (max-width: 900px) {
+        @media (
+          max-width: 900px
+        ) {
           .summary-grid {
             grid-template-columns:
               repeat(2, 1fr);
@@ -2028,16 +2035,18 @@ export default function CashBookPage() {
             grid-template-columns:
               1fr;
           }
-
-          .title-btn {
-            display: none;
-          }
         }
 
-        @media (max-width: 650px) {
+        @media (
+          max-width: 650px
+        ) {
+          .invoice-page {
+            padding: 10px;
+          }
+
           .summary-grid,
           .formTopLine,
-          .account-grid {
+          .accountGrid {
             grid-template-columns:
               1fr;
           }
@@ -2050,12 +2059,13 @@ export default function CashBookPage() {
             grid-column: auto;
           }
 
-          .invoice-page {
+          .inputModalBody {
             padding: 10px;
           }
 
-          .modal-body {
-            padding: 10px;
+          .fullPageInputBox {
+            min-height:
+              calc(100vh - 20px);
           }
         }
       `}</style>
@@ -2075,1296 +2085,1255 @@ export default function CashBookPage() {
         </div>
       )}
 
-      <div className="page-wrap">
-        <div className="top-card">
-          <div>
-            <h1 className="title">
-              {t.title}
-            </h1>
+      {!showForm && (
+        <div className="page-wrap">
+          <div className="top-card">
+            <div>
+              <h1 className="title">
+                {t.title}
+              </h1>
 
-            <p className="subtitle">
-              {t.subtitle}
-            </p>
-          </div>
+              <p className="subtitle">
+                {t.subtitle}
+              </p>
+            </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              className="btn btn-soft"
-              onClick={() =>
-                setLang(
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+
+                flexDirection:
                   isUrdu
-                    ? "en"
-                    : "ur"
-                )
-              }
-            >
-              <Languages size={15} />
-
-              {t.toggleLang}
-            </button>
-
-            <button
-              className={`btn ${
-                showSummary
-                  ? "btn-active"
-                  : "btn-soft"
-              }`}
-              onClick={() =>
-                setShowSummary(
-                  (value) => !value
-                )
-              }
-            >
-              {showSummary
-                ? t.hideSummary
-                : t.viewSummary}
-            </button>
-
-            <button
-              className="btn btn-soft"
-              onClick={loadPage}
-            >
-              <RefreshCw size={15} />
-
-              {loading
-                ? t.loading
-                : t.refresh}
-            </button>
-
-            <button
-              className="btn btn-soft"
-              onClick={() =>
-                openAccountModal()
-              }
-            >
-              <UserPlus size={15} />
-
-              {t.addAccount}
-            </button>
-
-            <button
-              className="btn btn-primary"
-              onClick={openAdd}
-            >
-              <Plus size={15} />
-
-              {t.newVoucher}
-            </button>
-          </div>
-        </div>
-
-        {showSummary && (
-          <div className="summary-grid">
-            {[
-              [
-                t.totalVouchers,
-                summary.totalVouchers,
-              ],
-              [
-                t.totalReceive,
-                `Rs ${money(
-                  summary.totalReceive
-                )}`,
-              ],
-              [
-                t.totalPaid,
-                `Rs ${money(
-                  summary.totalPaid
-                )}`,
-              ],
-              [
-                t.netBalance,
-                `Rs ${money(
-                  summary.netBalance
-                )}`,
-              ],
-            ].map(
-              (
-                [
-                  label,
-                  value,
-                ],
-                index
-              ) => (
-                <div
-                  className="summary-card"
-                  key={label}
-                  style={{
-                    animationDelay: `${
-                      index * 30
-                    }ms`,
-                  }}
-                >
-                  <small>
-                    {label}
-                  </small>
-
-                  <b>{value}</b>
-                </div>
-              )
-            )}
-          </div>
-        )}
-
-        <div className="toolbar">
-          <div
-            style={{
-              position: "relative",
-              width:
-                "min(430px,100%)",
-            }}
-          >
-            <Search
-              size={16}
-              style={{
-                position:
-                  "absolute",
-                left: 13,
-                top: 12,
-                color: "#94a3b8",
+                    ? "row-reverse"
+                    : "row",
               }}
-            />
-
-            <input
-              className="search"
-              style={{
-                paddingLeft: 38,
-                width: "100%",
-              }}
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
-              placeholder={
-                t.searchPlaceholder
-              }
-            />
-          </div>
-        </div>
-
-        <div className="card table-wrap">
-          <table className="list">
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    width: 45,
-                  }}
-                >
-                  #
-                </th>
-
-                <th
-                  style={{
-                    width: 150,
-                  }}
-                >
-                  {t.voucherNo}
-                </th>
-
-                <th
-                  style={{
-                    width: 145,
-                  }}
-                >
-                  {t.date}
-                </th>
-
-                <th
-                  style={{
-                    width: 140,
-                    textAlign:
-                      "right",
-                  }}
-                >
-                  {t.totalReceive}
-                </th>
-
-                <th
-                  style={{
-                    width: 140,
-                    textAlign:
-                      "right",
-                  }}
-                >
-                  {t.totalPaid}
-                </th>
-
-                <th
-                  style={{
-                    width: 80,
-                  }}
-                >
-                  Lines
-                </th>
-
-                <th
-                  style={{
-                    width: 220,
-                  }}
-                >
-                  {t.actions}
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    style={{
-                      textAlign:
-                        "center",
-                      padding: 44,
-                      color:
-                        "#94a3b8",
-                    }}
-                  >
-                    {t.loading}
-                  </td>
-                </tr>
-              ) : filteredRecords.length ===
-                0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    style={{
-                      textAlign:
-                        "center",
-                      padding: 44,
-                      color:
-                        "#94a3b8",
-                    }}
-                  >
-                    {t.noRecords}
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map(
-                  (
-                    record,
-                    index
-                  ) => (
-                    <tr
-                      key={record.id}
-                      onClick={() =>
-                        openEdit(
-                          record.id
-                        )
-                      }
-                      style={{
-                        cursor:
-                          "pointer",
-                      }}
-                    >
-                      <td
-                        style={{
-                          textAlign:
-                            "center",
-                          color:
-                            "#94a3b8",
-                        }}
-                      >
-                        {index + 1}
-                      </td>
-
-                      <td
-                        style={{
-                          fontFamily:
-                            "monospace",
-                          fontWeight:
-                            900,
-                        }}
-                      >
-                        {
-                          record.voucher_no
-                        }
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "center",
-                          fontWeight:
-                            800,
-                        }}
-                      >
-                        {formatDate(
-                          record.voucher_date
-                        )}
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "right",
-                          fontFamily:
-                            "monospace",
-                          fontWeight:
-                            900,
-                          color:
-                            "#047857",
-                        }}
-                      >
-                        {money(
-                          record.total_receive
-                        )}
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "right",
-                          fontFamily:
-                            "monospace",
-                          fontWeight:
-                            900,
-                          color:
-                            "#dc2626",
-                        }}
-                      >
-                        {money(
-                          record.total_paid
-                        )}
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "center",
-                        }}
-                      >
-                        {record.items_count ||
-                          0}
-                      </td>
-
-                      <td>
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "center",
-                            gap: 6,
-                            flexWrap:
-                              "wrap",
-                          }}
-                        >
-                          <button
-                            className="btn btn-soft"
-                            style={{
-                              padding:
-                                "6px 10px",
-                            }}
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              openEdit(
-                                record.id
-                              );
-                            }}
-                          >
-                            <Edit3
-                              size={14}
-                            />
-
-                            {t.edit}
-                          </button>
-
-                          <button
-                            className="btn btn-soft"
-                            style={{
-                              padding:
-                                "6px 10px",
-                            }}
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              printVoucher(
-                                record.id
-                              );
-                            }}
-                          >
-                            <Printer
-                              size={14}
-                            />
-
-                            {t.print}
-                          </button>
-
-                          <button
-                            className="btn btn-soft"
-                            style={{
-                              padding:
-                                "6px 10px",
-                            }}
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              deleteVoucher(
-                                record.id
-                              );
-                            }}
-                          >
-                            <Trash2
-                              size={14}
-                            />
-
-                            {t.delete}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+            >
+              <button
+                className="btn btn-soft"
+                onClick={() =>
+                  setLang(
+                    isUrdu
+                      ? "en"
+                      : "ur"
                   )
+                }
+              >
+                <Languages
+                  size={15}
+                />
+
+                {t.toggleLang}
+              </button>
+
+              <button
+                className={`btn ${
+                  showSummary
+                    ? "btn-active"
+                    : "btn-soft"
+                }`}
+                onClick={() =>
+                  setShowSummary(
+                    (value) =>
+                      !value
+                  )
+                }
+              >
+                {showSummary
+                  ? t.hideSummary
+                  : t.viewSummary}
+              </button>
+
+              <button
+                className="btn btn-soft"
+                onClick={loadPage}
+              >
+                <RefreshCw
+                  size={15}
+                />
+
+                {loading
+                  ? t.loading
+                  : t.refresh}
+              </button>
+
+              <button
+                className="btn btn-soft"
+                onClick={() =>
+                  openAccountModal()
+                }
+              >
+                <UserPlus
+                  size={15}
+                />
+
+                {t.addAccount}
+              </button>
+
+              <button
+                className="btn btn-primary"
+                onClick={openAdd}
+              >
+                <Plus size={15} />
+
+                {t.newVoucher}
+              </button>
+            </div>
+          </div>
+
+          {showSummary && (
+            <div className="summary-grid">
+              {[
+                [
+                  t.totalVouchers,
+                  summary.totalVouchers,
+                ],
+
+                [
+                  t.totalReceive,
+
+                  `Rs ${money(
+                    summary.totalReceive
+                  )}`,
+                ],
+
+                [
+                  t.totalPaid,
+
+                  `Rs ${money(
+                    summary.totalPaid
+                  )}`,
+                ],
+
+                [
+                  t.netBalance,
+
+                  `Rs ${money(
+                    summary.netBalance
+                  )}`,
+                ],
+              ].map(
+                (
+                  [
+                    label,
+                    value,
+                  ],
+
+                  index
+                ) => (
+                  <div
+                    className="summary-card"
+                    key={label}
+                    style={{
+                      animationDelay: `${
+                        index * 30
+                      }ms`,
+                    }}
+                  >
+                    <small>
+                      {label}
+                    </small>
+
+                    <b>{value}</b>
+                  </div>
                 )
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
+          )}
 
-      {showVoucherModal &&
-        createPortal(
-          <div
-            className="modal-back"
-            onMouseDown={(event) => {
-              if (
-                event.target ===
-                  event.currentTarget &&
-                !saving
-              ) {
-                setShowVoucherModal(
-                  false
-                );
-              }
-            }}
-          >
-            <div
-              className="invoice-modal"
-              onMouseDown={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="modal-title">
-                <div>
-                  <div className="mode-pill">
-                    {editingId
-                      ? t.editMode
-                      : t.createMode}
-                  </div>
+          <div className="toolbar">
+            <div className="search-wrap">
+              <Search
+                size={16}
+                className="search-icon"
+              />
 
-                  <h2>
-                    {editingId
-                      ? t.update
-                      : t.newVoucher}
-                  </h2>
-                </div>
+              <input
+                className="search"
+                value={search}
+                onChange={(event) =>
+                  setSearch(
+                    event.target
+                      .value
+                  )
+                }
+                placeholder={
+                  t.searchPlaceholder
+                }
+              />
+            </div>
+          </div>
 
-                <div className="modal-actions">
-                  <button
-                    className="title-btn"
-                    type="button"
-                    onClick={() =>
-                      openAccountModal()
-                    }
+          <div className="card table-wrap">
+            <table className="list">
+              <thead>
+                <tr>
+                  <th
+                    style={{
+                      width: 45,
+                    }}
                   >
-                    <UserPlus
-                      size={14}
-                    />
+                    #
+                  </th>
 
-                    {t.addAccount}
-                  </button>
+                  <th
+                    style={{
+                      width: 150,
+                    }}
+                  >
+                    {t.voucherNo}
+                  </th>
 
-                  <button
-                    className="close-btn"
-                    type="button"
-                    onClick={() =>
-                      !saving &&
-                      setShowVoucherModal(
-                        false
+                  <th
+                    style={{
+                      width: 145,
+                    }}
+                  >
+                    {t.date}
+                  </th>
+
+                  <th
+                    style={{
+                      width: 140,
+
+                      textAlign:
+                        "right",
+                    }}
+                  >
+                    {t.totalReceive}
+                  </th>
+
+                  <th
+                    style={{
+                      width: 140,
+
+                      textAlign:
+                        "right",
+                    }}
+                  >
+                    {t.totalPaid}
+                  </th>
+
+                  <th
+                    style={{
+                      width: 80,
+                    }}
+                  >
+                    Lines
+                  </th>
+
+                  <th
+                    style={{
+                      width: 220,
+                    }}
+                  >
+                    {t.actions}
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      style={{
+                        textAlign:
+                          "center",
+
+                        padding: 44,
+
+                        color:
+                          "#94a3b8",
+                      }}
+                    >
+                      {t.loading}
+                    </td>
+                  </tr>
+                ) : filteredRecords.length ===
+                  0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      style={{
+                        textAlign:
+                          "center",
+
+                        padding: 44,
+
+                        color:
+                          "#94a3b8",
+                      }}
+                    >
+                      {t.noRecords}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRecords.map(
+                    (
+                      record,
+                      index
+                    ) => (
+                      <tr
+                        key={
+                          record.id
+                        }
+                        onClick={() =>
+                          openEdit(
+                            record.id
+                          )
+                        }
+                        style={{
+                          cursor:
+                            "pointer",
+                        }}
+                      >
+                        <td
+                          style={{
+                            textAlign:
+                              "center",
+
+                            color:
+                              "#94a3b8",
+                          }}
+                        >
+                          {index + 1}
+                        </td>
+
+                        <td
+                          style={{
+                            fontFamily:
+                              "monospace",
+
+                            fontWeight:
+                              900,
+                          }}
+                        >
+                          {
+                            record.voucher_no
+                          }
+                        </td>
+
+                        <td
+                          style={{
+                            textAlign:
+                              "center",
+
+                            fontWeight:
+                              800,
+                          }}
+                        >
+                          {formatDate(
+                            record.voucher_date
+                          )}
+                        </td>
+
+                        <td
+                          style={{
+                            textAlign:
+                              "right",
+
+                            fontFamily:
+                              "monospace",
+
+                            fontWeight:
+                              900,
+
+                            color:
+                              "#047857",
+                          }}
+                        >
+                          {money(
+                            record.total_receive
+                          )}
+                        </td>
+
+                        <td
+                          style={{
+                            textAlign:
+                              "right",
+
+                            fontFamily:
+                              "monospace",
+
+                            fontWeight:
+                              900,
+
+                            color:
+                              "#dc2626",
+                          }}
+                        >
+                          {money(
+                            record.total_paid
+                          )}
+                        </td>
+
+                        <td
+                          style={{
+                            textAlign:
+                              "center",
+                          }}
+                        >
+                          {record.items_count ||
+                            0}
+                        </td>
+
+                        <td>
+                          <div
+                            style={{
+                              display:
+                                "flex",
+
+                              justifyContent:
+                                "center",
+
+                              gap: 6,
+
+                              flexWrap:
+                                "wrap",
+                            }}
+                          >
+                            <button
+                              className="btn btn-soft"
+                              style={{
+                                padding:
+                                  "6px 10px",
+                              }}
+                              onClick={(
+                                event
+                              ) => {
+                                event.stopPropagation();
+
+                                openEdit(
+                                  record.id
+                                );
+                              }}
+                            >
+                              <Edit3
+                                size={
+                                  14
+                                }
+                              />
+
+                              {t.edit}
+                            </button>
+
+                            <button
+                              className="btn btn-soft"
+                              style={{
+                                padding:
+                                  "6px 10px",
+                              }}
+                              onClick={(
+                                event
+                              ) => {
+                                event.stopPropagation();
+
+                                printVoucher(
+                                  record.id
+                                );
+                              }}
+                            >
+                              <Printer
+                                size={
+                                  14
+                                }
+                              />
+
+                              {t.print}
+                            </button>
+
+                            <button
+                              className="btn btn-soft"
+                              style={{
+                                padding:
+                                  "6px 10px",
+                              }}
+                              onClick={(
+                                event
+                              ) => {
+                                event.stopPropagation();
+
+                                deleteVoucher(
+                                  record.id
+                                );
+                              }}
+                            >
+                              <Trash2
+                                size={
+                                  14
+                                }
+                              />
+
+                              {t.delete}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="page-wrap form-page-wrap">
+          <div className="fullPageInputBox">
+            <div className="inputModalTitle">
+              <span>
+                {editingId
+                  ? t.update
+                  : t.newVoucher}
+              </span>
+
+              <button
+                className="cancelTopBtn"
+                type="button"
+                onClick={closeForm}
+                disabled={saving}
+              >
+                ← {t.cancel}
+              </button>
+            </div>
+
+            <div className="inputModalBody">
+              <div className="formTopLine">
+                <div>
+                  <label className="basicLabel">
+                    {t.voucherNo}
+                  </label>
+
+                  <input
+                    className="basicInput"
+                    style={{
+                      fontFamily:
+                        "monospace",
+
+                      fontWeight:
+                        900,
+                    }}
+                    value={
+                      voucher.voucher_no
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setVoucher(
+                        (current) => ({
+                          ...current,
+
+                          voucher_no:
+                            event
+                              .target
+                              .value,
+                        })
                       )
                     }
-                  >
-                    <X size={18} />
-                  </button>
+                  />
+                </div>
+
+                <div>
+                  <label className="basicLabel">
+                    {t.date}
+                  </label>
+
+                  <input
+                    type="date"
+                    className="basicInput"
+                    value={
+                      voucher.voucher_date
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setVoucher(
+                        (current) => ({
+                          ...current,
+
+                          voucher_date:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="basicLabel">
+                    {t.notes}
+                  </label>
+
+                  <input
+                    className="basicInput"
+                    value={
+                      voucher.notes
+                    }
+                    placeholder={
+                      t.optional
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setVoucher(
+                        (current) => ({
+                          ...current,
+
+                          notes:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                  />
                 </div>
               </div>
 
-              <div className="modal-body">
-                <div className="formTopLine">
-                  <div>
-                    <label className="basicLabel">
-                      {t.voucherNo}
-                    </label>
+              <div className="sectionHead">
+                <span>
+                  {t.accountEntries}
+                </span>
 
-                    <input
-                      className="basicInput"
-                      style={{
-                        fontFamily:
-                          "monospace",
-                        fontWeight:
-                          900,
-                      }}
-                      value={
-                        voucher.voucher_no
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setVoucher(
-                          (current) => ({
-                            ...current,
+                <button
+                  className="basicBtn"
+                  type="button"
+                  onClick={addRow}
+                >
+                  {t.addRow}
+                </button>
+              </div>
 
-                            voucher_no:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
+              <div className="paymentPanel">
+                <table className="basicProductTable">
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          width: 38,
+                        }}
+                      >
+                        #
+                      </th>
 
-                  <div>
-                    <label className="basicLabel">
-                      {t.date}
-                    </label>
+                      <th
+                        style={{
+                          width: 170,
+                        }}
+                      >
+                        {t.accountType}
+                      </th>
 
-                    <input
-                      type="date"
-                      className="basicInput"
-                      value={
-                        voucher.voucher_date
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setVoucher(
-                          (current) => ({
-                            ...current,
+                      <th
+                        style={{
+                          width: 240,
+                        }}
+                      >
+                        {t.account}
+                      </th>
 
-                            voucher_date:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
+                      <th>
+                        {t.description}
+                      </th>
 
-                  <div>
-                    <label className="basicLabel">
-                      {t.notes}
-                    </label>
+                      <th
+                        style={{
+                          width: 130,
+                        }}
+                      >
+                        {t.receive}
+                      </th>
 
-                    <input
-                      className="basicInput"
-                      value={
-                        voucher.notes
-                      }
-                      placeholder={
-                        t.optional
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setVoucher(
-                          (current) => ({
-                            ...current,
+                      <th
+                        style={{
+                          width: 130,
+                        }}
+                      >
+                        {t.paid}
+                      </th>
 
-                            notes:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                </div>
+                      <th
+                        style={{
+                          width: 42,
+                        }}
+                      />
+                    </tr>
+                  </thead>
 
-                <div className="sectionHead">
-                  <span>
-                    {t.accountEntries}
-                  </span>
-
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    onClick={addRow}
-                  >
-                    {t.addRow}
-                  </button>
-                </div>
-
-                <div className="paymentPanel">
-                  <table className="basicProductTable">
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            width: 38,
-                          }}
+                  <tbody>
+                    {rows.map(
+                      (
+                        row,
+                        index
+                      ) => (
+                        <tr
+                          key={
+                            row.local_id
+                          }
                         >
-                          #
-                        </th>
+                          <td
+                            style={{
+                              textAlign:
+                                "center",
 
-                        <th
-                          style={{
-                            width: 160,
-                          }}
-                        >
-                          {t.accountType}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 230,
-                          }}
-                        >
-                          {t.account}
-                        </th>
-
-                        <th>
-                          {t.description}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 125,
-                          }}
-                        >
-                          {t.receive}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 125,
-                          }}
-                        >
-                          {t.paid}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 42,
-                          }}
-                        />
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {rows.map(
-                        (
-                          row,
-                          index
-                        ) => (
-                          <tr
-                            key={
-                              row.local_id
-                            }
+                              fontWeight:
+                                900,
+                            }}
                           >
-                            <td
-                              style={{
-                                textAlign:
-                                  "center",
-                                fontWeight:
-                                  900,
-                              }}
-                            >
-                              {index + 1}
-                            </td>
+                            {index + 1}
+                          </td>
 
-                            <td>
+                          <td>
+                            <select
+                              className="productInput"
+                              value={
+                                row.account_type
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updateRow(
+                                  row.local_id,
+
+                                  "account_type",
+
+                                  event
+                                    .target
+                                    .value
+                                )
+                              }
+                            >
+                              {ACCOUNT_TYPES.map(
+                                (
+                                  type
+                                ) => (
+                                  <option
+                                    key={
+                                      type.value
+                                    }
+                                    value={
+                                      type.value
+                                    }
+                                  >
+                                    {isUrdu
+                                      ? type.ur
+                                      : type.en}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </td>
+
+                          <td>
+                            <div className="accountSelectWrap">
                               <select
                                 className="productInput"
                                 value={
-                                  row.account_type
+                                  row.account_id
                                 }
                                 onChange={(
                                   event
                                 ) =>
                                   updateRow(
                                     row.local_id,
-                                    "account_type",
+
+                                    "account_id",
+
                                     event
                                       .target
                                       .value
                                   )
                                 }
                               >
-                                {ACCOUNT_TYPES.map(
+                                <option value="">
+                                  {t.select}
+                                </option>
+
+                                {optionsFor(
+                                  row.account_type
+                                ).map(
                                   (
-                                    type
+                                    account
                                   ) => (
                                     <option
                                       key={
-                                        type.value
+                                        account.id
                                       }
                                       value={
-                                        type.value
+                                        account.id
                                       }
                                     >
-                                      {isUrdu
-                                        ? type.ur
-                                        : type.en}
+                                      {getAccountName(
+                                        account
+                                      )}
                                     </option>
                                   )
                                 )}
                               </select>
-                            </td>
 
-                            <td>
-                              <div className="accountSelectWrap">
-                                <select
-                                  className="productInput"
-                                  value={
-                                    row.account_id
-                                  }
-                                  onChange={(
-                                    event
-                                  ) =>
-                                    updateRow(
-                                      row.local_id,
-                                      "account_id",
-                                      event
-                                        .target
-                                        .value
+                              {row.account_type ===
+                                "general_ledger" && (
+                                <button
+                                  className="miniAdd"
+                                  type="button"
+                                  onClick={() =>
+                                    openAccountModal(
+                                      row.local_id
                                     )
                                   }
                                 >
-                                  <option value="">
-                                    {t.select}
-                                  </option>
-
-                                  {optionsFor(
-                                    row.account_type
-                                  ).map(
-                                    (
-                                      account
-                                    ) => (
-                                      <option
-                                        key={
-                                          account.id
-                                        }
-                                        value={
-                                          account.id
-                                        }
-                                      >
-                                        {getAccountName(
-                                          account
-                                        )}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
-
-                                {row.account_type ===
-                                  "general_ledger" && (
-                                  <button
-                                    className="miniAdd"
-                                    type="button"
-                                    onClick={() =>
-                                      openAccountModal(
-                                        row.local_id
-                                      )
+                                  <Plus
+                                    size={
+                                      14
                                     }
-                                  >
-                                    <Plus
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
+                                  />
+                                </button>
+                              )}
+                            </div>
+                          </td>
 
-                            <td>
-                              <input
-                                className="productInput"
-                                value={
-                                  row.description
-                                }
-                                placeholder={
-                                  t.enter
-                                }
-                                onChange={(
+                          <td>
+                            <input
+                              className="productInput"
+                              value={
+                                row.description
+                              }
+                              placeholder={
+                                t.enter
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updateRow(
+                                  row.local_id,
+
+                                  "description",
+
                                   event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "description",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              />
-                            </td>
+                                    .target
+                                    .value
+                                )
+                              }
+                            />
+                          </td>
 
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="productInput receiveInput"
-                                value={
-                                  row.receive
-                                }
-                                placeholder={
-                                  t.enter
-                                }
-                                onChange={(
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="productInput receiveInput"
+                              value={
+                                row.receive
+                              }
+                              placeholder={
+                                t.enter
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updateRow(
+                                  row.local_id,
+
+                                  "receive",
+
                                   event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "receive",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              />
-                            </td>
+                                    .target
+                                    .value
+                                )
+                              }
+                            />
+                          </td>
 
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="productInput paidInput"
-                                value={
-                                  row.paid
-                                }
-                                placeholder={
-                                  t.enter
-                                }
-                                onChange={(
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="productInput paidInput"
+                              value={
+                                row.paid
+                              }
+                              placeholder={
+                                t.enter
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updateRow(
+                                  row.local_id,
+
+                                  "paid",
+
                                   event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "paid",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              />
-                            </td>
+                                    .target
+                                    .value
+                                )
+                              }
+                            />
+                          </td>
 
-                            <td
-                              style={{
-                                textAlign:
-                                  "center",
-                              }}
+                          <td
+                            style={{
+                              textAlign:
+                                "center",
+                            }}
+                          >
+                            <button
+                              className="rowDelete"
+                              type="button"
+                              onClick={() =>
+                                removeRow(
+                                  row.local_id
+                                )
+                              }
                             >
-                              <button
-                                className="rowDelete"
-                                type="button"
-                                onClick={() =>
-                                  removeRow(
-                                    row.local_id
-                                  )
-                                }
-                              >
-                                ×
-                              </button>
-                            </td>
-                          </tr>
-                        )
+                              ×
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="sectionHead">
+                <span>
+                  {t.total}
+                </span>
+              </div>
+
+              <div className="paymentPanel">
+                <div className="finalTotalBar">
+                  <div className="totalBox">
+                    <label>
+                      {t.totalReceive}
+                    </label>
+
+                    <b
+                      style={{
+                        color:
+                          "#047857",
+                      }}
+                    >
+                      Rs{" "}
+                      {money(
+                        totals.receive
                       )}
-                    </tbody>
-                  </table>
-                </div>
+                    </b>
+                  </div>
 
-                <div className="sectionHead">
-                  <span>
-                    {t.total}
-                  </span>
-                </div>
+                  <div className="totalBox">
+                    <label>
+                      {t.totalPaid}
+                    </label>
 
-                <div className="paymentPanel">
-                  <div className="finalTotalBar">
-                    <div className="totalBox">
-                      <label>
-                        {t.totalReceive}
-                      </label>
+                    <b
+                      style={{
+                        color:
+                          "#dc2626",
+                      }}
+                    >
+                      Rs{" "}
+                      {money(
+                        totals.paid
+                      )}
+                    </b>
+                  </div>
 
-                      <b
-                        style={{
-                          color:
-                            "#047857",
-                        }}
-                      >
-                        Rs{" "}
-                        {money(
-                          totals.receive
-                        )}
-                      </b>
-                    </div>
+                  <div className="totalBox grandBox">
+                    <label>
+                      {t.grandTotal}
+                    </label>
 
-                    <div className="totalBox">
-                      <label>
-                        {t.totalPaid}
-                      </label>
-
-                      <b
-                        style={{
-                          color:
-                            "#dc2626",
-                        }}
-                      >
-                        Rs{" "}
-                        {money(
+                    <b>
+                      Rs{" "}
+                      {money(
+                        totals.receive -
                           totals.paid
-                        )}
-                      </b>
-                    </div>
-
-                    <div className="totalBox grandBox">
-                      <label>
-                        {t.grandTotal}
-                      </label>
-
-                      <b>
-                        Rs{" "}
-                        {money(
-                          totals.receive -
-                            totals.paid
-                        )}
-                      </b>
-                    </div>
+                      )}
+                    </b>
                   </div>
                 </div>
+              </div>
 
-                <div className="modalFooterBasic">
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={saving}
-                    onClick={() =>
-                      setShowVoucherModal(
-                        false
+              <div className="modalFooterBasic">
+                <button
+                  className="basicBtn"
+                  type="button"
+                  disabled={saving}
+                  onClick={closeForm}
+                >
+                  {t.cancel}
+                </button>
+
+                <button
+                  className="basicBtn"
+                  type="button"
+                  disabled={saving}
+                  onClick={
+                    saveVoucher
+                  }
+                >
+                  {saving ? (
+                    <RefreshCw
+                      size={15}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <Save
+                      size={15}
+                    />
+                  )}
+
+                  {saving
+                    ? t.saving
+                    : editingId
+                    ? t.update
+                    : t.save}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAccountModal && (
+        <div
+          className="accountModalBack"
+          onMouseDown={(
+            event
+          ) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closeAccountModal();
+            }
+          }}
+        >
+          <div
+            className="accountModalBox"
+            onMouseDown={(
+              event
+            ) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="accountModalHead">
+              <strong>
+                {
+                  t.accountModalTitle
+                }
+              </strong>
+
+              <button
+                type="button"
+                className="cancelTopBtn"
+                onClick={
+                  closeAccountModal
+                }
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="inputModalBody">
+              <div className="accountGrid">
+                <div>
+                  <label className="basicLabel">
+                    {
+                      t.accountCode
+                    }
+                  </label>
+
+                  <input
+                    className="basicInput"
+                    value={
+                      accountForm.account_code
+                    }
+                    placeholder={
+                      t.autoCode
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setAccountForm(
+                        (current) => ({
+                          ...current,
+
+                          account_code:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="basicLabel">
+                    {
+                      t.accountGroup
+                    }
+                  </label>
+
+                  <select
+                    className="basicSelect"
+                    value={
+                      accountForm.group_id
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setAccountForm(
+                        (current) => ({
+                          ...current,
+
+                          group_id:
+                            event
+                              .target
+                              .value,
+                        })
                       )
                     }
                   >
-                    {t.cancel}
-                  </button>
+                    <option value="">
+                      {t.optional}
+                    </option>
 
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={saving}
-                    onClick={
-                      saveVoucher
-                    }
-                  >
-                    {saving ? (
-                      <RefreshCw
-                        size={15}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <Save
-                        size={15}
-                      />
+                    {lookups.groups.map(
+                      (
+                        group
+                      ) => (
+                        <option
+                          key={
+                            group.id
+                          }
+                          value={
+                            group.id
+                          }
+                        >
+                          {
+                            group.group_name
+                          }
+                        </option>
+                      )
                     )}
+                  </select>
+                </div>
 
-                    {saving
-                      ? t.saving
-                      : editingId
-                      ? t.update
-                      : t.save}
-                  </button>
+                <div className="full">
+                  <label className="basicLabel">
+                    {t.accountTitle} *
+                  </label>
+
+                  <input
+                    autoFocus
+                    className="basicInput"
+                    value={
+                      accountForm.account_title
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setAccountForm(
+                        (current) => ({
+                          ...current,
+
+                          account_title:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="full">
+                  <label className="basicLabel">
+                    {
+                      t.openingBalance
+                    }
+                  </label>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="basicInput"
+                    value={
+                      accountForm.opening_balance
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setAccountForm(
+                        (current) => ({
+                          ...current,
+
+                          opening_balance:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                  />
                 </div>
               </div>
-            </div>
-          </div>,
 
-          document.body
-        )}
-
-      {showAccountModal &&
-        createPortal(
-          <div
-            className="modal-back account-modal"
-            onMouseDown={(event) => {
-              if (
-                event.target ===
-                  event.currentTarget &&
-                !accountSaving
-              ) {
-                setShowAccountModal(
-                  false
-                );
-
-                setAccountTargetRow(
-                  null
-                );
-              }
-            }}
-          >
-            <div
-              className="invoice-modal account-box"
-              onMouseDown={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="modal-title">
-                <div>
-                  <div className="mode-pill">
-                    Account
-                  </div>
-
-                  <h2>
-                    {
-                      t.accountModalTitle
-                    }
-                  </h2>
-                </div>
+              <div className="modalFooterBasic">
+                <button
+                  className="basicBtn"
+                  type="button"
+                  disabled={
+                    accountSaving
+                  }
+                  onClick={
+                    closeAccountModal
+                  }
+                >
+                  {t.cancel}
+                </button>
 
                 <button
-                  className="close-btn"
+                  className="basicBtn"
                   type="button"
-                  onClick={() => {
-                    if (
-                      !accountSaving
-                    ) {
-                      setShowAccountModal(
-                        false
-                      );
-
-                      setAccountTargetRow(
-                        null
-                      );
-                    }
-                  }}
+                  disabled={
+                    accountSaving
+                  }
+                  onClick={
+                    saveAccount
+                  }
                 >
-                  <X size={18} />
+                  {accountSaving ? (
+                    <RefreshCw
+                      size={15}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <UserPlus
+                      size={15}
+                    />
+                  )}
+
+                  {accountSaving
+                    ? t.saving
+                    : t.saveAccount}
                 </button>
               </div>
-
-              <div className="modal-body">
-                <p
-                  style={{
-                    marginTop: 0,
-                    color: "#64748b",
-                    fontSize: 13,
-                  }}
-                >
-                  {
-                    t.accountModalText
-                  }
-                </p>
-
-                <div className="account-grid">
-                  <div>
-                    <label className="basicLabel">
-                      {t.accountCode}
-                    </label>
-
-                    <input
-                      className="basicInput"
-                      value={
-                        accountForm.account_code
-                      }
-                      placeholder={
-                        t.autoCode
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            account_code:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="basicLabel">
-                      {t.accountGroup}
-                    </label>
-
-                    <select
-                      className="basicSelect"
-                      value={
-                        accountForm.group_id
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            group_id:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    >
-                      <option value="">
-                        {t.optional}
-                      </option>
-
-                      {lookups.groups.map(
-                        (group) => (
-                          <option
-                            key={
-                              group.id
-                            }
-                            value={
-                              group.id
-                            }
-                          >
-                            {
-                              group.group_name
-                            }
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </div>
-
-                  <div className="full">
-                    <label className="basicLabel">
-                      {t.accountTitle} *
-                    </label>
-
-                    <input
-                      autoFocus
-                      className="basicInput"
-                      value={
-                        accountForm.account_title
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            account_title:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div className="full">
-                    <label className="basicLabel">
-                      {
-                        t.openingBalance
-                      }
-                    </label>
-
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="basicInput"
-                      value={
-                        accountForm.opening_balance
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            opening_balance:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="modalFooterBasic">
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={
-                      accountSaving
-                    }
-                    onClick={() => {
-                      setShowAccountModal(
-                        false
-                      );
-
-                      setAccountTargetRow(
-                        null
-                      );
-                    }}
-                  >
-                    {t.cancel}
-                  </button>
-
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={
-                      accountSaving
-                    }
-                    onClick={
-                      saveAccount
-                    }
-                  >
-                    {accountSaving ? (
-                      <RefreshCw
-                        size={15}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <UserPlus
-                        size={15}
-                      />
-                    )}
-
-                    {accountSaving
-                      ? t.saving
-                      : t.saveAccount}
-                  </button>
-                </div>
-              </div>
             </div>
-          </div>,
-
-          document.body
-        )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
