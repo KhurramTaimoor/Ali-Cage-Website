@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import {
@@ -14,13 +20,14 @@ import {
   X,
 } from "lucide-react";
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+const API_ROOT = (
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000"
 )
   .replace(/\/$/, "")
   .replace(/\/api$/i, "");
 
-const API = `${API_ORIGIN}/api/cash-book`;
+const API_BASE = `${API_ROOT}/api/cash-book`;
 
 const ACCOUNT_TYPES = [
   {
@@ -45,115 +52,130 @@ const ACCOUNT_TYPES = [
   },
 ];
 
-const TEXT = {
+const LANG = {
   en: {
     title: "Cash Book",
-    subtitle: "Create and manage cash receive and payment vouchers",
-    language: "اردو",
+    subtitle:
+      "Create and manage cash receive and payment vouchers",
+    toggleLang: "اردو",
     addAccount: "Add Account",
-    addVoucher: "Add New Voucher",
-    saveVoucher: "Save Voucher",
-    updateVoucher: "Update Voucher",
-    invoiceNo: "Invoice No",
+    newVoucher: "New Voucher",
+    viewSummary: "View Summary",
+    hideSummary: "Hide Summary",
+    refresh: "Refresh",
+    searchPlaceholder:
+      "Search voucher no, account, description or date...",
+    totalVouchers: "Total Vouchers",
+    totalReceive: "Total Receive",
+    totalPaid: "Total Paid",
+    netBalance: "Net Balance",
+    voucherNo: "Voucher No",
     date: "Date",
     notes: "Voucher Notes",
-    optional: "Optional",
+    accountEntries: "Account Entries",
+    addRow: "+ Add Row",
     accountType: "Account Type",
     account: "Account",
     description: "Description",
     receive: "Receive",
     paid: "Paid",
-    select: "Select",
-    enter: "Enter",
-    totalVouchers: "Total Vouchers",
-    totalReceive: "Total Receive",
-    totalPaid: "Total Paid",
-    netBalance: "Net Balance",
+    total: "Total",
     grandTotal: "Grand Total",
-    vouchers: "Cash Book Vouchers",
-    search: "Search voucher, account or description...",
+    save: "Save",
+    update: "Update",
+    saving: "Saving...",
+    cancel: "Cancel",
     edit: "Edit",
     print: "Print",
     delete: "Delete",
-    cancel: "Cancel",
+    actions: "Actions",
     loading: "Loading...",
     noRecords: "No vouchers found.",
-    accountModalTitle: "Add General Ledger Account",
+    select: "Select",
+    enter: "Enter",
+    optional: "Optional",
+    createMode: "Create Mode",
+    editMode: "Edit Mode",
+    deleteConfirm: "Delete this voucher?",
+    accountModalTitle:
+      "Add General Ledger Account",
     accountModalText:
-      "Create a new account. It will appear in the dropdown immediately after saving.",
+      "Create a new account. It will appear in the account dropdown immediately after saving.",
     accountCode: "Account Code",
     accountTitle: "Account Title",
-    group: "Account Group",
+    accountGroup: "Account Group",
     openingBalance: "Opening Balance",
-    autoCode: "Leave blank for automatic code",
+    autoCode:
+      "Leave blank for automatic code",
     saveAccount: "Save Account",
   },
 
   ur: {
     title: "کیش بک",
-    subtitle: "کیش وصولی اور ادائیگی کے واؤچرز بنائیں اور منظم کریں",
-    language: "English",
+    subtitle:
+      "کیش وصولی اور ادائیگی کے واؤچرز بنائیں اور منظم کریں",
+    toggleLang: "English",
     addAccount: "اکاؤنٹ شامل کریں",
-    addVoucher: "نیا واؤچر شامل کریں",
-    saveVoucher: "واؤچر محفوظ کریں",
-    updateVoucher: "واؤچر اپڈیٹ کریں",
-    invoiceNo: "انوائس نمبر",
+    newVoucher: "نیا واؤچر",
+    viewSummary: "سمری دیکھیں",
+    hideSummary: "سمری بند کریں",
+    refresh: "ری فریش",
+    searchPlaceholder:
+      "واؤچر نمبر، اکاؤنٹ، تفصیل یا تاریخ تلاش کریں...",
+    totalVouchers: "کل واؤچرز",
+    totalReceive: "کل وصولی",
+    totalPaid: "کل ادائیگی",
+    netBalance: "نیٹ بیلنس",
+    voucherNo: "واؤچر نمبر",
     date: "تاریخ",
     notes: "واؤچر نوٹس",
-    optional: "اختیاری",
+    accountEntries: "اکاؤنٹ اندراجات",
+    addRow: "+ لائن شامل کریں",
     accountType: "اکاؤنٹ کی قسم",
     account: "اکاؤنٹ",
     description: "تفصیل",
     receive: "وصولی",
     paid: "ادائیگی",
-    select: "منتخب کریں",
-    enter: "درج کریں",
-    totalVouchers: "کل واؤچرز",
-    totalReceive: "کل وصولی",
-    totalPaid: "کل ادائیگی",
-    netBalance: "نیٹ بیلنس",
+    total: "ٹوٹل",
     grandTotal: "مجموعی رقم",
-    vouchers: "کیش بک واؤچرز",
-    search: "واؤچر، اکاؤنٹ یا تفصیل تلاش کریں...",
+    save: "محفوظ کریں",
+    update: "اپڈیٹ",
+    saving: "محفوظ ہو رہا ہے...",
+    cancel: "منسوخ",
     edit: "ترمیم",
     print: "پرنٹ",
     delete: "حذف",
-    cancel: "منسوخ",
+    actions: "اقدامات",
     loading: "لوڈ ہو رہا ہے...",
     noRecords: "کوئی واؤچر نہیں ملا۔",
-    accountModalTitle: "جنرل لیجر اکاؤنٹ شامل کریں",
+    select: "منتخب کریں",
+    enter: "درج کریں",
+    optional: "اختیاری",
+    createMode: "نیا موڈ",
+    editMode: "ترمیم موڈ",
+    deleteConfirm:
+      "کیا یہ واؤچر حذف کرنا ہے؟",
+    accountModalTitle:
+      "جنرل لیجر اکاؤنٹ شامل کریں",
     accountModalText:
       "نیا اکاؤنٹ بنائیں۔ محفوظ ہونے کے بعد یہ فوراً ڈراپ ڈاؤن میں نظر آئے گا۔",
     accountCode: "اکاؤنٹ کوڈ",
     accountTitle: "اکاؤنٹ ٹائٹل",
-    group: "اکاؤنٹ گروپ",
+    accountGroup: "اکاؤنٹ گروپ",
     openingBalance: "ابتدائی بیلنس",
-    autoCode: "خالی چھوڑیں تو کوڈ خود بنے گا",
+    autoCode:
+      "خالی چھوڑیں تو کوڈ خود بنے گا",
     saveAccount: "اکاؤنٹ محفوظ کریں",
   },
 };
 
-const today = () => {
-  const date = new Date();
+const today = () =>
+  new Date().toISOString().slice(0, 10);
 
-  const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
-const makeRow = () => ({
-  localId: `${Date.now()}-${Math.random()
+const emptyRow = () => ({
+  local_id: `${Date.now()}-${Math.random()
     .toString(16)
     .slice(2)}`,
-
   account_type: "customer",
   account_id: "",
   description: "",
@@ -161,13 +183,19 @@ const makeRow = () => ({
   paid: "",
 });
 
-const makeRows = (count = 6) =>
+const defaultRows = (count = 6) =>
   Array.from(
     { length: count },
-    () => makeRow()
+    () => emptyRow()
   );
 
-const num = (value) => {
+const emptyVoucher = () => ({
+  voucher_no: "",
+  voucher_date: today(),
+  notes: "",
+});
+
+const toNum = (value) => {
   const number = Number(value);
 
   return Number.isFinite(number)
@@ -176,7 +204,7 @@ const num = (value) => {
 };
 
 const money = (value) =>
-  num(value).toLocaleString(
+  toNum(value).toLocaleString(
     "en-PK",
     {
       minimumFractionDigits: 0,
@@ -184,7 +212,7 @@ const money = (value) =>
     }
   );
 
-const asList = (
+const getList = (
   payload,
   key
 ) => {
@@ -192,84 +220,84 @@ const asList = (
     return payload;
   }
 
-  if (
-    Array.isArray(payload?.data)
-  ) {
+  if (Array.isArray(payload?.data)) {
     return payload.data;
   }
 
-  if (
-    Array.isArray(payload?.[key])
-  ) {
+  if (Array.isArray(payload?.[key])) {
     return payload[key];
+  }
+
+  if (Array.isArray(payload?.rows)) {
+    return payload.rows;
+  }
+
+  if (Array.isArray(payload?.result)) {
+    return payload.result;
   }
 
   return [];
 };
 
-const errorText = (error) =>
+const getError = (error) =>
   error?.response?.data?.message ||
   error?.response?.data?.error ||
   error?.message ||
   "Something went wrong.";
 
-const displayName = (row) =>
+const getAccountName = (row) =>
   row?.display_name ||
   row?.account_title ||
   row?.customer_name_en ||
+  row?.customer_name ||
   row?.supplier_name ||
   row?.full_name ||
   row?.name ||
   "-";
 
-const Button = ({
-  className = "",
-  children,
-  ...props
-}) => (
-  <button
-    {...props}
-    className={`
-      inline-flex
-      min-h-10
-      items-center
-      justify-center
-      gap-2
-      rounded-xl
-      px-4
-      py-2
-      text-sm
-      font-bold
-      transition
-      disabled:cursor-not-allowed
-      disabled:opacity-60
-      ${className}
-    `}
-  >
-    {children}
-  </button>
-);
+const formatDate = (value) => {
+  const raw = String(value || "").slice(
+    0,
+    10
+  );
+
+  const match = raw.match(
+    /^(\d{4})-(\d{2})-(\d{2})$/
+  );
+
+  return match
+    ? `${match[3]}/${match[2]}/${match[1]}`
+    : raw || "-";
+};
 
 export default function CashBookPage() {
   const [lang, setLang] =
     useState("en");
 
-  const text = TEXT[lang];
+  const t = LANG[lang];
 
   const isUrdu =
     lang === "ur";
+
+  const dir =
+    isUrdu ? "rtl" : "ltr";
 
   const toastTimer =
     useRef(null);
 
   const [
-    voucherModal,
-    setVoucherModal,
+    showSummary,
+    setShowSummary,
   ] = useState(false);
 
   const [
-    accountModal,
-    setAccountModal,
+    showVoucherModal,
+    setShowVoucherModal,
+  ] = useState(false);
+
+  const [
+    showAccountModal,
+    setShowAccountModal,
   ] = useState(false);
 
   const [
@@ -277,8 +305,41 @@ export default function CashBookPage() {
     setEditingId,
   ] = useState(null);
 
+  const [
+    accountTargetRow,
+    setAccountTargetRow,
+  ] = useState(null);
+
+  const [voucher, setVoucher] =
+    useState(emptyVoucher());
+
+  const [rows, setRows] =
+    useState(defaultRows());
+
+  const [records, setRecords] =
+    useState([]);
+
   const [search, setSearch] =
     useState("");
+
+  const [lookups, setLookups] =
+    useState({
+      customer: [],
+      general_ledger: [],
+      supplier: [],
+      employee: [],
+      groups: [],
+    });
+
+  const [
+    accountForm,
+    setAccountForm,
+  ] = useState({
+    account_code: "",
+    account_title: "",
+    group_id: "",
+    opening_balance: "",
+  });
 
   const [loading, setLoading] =
     useState(true);
@@ -291,70 +352,33 @@ export default function CashBookPage() {
     setAccountSaving,
   ] = useState(false);
 
-  const [toast, setToast] =
+  const [message, setMessage] =
     useState({
       type: "",
-      message: "",
+      text: "",
     });
 
-  const [voucher, setVoucher] =
-    useState({
-      voucher_no: "",
-      voucher_date: today(),
-      notes: "",
-    });
+  const toast = useCallback(
+    (type, text) => {
+      setMessage({
+        type,
+        text,
+      });
 
-  const [rows, setRows] =
-    useState(makeRows());
+      window.clearTimeout(
+        toastTimer.current
+      );
 
-  const [records, setRecords] =
-    useState([]);
-
-  const [lookups, setLookups] =
-    useState({
-      customer: [],
-      general_ledger: [],
-      supplier: [],
-      employee: [],
-      groups: [],
-    });
-
-  const [
-    accountTargetRow,
-    setAccountTargetRow,
-  ] = useState(null);
-
-  const [
-    accountForm,
-    setAccountForm,
-  ] = useState({
-    account_code: "",
-    account_title: "",
-    group_id: "",
-    opening_balance: "",
-  });
-
-  const notify = (
-    type,
-    message
-  ) => {
-    setToast({
-      type,
-      message,
-    });
-
-    window.clearTimeout(
-      toastTimer.current
-    );
-
-    toastTimer.current =
-      window.setTimeout(() => {
-        setToast({
-          type: "",
-          message: "",
-        });
-      }, 3500);
-  };
+      toastTimer.current =
+        window.setTimeout(() => {
+          setMessage({
+            type: "",
+            text: "",
+          });
+        }, 2800);
+    },
+    []
+  );
 
   useEffect(
     () => () => {
@@ -367,8 +391,8 @@ export default function CashBookPage() {
 
   useEffect(() => {
     if (
-      !voucherModal &&
-      !accountModal
+      !showVoucherModal &&
+      !showAccountModal
     ) {
       return undefined;
     }
@@ -384,57 +408,15 @@ export default function CashBookPage() {
         oldOverflow;
     };
   }, [
-    voucherModal,
-    accountModal,
-  ]);
-
-  useEffect(() => {
-    const onEscape = (event) => {
-      if (
-        event.key !== "Escape"
-      ) {
-        return;
-      }
-
-      if (
-        accountModal &&
-        !accountSaving
-      ) {
-        setAccountModal(false);
-        setAccountTargetRow(null);
-        return;
-      }
-
-      if (
-        voucherModal &&
-        !saving
-      ) {
-        setVoucherModal(false);
-      }
-    };
-
-    window.addEventListener(
-      "keydown",
-      onEscape
-    );
-
-    return () =>
-      window.removeEventListener(
-        "keydown",
-        onEscape
-      );
-  }, [
-    accountModal,
-    accountSaving,
-    voucherModal,
-    saving,
+    showVoucherModal,
+    showAccountModal,
   ]);
 
   const fetchLookups =
-    async () => {
+    useCallback(async () => {
       const response =
         await axios.get(
-          `${API}/lookups`
+          `${API_BASE}/lookups`
         );
 
       const data =
@@ -443,58 +425,57 @@ export default function CashBookPage() {
         {};
 
       setLookups({
-        customer: asList(
+        customer: getList(
           data.customers,
           "customers"
         ),
 
-        general_ledger: asList(
+        general_ledger: getList(
           data.general_ledgers,
           "general_ledgers"
         ),
 
-        supplier: asList(
+        supplier: getList(
           data.suppliers,
           "suppliers"
         ),
 
-        employee: asList(
+        employee: getList(
           data.employees,
           "employees"
         ),
 
-        groups: asList(
+        groups: getList(
           data.groups,
           "groups"
         ),
       });
-    };
+    }, []);
 
   const fetchRecords =
-    async () => {
+    useCallback(async () => {
       const response =
         await axios.get(
-          `${API}/vouchers`
+          `${API_BASE}/vouchers`
         );
 
       setRecords(
-        asList(
+        getList(
           response.data,
           "vouchers"
         )
       );
-    };
+    }, []);
 
   const fetchNextNumber =
-    async () => {
+    useCallback(async () => {
       const response =
         await axios.get(
-          `${API}/next-number`
+          `${API_BASE}/next-number`
         );
 
-      const nextNo =
-        response.data
-          ?.voucher_no ||
+      const number =
+        response.data?.voucher_no ||
         response.data?.data
           ?.voucher_no ||
         "";
@@ -502,13 +483,13 @@ export default function CashBookPage() {
       setVoucher(
         (current) => ({
           ...current,
-          voucher_no: nextNo,
+          voucher_no: number,
         })
       );
-    };
+    }, []);
 
-  useEffect(() => {
-    const load = async () => {
+  const loadPage =
+    useCallback(async () => {
       setLoading(true);
 
       try {
@@ -517,48 +498,217 @@ export default function CashBookPage() {
           fetchRecords(),
         ]);
       } catch (error) {
-        notify(
+        toast(
           "error",
-          errorText(error)
+          getError(error)
         );
       } finally {
         setLoading(false);
       }
-    };
+    }, [
+      fetchLookups,
+      fetchRecords,
+      toast,
+    ]);
 
-    load();
-  }, []);
+  useEffect(() => {
+    loadPage();
+  }, [loadPage]);
 
   const optionsFor = (type) =>
     lookups[type] || [];
 
+  const totals = useMemo(
+    () => ({
+      receive: rows.reduce(
+        (sum, row) =>
+          sum +
+          toNum(row.receive),
+        0
+      ),
+
+      paid: rows.reduce(
+        (sum, row) =>
+          sum +
+          toNum(row.paid),
+        0
+      ),
+    }),
+    [rows]
+  );
+
+  const summary = useMemo(() => {
+    const receive =
+      records.reduce(
+        (sum, row) =>
+          sum +
+          toNum(
+            row.total_receive
+          ),
+        0
+      );
+
+    const paid =
+      records.reduce(
+        (sum, row) =>
+          sum +
+          toNum(
+            row.total_paid
+          ),
+        0
+      );
+
+    return {
+      totalVouchers:
+        records.length,
+
+      totalReceive:
+        receive,
+
+      totalPaid:
+        paid,
+
+      netBalance:
+        receive - paid,
+    };
+  }, [records]);
+
+  const filteredRecords =
+    useMemo(() => {
+      const query =
+        search
+          .trim()
+          .toLowerCase();
+
+      if (!query) {
+        return records;
+      }
+
+      return records.filter(
+        (record) =>
+          [
+            record.voucher_no,
+            record.voucher_date,
+            record.notes,
+            record.account_names,
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(query)
+      );
+    }, [records, search]);
+
   const resetVoucher = () => {
     setEditingId(null);
 
-    setRows(makeRows());
+    setVoucher(
+      emptyVoucher()
+    );
 
-    setVoucher({
-      voucher_no: "",
-      voucher_date: today(),
-      notes: "",
-    });
+    setRows(
+      defaultRows()
+    );
   };
 
-  const openNewVoucher =
-    async () => {
-      resetVoucher();
+  const openAdd = async () => {
+    resetVoucher();
 
-      setVoucherModal(true);
+    setShowVoucherModal(true);
 
-      try {
-        await fetchNextNumber();
-      } catch (error) {
-        notify(
-          "error",
-          errorText(error)
+    try {
+      await fetchNextNumber();
+    } catch (error) {
+      toast(
+        "error",
+        getError(error)
+      );
+    }
+  };
+
+  const openEdit = async (id) => {
+    try {
+      const response =
+        await axios.get(
+          `${API_BASE}/vouchers/${id}`
         );
-      }
-    };
+
+      const record =
+        response.data?.data ||
+        response.data?.voucher ||
+        response.data;
+
+      setEditingId(
+        record.id
+      );
+
+      setVoucher({
+        voucher_no:
+          record.voucher_no ||
+          "",
+
+        voucher_date:
+          String(
+            record.voucher_date ||
+              ""
+          ).slice(0, 10) ||
+          today(),
+
+        notes:
+          record.notes || "",
+      });
+
+      const loadedRows =
+        (
+          record.items || []
+        ).map((item) => ({
+          local_id: `${item.id}-${Math.random()
+            .toString(16)
+            .slice(2)}`,
+
+          account_type:
+            item.account_type ||
+            "customer",
+
+          account_id:
+            String(
+              item.account_id ||
+                ""
+            ),
+
+          description:
+            item.description ||
+            "",
+
+          receive:
+            toNum(
+              item.receive
+            ) > 0
+              ? String(
+                  item.receive
+                )
+              : "",
+
+          paid:
+            toNum(item.paid) >
+            0
+              ? String(item.paid)
+              : "",
+        }));
+
+      setRows(
+        loadedRows.length
+          ? loadedRows
+          : defaultRows()
+      );
+
+      setShowVoucherModal(true);
+    } catch (error) {
+      toast(
+        "error",
+        getError(error)
+      );
+    }
+  };
 
   const updateRow = (
     localId,
@@ -568,21 +718,23 @@ export default function CashBookPage() {
     setRows((current) =>
       current.map((row) => {
         if (
-          row.localId !== localId
+          row.local_id !==
+          localId
         ) {
           return row;
         }
 
-        const updated = {
+        const next = {
           ...row,
           [field]: value,
         };
 
         if (
-          field === "account_type"
+          field ===
+          "account_type"
         ) {
-          updated.account_id = "";
-          updated.description = "";
+          next.account_id = "";
+          next.description = "";
         }
 
         if (
@@ -601,31 +753,56 @@ export default function CashBookPage() {
             selected &&
             !row.description.trim()
           ) {
-            updated.description =
-              displayName(selected);
+            next.description =
+              getAccountName(
+                selected
+              );
           }
         }
 
         if (
           field === "receive" &&
-          num(value) > 0
+          toNum(value) > 0
         ) {
-          updated.paid = "";
+          next.paid = "";
         }
 
         if (
           field === "paid" &&
-          num(value) > 0
+          toNum(value) > 0
         ) {
-          updated.receive = "";
+          next.receive = "";
         }
 
-        return updated;
+        return next;
       })
     );
   };
 
-  const cleanItems = () =>
+  const addRow = () =>
+    setRows((current) => [
+      ...current,
+      emptyRow(),
+    ]);
+
+  const removeRow = (
+    localId
+  ) => {
+    setRows((current) => {
+      const next =
+        current.filter(
+          (row) =>
+            row.local_id !==
+            localId
+        );
+
+      return next.length
+        ? next
+        : [emptyRow()];
+    });
+  };
+
+  const prepareItems = () =>
     rows
       .map((row) => ({
         account_type:
@@ -638,10 +815,10 @@ export default function CashBookPage() {
           row.description.trim(),
 
         receive:
-          num(row.receive),
+          toNum(row.receive),
 
         paid:
-          num(row.paid),
+          toNum(row.paid),
       }))
       .filter(
         (row) =>
@@ -651,62 +828,11 @@ export default function CashBookPage() {
           row.paid > 0
       );
 
-  const totals = useMemo(
-    () => ({
-      receive: rows.reduce(
-        (sum, row) =>
-          sum +
-          num(row.receive),
-        0
-      ),
-
-      paid: rows.reduce(
-        (sum, row) =>
-          sum +
-          num(row.paid),
-        0
-      ),
-    }),
-    [rows]
-  );
-
-  const summary = useMemo(
-    () => {
-      const receive =
-        records.reduce(
-          (sum, record) =>
-            sum +
-            num(
-              record.total_receive
-            ),
-          0
-        );
-
-      const paid =
-        records.reduce(
-          (sum, record) =>
-            sum +
-            num(
-              record.total_paid
-            ),
-          0
-        );
-
-      return {
-        count: records.length,
-        receive,
-        paid,
-        net: receive - paid,
-      };
-    },
-    [records]
-  );
-
-  const validate = () => {
+  const validateVoucher = () => {
     if (
       !voucher.voucher_no.trim()
     ) {
-      return "Invoice number is required.";
+      return "Voucher number is required.";
     }
 
     if (
@@ -716,10 +842,10 @@ export default function CashBookPage() {
     }
 
     const items =
-      cleanItems();
+      prepareItems();
 
     if (!items.length) {
-      return "At least one valid account row is required.";
+      return "Add at least one valid account row.";
     }
 
     for (
@@ -762,10 +888,10 @@ export default function CashBookPage() {
   const saveVoucher =
     async () => {
       const validation =
-        validate();
+        validateVoucher();
 
       if (validation) {
-        notify(
+        toast(
           "error",
           validation
         );
@@ -778,155 +904,71 @@ export default function CashBookPage() {
       try {
         const payload = {
           ...voucher,
-          items: cleanItems(),
+          items: prepareItems(),
         };
 
         if (editingId) {
           await axios.put(
-            `${API}/vouchers/${editingId}`,
+            `${API_BASE}/vouchers/${editingId}`,
             payload
           );
 
-          notify(
+          toast(
             "success",
-            "Cash Book voucher updated successfully."
+            "Voucher updated successfully."
           );
         } else {
           await axios.post(
-            `${API}/vouchers`,
+            `${API_BASE}/vouchers`,
             payload
           );
 
-          notify(
+          toast(
             "success",
-            "Cash Book voucher saved successfully."
+            "Voucher saved successfully."
           );
         }
 
-        setVoucherModal(false);
+        setShowVoucherModal(false);
 
         resetVoucher();
 
         await fetchRecords();
       } catch (error) {
-        notify(
+        toast(
           "error",
-          errorText(error)
+          getError(error)
         );
       } finally {
         setSaving(false);
       }
     };
 
-  const editVoucher =
-    async (id) => {
-      try {
-        const response =
-          await axios.get(
-            `${API}/vouchers/${id}`
-          );
-
-        const record =
-          response.data?.data ||
-          response.data?.voucher ||
-          response.data;
-
-        setEditingId(
-          record.id
-        );
-
-        setVoucher({
-          voucher_no:
-            record.voucher_no ||
-            "",
-
-          voucher_date:
-            String(
-              record.voucher_date ||
-                ""
-            ).slice(0, 10) ||
-            today(),
-
-          notes:
-            record.notes || "",
-        });
-
-        const loaded =
-          (
-            record.items || []
-          ).map((item) => ({
-            localId: `${item.id}-${Math.random()
-              .toString(16)
-              .slice(2)}`,
-
-            account_type:
-              item.account_type ||
-              "customer",
-
-            account_id:
-              String(
-                item.account_id ||
-                  ""
-              ),
-
-            description:
-              item.description || "",
-
-            receive:
-              num(item.receive) >
-              0
-                ? String(
-                    item.receive
-                  )
-                : "",
-
-            paid:
-              num(item.paid) > 0
-                ? String(item.paid)
-                : "",
-          }));
-
-        setRows(
-          loaded.length
-            ? loaded
-            : makeRows()
-        );
-
-        setVoucherModal(true);
-      } catch (error) {
-        notify(
-          "error",
-          errorText(error)
-        );
-      }
-    };
-
   const deleteVoucher =
     async (id) => {
-      const confirmed =
-        window.confirm(
-          "Are you sure you want to delete this voucher?"
-        );
-
-      if (!confirmed) {
+      if (
+        !window.confirm(
+          t.deleteConfirm
+        )
+      ) {
         return;
       }
 
       try {
         await axios.delete(
-          `${API}/vouchers/${id}`
+          `${API_BASE}/vouchers/${id}`
         );
 
-        await fetchRecords();
-
-        notify(
+        toast(
           "success",
           "Voucher deleted successfully."
         );
+
+        await fetchRecords();
       } catch (error) {
-        notify(
+        toast(
           "error",
-          errorText(error)
+          getError(error)
         );
       }
     };
@@ -945,7 +987,7 @@ export default function CashBookPage() {
       opening_balance: "",
     });
 
-    setAccountModal(true);
+    setShowAccountModal(true);
   };
 
   const saveAccount =
@@ -953,7 +995,7 @@ export default function CashBookPage() {
       if (
         !accountForm.account_title.trim()
       ) {
-        notify(
+        toast(
           "error",
           "Account title is required."
         );
@@ -966,7 +1008,7 @@ export default function CashBookPage() {
       try {
         const response =
           await axios.post(
-            `${API}/accounts`,
+            `${API_BASE}/accounts`,
             accountForm
           );
 
@@ -983,8 +1025,8 @@ export default function CashBookPage() {
               account,
 
               ...current.general_ledger.filter(
-                (item) =>
-                  String(item.id) !==
+                (row) =>
+                  String(row.id) !==
                   String(
                     account.id
                   )
@@ -993,12 +1035,10 @@ export default function CashBookPage() {
           })
         );
 
-        if (
-          accountTargetRow
-        ) {
+        if (accountTargetRow) {
           setRows((current) =>
             current.map((row) =>
-              row.localId ===
+              row.local_id ===
               accountTargetRow
                 ? {
                     ...row,
@@ -1013,7 +1053,7 @@ export default function CashBookPage() {
 
                     description:
                       row.description ||
-                      displayName(
+                      getAccountName(
                         account
                       ),
                   }
@@ -1022,18 +1062,18 @@ export default function CashBookPage() {
           );
         }
 
-        setAccountModal(false);
+        setShowAccountModal(false);
 
         setAccountTargetRow(null);
 
-        notify(
+        toast(
           "success",
           "Account added and dropdown refreshed."
         );
       } catch (error) {
-        notify(
+        toast(
           "error",
-          errorText(error)
+          getError(error)
         );
       } finally {
         setAccountSaving(false);
@@ -1045,7 +1085,7 @@ export default function CashBookPage() {
       try {
         const response =
           await axios.get(
-            `${API}/vouchers/${id}`
+            `${API_BASE}/vouchers/${id}`
           );
 
         const record =
@@ -1053,7 +1093,7 @@ export default function CashBookPage() {
           response.data?.voucher ||
           response.data;
 
-        const body =
+        const rowsHtml =
           (
             record.items || []
           )
@@ -1083,7 +1123,7 @@ export default function CashBookPage() {
                   }</td>
 
                   <td>${
-                    num(
+                    toNum(
                       item.receive
                     ) > 0
                       ? money(
@@ -1093,8 +1133,9 @@ export default function CashBookPage() {
                   }</td>
 
                   <td>${
-                    num(item.paid) >
-                    0
+                    toNum(
+                      item.paid
+                    ) > 0
                       ? money(
                           item.paid
                         )
@@ -1129,7 +1170,7 @@ export default function CashBookPage() {
 
               <style>
                 body {
-                  font-family: Arial;
+                  font-family: Arial, sans-serif;
                   padding: 28px;
                   color: #172033;
                 }
@@ -1151,7 +1192,7 @@ export default function CashBookPage() {
 
                 th,
                 td {
-                  border: 1px solid #ddd;
+                  border: 1px solid #d5dae3;
                   padding: 10px;
                   text-align: left;
                 }
@@ -1178,16 +1219,15 @@ export default function CashBookPage() {
 
               <div class="meta">
                 <strong>
-                  Invoice No:
+                  Voucher No:
                   ${record.voucher_no}
                 </strong>
 
                 <strong>
                   Date:
-                  ${String(
-                    record.voucher_date ||
-                      ""
-                  ).slice(0, 10)}
+                  ${formatDate(
+                    record.voucher_date
+                  )}
                 </strong>
               </div>
 
@@ -1195,7 +1235,9 @@ export default function CashBookPage() {
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Account Type</th>
+                    <th>
+                      Account Type
+                    </th>
                     <th>Account</th>
                     <th>Description</th>
                     <th>Receive</th>
@@ -1204,7 +1246,7 @@ export default function CashBookPage() {
                 </thead>
 
                 <tbody>
-                  ${body}
+                  ${rowsHtml}
                 </tbody>
               </table>
 
@@ -1223,345 +1265,978 @@ export default function CashBookPage() {
                   )}
                 </span>
               </div>
+
+              <script>
+                window.onload = () =>
+                  setTimeout(
+                    () => window.print(),
+                    300
+                  );
+              </script>
             </body>
           </html>
         `);
 
         popup.document.close();
-        popup.focus();
-        popup.print();
       } catch (error) {
-        notify(
+        toast(
           "error",
-          errorText(error)
+          getError(error)
         );
       }
     };
 
-  const filteredRecords =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
-
-      if (!query) {
-        return records;
-      }
-
-      return records.filter(
-        (record) =>
-          [
-            record.voucher_no,
-            record.voucher_date,
-            record.notes,
-            record.account_names,
-          ].some((value) =>
-            String(value || "")
-              .toLowerCase()
-              .includes(query)
-          )
-      );
-    }, [
-      records,
-      search,
-    ]);
-
   return (
     <div
-      className="min-h-screen text-slate-800"
-      dir={
-        isUrdu
-          ? "rtl"
-          : "ltr"
-      }
+      dir={dir}
+      className="invoice-page"
     >
-      {toast.message && (
-        <div
-          className={`
-            fixed
-            left-1/2
-            top-5
-            z-[100000]
-            -translate-x-1/2
-            rounded-xl
-            px-5
-            py-3
-            text-sm
-            font-bold
-            text-white
-            shadow-2xl
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .invoice-page {
+          min-height: 100vh;
+          background:
+            linear-gradient(
+              135deg,
+              #f8fafc,
+              #eef2ff
+            );
+          padding: 18px;
+          color: #0f172a;
+          font-family:
             ${
-              toast.type ===
-              "success"
-                ? "bg-emerald-600"
-                : "bg-red-600"
-            }
-          `}
+              isUrdu
+                ? "'Noto Nastaliq Urdu', serif"
+                : "Arial, sans-serif"
+            };
+          overflow-x: hidden;
+        }
+
+        @keyframes fadeSlide {
+          from {
+            opacity: 0;
+            transform:
+              translateY(-12px)
+              scale(.985);
+          }
+
+          to {
+            opacity: 1;
+            transform:
+              translateY(0)
+              scale(1);
+          }
+        }
+
+        @keyframes pop {
+          from {
+            opacity: 0;
+            transform:
+              translateY(10px)
+              scale(.97);
+          }
+
+          to {
+            opacity: 1;
+            transform:
+              translateY(0)
+              scale(1);
+          }
+        }
+
+        .page-wrap {
+          max-width: 1220px;
+          width: 100%;
+          margin: 0 auto;
+        }
+
+        .top-card {
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              .94
+            );
+          border:
+            1px solid #dbe3ee;
+          border-radius: 22px;
+          padding: 20px 22px;
+          box-shadow:
+            0 18px 48px
+            rgba(
+              15,
+              23,
+              42,
+              .08
+            );
+          display: flex;
+          justify-content:
+            space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .title {
+          margin: 0;
+          font-size: 30px;
+          font-weight: 950;
+          letter-spacing: -.8px;
+        }
+
+        .subtitle {
+          margin: 5px 0 0;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .btn {
+          border:
+            1px solid #cbd5e1;
+          background: white;
+          color: #0f172a;
+          border-radius: 10px;
+          padding: 8px 12px;
+          font-weight: 800;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: .12s;
+          box-shadow: none;
+        }
+
+        .btn:hover {
+          background: #f8fafc;
+        }
+
+        .btn-primary {
+          background: white;
+          color: #0f172a;
+          border:
+            1px solid #cbd5e1;
+        }
+
+        .btn-soft {
+          background: white;
+          color: #0f172a;
+          border:
+            1px solid #cbd5e1;
+        }
+
+        .btn-active {
+          background: #f8fafc;
+          color: #0f172a;
+          border:
+            1px solid #94a3b8;
+        }
+
+        .summary-grid {
+          animation:
+            fadeSlide
+            .24s ease-out both;
+          display: grid;
+          grid-template-columns:
+            repeat(4, 1fr);
+          gap: 10px;
+          margin: 14px 0;
+        }
+
+        .summary-card {
+          background: white;
+          border:
+            1px solid #dbe3ee;
+          border-radius: 18px;
+          padding: 14px;
+          box-shadow:
+            0 8px 22px
+            rgba(
+              15,
+              23,
+              42,
+              .05
+            );
+          animation:
+            pop
+            .22s ease-out both;
+        }
+
+        .summary-card small {
+          display: block;
+          color: #64748b;
+          font-size: 10.5px;
+          font-weight: 950;
+          text-transform:
+            uppercase;
+          letter-spacing: .5px;
+        }
+
+        .summary-card b {
+          display: block;
+          margin-top: 7px;
+          font-size: 18px;
+          font-weight: 950;
+          font-family:
+            monospace;
+        }
+
+        .toolbar {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+          margin:
+            14px 0 12px;
+        }
+
+        .search {
+          width:
+            min(430px, 100%);
+          height: 40px;
+          border:
+            1px solid #cbd5e1;
+          border-radius: 14px;
+          padding: 0 13px;
+          font-size: 13px;
+          outline: none;
+          background: white;
+        }
+
+        .search:focus {
+          border-color: #4f46e5;
+          box-shadow:
+            0 0 0 3px
+            rgba(
+              79,
+              70,
+              229,
+              .10
+            );
+        }
+
+        .card {
+          background: white;
+          border:
+            1px solid #dbe3ee;
+          border-radius: 18px;
+          box-shadow:
+            0 8px 24px
+            rgba(
+              15,
+              23,
+              42,
+              .05
+            );
+          overflow: hidden;
+        }
+
+        .table-wrap {
+          overflow-x: auto;
+        }
+
+        table.list {
+          width: 100%;
+          border-collapse:
+            collapse;
+          table-layout: fixed;
+          min-width: 850px;
+        }
+
+        table.list th {
+          background: #111827;
+          color:
+            rgba(
+              255,
+              255,
+              255,
+              .78
+            );
+          font-size: 10px;
+          text-transform:
+            uppercase;
+          letter-spacing: .5px;
+          padding: 12px 9px;
+        }
+
+        table.list td {
+          padding: 12px 9px;
+          border-bottom:
+            1px solid #eef2f7;
+          font-size: 13px;
+        }
+
+        table.list tr:hover td {
+          background: #f8fafc;
+        }
+
+        .toast {
+          position: fixed;
+          ${
+            isUrdu
+              ? "left"
+              : "right"
+          }: 18px;
+          bottom: 18px;
+          z-index: 120;
+          color: white;
+          padding: 12px 16px;
+          border-radius: 14px;
+          font-weight: 900;
+          box-shadow:
+            0 20px 50px
+            rgba(
+              15,
+              23,
+              42,
+              .25
+            );
+        }
+
+        .modal-back {
+          position: fixed;
+          inset: 0;
+          background:
+            rgba(
+              15,
+              23,
+              42,
+              .45
+            );
+          backdrop-filter:
+            blur(6px);
+          z-index: 80;
+          display: flex;
+          align-items:
+            flex-start;
+          justify-content:
+            center;
+          padding: 12px;
+          overflow: auto;
+        }
+
+        .invoice-modal {
+          width:
+            min(1060px, 100%);
+          background: #f8fafc;
+          border:
+            1px solid #cbd5e1;
+          border-radius: 18px;
+          box-shadow:
+            0 30px 90px
+            rgba(
+              15,
+              23,
+              42,
+              .28
+            );
+          overflow: hidden;
+          animation:
+            fadeSlide
+            .22s ease-out both;
+        }
+
+        .modal-title {
+          min-height: 54px;
+          background:
+            linear-gradient(
+              135deg,
+              #0f172a,
+              #1e293b
+            );
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content:
+            space-between;
+          padding: 8px 18px;
+          gap: 12px;
+        }
+
+        .modal-title h2 {
+          margin: 0;
+          font-size: 17px;
+          font-weight: 900;
+        }
+
+        .mode-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          border:
+            1px solid
+            rgba(
+              255,
+              255,
+              255,
+              .18
+            );
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              .10
+            );
+          border-radius: 999px;
+          padding: 3px 9px;
+          font-size: 9.5px;
+          font-weight: 900;
+          margin-bottom: 3px;
+        }
+
+        .modal-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .title-btn,
+        .close-btn {
+          border:
+            1px solid
+            rgba(
+              255,
+              255,
+              255,
+              .25
+            );
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              .08
+            );
+          color: white;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+
+        .title-btn {
+          min-height: 32px;
+          padding: 5px 10px;
+          font-size: 11px;
+          font-weight: 850;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .close-btn {
+          width: 34px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+        }
+
+        .modal-body {
+          padding: 14px;
+          background: #f3f6fb;
+          max-height:
+            calc(100vh - 78px);
+          overflow: auto;
+        }
+
+        .formTopLine {
+          display: grid;
+          grid-template-columns:
+            180px
+            180px
+            minmax(260px, 1fr);
+          gap: 10px;
+          align-items: end;
+          margin-bottom: 10px;
+        }
+
+        .basicLabel {
+          font-size: 11px;
+          color: #334155;
+          margin-bottom: 5px;
+          display: block;
+          font-weight: 900;
+          text-transform:
+            uppercase;
+          letter-spacing: .35px;
+        }
+
+        .basicInput,
+        .basicSelect,
+        .productInput {
+          width: 100%;
+          height: 34px;
+          border:
+            1px solid #cbd5e1;
+          background: white;
+          color: #0f172a;
+          padding: 5px 9px;
+          font-size: 13px;
+          border-radius: 10px;
+          outline: none;
+          font-weight: 650;
+        }
+
+        .basicInput:focus,
+        .basicSelect:focus,
+        .productInput:focus {
+          border-color: #4f46e5;
+          box-shadow:
+            0 0 0 3px
+            rgba(
+              79,
+              70,
+              229,
+              .10
+            );
+        }
+
+        .sectionHead {
+          height: 38px;
+          background:
+            linear-gradient(
+              135deg,
+              #eef2ff,
+              #f8fafc
+            );
+          border:
+            1px solid #cbd5e1;
+          border-radius:
+            14px 14px 0 0;
+          display: flex;
+          align-items: center;
+          justify-content:
+            space-between;
+          padding: 0 12px;
+          margin-top: 12px;
+          font-weight: 950;
+          color: #0f172a;
+        }
+
+        .basicBtn {
+          height: 32px;
+          border:
+            1px solid #cbd5e1;
+          background: white;
+          color: #0f172a;
+          padding: 5px 12px;
+          font-size: 12px;
+          cursor: pointer;
+          border-radius: 10px;
+          font-weight: 850;
+          display: inline-flex;
+          align-items: center;
+          justify-content:
+            center;
+          gap: 6px;
+        }
+
+        .basicBtn:hover {
+          background: #f8fafc;
+        }
+
+        .basicBtn:disabled {
+          opacity: .6;
+          cursor: not-allowed;
+        }
+
+        .paymentPanel {
+          border:
+            1px solid #cbd5e1;
+          border-top: none;
+          padding: 8px;
+          background: white;
+          border-radius:
+            0 0 14px 14px;
+          overflow: auto;
+        }
+
+        .basicProductTable {
+          width: 100%;
+          border-collapse:
+            collapse;
+          background: white;
+          min-width: 960px;
+          table-layout: fixed;
+        }
+
+        .basicProductTable th,
+        .basicProductTable td {
+          border:
+            1px solid #dbe3ee;
+          padding: 5px;
+          font-size: 12px;
+        }
+
+        .basicProductTable th {
+          background: #e2e8f0;
+          text-align: center;
+          color: #334155;
+          font-weight: 900;
+        }
+
+        .accountSelectWrap {
+          display: grid;
+          grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+          gap: 5px;
+          align-items: center;
+        }
+
+        .miniAdd {
+          width: 30px;
+          height: 30px;
+          display: grid;
+          place-items: center;
+          border:
+            1px solid #cbd5e1;
+          border-radius: 9px;
+          background: white;
+          color: #0f172a;
+          cursor: pointer;
+        }
+
+        .receiveInput {
+          color: #047857;
+          text-align: right;
+          font-weight: 900;
+        }
+
+        .paidInput {
+          color: #dc2626;
+          text-align: right;
+          font-weight: 900;
+        }
+
+        .rowDelete {
+          width: 24px;
+          height: 26px;
+          border:
+            1px solid #cbd5e1;
+          border-radius: 8px;
+          background: white;
+          color: #0f172a;
+          font-weight: 900;
+          cursor: pointer;
+        }
+
+        .finalTotalBar {
+          margin-top: 0;
+          display: grid;
+          grid-template-columns:
+            repeat(3, 1fr);
+          gap: 10px;
+        }
+
+        .totalBox {
+          border:
+            1px solid #dbe3ee;
+          background: #f8fafc;
+          border-radius: 14px;
+          padding: 10px 12px;
+        }
+
+        .totalBox label {
+          display: block;
+          font-size: 11px;
+          color: #64748b;
+          margin-bottom: 6px;
+          font-weight: 900;
+        }
+
+        .totalBox b {
+          display: block;
+          text-align:
+            ${
+              isUrdu
+                ? "left"
+                : "right"
+            };
+          font-family:
+            monospace;
+          font-size: 18px;
+        }
+
+        .grandBox {
+          background: #eef2ff;
+          border-color: #c7d2fe;
+          color: #3730a3;
+        }
+
+        .modalFooterBasic {
+          padding: 12px 0 0;
+          display: flex;
+          justify-content:
+            flex-end;
+          gap: 8px;
+          position: sticky;
+          bottom: 0;
+          background:
+            linear-gradient(
+              180deg,
+              rgba(
+                248,
+                250,
+                252,
+                0
+              ),
+              #eef2f7 35%
+            );
+        }
+
+        .account-modal {
+          z-index: 100;
+        }
+
+        .account-box {
+          width:
+            min(680px, 100%);
+        }
+
+        .account-grid {
+          display: grid;
+          grid-template-columns:
+            1fr 1fr;
+          gap: 10px;
+        }
+
+        .full {
+          grid-column: 1 / -1;
+        }
+
+        @media (max-width: 900px) {
+          .summary-grid {
+            grid-template-columns:
+              repeat(2, 1fr);
+          }
+
+          .formTopLine {
+            grid-template-columns:
+              1fr 1fr;
+          }
+
+          .finalTotalBar {
+            grid-template-columns:
+              1fr;
+          }
+
+          .title-btn {
+            display: none;
+          }
+        }
+
+        @media (max-width: 650px) {
+          .summary-grid,
+          .formTopLine,
+          .account-grid {
+            grid-template-columns:
+              1fr;
+          }
+
+          .title {
+            font-size: 24px;
+          }
+
+          .full {
+            grid-column: auto;
+          }
+
+          .invoice-page {
+            padding: 10px;
+          }
+
+          .modal-body {
+            padding: 10px;
+          }
+        }
+      `}</style>
+
+      {message.text && (
+        <div
+          className="toast"
+          style={{
+            background:
+              message.type ===
+              "error"
+                ? "#dc2626"
+                : "#16a34a",
+          }}
         >
-          {toast.message}
+          {message.text}
         </div>
       )}
 
-      <section
-        className="
-          mb-4
-          flex
-          flex-col
-          justify-between
-          gap-5
-          rounded-3xl
-          border
-          border-slate-200
-          bg-white
-          p-6
-          shadow-sm
-          lg:flex-row
-          lg:items-start
-        "
-      >
-        <div>
-          <h1
-            className="
-              text-3xl
-              font-black
-              tracking-tight
-              text-slate-950
-            "
-          >
-            {text.title}
-          </h1>
-
-          <p
-            className="
-              mt-1
-              text-sm
-              text-slate-500
-            "
-          >
-            {text.subtitle}
-          </p>
-        </div>
-
-        <div
-          className="
-            flex
-            flex-wrap
-            gap-2
-          "
-        >
-          <Button
-            className="
-              border
-              border-slate-300
-              bg-white
-              text-slate-700
-              hover:bg-slate-50
-            "
-            onClick={() =>
-              setLang((value) =>
-                value === "en"
-                  ? "ur"
-                  : "en"
-              )
-            }
-          >
-            <Languages size={16} />
-
-            {text.language}
-          </Button>
-
-          <Button
-            className="
-              border
-              border-blue-200
-              bg-blue-50
-              text-blue-700
-              hover:bg-blue-100
-            "
-            onClick={() =>
-              openAccountModal()
-            }
-          >
-            <UserPlus size={16} />
-
-            {text.addAccount}
-          </Button>
-
-          <Button
-            className="
-              bg-gradient-to-r
-              from-blue-600
-              to-indigo-600
-              text-white
-              shadow-lg
-              shadow-blue-200
-              hover:-translate-y-0.5
-            "
-            onClick={
-              openNewVoucher
-            }
-          >
-            <Plus size={17} />
-
-            {text.addVoucher}
-          </Button>
-        </div>
-      </section>
-
-      <section
-        className="
-          mb-4
-          grid
-          grid-cols-1
-          gap-3
-          sm:grid-cols-2
-          xl:grid-cols-4
-        "
-      >
-        {[
-          [
-            text.totalVouchers,
-            summary.count,
-            "border-blue-500",
-          ],
-
-          [
-            text.totalReceive,
-            `Rs ${money(
-              summary.receive
-            )}`,
-            "border-emerald-500",
-          ],
-
-          [
-            text.totalPaid,
-            `Rs ${money(
-              summary.paid
-            )}`,
-            "border-red-500",
-          ],
-
-          [
-            text.netBalance,
-            `Rs ${money(
-              summary.net
-            )}`,
-            "border-indigo-500",
-          ],
-        ].map(
-          ([
-            label,
-            value,
-            border,
-          ]) => (
-            <div
-              key={label}
-              className={`
-                rounded-2xl
-                border
-                border-slate-200
-                border-t-4
-                ${border}
-                bg-white
-                p-5
-                shadow-sm
-              `}
-            >
-              <p
-                className="
-                  text-xs
-                  font-black
-                  uppercase
-                  tracking-wide
-                  text-slate-500
-                "
-              >
-                {label}
-              </p>
-
-              <p
-                className="
-                  mt-2
-                  truncate
-                  text-2xl
-                  font-black
-                  text-slate-950
-                "
-              >
-                {value}
-              </p>
-            </div>
-          )
-        )}
-      </section>
-
-      <section
-        className="
-          overflow-hidden
-          rounded-3xl
-          border
-          border-slate-200
-          bg-white
-          shadow-sm
-        "
-      >
-        <div
-          className="
-            flex
-            flex-col
-            justify-between
-            gap-4
-            border-b
-            border-slate-100
-            p-5
-            md:flex-row
-            md:items-center
-          "
-        >
+      <div className="page-wrap">
+        <div className="top-card">
           <div>
-            <h2
-              className="
-                text-xl
-                font-black
-                text-slate-950
-              "
-            >
-              {text.vouchers}
-            </h2>
+            <h1 className="title">
+              {t.title}
+            </h1>
 
-            <p
-              className="
-                text-xs
-                text-slate-500
-              "
-            >
-              {records.length} voucher
-              {records.length === 1
-                ? ""
-                : "s"}
+            <p className="subtitle">
+              {t.subtitle}
             </p>
           </div>
 
           <div
-            className="
-              relative
-              w-full
-              md:max-w-md
-            "
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              className="btn btn-soft"
+              onClick={() =>
+                setLang(
+                  isUrdu
+                    ? "en"
+                    : "ur"
+                )
+              }
+            >
+              <Languages size={15} />
+
+              {t.toggleLang}
+            </button>
+
+            <button
+              className={`btn ${
+                showSummary
+                  ? "btn-active"
+                  : "btn-soft"
+              }`}
+              onClick={() =>
+                setShowSummary(
+                  (value) => !value
+                )
+              }
+            >
+              {showSummary
+                ? t.hideSummary
+                : t.viewSummary}
+            </button>
+
+            <button
+              className="btn btn-soft"
+              onClick={loadPage}
+            >
+              <RefreshCw size={15} />
+
+              {loading
+                ? t.loading
+                : t.refresh}
+            </button>
+
+            <button
+              className="btn btn-soft"
+              onClick={() =>
+                openAccountModal()
+              }
+            >
+              <UserPlus size={15} />
+
+              {t.addAccount}
+            </button>
+
+            <button
+              className="btn btn-primary"
+              onClick={openAdd}
+            >
+              <Plus size={15} />
+
+              {t.newVoucher}
+            </button>
+          </div>
+        </div>
+
+        {showSummary && (
+          <div className="summary-grid">
+            {[
+              [
+                t.totalVouchers,
+                summary.totalVouchers,
+              ],
+              [
+                t.totalReceive,
+                `Rs ${money(
+                  summary.totalReceive
+                )}`,
+              ],
+              [
+                t.totalPaid,
+                `Rs ${money(
+                  summary.totalPaid
+                )}`,
+              ],
+              [
+                t.netBalance,
+                `Rs ${money(
+                  summary.netBalance
+                )}`,
+              ],
+            ].map(
+              (
+                [
+                  label,
+                  value,
+                ],
+                index
+              ) => (
+                <div
+                  className="summary-card"
+                  key={label}
+                  style={{
+                    animationDelay: `${
+                      index * 30
+                    }ms`,
+                  }}
+                >
+                  <small>
+                    {label}
+                  </small>
+
+                  <b>{value}</b>
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        <div className="toolbar">
+          <div
+            style={{
+              position: "relative",
+              width:
+                "min(430px,100%)",
+            }}
           >
             <Search
-              size={17}
-              className="
-                absolute
-                left-3
-                top-1/2
-                -translate-y-1/2
-                text-slate-400
-              "
+              size={16}
+              style={{
+                position:
+                  "absolute",
+                left: 13,
+                top: 12,
+                color: "#94a3b8",
+              }}
             />
 
             <input
+              className="search"
+              style={{
+                paddingLeft: 38,
+                width: "100%",
+              }}
               value={search}
               onChange={(event) =>
                 setSearch(
@@ -1569,105 +2244,111 @@ export default function CashBookPage() {
                 )
               }
               placeholder={
-                text.search
+                t.searchPlaceholder
               }
-              className="
-                h-11
-                w-full
-                rounded-xl
-                border
-                border-slate-300
-                bg-white
-                pl-10
-                pr-3
-                text-sm
-                outline-none
-                transition
-                focus:border-blue-500
-                focus:ring-4
-                focus:ring-blue-100
-              "
             />
           </div>
         </div>
 
-        <div
-          className="
-            overflow-x-auto
-            p-4
-          "
-        >
-          <table
-            className="
-              w-full
-              min-w-[850px]
-              overflow-hidden
-              rounded-2xl
-              text-left
-              text-sm
-            "
-          >
-            <thead
-              className="
-                bg-slate-950
-                text-xs
-                uppercase
-                tracking-wide
-                text-white
-              "
-            >
+        <div className="card table-wrap">
+          <table className="list">
+            <thead>
               <tr>
-                <th className="px-4 py-3">
+                <th
+                  style={{
+                    width: 45,
+                  }}
+                >
                   #
                 </th>
 
-                <th className="px-4 py-3">
-                  {text.invoiceNo}
+                <th
+                  style={{
+                    width: 150,
+                  }}
+                >
+                  {t.voucherNo}
                 </th>
 
-                <th className="px-4 py-3">
-                  {text.date}
+                <th
+                  style={{
+                    width: 145,
+                  }}
+                >
+                  {t.date}
                 </th>
 
-                <th className="px-4 py-3">
-                  {text.receive}
+                <th
+                  style={{
+                    width: 140,
+                    textAlign:
+                      "right",
+                  }}
+                >
+                  {t.totalReceive}
                 </th>
 
-                <th className="px-4 py-3">
-                  {text.paid}
+                <th
+                  style={{
+                    width: 140,
+                    textAlign:
+                      "right",
+                  }}
+                >
+                  {t.totalPaid}
                 </th>
 
-                <th className="px-4 py-3">
+                <th
+                  style={{
+                    width: 80,
+                  }}
+                >
                   Lines
                 </th>
 
-                <th className="px-4 py-3">
-                  Actions
+                <th
+                  style={{
+                    width: 220,
+                  }}
+                >
+                  {t.actions}
                 </th>
               </tr>
             </thead>
 
-            <tbody
-              className="
-                divide-y
-                divide-slate-100
-              "
-            >
+            <tbody>
               {loading ? (
                 <tr>
                   <td
-                    colSpan="7"
-                    className="
-                      px-4
-                      py-12
-                      text-center
-                      text-slate-400
-                    "
+                    colSpan={7}
+                    style={{
+                      textAlign:
+                        "center",
+                      padding: 44,
+                      color:
+                        "#94a3b8",
+                    }}
                   >
-                    {text.loading}
+                    {t.loading}
                   </td>
                 </tr>
-              ) : filteredRecords.length ? (
+              ) : filteredRecords.length ===
+                0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      textAlign:
+                        "center",
+                      padding: 44,
+                      color:
+                        "#94a3b8",
+                    }}
+                  >
+                    {t.noRecords}
+                  </td>
+                </tr>
+              ) : (
                 filteredRecords.map(
                   (
                     record,
@@ -1675,1172 +2356,798 @@ export default function CashBookPage() {
                   ) => (
                     <tr
                       key={record.id}
-                      className="
-                        hover:bg-slate-50
-                      "
+                      onClick={() =>
+                        openEdit(
+                          record.id
+                        )
+                      }
+                      style={{
+                        cursor:
+                          "pointer",
+                      }}
                     >
-                      <td className="px-4 py-3">
+                      <td
+                        style={{
+                          textAlign:
+                            "center",
+                          color:
+                            "#94a3b8",
+                        }}
+                      >
                         {index + 1}
                       </td>
 
                       <td
-                        className="
-                          px-4
-                          py-3
-                          font-bold
-                        "
+                        style={{
+                          fontFamily:
+                            "monospace",
+                          fontWeight:
+                            900,
+                        }}
                       >
                         {
                           record.voucher_no
                         }
                       </td>
 
-                      <td className="px-4 py-3">
-                        {String(
-                          record.voucher_date ||
-                            ""
-                        ).slice(
-                          0,
-                          10
+                      <td
+                        style={{
+                          textAlign:
+                            "center",
+                          fontWeight:
+                            800,
+                        }}
+                      >
+                        {formatDate(
+                          record.voucher_date
                         )}
                       </td>
 
                       <td
-                        className="
-                          px-4
-                          py-3
-                          font-bold
-                          text-emerald-600
-                        "
+                        style={{
+                          textAlign:
+                            "right",
+                          fontFamily:
+                            "monospace",
+                          fontWeight:
+                            900,
+                          color:
+                            "#047857",
+                        }}
                       >
-                        Rs{" "}
                         {money(
                           record.total_receive
                         )}
                       </td>
 
                       <td
-                        className="
-                          px-4
-                          py-3
-                          font-bold
-                          text-red-600
-                        "
+                        style={{
+                          textAlign:
+                            "right",
+                          fontFamily:
+                            "monospace",
+                          fontWeight:
+                            900,
+                          color:
+                            "#dc2626",
+                        }}
                       >
-                        Rs{" "}
                         {money(
                           record.total_paid
                         )}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td
+                        style={{
+                          textAlign:
+                            "center",
+                        }}
+                      >
                         {record.items_count ||
                           0}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td>
                         <div
-                          className="
-                            flex
-                            flex-wrap
-                            gap-2
-                          "
+                          style={{
+                            display:
+                              "flex",
+                            justifyContent:
+                              "center",
+                            gap: 6,
+                            flexWrap:
+                              "wrap",
+                          }}
                         >
-                          <Button
-                            className="
-                              min-h-9
-                              border
-                              border-blue-200
-                              bg-blue-50
-                              px-3
-                              py-1.5
-                              text-xs
-                              text-blue-700
-                            "
-                            onClick={() =>
-                              editVoucher(
+                          <button
+                            className="btn btn-soft"
+                            style={{
+                              padding:
+                                "6px 10px",
+                            }}
+                            onClick={(
+                              event
+                            ) => {
+                              event.stopPropagation();
+
+                              openEdit(
                                 record.id
-                              )
-                            }
+                              );
+                            }}
                           >
                             <Edit3
                               size={14}
                             />
 
-                            {text.edit}
-                          </Button>
+                            {t.edit}
+                          </button>
 
-                          <Button
-                            className="
-                              min-h-9
-                              border
-                              border-slate-300
-                              bg-white
-                              px-3
-                              py-1.5
-                              text-xs
-                              text-slate-700
-                            "
-                            onClick={() =>
+                          <button
+                            className="btn btn-soft"
+                            style={{
+                              padding:
+                                "6px 10px",
+                            }}
+                            onClick={(
+                              event
+                            ) => {
+                              event.stopPropagation();
+
                               printVoucher(
                                 record.id
-                              )
-                            }
+                              );
+                            }}
                           >
                             <Printer
                               size={14}
                             />
 
-                            {text.print}
-                          </Button>
+                            {t.print}
+                          </button>
 
-                          <Button
-                            className="
-                              min-h-9
-                              border
-                              border-red-200
-                              bg-red-50
-                              px-3
-                              py-1.5
-                              text-xs
-                              text-red-700
-                            "
-                            onClick={() =>
+                          <button
+                            className="btn btn-soft"
+                            style={{
+                              padding:
+                                "6px 10px",
+                            }}
+                            onClick={(
+                              event
+                            ) => {
+                              event.stopPropagation();
+
                               deleteVoucher(
                                 record.id
-                              )
-                            }
+                              );
+                            }}
                           >
                             <Trash2
                               size={14}
                             />
 
-                            {text.delete}
-                          </Button>
+                            {t.delete}
+                          </button>
                         </div>
                       </td>
                     </tr>
                   )
                 )
-              ) : (
-                <tr>
-                  <td
-                    colSpan="7"
-                    className="
-                      px-4
-                      py-12
-                      text-center
-                      text-slate-400
-                    "
-                  >
-                    {text.noRecords}
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
 
-      {voucherModal &&
+      {showVoucherModal &&
         createPortal(
           <div
-            className="
-              fixed
-              inset-0
-              z-[99990]
-              flex
-              items-center
-              justify-center
-              overflow-y-auto
-              bg-slate-950/65
-              p-3
-              backdrop-blur-sm
-              sm:p-6
-            "
+            className="modal-back"
             onMouseDown={(event) => {
               if (
                 event.target ===
                   event.currentTarget &&
                 !saving
               ) {
-                setVoucherModal(false);
+                setShowVoucherModal(
+                  false
+                );
               }
             }}
           >
-            <section
-              className="
-                flex
-                max-h-[calc(100vh-24px)]
-                w-full
-                max-w-6xl
-                flex-col
-                overflow-hidden
-                rounded-3xl
-                border
-                border-white/70
-                bg-white
-                shadow-2xl
-              "
+            <div
+              className="invoice-modal"
               onMouseDown={(event) =>
                 event.stopPropagation()
               }
             >
-              <header
-                className="
-                  flex
-                  items-start
-                  justify-between
-                  gap-4
-                  border-b
-                  border-slate-200
-                  bg-gradient-to-r
-                  from-blue-50
-                  to-indigo-50
-                  p-5
-                "
-              >
+              <div className="modal-title">
                 <div>
-                  <span
-                    className="
-                      text-[10px]
-                      font-black
-                      uppercase
-                      tracking-[0.18em]
-                      text-blue-700
-                    "
-                  >
-                    Cash Book
-                  </span>
-
-                  <h2
-                    className="
-                      mt-1
-                      text-2xl
-                      font-black
-                      text-slate-950
-                    "
-                  >
+                  <div className="mode-pill">
                     {editingId
-                      ? text.updateVoucher
-                      : text.addVoucher}
-                  </h2>
+                      ? t.editMode
+                      : t.createMode}
+                  </div>
 
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      text-slate-500
-                    "
-                  >
-                    Select accounts and
-                    enter Receive or Paid
-                    amounts.
-                  </p>
+                  <h2>
+                    {editingId
+                      ? t.update
+                      : t.newVoucher}
+                  </h2>
                 </div>
 
-                <div
-                  className="
-                    flex
-                    items-center
-                    gap-2
-                  "
-                >
-                  <Button
-                    className="
-                      hidden
-                      border
-                      border-blue-200
-                      bg-white
-                      text-blue-700
-                      sm:inline-flex
-                    "
+                <div className="modal-actions">
+                  <button
+                    className="title-btn"
+                    type="button"
                     onClick={() =>
                       openAccountModal()
                     }
                   >
-                    <UserPlus size={16} />
+                    <UserPlus
+                      size={14}
+                    />
 
-                    {text.addAccount}
-                  </Button>
+                    {t.addAccount}
+                  </button>
 
                   <button
+                    className="close-btn"
                     type="button"
                     onClick={() =>
                       !saving &&
-                      setVoucherModal(
+                      setShowVoucherModal(
                         false
                       )
                     }
-                    className="
-                      grid
-                      h-10
-                      w-10
-                      place-items-center
-                      rounded-xl
-                      border
-                      border-red-200
-                      bg-red-50
-                      text-red-600
-                    "
                   >
-                    <X size={20} />
+                    <X size={18} />
                   </button>
                 </div>
-              </header>
+              </div>
 
-              <div
-                className="
-                  overflow-y-auto
-                  bg-slate-50
-                  p-4
-                  sm:p-5
-                "
-              >
-                <div
-                  className="
-                    mb-4
-                    grid
-                    grid-cols-1
-                    gap-3
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    bg-white
-                    p-4
-                    md:grid-cols-[190px_190px_1fr]
-                  "
-                >
-                  <label
-                    className="
-                      grid
-                      gap-1.5
-                      text-xs
-                      font-bold
-                      text-slate-600
-                    "
-                  >
-                    {text.invoiceNo}
+              <div className="modal-body">
+                <div className="formTopLine">
+                  <div>
+                    <label className="basicLabel">
+                      {t.voucherNo}
+                    </label>
 
                     <input
+                      className="basicInput"
+                      style={{
+                        fontFamily:
+                          "monospace",
+                        fontWeight:
+                          900,
+                      }}
                       value={
                         voucher.voucher_no
                       }
-                      onChange={(event) =>
+                      onChange={(
+                        event
+                      ) =>
                         setVoucher(
                           (current) => ({
                             ...current,
 
                             voucher_no:
-                              event.target
+                              event
+                                .target
                                 .value,
                           })
                         )
                       }
-                      className="
-                        h-11
-                        rounded-xl
-                        border
-                        border-slate-300
-                        px-3
-                        text-sm
-                        outline-none
-                        focus:border-blue-500
-                        focus:ring-4
-                        focus:ring-blue-100
-                      "
                     />
-                  </label>
+                  </div>
 
-                  <label
-                    className="
-                      grid
-                      gap-1.5
-                      text-xs
-                      font-bold
-                      text-slate-600
-                    "
-                  >
-                    {text.date}
+                  <div>
+                    <label className="basicLabel">
+                      {t.date}
+                    </label>
 
                     <input
                       type="date"
+                      className="basicInput"
                       value={
                         voucher.voucher_date
                       }
-                      onChange={(event) =>
+                      onChange={(
+                        event
+                      ) =>
                         setVoucher(
                           (current) => ({
                             ...current,
 
                             voucher_date:
-                              event.target
+                              event
+                                .target
                                 .value,
                           })
                         )
                       }
-                      className="
-                        h-11
-                        rounded-xl
-                        border
-                        border-slate-300
-                        px-3
-                        text-sm
-                        outline-none
-                        focus:border-blue-500
-                        focus:ring-4
-                        focus:ring-blue-100
-                      "
                     />
-                  </label>
+                  </div>
 
-                  <label
-                    className="
-                      grid
-                      gap-1.5
-                      text-xs
-                      font-bold
-                      text-slate-600
-                    "
-                  >
-                    {text.notes}
+                  <div>
+                    <label className="basicLabel">
+                      {t.notes}
+                    </label>
 
                     <input
+                      className="basicInput"
                       value={
                         voucher.notes
                       }
                       placeholder={
-                        text.optional
+                        t.optional
                       }
-                      onChange={(event) =>
+                      onChange={(
+                        event
+                      ) =>
                         setVoucher(
                           (current) => ({
                             ...current,
 
                             notes:
-                              event.target
+                              event
+                                .target
                                 .value,
                           })
                         )
                       }
-                      className="
-                        h-11
-                        rounded-xl
-                        border
-                        border-slate-300
-                        px-3
-                        text-sm
-                        outline-none
-                        focus:border-blue-500
-                        focus:ring-4
-                        focus:ring-blue-100
-                      "
                     />
-                  </label>
+                  </div>
                 </div>
 
-                <div
-                  className="
-                    overflow-x-auto
-                    rounded-2xl
-                    border
-                    border-slate-300
-                    bg-white
-                  "
-                >
-                  <table
-                    className="
-                      w-full
-                      min-w-[920px]
-                      table-fixed
-                      text-sm
-                    "
+                <div className="sectionHead">
+                  <span>
+                    {t.accountEntries}
+                  </span>
+
+                  <button
+                    className="basicBtn"
+                    type="button"
+                    onClick={addRow}
                   >
-                    <thead
-                      className="
-                        bg-slate-800
-                        text-white
-                      "
-                    >
+                    {t.addRow}
+                  </button>
+                </div>
+
+                <div className="paymentPanel">
+                  <table className="basicProductTable">
+                    <thead>
                       <tr>
                         <th
-                          className="
-                            w-12
-                            bg-cyan-400
-                            p-0
-                            text-slate-950
-                          "
+                          style={{
+                            width: 38,
+                          }}
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRows(
-                                (current) => [
-                                  ...current,
-                                  makeRow(),
-                                ]
-                              )
-                            }
-                            className="
-                              grid
-                              h-12
-                              w-full
-                              place-items-center
-                            "
-                          >
-                            <Plus size={24} />
-                          </button>
+                          #
                         </th>
 
                         <th
-                          className="
-                            w-[17%]
-                            px-3
-                            py-3
-                          "
+                          style={{
+                            width: 160,
+                          }}
                         >
-                          {text.accountType}
+                          {t.accountType}
                         </th>
 
                         <th
-                          className="
-                            w-[22%]
-                            px-3
-                            py-3
-                          "
+                          style={{
+                            width: 230,
+                          }}
                         >
-                          {text.account}
+                          {t.account}
+                        </th>
+
+                        <th>
+                          {t.description}
                         </th>
 
                         <th
-                          className="
-                            w-[30%]
-                            px-3
-                            py-3
-                          "
+                          style={{
+                            width: 125,
+                          }}
                         >
-                          {text.description}
+                          {t.receive}
                         </th>
 
                         <th
-                          className="
-                            w-[14%]
-                            px-3
-                            py-3
-                            text-right
-                          "
+                          style={{
+                            width: 125,
+                          }}
                         >
-                          {text.receive}
+                          {t.paid}
                         </th>
 
                         <th
-                          className="
-                            w-[14%]
-                            px-3
-                            py-3
-                            text-right
-                          "
-                        >
-                          {text.paid}
-                        </th>
+                          style={{
+                            width: 42,
+                          }}
+                        />
                       </tr>
                     </thead>
 
-                    <tbody
-                      className="
-                        divide-y
-                        divide-slate-200
-                      "
-                    >
-                      {rows.map((row) => (
-                        <tr key={row.localId}>
-                          <td
-                            className="
-                              bg-rose-400
-                              p-0
-                            "
+                    <tbody>
+                      {rows.map(
+                        (
+                          row,
+                          index
+                        ) => (
+                          <tr
+                            key={
+                              row.local_id
+                            }
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setRows(
-                                  (current) => {
-                                    const next =
-                                      current.filter(
-                                        (item) =>
-                                          item.localId !==
-                                          row.localId
-                                      );
-
-                                    return next.length
-                                      ? next
-                                      : [
-                                          makeRow(),
-                                        ];
-                                  }
-                                )
-                              }
-                              className="
-                                grid
-                                h-13
-                                w-full
-                                place-items-center
-                                text-rose-950
-                              "
+                            <td
+                              style={{
+                                textAlign:
+                                  "center",
+                                fontWeight:
+                                  900,
+                              }}
                             >
-                              <Trash2
-                                size={16}
-                              />
-                            </button>
-                          </td>
+                              {index + 1}
+                            </td>
 
-                          <td
-                            className="
-                              border-r
-                              border-slate-200
-                              p-0
-                            "
-                          >
-                            <select
-                              value={
-                                row.account_type
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                updateRow(
-                                  row.localId,
-                                  "account_type",
-                                  event.target
-                                    .value
-                                )
-                              }
-                              className="
-                                h-13
-                                w-full
-                                border-0
-                                bg-transparent
-                                px-3
-                                outline-none
-                                focus:ring-2
-                                focus:ring-inset
-                                focus:ring-blue-500
-                              "
-                            >
-                              {ACCOUNT_TYPES.map(
-                                (type) => (
-                                  <option
-                                    key={
-                                      type.value
-                                    }
-                                    value={
-                                      type.value
-                                    }
-                                  >
-                                    {isUrdu
-                                      ? type.ur
-                                      : type.en}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </td>
-
-                          <td
-                            className="
-                              border-r
-                              border-slate-200
-                              p-0
-                            "
-                          >
-                            <div
-                              className="
-                                flex
-                                h-13
-                                items-center
-                              "
-                            >
+                            <td>
                               <select
+                                className="productInput"
                                 value={
-                                  row.account_id
+                                  row.account_type
                                 }
                                 onChange={(
                                   event
                                 ) =>
                                   updateRow(
-                                    row.localId,
-                                    "account_id",
-                                    event.target
+                                    row.local_id,
+                                    "account_type",
+                                    event
+                                      .target
                                       .value
                                   )
                                 }
-                                className="
-                                  h-full
-                                  min-w-0
-                                  flex-1
-                                  border-0
-                                  bg-transparent
-                                  px-3
-                                  outline-none
-                                  focus:ring-2
-                                  focus:ring-inset
-                                  focus:ring-blue-500
-                                "
                               >
-                                <option value="">
-                                  {text.select}
-                                </option>
-
-                                {optionsFor(
-                                  row.account_type
-                                ).map(
-                                  (account) => (
+                                {ACCOUNT_TYPES.map(
+                                  (
+                                    type
+                                  ) => (
                                     <option
                                       key={
-                                        account.id
+                                        type.value
                                       }
                                       value={
-                                        account.id
+                                        type.value
                                       }
                                     >
-                                      {displayName(
-                                        account
-                                      )}
+                                      {isUrdu
+                                        ? type.ur
+                                        : type.en}
                                     </option>
                                   )
                                 )}
                               </select>
+                            </td>
 
-                              {row.account_type ===
-                                "general_ledger" && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openAccountModal(
-                                      row.localId
+                            <td>
+                              <div className="accountSelectWrap">
+                                <select
+                                  className="productInput"
+                                  value={
+                                    row.account_id
+                                  }
+                                  onChange={(
+                                    event
+                                  ) =>
+                                    updateRow(
+                                      row.local_id,
+                                      "account_id",
+                                      event
+                                        .target
+                                        .value
                                     )
                                   }
-                                  className="
-                                    mr-2
-                                    grid
-                                    h-8
-                                    w-8
-                                    place-items-center
-                                    rounded-lg
-                                    border
-                                    border-blue-200
-                                    bg-blue-50
-                                    text-blue-700
-                                  "
                                 >
-                                  <Plus
-                                    size={16}
-                                  />
-                                </button>
-                              )}
-                            </div>
-                          </td>
+                                  <option value="">
+                                    {t.select}
+                                  </option>
 
-                          <td
-                            className="
-                              border-r
-                              border-slate-200
-                              p-0
-                            "
-                          >
-                            <input
-                              value={
-                                row.description
-                              }
-                              placeholder={
-                                text.enter
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                updateRow(
-                                  row.localId,
-                                  "description",
-                                  event.target
-                                    .value
-                                )
-                              }
-                              className="
-                                h-13
-                                w-full
-                                border-0
-                                bg-transparent
-                                px-3
-                                outline-none
-                                focus:ring-2
-                                focus:ring-inset
-                                focus:ring-blue-500
-                              "
-                            />
-                          </td>
+                                  {optionsFor(
+                                    row.account_type
+                                  ).map(
+                                    (
+                                      account
+                                    ) => (
+                                      <option
+                                        key={
+                                          account.id
+                                        }
+                                        value={
+                                          account.id
+                                        }
+                                      >
+                                        {getAccountName(
+                                          account
+                                        )}
+                                      </option>
+                                    )
+                                  )}
+                                </select>
 
-                          <td
-                            className="
-                              border-r
-                              border-slate-200
-                              p-0
-                            "
-                          >
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={
-                                row.receive
-                              }
-                              placeholder={
-                                text.enter
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                updateRow(
-                                  row.localId,
-                                  "receive",
-                                  event.target
-                                    .value
-                                )
-                              }
-                              className="
-                                h-13
-                                w-full
-                                border-0
-                                bg-transparent
-                                px-3
-                                text-right
-                                font-bold
-                                text-emerald-600
-                                outline-none
-                                focus:ring-2
-                                focus:ring-inset
-                                focus:ring-blue-500
-                              "
-                            />
-                          </td>
+                                {row.account_type ===
+                                  "general_ledger" && (
+                                  <button
+                                    className="miniAdd"
+                                    type="button"
+                                    onClick={() =>
+                                      openAccountModal(
+                                        row.local_id
+                                      )
+                                    }
+                                  >
+                                    <Plus
+                                      size={14}
+                                    />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
 
-                          <td className="p-0">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={row.paid}
-                              placeholder={
-                                text.enter
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                updateRow(
-                                  row.localId,
-                                  "paid",
-                                  event.target
-                                    .value
-                                )
-                              }
-                              className="
-                                h-13
-                                w-full
-                                border-0
-                                bg-transparent
-                                px-3
-                                text-right
-                                font-bold
-                                text-red-500
-                                outline-none
-                                focus:ring-2
-                                focus:ring-inset
-                                focus:ring-blue-500
-                              "
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                            <td>
+                              <input
+                                className="productInput"
+                                value={
+                                  row.description
+                                }
+                                placeholder={
+                                  t.enter
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  updateRow(
+                                    row.local_id,
+                                    "description",
+                                    event
+                                      .target
+                                      .value
+                                  )
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="productInput receiveInput"
+                                value={
+                                  row.receive
+                                }
+                                placeholder={
+                                  t.enter
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  updateRow(
+                                    row.local_id,
+                                    "receive",
+                                    event
+                                      .target
+                                      .value
+                                  )
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="productInput paidInput"
+                                value={
+                                  row.paid
+                                }
+                                placeholder={
+                                  t.enter
+                                }
+                                onChange={(
+                                  event
+                                ) =>
+                                  updateRow(
+                                    row.local_id,
+                                    "paid",
+                                    event
+                                      .target
+                                      .value
+                                  )
+                                }
+                              />
+                            </td>
+
+                            <td
+                              style={{
+                                textAlign:
+                                  "center",
+                              }}
+                            >
+                              <button
+                                className="rowDelete"
+                                type="button"
+                                onClick={() =>
+                                  removeRow(
+                                    row.local_id
+                                  )
+                                }
+                              >
+                                ×
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                <div
-                  className="
-                    mt-4
-                    grid
-                    grid-cols-1
-                    gap-3
-                    lg:grid-cols-[1fr_240px_240px]
-                  "
-                >
-                  <div
-                    className="
-                      flex
-                      min-h-16
-                      items-center
-                      justify-between
-                      rounded-2xl
-                      border
-                      border-slate-200
-                      bg-white
-                      px-5
-                    "
-                  >
-                    <span
-                      className="
-                        text-sm
-                        font-black
-                        text-slate-600
-                      "
-                    >
-                      {text.grandTotal}
-                    </span>
+                <div className="sectionHead">
+                  <span>
+                    {t.total}
+                  </span>
+                </div>
 
-                    <strong
-                      className="
-                        text-xl
-                        text-slate-950
-                      "
-                    >
-                      Rs{" "}
-                      {money(
-                        totals.receive -
+                <div className="paymentPanel">
+                  <div className="finalTotalBar">
+                    <div className="totalBox">
+                      <label>
+                        {t.totalReceive}
+                      </label>
+
+                      <b
+                        style={{
+                          color:
+                            "#047857",
+                        }}
+                      >
+                        Rs{" "}
+                        {money(
+                          totals.receive
+                        )}
+                      </b>
+                    </div>
+
+                    <div className="totalBox">
+                      <label>
+                        {t.totalPaid}
+                      </label>
+
+                      <b
+                        style={{
+                          color:
+                            "#dc2626",
+                        }}
+                      >
+                        Rs{" "}
+                        {money(
                           totals.paid
-                      )}
-                    </strong>
-                  </div>
+                        )}
+                      </b>
+                    </div>
 
-                  <div
-                    className="
-                      rounded-2xl
-                      border
-                      border-emerald-200
-                      bg-white
-                      px-5
-                      py-3
-                      text-right
-                    "
-                  >
-                    <span
-                      className="
-                        text-xs
-                        font-bold
-                        text-slate-500
-                      "
-                    >
-                      {text.totalReceive}
-                    </span>
+                    <div className="totalBox grandBox">
+                      <label>
+                        {t.grandTotal}
+                      </label>
 
-                    <strong
-                      className="
-                        mt-1
-                        block
-                        text-xl
-                        text-emerald-600
-                      "
-                    >
-                      Rs{" "}
-                      {money(
-                        totals.receive
-                      )}
-                    </strong>
-                  </div>
-
-                  <div
-                    className="
-                      rounded-2xl
-                      border
-                      border-red-200
-                      bg-white
-                      px-5
-                      py-3
-                      text-right
-                    "
-                  >
-                    <span
-                      className="
-                        text-xs
-                        font-bold
-                        text-slate-500
-                      "
-                    >
-                      {text.totalPaid}
-                    </span>
-
-                    <strong
-                      className="
-                        mt-1
-                        block
-                        text-xl
-                        text-red-600
-                      "
-                    >
-                      Rs{" "}
-                      {money(
-                        totals.paid
-                      )}
-                    </strong>
+                      <b>
+                        Rs{" "}
+                        {money(
+                          totals.receive -
+                            totals.paid
+                        )}
+                      </b>
+                    </div>
                   </div>
                 </div>
+
+                <div className="modalFooterBasic">
+                  <button
+                    className="basicBtn"
+                    type="button"
+                    disabled={saving}
+                    onClick={() =>
+                      setShowVoucherModal(
+                        false
+                      )
+                    }
+                  >
+                    {t.cancel}
+                  </button>
+
+                  <button
+                    className="basicBtn"
+                    type="button"
+                    disabled={saving}
+                    onClick={
+                      saveVoucher
+                    }
+                  >
+                    {saving ? (
+                      <RefreshCw
+                        size={15}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <Save
+                        size={15}
+                      />
+                    )}
+
+                    {saving
+                      ? t.saving
+                      : editingId
+                      ? t.update
+                      : t.save}
+                  </button>
+                </div>
               </div>
-
-              <footer
-                className="
-                  flex
-                  justify-end
-                  gap-2
-                  border-t
-                  border-slate-200
-                  bg-white
-                  p-4
-                "
-              >
-                <Button
-                  className="
-                    border
-                    border-slate-300
-                    bg-white
-                    text-slate-700
-                  "
-                  onClick={() =>
-                    !saving &&
-                    setVoucherModal(
-                      false
-                    )
-                  }
-                  disabled={saving}
-                >
-                  {text.cancel}
-                </Button>
-
-                <Button
-                  className="
-                    bg-gradient-to-r
-                    from-blue-600
-                    to-indigo-600
-                    text-white
-                    shadow-lg
-                    shadow-blue-200
-                  "
-                  onClick={
-                    saveVoucher
-                  }
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <RefreshCw
-                      size={16}
-                      className="
-                        animate-spin
-                      "
-                    />
-                  ) : (
-                    <Save size={16} />
-                  )}
-
-                  {saving
-                    ? text.loading
-                    : editingId
-                    ? text.updateVoucher
-                    : text.saveVoucher}
-                </Button>
-              </footer>
-            </section>
+            </div>
           </div>,
 
           document.body
         )}
 
-      {accountModal &&
+      {showAccountModal &&
         createPortal(
           <div
-            className="
-              fixed
-              inset-0
-              z-[100100]
-              flex
-              items-center
-              justify-center
-              overflow-y-auto
-              bg-slate-950/65
-              p-3
-              backdrop-blur-sm
-            "
+            className="modal-back account-modal"
             onMouseDown={(event) => {
               if (
                 event.target ===
                   event.currentTarget &&
                 !accountSaving
               ) {
-                setAccountModal(false);
+                setShowAccountModal(
+                  false
+                );
+
                 setAccountTargetRow(
                   null
                 );
               }
             }}
           >
-            <section
-              className="
-                w-full
-                max-w-2xl
-                overflow-hidden
-                rounded-3xl
-                border
-                border-white/70
-                bg-white
-                shadow-2xl
-              "
+            <div
+              className="invoice-modal account-box"
               onMouseDown={(event) =>
                 event.stopPropagation()
               }
             >
-              <header
-                className="
-                  flex
-                  items-start
-                  justify-between
-                  gap-4
-                  border-b
-                  border-slate-200
-                  bg-gradient-to-r
-                  from-blue-50
-                  to-indigo-50
-                  p-5
-                "
-              >
+              <div className="modal-title">
                 <div>
-                  <h2
-                    className="
-                      text-2xl
-                      font-black
-                      text-slate-950
-                    "
-                  >
+                  <div className="mode-pill">
+                    Account
+                  </div>
+
+                  <h2>
                     {
-                      text.accountModalTitle
+                      t.accountModalTitle
                     }
                   </h2>
-
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      text-slate-500
-                    "
-                  >
-                    {
-                      text.accountModalText
-                    }
-                  </p>
                 </div>
 
                 <button
+                  className="close-btn"
                   type="button"
                   onClick={() => {
                     if (
                       !accountSaving
                     ) {
-                      setAccountModal(
+                      setShowAccountModal(
                         false
                       );
 
@@ -2849,292 +3156,211 @@ export default function CashBookPage() {
                       );
                     }
                   }}
-                  className="
-                    grid
-                    h-10
-                    w-10
-                    place-items-center
-                    rounded-xl
-                    border
-                    border-red-200
-                    bg-red-50
-                    text-red-600
-                  "
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
-              </header>
-
-              <div
-                className="
-                  grid
-                  grid-cols-1
-                  gap-4
-                  p-5
-                  sm:grid-cols-2
-                "
-              >
-                <label
-                  className="
-                    grid
-                    gap-1.5
-                    text-xs
-                    font-bold
-                    text-slate-600
-                  "
-                >
-                  {text.accountCode}
-
-                  <input
-                    value={
-                      accountForm.account_code
-                    }
-                    placeholder={
-                      text.autoCode
-                    }
-                    onChange={(event) =>
-                      setAccountForm(
-                        (current) => ({
-                          ...current,
-
-                          account_code:
-                            event.target
-                              .value,
-                        })
-                      )
-                    }
-                    className="
-                      h-11
-                      rounded-xl
-                      border
-                      border-slate-300
-                      px-3
-                      text-sm
-                      outline-none
-                      focus:border-blue-500
-                      focus:ring-4
-                      focus:ring-blue-100
-                    "
-                  />
-                </label>
-
-                <label
-                  className="
-                    grid
-                    gap-1.5
-                    text-xs
-                    font-bold
-                    text-slate-600
-                  "
-                >
-                  {text.group}
-
-                  <select
-                    value={
-                      accountForm.group_id
-                    }
-                    onChange={(event) =>
-                      setAccountForm(
-                        (current) => ({
-                          ...current,
-
-                          group_id:
-                            event.target
-                              .value,
-                        })
-                      )
-                    }
-                    className="
-                      h-11
-                      rounded-xl
-                      border
-                      border-slate-300
-                      px-3
-                      text-sm
-                      outline-none
-                      focus:border-blue-500
-                      focus:ring-4
-                      focus:ring-blue-100
-                    "
-                  >
-                    <option value="">
-                      {text.optional}
-                    </option>
-
-                    {lookups.groups.map(
-                      (group) => (
-                        <option
-                          key={group.id}
-                          value={group.id}
-                        >
-                          {
-                            group.group_name
-                          }
-                        </option>
-                      )
-                    )}
-                  </select>
-                </label>
-
-                <label
-                  className="
-                    grid
-                    gap-1.5
-                    text-xs
-                    font-bold
-                    text-slate-600
-                    sm:col-span-2
-                  "
-                >
-                  {text.accountTitle} *
-
-                  <input
-                    autoFocus
-                    value={
-                      accountForm.account_title
-                    }
-                    placeholder="e.g. Office Expense"
-                    onChange={(event) =>
-                      setAccountForm(
-                        (current) => ({
-                          ...current,
-
-                          account_title:
-                            event.target
-                              .value,
-                        })
-                      )
-                    }
-                    className="
-                      h-11
-                      rounded-xl
-                      border
-                      border-slate-300
-                      px-3
-                      text-sm
-                      outline-none
-                      focus:border-blue-500
-                      focus:ring-4
-                      focus:ring-blue-100
-                    "
-                  />
-                </label>
-
-                <label
-                  className="
-                    grid
-                    gap-1.5
-                    text-xs
-                    font-bold
-                    text-slate-600
-                    sm:col-span-2
-                  "
-                >
-                  {
-                    text.openingBalance
-                  }
-
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={
-                      accountForm.opening_balance
-                    }
-                    placeholder="0"
-                    onChange={(event) =>
-                      setAccountForm(
-                        (current) => ({
-                          ...current,
-
-                          opening_balance:
-                            event.target
-                              .value,
-                        })
-                      )
-                    }
-                    className="
-                      h-11
-                      rounded-xl
-                      border
-                      border-slate-300
-                      px-3
-                      text-sm
-                      outline-none
-                      focus:border-blue-500
-                      focus:ring-4
-                      focus:ring-blue-100
-                    "
-                  />
-                </label>
               </div>
 
-              <footer
-                className="
-                  flex
-                  justify-end
-                  gap-2
-                  border-t
-                  border-slate-200
-                  bg-slate-50
-                  p-4
-                "
-              >
-                <Button
-                  className="
-                    border
-                    border-slate-300
-                    bg-white
-                    text-slate-700
-                  "
-                  disabled={
-                    accountSaving
-                  }
-                  onClick={() => {
-                    setAccountModal(
-                      false
-                    );
-
-                    setAccountTargetRow(
-                      null
-                    );
+              <div className="modal-body">
+                <p
+                  style={{
+                    marginTop: 0,
+                    color: "#64748b",
+                    fontSize: 13,
                   }}
                 >
-                  {text.cancel}
-                </Button>
-
-                <Button
-                  className="
-                    bg-gradient-to-r
-                    from-blue-600
-                    to-indigo-600
-                    text-white
-                    shadow-lg
-                    shadow-blue-200
-                  "
-                  disabled={
-                    accountSaving
+                  {
+                    t.accountModalText
                   }
-                  onClick={saveAccount}
-                >
-                  {accountSaving ? (
-                    <RefreshCw
-                      size={16}
-                      className="
-                        animate-spin
-                      "
-                    />
-                  ) : (
-                    <UserPlus
-                      size={16}
-                    />
-                  )}
+                </p>
 
-                  {accountSaving
-                    ? text.loading
-                    : text.saveAccount}
-                </Button>
-              </footer>
-            </section>
+                <div className="account-grid">
+                  <div>
+                    <label className="basicLabel">
+                      {t.accountCode}
+                    </label>
+
+                    <input
+                      className="basicInput"
+                      value={
+                        accountForm.account_code
+                      }
+                      placeholder={
+                        t.autoCode
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setAccountForm(
+                          (current) => ({
+                            ...current,
+
+                            account_code:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="basicLabel">
+                      {t.accountGroup}
+                    </label>
+
+                    <select
+                      className="basicSelect"
+                      value={
+                        accountForm.group_id
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setAccountForm(
+                          (current) => ({
+                            ...current,
+
+                            group_id:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="">
+                        {t.optional}
+                      </option>
+
+                      {lookups.groups.map(
+                        (group) => (
+                          <option
+                            key={
+                              group.id
+                            }
+                            value={
+                              group.id
+                            }
+                          >
+                            {
+                              group.group_name
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="full">
+                    <label className="basicLabel">
+                      {t.accountTitle} *
+                    </label>
+
+                    <input
+                      autoFocus
+                      className="basicInput"
+                      value={
+                        accountForm.account_title
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setAccountForm(
+                          (current) => ({
+                            ...current,
+
+                            account_title:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="full">
+                    <label className="basicLabel">
+                      {
+                        t.openingBalance
+                      }
+                    </label>
+
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="basicInput"
+                      value={
+                        accountForm.opening_balance
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setAccountForm(
+                          (current) => ({
+                            ...current,
+
+                            opening_balance:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="modalFooterBasic">
+                  <button
+                    className="basicBtn"
+                    type="button"
+                    disabled={
+                      accountSaving
+                    }
+                    onClick={() => {
+                      setShowAccountModal(
+                        false
+                      );
+
+                      setAccountTargetRow(
+                        null
+                      );
+                    }}
+                  >
+                    {t.cancel}
+                  </button>
+
+                  <button
+                    className="basicBtn"
+                    type="button"
+                    disabled={
+                      accountSaving
+                    }
+                    onClick={
+                      saveAccount
+                    }
+                  >
+                    {accountSaving ? (
+                      <RefreshCw
+                        size={15}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <UserPlus
+                        size={15}
+                      />
+                    )}
+
+                    {accountSaving
+                      ? t.saving
+                      : t.saveAccount}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>,
 
           document.body
