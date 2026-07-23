@@ -1,3370 +1,1437 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { createPortal } from "react-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import {
-  Edit3,
-  Languages,
-  Plus,
-  Printer,
-  RefreshCw,
-  Save,
-  Search,
-  Trash2,
-  UserPlus,
-  X,
-} from "lucide-react";
 
-const API_ROOT = (
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000"
-)
-  .replace(/\/$/, "")
-  .replace(/\/api$/i, "");
-
-const API_BASE = `${API_ROOT}/api/cash-book`;
-
-const ACCOUNT_TYPES = [
-  {
-    value: "customer",
-    en: "Customer",
-    ur: "کسٹمر",
-  },
-  {
-    value: "general_ledger",
-    en: "General Ledger",
-    ur: "جنرل لیجر",
-  },
-  {
-    value: "supplier",
-    en: "Supplier",
-    ur: "سپلائر",
-  },
-  {
-    value: "employee",
-    en: "Employee",
-    ur: "ملازم",
-  },
-];
+const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_BASE = `${API_ROOT}/api/sales-invoices`;
+const SALE_ORDERS_API = `${API_ROOT}/api/sale-orders`;
+const CUSTOMERS_API = `${API_ROOT}/api/customers`;
+const EMPLOYEES_API = `${API_ROOT}/api/employees`;
+const SUPPLIERS_API = `${API_ROOT}/api/suppliers`;
+const GENERAL_LEDGERS_API = `${API_ROOT}/api/general-ledgers`;
+const CATEGORIES_API = `${API_ROOT}/api/categories`;
+const PRODUCTS_API = `${API_ROOT}/api/products`;
+const UNITS_API = `${API_ROOT}/api/units`;
 
 const LANG = {
   en: {
-    title: "Cash Book",
-    subtitle:
-      "Create and manage cash receive and payment vouchers",
-    toggleLang: "اردو",
-    addAccount: "Add Account",
-    newVoucher: "New Voucher",
+    title: "Sales Invoice",
+    subtitle: "Create invoices with products, quantities, dates and totals",
+    newInvoice: "New Invoice",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
     refresh: "Refresh",
-    searchPlaceholder:
-      "Search voucher no, account, description or date...",
-    totalVouchers: "Total Vouchers",
-    totalReceive: "Total Receive",
-    totalPaid: "Total Paid",
-    netBalance: "Net Balance",
-    voucherNo: "Voucher No",
+    todayFilter: "Today",
+    selectDate: "Select Date",
+    showingDate: "Showing Date",
+    toggleLang: "اردو",
+    searchPlaceholder: "Search invoice no, name, product or date...",
+    customerInvoiceSearch: "Customer Invoices",
+    customerInvoicePlaceholder: "Type customer name to show all invoices...",
+    bulkPrint: "Bulk Print",
+    bulkPrinting: "Printing...",
+    allCustomerInvoices: "All invoices for this customer",
+    all: "All",
+    last24: "24 Hours",
+    last7: "7 Days",
+    month: "This Month",
+    totalInvoices: "Total Invoices",
+    totalItems: "Total Items",
+    totalValue: "Total Value",
+    totalPrev: "Previous Balance",
+    totalDiscount: "Total Discount",
+    totalDelivery: "Delivery Charges",
+    customerType: "Customer Type",
+    name: "Name",
+    reference: "Reference",
+    address: "Address",
+    invoiceNo: "Invoice No",
     date: "Date",
-    notes: "Voucher Notes",
-    accountEntries: "Account Entries",
+    dateFull: "Date",
+    shipTo: "Ship To",
+    products: "Products",
     addRow: "+ Add Row",
-    accountType: "Account Type",
-    account: "Account",
-    description: "Description",
-    receive: "Receive",
-    paid: "Paid",
-    total: "Total",
+    productType: "Product Type",
+    category: "Category",
+    product: "Product",
+    desc: "Desc",
+    unit: "Unit",
+    saleType: "Sale Type",
+    single: "Single",
+    carton: "Carton",
+    pieces: "Pieces",
+    cartonQty: "Carton Qty",
+    piecesQty: "Pieces Qty",
+    pcsCtn: "Pcs/Ctn",
+    qty: "Qty",
+    rate: "Rate",
+    amount: "Amount",
+    totalQty: "Total Quantity",
+    invoiceTotal: "Invoice Total",
+    previousBalance: "Previous Balance",
+    deliveryCharges: "Delivery Charges",
+    discount: "Discount",
     grandTotal: "Grand Total",
     save: "Save",
     update: "Update",
     saving: "Saving...",
     cancel: "Cancel",
+    close: "Close",
     edit: "Edit",
-    print: "Print",
     delete: "Delete",
+    print: "Print",
     actions: "Actions",
     loading: "Loading...",
-    noRecords: "No vouchers found.",
+    noRecords: "No invoices found.",
     select: "Select",
-    enter: "Enter",
-    optional: "Optional",
+    selectName: "Select Name",
+    customer: "Customer",
+    employee: "Employee",
+    supplier: "Supplier",
+    generalLedger: "General Ledger",
+    requiredInvoice: "Invoice No is required.",
+    requiredPartyType: "Customer Type is required.",
+    requiredParty: "Please select a name.",
+    requiredItem: "Add at least one valid product row.",
+    saved: "Invoice saved.",
+    updated: "Invoice updated.",
+    deleted: "Invoice deleted.",
+    saveError: "Save failed. Check backend.",
+    loadError: "Data load failed.",
+    printError: "Print failed.",
+    editError: "Could not load invoice details.",
+    deleteConfirm: "Delete this invoice?",
     createMode: "Create Mode",
     editMode: "Edit Mode",
-    deleteConfirm: "Delete this voucher?",
-    accountModalTitle:
-      "Add General Ledger Account",
-    accountModalText:
-      "Create a new account. It will appear in the account dropdown immediately after saving.",
-    accountCode: "Account Code",
-    accountTitle: "Account Title",
-    accountGroup: "Account Group",
-    openingBalance: "Opening Balance",
-    autoCode:
-      "Leave blank for automatic code",
-    saveAccount: "Save Account",
   },
-
   ur: {
-    title: "کیش بک",
-    subtitle:
-      "کیش وصولی اور ادائیگی کے واؤچرز بنائیں اور منظم کریں",
-    toggleLang: "English",
-    addAccount: "اکاؤنٹ شامل کریں",
-    newVoucher: "نیا واؤچر",
+    title: "سیلز انوائس",
+    subtitle: "پروڈکٹس، مقدار، تاریخ اور ٹوٹل کے ساتھ انوائس بنائیں",
+    newInvoice: "نئی انوائس",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
     refresh: "ری فریش",
-    searchPlaceholder:
-      "واؤچر نمبر، اکاؤنٹ، تفصیل یا تاریخ تلاش کریں...",
-    totalVouchers: "کل واؤچرز",
-    totalReceive: "کل وصولی",
-    totalPaid: "کل ادائیگی",
-    netBalance: "نیٹ بیلنس",
-    voucherNo: "واؤچر نمبر",
+    todayFilter: "آج",
+    selectDate: "تاریخ منتخب کریں",
+    showingDate: "دکھائی جانے والی تاریخ",
+    toggleLang: "English",
+    searchPlaceholder: "انوائس نمبر، نام، پروڈکٹ یا تاریخ تلاش کریں...",
+    customerInvoiceSearch: "کسٹمر انوائسز",
+    customerInvoicePlaceholder: "کسٹمر کا نام لکھیں، تمام انوائسز آئیں گی...",
+    bulkPrint: "بلک پرنٹ",
+    bulkPrinting: "پرنٹ ہو رہا ہے...",
+    allCustomerInvoices: "اس کسٹمر کی تمام انوائسز",
+    all: "سب",
+    last24: "24 گھنٹے",
+    last7: "7 دن",
+    month: "یہ مہینہ",
+    totalInvoices: "کل انوائسز",
+    totalItems: "کل آئٹمز",
+    totalValue: "کل رقم",
+    totalPrev: "سابقہ بیلنس",
+    totalDiscount: "کل ڈسکاؤنٹ",
+    totalDelivery: "ڈیلیوری چارجز",
+    customerType: "کسٹمر ٹائپ",
+    name: "نام",
+    reference: "ریفرنس",
+    address: "ایڈریس",
+    invoiceNo: "انوائس نمبر",
     date: "تاریخ",
-    notes: "واؤچر نوٹس",
-    accountEntries: "اکاؤنٹ اندراجات",
+    dateFull: "تاریخ",
+    shipTo: "شپ ٹو",
+    products: "پروڈکٹس",
     addRow: "+ لائن شامل کریں",
-    accountType: "اکاؤنٹ کی قسم",
-    account: "اکاؤنٹ",
-    description: "تفصیل",
-    receive: "وصولی",
-    paid: "ادائیگی",
-    total: "ٹوٹل",
-    grandTotal: "مجموعی رقم",
+    productType: "پروڈکٹ ٹائپ",
+    category: "کیٹیگری",
+    product: "پروڈکٹ",
+    desc: "تفصیل",
+    unit: "یونٹ",
+    saleType: "قسم",
+    single: "سنگل",
+    carton: "کارٹن",
+    pieces: "پیسز",
+    cartonQty: "کارٹن مقدار",
+    piecesQty: "پیسز مقدار",
+    pcsCtn: "فی کارٹن",
+    qty: "مقدار",
+    rate: "ریٹ",
+    amount: "رقم",
+    totalQty: "کل مقدار",
+    invoiceTotal: "انوائس ٹوٹل",
+    previousBalance: "سابقہ بیلنس",
+    deliveryCharges: "ڈیلیوری چارجز",
+    discount: "ڈسکاؤنٹ",
+    grandTotal: "کل رقم",
     save: "محفوظ کریں",
     update: "اپڈیٹ",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
+    close: "بند کریں",
     edit: "ترمیم",
-    print: "پرنٹ",
     delete: "حذف",
+    print: "پرنٹ",
     actions: "اقدامات",
     loading: "لوڈ ہو رہا ہے...",
-    noRecords: "کوئی واؤچر نہیں ملا۔",
+    noRecords: "کوئی انوائس نہیں ملی۔",
     select: "منتخب کریں",
-    enter: "درج کریں",
-    optional: "اختیاری",
+    selectName: "نام منتخب کریں",
+    customer: "کسٹمر",
+    employee: "ملازم",
+    supplier: "سپلائر",
+    generalLedger: "جنرل لیجر",
+    requiredInvoice: "انوائس نمبر ضروری ہے۔",
+    requiredPartyType: "کسٹمر ٹائپ ضروری ہے۔",
+    requiredParty: "نام منتخب کریں۔",
+    requiredItem: "کم از کم ایک درست پروڈکٹ لائن شامل کریں۔",
+    saved: "انوائس محفوظ ہو گئی۔",
+    updated: "انوائس اپڈیٹ ہو گئی۔",
+    deleted: "انوائس حذف ہو گئی۔",
+    saveError: "محفوظ نہیں ہوئی، بیک اینڈ چیک کریں۔",
+    loadError: "ڈیٹا لوڈ نہیں ہوا۔",
+    printError: "پرنٹ نہیں ہو سکا۔",
+    editError: "انوائس تفصیل لوڈ نہیں ہوئی۔",
+    deleteConfirm: "کیا یہ انوائس حذف کرنی ہے؟",
     createMode: "نیا موڈ",
     editMode: "ترمیم موڈ",
-    deleteConfirm:
-      "کیا یہ واؤچر حذف کرنا ہے؟",
-    accountModalTitle:
-      "جنرل لیجر اکاؤنٹ شامل کریں",
-    accountModalText:
-      "نیا اکاؤنٹ بنائیں۔ محفوظ ہونے کے بعد یہ فوراً ڈراپ ڈاؤن میں نظر آئے گا۔",
-    accountCode: "اکاؤنٹ کوڈ",
-    accountTitle: "اکاؤنٹ ٹائٹل",
-    accountGroup: "اکاؤنٹ گروپ",
-    openingBalance: "ابتدائی بیلنس",
-    autoCode:
-      "خالی چھوڑیں تو کوڈ خود بنے گا",
-    saveAccount: "اکاؤنٹ محفوظ کریں",
   },
 };
 
-const today = () =>
-  new Date().toISOString().slice(0, 10);
+const PARTY_TYPES = [
+  { value: "customer", labelKey: "customer" },
+  { value: "employee", labelKey: "employee" },
+  { value: "supplier", labelKey: "supplier" },
+  { value: "general_ledger", labelKey: "generalLedger" },
+];
 
-const emptyRow = () => ({
-  local_id: `${Date.now()}-${Math.random()
-    .toString(16)
-    .slice(2)}`,
-  account_type: "customer",
-  account_id: "",
-  description: "",
-  receive: "",
-  paid: "",
+const DATE_FILTERS = [
+  { value: "all", labelKey: "all" },
+  { value: "24h", labelKey: "last24" },
+  { value: "7d", labelKey: "last7" },
+  { value: "month", labelKey: "month" },
+];
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const emptyItem = () => ({
+  category_id: "",
+  product_id: "",
+  product_description: "",
+  product_type_id: "",
+  unit_id: "",
+  sale_type: "single",
+  carton_qty: "",
+  pieces_qty: "",
+  qty: "",
+  pieces_per_carton: "0",
+  rate: "0",
+  amount: "0",
 });
 
-const defaultRows = (count = 6) =>
-  Array.from(
-    { length: count },
-    () => emptyRow()
-  );
+const defaultInvoiceItems = (count = 5) =>
+  Array.from({ length: count }, () => emptyItem());
 
-const emptyVoucher = () => ({
-  voucher_no: "",
-  voucher_date: today(),
-  notes: "",
+const emptyForm = () => ({
+  invoice_no: "",
+  reference_no: "",
+  party_type: "customer",
+  party_id: "",
+  customer_id: "",
+  invoice_date: today(),
+  shipment_to: "",
+  previous_balance: "0",
+  delivery_charges: "0",
+  discount: "0",
 });
 
-const toNum = (value) => {
-  const number = Number(value);
-
-  return Number.isFinite(number)
-    ? number
-    : 0;
-};
-
-const money = (value) =>
-  toNum(value).toLocaleString(
-    "en-PK",
-    {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }
-  );
-
-const getList = (
-  payload,
-  key
-) => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
-  }
-
-  if (Array.isArray(payload?.[key])) {
-    return payload[key];
-  }
-
-  if (Array.isArray(payload?.rows)) {
-    return payload.rows;
-  }
-
-  if (Array.isArray(payload?.result)) {
-    return payload.result;
-  }
-
+const getList = (d) => {
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.products)) return d.products;
+  if (Array.isArray(d?.result)) return d.result;
+  if (Array.isArray(d?.rows)) return d.rows;
   return [];
 };
 
-const getError = (error) =>
-  error?.response?.data?.message ||
-  error?.response?.data?.error ||
-  error?.message ||
-  "Something went wrong.";
-
-const getAccountName = (row) =>
-  row?.display_name ||
-  row?.account_title ||
-  row?.customer_name_en ||
-  row?.customer_name ||
-  row?.supplier_name ||
-  row?.full_name ||
-  row?.name ||
-  "-";
-
-const formatDate = (value) => {
-  const raw = String(value || "").slice(
-    0,
-    10
-  );
-
-  const match = raw.match(
-    /^(\d{4})-(\d{2})-(\d{2})$/
-  );
-
-  return match
-    ? `${match[3]}/${match[2]}/${match[1]}`
-    : raw || "-";
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 };
 
-export default function CashBookPage() {
-  const [lang, setLang] =
-    useState("en");
-
-  const t = LANG[lang];
-
-  const isUrdu =
-    lang === "ur";
-
-  const dir =
-    isUrdu ? "rtl" : "ltr";
-
-  const toastTimer =
-    useRef(null);
-
-  const [
-    showSummary,
-    setShowSummary,
-  ] = useState(false);
-
-  const [
-    showVoucherModal,
-    setShowVoucherModal,
-  ] = useState(false);
-
-  const [
-    showAccountModal,
-    setShowAccountModal,
-  ] = useState(false);
-
-  const [
-    editingId,
-    setEditingId,
-  ] = useState(null);
-
-  const [
-    accountTargetRow,
-    setAccountTargetRow,
-  ] = useState(null);
-
-  const [voucher, setVoucher] =
-    useState(emptyVoucher());
-
-  const [rows, setRows] =
-    useState(defaultRows());
-
-  const [records, setRecords] =
-    useState([]);
-
-  const [search, setSearch] =
-    useState("");
-
-  const [lookups, setLookups] =
-    useState({
-      customer: [],
-      general_ledger: [],
-      supplier: [],
-      employee: [],
-      groups: [],
-    });
-
-  const [
-    accountForm,
-    setAccountForm,
-  ] = useState({
-    account_code: "",
-    account_title: "",
-    group_id: "",
-    opening_balance: "",
+const money = (v) =>
+  Number(v || 0).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   });
 
-  const [loading, setLoading] =
-    useState(true);
+const getRecordId = (o) =>
+  o?.id ??
+  o?.value ??
+  o?.ID ??
+  o?.Id ??
+  o?.customer_id ??
+  o?.CustomerID ??
+  o?.employee_id ??
+  o?.EmployeeID ??
+  o?.supplier_id ??
+  o?.SupplierID ??
+  o?.general_ledger_id ??
+  o?.ledger_id ??
+  o?.account_id ??
+  o?.category_id ??
+  o?.CategoryID ??
+  o?.unit_id ??
+  o?.UnitID ??
+  o?.product_id ??
+  o?.ProductID ??
+  "";
 
-  const [saving, setSaving] =
-    useState(false);
+const pickText = (o, keys) => {
+  for (const key of keys) {
+    if (o?.[key] !== undefined && o?.[key] !== null && String(o[key]).trim()) return String(o[key]).trim();
+  }
+  const id = getRecordId(o);
+  return id ? `#${id}` : "";
+};
 
-  const [
-    accountSaving,
-    setAccountSaving,
-  ] = useState(false);
+const getCustomerName = (o) => pickText(o, ["customer_name", "customer_name_en", "name", "name_en", "title"]);
+const getEmployeeName = (o) => pickText(o, ["employee_name", "employee_name_en", "full_name", "name", "name_en", "title"]);
+const getSupplierName = (o) => pickText(o, ["supplier_name", "supplier_name_en", "vendor_name", "name", "name_en", "title"]);
+const getLedgerName = (o) => pickText(o, ["ledger_name", "ledger_name_en", "account_name", "account_title", "name", "name_en", "title"]);
 
-  const [message, setMessage] =
-    useState({
-      type: "",
-      text: "",
-    });
+const getPreviousBalance = (row) => {
+  if (!row) return 0;
+  const keys = [
+    "previous_balance", "previousBalance", "prev_balance", "prevBalance",
+    "opening_balance", "openingBalance", "balance", "current_balance",
+    "currentBalance", "closing_balance", "closingBalance", "ledger_balance",
+    "ledgerBalance", "account_balance", "accountBalance", "old_balance",
+    "oldBalance", "remaining_balance", "remainingBalance", "due_balance",
+    "dueBalance", "payable", "receivable",
+  ];
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return toNum(row[key]);
+  }
+  const debit = toNum(row.debit || row.total_debit || row.debit_amount || row.dr || row.total_dr);
+  const credit = toNum(row.credit || row.total_credit || row.credit_amount || row.cr || row.total_cr);
+  if (debit || credit) return debit - credit;
+  return 0;
+};
 
-  const toast = useCallback(
-    (type, text) => {
-      setMessage({
-        type,
-        text,
-      });
+const makePartyOption = (row, nameGetter) => ({
+  id: String(getRecordId(row)),
+  name: nameGetter(row),
+  previous_balance: getPreviousBalance(row),
+});
+const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "CategoryName", "name", "name_en", "title"]);
+const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "ProductName", "item_name", "ItemName", "name", "name_en", "title"]);
+const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "UnitName", "name", "name_en", "symbol", "title"]);
+const getProductDesc = (o) => pickText(o, ["product_description", "ProductDescription", "description", "Description", "details", "remarks"]);
 
-      window.clearTimeout(
-        toastTimer.current
-      );
+const getCategoryId = (o) =>
+  o?.id ?? o?.value ?? o?.category_id ?? o?.categoryId ?? o?.CategoryID ?? o?.cat_id ?? o?.CatID ?? "";
 
-      toastTimer.current =
-        window.setTimeout(() => {
-          setMessage({
-            type: "",
-            text: "",
-          });
-        }, 2800);
-    },
-    []
-  );
+const getProductId = (o) =>
+  o?.id ?? o?.value ?? o?.product_id ?? o?.productId ?? o?.ProductID ?? o?.item_id ?? o?.ItemID ?? "";
 
-  useEffect(
-    () => () => {
-      window.clearTimeout(
-        toastTimer.current
-      );
-    },
-    []
-  );
+const getUnitId = (o) =>
+  o?.id ?? o?.value ?? o?.unit_id ?? o?.unitId ?? o?.UnitID ?? "";
+
+const sameId = (a, b) => String(a ?? "") !== "" && String(a ?? "") === String(b ?? "");
+
+const getProductCatId = (p) =>
+  p?.category_id ??
+  p?.categoryId ??
+  p?.CategoryID ??
+  p?.cat_id ??
+  p?.CatID ??
+  p?.product_category_id ??
+  p?.productCategoryId ??
+  p?.ProductCategoryID ??
+  p?.category?.id ??
+  p?.category?.category_id ??
+  p?.category?.CategoryID ??
+  "";
+
+const getProductUnitId = (p) =>
+  p?.unit_id ?? p?.unitId ?? p?.UnitID ?? p?.unit?.id ?? p?.unit?.unit_id ?? p?.unit?.UnitID ?? "";
+
+const getProductPieceRate = (p) =>
+  p?.piece_rate ??
+  p?.pieceRate ??
+  p?.PieceRate ??
+  p?.sale_rate ??
+  p?.saleRate ??
+  p?.SaleRate ??
+  p?.rate ??
+  p?.Rate ??
+  p?.price ??
+  p?.Price ??
+  p?.sale_price ??
+  p?.SalePrice ??
+  p?.retail_price ??
+  p?.RetailPrice ??
+  0;
+
+const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
+const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
+const getProductTypeId = (p) =>
+  p?.product_type_id ??
+  p?.productTypeId ??
+  p?.ProductTypeID ??
+  p?.type_id ??
+  p?.typeId ??
+  p?.TypeID ??
+  p?.product_type?.id ??
+  p?.type?.id ??
+  "";
+const getTypeName = (o) => pickText(o, ["product_type_en", "product_type", "type_name", "type", "name", "name_en", "title"]);
+const getDefaultFmsTypeId = (types = []) => {
+  const found = types.find((x) => /fms/i.test(getTypeName(x)));
+  return found ? String(getRecordId(found)) : types[0] ? String(getRecordId(types[0])) : "";
+};
+
+const getPartyNameByType = (type, row) => {
+  if (type === "employee") return getEmployeeName(row);
+  if (type === "supplier") return getSupplierName(row);
+  if (type === "general_ledger") return getLedgerName(row);
+  return getCustomerName(row);
+};
+
+const getInvPartyType = (inv) =>
+  inv?.customer_type ||
+  inv?.party_type ||
+  (inv?.customer_id ? "customer" : inv?.employee_id ? "employee" : inv?.supplier_id ? "supplier" : inv?.general_ledger_id ? "general_ledger" : "customer");
+
+const getInvPartyId = (inv) => {
+  const type = getInvPartyType(inv);
+  if (inv?.party_id) return inv.party_id;
+  if (type === "employee") return inv?.employee_id || "";
+  if (type === "supplier") return inv?.supplier_id || "";
+  if (type === "general_ledger") return inv?.general_ledger_id || inv?.ledger_id || inv?.account_id || "";
+  return inv?.customer_id || "";
+};
+
+function makeMap(list, getter) {
+  const map = {};
+  list.forEach((row) => {
+    const id = String(getRecordId(row));
+    if (id) map[id] = getter(row);
+  });
+  return map;
+}
+
+function genInvoiceNo(list) {
+  let max = 0;
+  list.forEach((inv) => {
+    const m1 = String(inv.invoice_no || "").match(/^sales-invoice(\d+)$/i);
+    const m2 = String(inv.invoice_no || "").match(/^SI[- ]?(\d+)$/i);
+    const m = m1 || m2;
+    if (m) max = Math.max(max, Number(m[1]));
+  });
+  return `sales-invoice${String(max + 1).padStart(2, "0")}`;
+}
+
+// ✅ Date format: 25/06/2026 (day name removed)
+function formatFullDate(dateValue) {
+  if (!dateValue) return "-";
+  const raw = String(dateValue).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+
+function parseDisplayDate(value) {
+  const v = String(value || "").trim();
+  const slash = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (slash) {
+    const dd = slash[1].padStart(2, "0");
+    const mm = slash[2].padStart(2, "0");
+    const yyyy = slash[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return "";
+}
+
+function DateTextInput({ value, onChange, className = "", style = {}, ...props }) {
+  const [draft, setDraft] = useState(formatFullDate(value));
 
   useEffect(() => {
-    if (
-      !showVoucherModal &&
-      !showAccountModal
-    ) {
-      return undefined;
+    setDraft(formatFullDate(value));
+  }, [value]);
+
+  return (
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/yyyy"
+      className={className}
+      style={style}
+      value={draft}
+      onChange={(e) => {
+        const next = e.target.value;
+        setDraft(next);
+        const parsed = parseDisplayDate(next);
+        if (parsed) onChange(parsed);
+      }}
+      onBlur={() => setDraft(formatFullDate(value))}
+    />
+  );
+}
+
+function useLookup(url) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await axios.get(url);
+      setData(getList(res.data));
+    } catch (err) {
+      setError(err?.message || "Load error");
+    } finally {
+      setLoading(false);
     }
-
-    const oldOverflow =
-      document.body.style.overflow;
-
-    document.body.style.overflow =
-      "hidden";
-
-    return () => {
-      document.body.style.overflow =
-        oldOverflow;
-    };
-  }, [
-    showVoucherModal,
-    showAccountModal,
-  ]);
-
-  const fetchLookups =
-    useCallback(async () => {
-      const response =
-        await axios.get(
-          `${API_BASE}/lookups`
-        );
-
-      const data =
-        response.data?.data ||
-        response.data ||
-        {};
-
-      setLookups({
-        customer: getList(
-          data.customers,
-          "customers"
-        ),
-
-        general_ledger: getList(
-          data.general_ledgers,
-          "general_ledgers"
-        ),
-
-        supplier: getList(
-          data.suppliers,
-          "suppliers"
-        ),
-
-        employee: getList(
-          data.employees,
-          "employees"
-        ),
-
-        groups: getList(
-          data.groups,
-          "groups"
-        ),
-      });
-    }, []);
-
-  const fetchRecords =
-    useCallback(async () => {
-      const response =
-        await axios.get(
-          `${API_BASE}/vouchers`
-        );
-
-      setRecords(
-        getList(
-          response.data,
-          "vouchers"
-        )
-      );
-    }, []);
-
-  const fetchNextNumber =
-    useCallback(async () => {
-      const response =
-        await axios.get(
-          `${API_BASE}/next-number`
-        );
-
-      const number =
-        response.data?.voucher_no ||
-        response.data?.data
-          ?.voucher_no ||
-        "";
-
-      setVoucher(
-        (current) => ({
-          ...current,
-          voucher_no: number,
-        })
-      );
-    }, []);
-
-  const loadPage =
-    useCallback(async () => {
-      setLoading(true);
-
-      try {
-        await Promise.all([
-          fetchLookups(),
-          fetchRecords(),
-        ]);
-      } catch (error) {
-        toast(
-          "error",
-          getError(error)
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, [
-      fetchLookups,
-      fetchRecords,
-      toast,
-    ]);
+  }, [url]);
 
   useEffect(() => {
-    loadPage();
-  }, [loadPage]);
+    fetchData();
+  }, [fetchData]);
 
-  const optionsFor = (type) =>
-    lookups[type] || [];
+  return { data, loading, error, refetch: fetchData };
+}
 
-  const totals = useMemo(
-    () => ({
-      receive: rows.reduce(
-        (sum, row) =>
-          sum +
-          toNum(row.receive),
-        0
-      ),
+function badgeStyle(tone) {
+  const styles = {
+    green: { background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" },
+    blue: { background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe" },
+    red: { background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" },
+    amber: { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" },
+    slate: { background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" },
+  };
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px 10px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+    ...(styles[tone] || styles.slate),
+  };
+}
 
-      paid: rows.reduce(
-        (sum, row) =>
-          sum +
-          toNum(row.paid),
-        0
-      ),
-    }),
-    [rows]
+function printInvoice(invoice, maps, t, isUrdu) {
+  const items = Array.isArray(invoice.items) ? invoice.items : [];
+  const invTotal = toNum(invoice.invoice_total) || items.reduce((s, r) => s + toNum(r.amount), 0);
+  const prev = toNum(invoice.previous_balance);
+  const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
+  const discount = toNum(invoice.discount);
+  const grand = toNum(invoice.grand_total) || invTotal + prev + delivery - discount;
+
+  const rows = items
+    .map((row, idx) => {
+      const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || "-";
+      const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || "-";
+      const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || "-";
+      return `<tr>
+        <td class="center">${idx + 1}</td>
+        <td>${product}<div class="desc">${row.product_description || row.description || ""}</div></td>
+        <td>${category}</td>
+        <td class="center">${unit}</td>
+        <td class="num">${money(row.qty || row.pieces_qty || row.carton_qty)}</td>
+        <td class="num">${money(row.rate)}</td>
+        <td class="num strong">${money(row.amount)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const html = `<!doctype html>
+<html dir="${isUrdu ? "rtl" : "ltr"}">
+<head>
+<title>${invoice.invoice_no || "Sales Invoice"}</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.desc{font-size:10px;color:#64748b;margin-top:4px}.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
+</style>
+</head>
+<body><div class="page"><div class="sheet">
+  <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.invoiceNo}: <b>${invoice.invoice_no || "-"}</b><br/>${t.date}: ${invoice.invoice_date || "-"}</div></div>
+  <div class="body">
+    <div class="grid">
+      <div class="box"><small>${t.invoiceNo}</small><b>${invoice.invoice_no || "-"}</b></div>
+      <div class="box"><small>${t.reference}</small><b>${invoice.reference_no || "-"}</b></div>
+      <div class="box"><small>${t.name}</small><b>${invoice.party_name || invoice.customer_name || "-"}</b></div>
+      <div class="box"><small>${t.dateFull}</small><b>${formatFullDate(invoice.invoice_date, isUrdu ? "ur" : "en")}</b></div>
+      <div class="box"><small>${t.shipTo}</small><b>${invoice.shipment_to || "-"}</b></div>
+    </div>
+    <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="totals">
+      <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
+      <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
+      <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
+      <div class="box"><small>${t.discount}</small><b>${money(discount)}</b></div>
+      <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
+    </div>
+  </div>
+</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+
+  const w = window.open("", "_blank", "width=1200,height=800");
+  if (!w) return;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+function makeInvoiceSheet(invoice, maps, t, isUrdu) {
+  const items = Array.isArray(invoice.items) ? invoice.items : [];
+  const invTotal = toNum(invoice.invoice_total) || items.reduce((s, r) => s + toNum(r.amount), 0);
+  const prev = toNum(invoice.previous_balance);
+  const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
+  const discount = toNum(invoice.discount);
+  const grand = toNum(invoice.grand_total) || invTotal + prev + delivery - discount;
+
+  const rows = items
+    .map((row, idx) => {
+      const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || "-";
+      const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || "-";
+      const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || "-";
+      return `<tr>
+        <td class="center">${idx + 1}</td>
+        <td>${product}<div class="desc">${row.product_description || row.description || ""}</div></td>
+        <td>${category}</td>
+        <td class="center">${unit}</td>
+        <td class="num">${money(row.qty || row.pieces_qty || row.carton_qty)}</td>
+        <td class="num">${money(row.rate)}</td>
+        <td class="num strong">${money(row.amount)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `<div class="sheet">
+    <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.invoiceNo}: <b>${invoice.invoice_no || "-"}</b><br/>${t.date}: ${invoice.invoice_date || "-"}</div></div>
+    <div class="body">
+      <div class="grid">
+        <div class="box"><small>${t.invoiceNo}</small><b>${invoice.invoice_no || "-"}</b></div>
+        <div class="box"><small>${t.reference}</small><b>${invoice.reference_no || "-"}</b></div>
+        <div class="box"><small>${t.name}</small><b>${invoice.party_name || invoice.customer_name || "-"}</b></div>
+        <div class="box"><small>${t.dateFull}</small><b>${formatFullDate(invoice.invoice_date, isUrdu ? "ur" : "en")}</b></div>
+        <div class="box"><small>${t.shipTo}</small><b>${invoice.shipment_to || "-"}</b></div>
+      </div>
+      <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="totals">
+        <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
+        <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
+        <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
+        <div class="box"><small>${t.discount}</small><b>${money(discount)}</b></div>
+        <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function printBulkInvoices(invoices, maps, t, isUrdu) {
+  const sheets = invoices.map((invoice) => makeInvoiceSheet(invoice, maps, t, isUrdu)).join("<div class='page-break'></div>");
+  const html = `<!doctype html>
+<html dir="${isUrdu ? "rtl" : "ltr"}">
+<head>
+<title>${t.bulkPrint}</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden;margin-bottom:18px}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.desc{font-size:10px;color:#64748b;margin-top:4px}.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}.page-break{page-break-after:always}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}.page-break{page-break-after:always}}
+</style>
+</head>
+<body><div class="page">${sheets}</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+
+  const w = window.open("", "_blank", "width=1200,height=800");
+  if (!w) return;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+export default function SalesInvoicePage() {
+  const [lang, setLang] = useState("en");
+  const t = LANG[lang];
+  const isUrdu = lang === "ur";
+  const dir = isUrdu ? "rtl" : "ltr";
+
+  const { data: customers, loading: cuLoading } = useLookup(CUSTOMERS_API);
+  const { data: employees, loading: emLoading } = useLookup(EMPLOYEES_API);
+  const { data: suppliers, loading: suLoading } = useLookup(SUPPLIERS_API);
+  const { data: generalLedgers, loading: glLoading } = useLookup(GENERAL_LEDGERS_API);
+  const { data: categories, loading: catLoading } = useLookup(CATEGORIES_API);
+  const { data: products, loading: prodLoading } = useLookup(PRODUCTS_API);
+  const { data: units, loading: unLoading } = useLookup(UNITS_API);
+  const [productTypes, setProductTypes] = useState([]);
+
+  const [invoices, setInvoices] = useState([]);
+  const [loadingInv, setLoadingInv] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm());
+  const [items, setItems] = useState(defaultInvoiceItems(5));
+  const [search, setSearch] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [bulkPrinting, setBulkPrinting] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(today());
+  const [msg, setMsg] = useState({ type: "", text: "" });
+  const [saving, setSaving] = useState(false);
+
+  const mastersLoading = cuLoading || emLoading || suLoading || glLoading || catLoading || prodLoading || unLoading;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await axios.get(SALE_ORDERS_API);
+        const dropdowns = res.data?.dropdowns || {};
+        const list = getList(dropdowns.product_types || dropdowns.types || res.data?.product_types || res.data?.types);
+        if (alive) setProductTypes(list);
+      } catch {
+        if (alive) setProductTypes([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const customerMap = useMemo(() => makeMap(customers, getCustomerName), [customers]);
+  const employeeMap = useMemo(() => makeMap(employees, getEmployeeName), [employees]);
+  const supplierMap = useMemo(() => makeMap(suppliers, getSupplierName), [suppliers]);
+  const ledgerMap = useMemo(() => makeMap(generalLedgers, getLedgerName), [generalLedgers]);
+  const categoryMap = useMemo(() => makeMap(categories, getCategoryName), [categories]);
+  const productMap = useMemo(() => makeMap(products, getProductName), [products]);
+  const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
+  const typeMap = useMemo(() => makeMap(productTypes, getTypeName), [productTypes]);
+  const defaultFmsTypeId = useMemo(() => getDefaultFmsTypeId(productTypes), [productTypes]);
+
+  const partyOptions = useMemo(() => {
+    if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
+    if (form.party_type === "supplier") return suppliers.map((x) => makePartyOption(x, getSupplierName));
+    if (form.party_type === "general_ledger") return generalLedgers.map((x) => makePartyOption(x, getLedgerName));
+    if (form.party_type === "customer") return customers.map((x) => makePartyOption(x, getCustomerName));
+    return [];
+  }, [form.party_type, customers, employees, suppliers, generalLedgers]);
+
+  const getInvoicePartyName = useCallback(
+    (inv) => {
+      const type = getInvPartyType(inv);
+      const id = String(getInvPartyId(inv));
+      const fallback = inv.party_name || inv.customer_name || inv.employee_name || inv.supplier_name || inv.general_ledger_name || "";
+      if (type === "employee") return employeeMap[id] || fallback;
+      if (type === "supplier") return supplierMap[id] || fallback;
+      if (type === "general_ledger") return ledgerMap[id] || fallback;
+      return customerMap[id] || fallback;
+    },
+    [customerMap, employeeMap, supplierMap, ledgerMap]
   );
+
+  const toast = useCallback((type, text) => {
+    setMsg({ type, text });
+    setTimeout(() => setMsg({ type: "", text: "" }), 2800);
+  }, []);
+
+  const fetchInvoices = useCallback(async () => {
+    setLoadingInv(true);
+    try {
+      const res = await axios.get(API_BASE);
+      setInvoices(getList(res.data));
+    } catch {
+      toast("error", t.loadError);
+    } finally {
+      setLoadingInv(false);
+    }
+  }, [t.loadError, toast]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
+
+  useEffect(() => {
+    if (!defaultFmsTypeId) return;
+    setItems((prev) =>
+      prev.map((row) => (row.product_type_id ? row : { ...row, product_type_id: defaultFmsTypeId }))
+    );
+  }, [defaultFmsTypeId]);
+
+  const invTotal = useMemo(() => items.reduce((sum, row) => sum + toNum(row.amount), 0), [items]);
+  const totalQty = useMemo(() => items.reduce((sum, row) => sum + toNum(row.qty || row.pieces_qty || row.carton_qty), 0), [items]);
+  const grandTotal = invTotal + toNum(form.previous_balance) + toNum(form.delivery_charges) - toNum(form.discount);
 
   const summary = useMemo(() => {
-    const receive =
-      records.reduce(
-        (sum, row) =>
-          sum +
-          toNum(
-            row.total_receive
-          ),
-        0
-      );
-
-    const paid =
-      records.reduce(
-        (sum, row) =>
-          sum +
-          toNum(
-            row.total_paid
-          ),
-        0
-      );
-
-    return {
-      totalVouchers:
-        records.length,
-
-      totalReceive:
-        receive,
-
-      totalPaid:
-        paid,
-
-      netBalance:
-        receive - paid,
-    };
-  }, [records]);
-
-  const filteredRecords =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
-
-      if (!query) {
-        return records;
-      }
-
-      return records.filter(
-        (record) =>
-          [
-            record.voucher_no,
-            record.voucher_date,
-            record.notes,
-            record.account_names,
-          ]
-            .join(" ")
-            .toLowerCase()
-            .includes(query)
-      );
-    }, [records, search]);
-
-  const resetVoucher = () => {
-    setEditingId(null);
-
-    setVoucher(
-      emptyVoucher()
+    return invoices.reduce(
+      (acc, inv) => {
+        const total = toNum(inv.grand_total) || toNum(inv.invoice_total);
+        acc.totalInvoices += 1;
+        acc.totalItems += Number(inv.items_count || inv.items?.length || 0);
+        acc.totalValue += total;
+        acc.totalPrev += toNum(inv.previous_balance);
+        acc.totalDiscount += toNum(inv.discount);
+        acc.totalDelivery += toNum(inv.delivery_charges ?? inv.deliveryCharges);
+        return acc;
+      },
+      { totalInvoices: 0, totalItems: 0, totalValue: 0, totalPrev: 0, totalDiscount: 0, totalDelivery: 0 }
     );
+  }, [invoices]);
 
-    setRows(
-      defaultRows()
-    );
-  };
+  const filtered = useMemo(() => {
+    const customerQ = customerFilter.toLowerCase().trim();
+    let list = invoices;
 
-  const openAdd = async () => {
-    resetVoucher();
-
-    setShowVoucherModal(true);
-
-    try {
-      await fetchNextNumber();
-    } catch (error) {
-      toast(
-        "error",
-        getError(error)
-      );
+    if (customerQ) {
+      list = invoices.filter((inv) => getInvoicePartyName(inv).toLowerCase().includes(customerQ));
+    } else {
+      const dateValue = selectedDate || today();
+      list = invoices.filter((inv) => String(inv.invoice_date || "").slice(0, 10) === dateValue);
     }
+
+    const q = search.toLowerCase().trim();
+    if (!q) return list;
+
+    return list.filter((inv) =>
+      [inv.invoice_no, inv.reference_no, getInvoicePartyName(inv), inv.invoice_date, inv.shipment_to]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [invoices, search, customerFilter, selectedDate, getInvoicePartyName]);
+
+  const openAdd = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm(), invoice_no: genInvoiceNo(invoices) });
+    setItems(defaultInvoiceItems(5));
+    setShowForm(true);
   };
 
   const openEdit = async (id) => {
     try {
-      const response =
-        await axios.get(
-          `${API_BASE}/vouchers/${id}`
-        );
-
-      const record =
-        response.data?.data ||
-        response.data?.voucher ||
-        response.data;
-
-      setEditingId(
-        record.id
-      );
-
-      setVoucher({
-        voucher_no:
-          record.voucher_no ||
-          "",
-
-        voucher_date:
-          String(
-            record.voucher_date ||
-              ""
-          ).slice(0, 10) ||
-          today(),
-
-        notes:
-          record.notes || "",
+      const res = await axios.get(`${API_BASE}/${id}`);
+      const inv = res.data?.data || res.data;
+      const pType = getInvPartyType(inv);
+      const pId = String(getInvPartyId(inv) || "");
+      setEditingId(inv.id);
+      setForm({
+        invoice_no: inv.invoice_no || "",
+        reference_no: inv.reference_no || "",
+        party_type: pType || "",
+        party_id: pId,
+        customer_id: pType === "customer" ? pId : "",
+        invoice_date: inv.invoice_date || today(),
+        shipment_to: inv.shipment_to || "",
+        previous_balance: String(inv.previous_balance || 0),
+        delivery_charges: String(inv.delivery_charges ?? inv.deliveryCharges ?? 0),
+        discount: String(inv.discount || 0),
       });
-
-      const loadedRows =
-        (
-          record.items || []
-        ).map((item) => ({
-          local_id: `${item.id}-${Math.random()
-            .toString(16)
-            .slice(2)}`,
-
-          account_type:
-            item.account_type ||
-            "customer",
-
-          account_id:
-            String(
-              item.account_id ||
-                ""
-            ),
-
-          description:
-            item.description ||
-            "",
-
-          receive:
-            toNum(
-              item.receive
-            ) > 0
-              ? String(
-                  item.receive
-                )
-              : "",
-
-          paid:
-            toNum(item.paid) >
-            0
-              ? String(item.paid)
-              : "",
-        }));
-
-      setRows(
-        loadedRows.length
-          ? loadedRows
-          : defaultRows()
+      setItems(
+        Array.isArray(inv.items) && inv.items.length
+          ? inv.items.map((row) => ({
+              category_id: String(row.category_id ?? row.category?.id ?? ""),
+              product_id: String(row.product_id ?? row.product?.id ?? ""),
+              product_description: String(row.product_description ?? row.description ?? ""),
+              product_type_id: String(row.product_type_id ?? row.productTypeId ?? row.type_id ?? row.typeId ?? ""),
+              unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
+              sale_type: String(row.sale_type || "single"),
+              carton_qty: String(row.carton_qty || ""),
+              pieces_qty: String(row.pieces_qty || ""),
+              qty: String(row.qty || row.quantity || ""),
+              pieces_per_carton: String(row.pieces_per_carton || 0),
+              rate: String(row.rate || 0),
+              amount: String(row.amount || 0),
+            }))
+          : defaultInvoiceItems(5)
       );
-
-      setShowVoucherModal(true);
-    } catch (error) {
-      toast(
-        "error",
-        getError(error)
-      );
+      setShowForm(true);
+    } catch {
+      toast("error", t.editError);
     }
   };
 
-  const updateRow = (
-    localId,
-    field,
-    value
-  ) => {
-    setRows((current) =>
-      current.map((row) => {
-        if (
-          row.local_id !==
-          localId
-        ) {
-          return row;
+  const calcRow = useCallback(
+    (row) => {
+      const prod = products.find((p) => sameId(getProductId(p), row.product_id));
+      const saleUnit = getProductSaleUnit(prod || {});
+      const pcsCtn = toNum(row.pieces_per_carton || getProductPcsCtn(prod || {}));
+      const rate = toNum(row.rate || getProductPieceRate(prod || {}));
+      const saleType = row.sale_type || (saleUnit === "carton" ? "carton" : "single");
+      let qty = 0;
+      let piecesQty = 0;
+      let amount = 0;
+
+      if (saleUnit === "carton" && saleType === "carton") {
+        const cartons = toNum(row.carton_qty);
+        piecesQty = cartons * pcsCtn;
+        qty = piecesQty;
+        amount = qty * rate;
+      } else {
+        qty = toNum(row.qty);
+        piecesQty = saleUnit === "carton" ? qty : 0;
+        amount = qty * rate;
+      }
+
+      return {
+        qty: String(qty || ""),
+        pieces_qty: String(piecesQty || ""),
+        amount: String(amount.toFixed(2)),
+        rate: String(rate || 0),
+        pieces_per_carton: String(pcsCtn || 0),
+      };
+    },
+    [products]
+  );
+
+  const handleItemChange = (index, field, value) => {
+    setItems((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
+        let next = { ...row, [field]: value };
+
+        if (field === "category_id") {
+          // Category choose karne se product/rate/amount zero nahi honge.
+          // Dropdown selected category ke mutabiq filter hoga, lekin row data safe rahega.
+          return next;
         }
 
-        const next = {
-          ...row,
-          [field]: value,
-        };
-
-        if (
-          field ===
-          "account_type"
-        ) {
-          next.account_id = "";
-          next.description = "";
-        }
-
-        if (
-          field === "account_id"
-        ) {
-          const selected =
-            optionsFor(
-              row.account_type
-            ).find(
-              (item) =>
-                String(item.id) ===
-                String(value)
-            );
-
-          if (
-            selected &&
-            !row.description.trim()
-          ) {
-            next.description =
-              getAccountName(
-                selected
-              );
+        if (field === "product_id") {
+          const prod = products.find((p) => sameId(getProductId(p), value));
+          if (prod) {
+            const saleUnit = getProductSaleUnit(prod);
+            next.category_id = String(getProductCatId(prod) || next.category_id || "");
+            next.unit_id = String(getProductUnitId(prod) || "");
+            next.product_description = getProductDesc(prod) || next.product_description || "";
+            next.product_type_id = String(getProductTypeId(prod) || next.product_type_id || defaultFmsTypeId || "");
+            next.rate = String(getProductPieceRate(prod) || 0);
+            next.pieces_per_carton = String(getProductPcsCtn(prod) || 0);
+            next.sale_type = saleUnit === "carton" ? "carton" : "single";
+            next.carton_qty = "";
+            next.pieces_qty = "";
+            next.qty = "";
           }
         }
 
-        if (
-          field === "receive" &&
-          toNum(value) > 0
-        ) {
-          next.paid = "";
+        if (field === "sale_type") {
+          next.carton_qty = "";
+          next.pieces_qty = "";
+          next.qty = "";
         }
 
-        if (
-          field === "paid" &&
-          toNum(value) > 0
-        ) {
-          next.receive = "";
-        }
+        if (field === "product_description") return next;
 
+        const calculated = calcRow(next);
+        next.qty = calculated.qty;
+        next.pieces_qty = calculated.pieces_qty;
+        next.amount = calculated.amount;
+        next.rate = calculated.rate;
+        next.pieces_per_carton = calculated.pieces_per_carton;
         return next;
       })
     );
   };
 
-  const addRow = () =>
-    setRows((current) => [
-      ...current,
-      emptyRow(),
-    ]);
+  const addRow = () => setItems((prev) => [...prev, emptyItem()]);
+  const removeRow = (index) => setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
 
-  const removeRow = (
-    localId
-  ) => {
-    setRows((current) => {
-      const next =
-        current.filter(
-          (row) =>
-            row.local_id !==
-            localId
-        );
-
-      return next.length
-        ? next
-        : [emptyRow()];
-    });
+  const handlePartyTypeChange = (value) => {
+    setForm((prev) => ({ ...prev, party_type: value, party_id: "", customer_id: "", previous_balance: "0" }));
   };
 
-  const prepareItems = () =>
-    rows
-      .map((row) => ({
-        account_type:
-          row.account_type,
-
-        account_id:
-          row.account_id,
-
-        description:
-          row.description.trim(),
-
-        receive:
-          toNum(row.receive),
-
-        paid:
-          toNum(row.paid),
-      }))
-      .filter(
-        (row) =>
-          row.account_id ||
-          row.description ||
-          row.receive > 0 ||
-          row.paid > 0
-      );
-
-  const validateVoucher = () => {
-    if (
-      !voucher.voucher_no.trim()
-    ) {
-      return "Voucher number is required.";
-    }
-
-    if (
-      !voucher.voucher_date
-    ) {
-      return "Date is required.";
-    }
-
-    const items =
-      prepareItems();
-
-    if (!items.length) {
-      return "Add at least one valid account row.";
-    }
-
-    for (
-      const [
-        index,
-        item,
-      ] of items.entries()
-    ) {
-      if (
-        !item.account_type ||
-        !item.account_id
-      ) {
-        return `Select account type and account in row ${
-          index + 1
-        }.`;
-      }
-
-      if (
-        item.receive <= 0 &&
-        item.paid <= 0
-      ) {
-        return `Enter Receive or Paid amount in row ${
-          index + 1
-        }.`;
-      }
-
-      if (
-        item.receive > 0 &&
-        item.paid > 0
-      ) {
-        return `Receive and Paid cannot both be entered in row ${
-          index + 1
-        }.`;
-      }
-    }
-
-    return "";
+  const handlePartyChange = (value) => {
+    const selected = partyOptions.find((x) => String(x.id) === String(value));
+    setForm((prev) => ({
+      ...prev,
+      party_id: value,
+      customer_id: prev.party_type === "customer" ? value : "",
+      previous_balance: value ? String(selected?.previous_balance ?? 0) : "0",
+    }));
   };
 
-  const saveVoucher =
-    async () => {
-      const validation =
-        validateVoucher();
+  const preparePayload = () => {
+    if (!String(form.invoice_no || "").trim()) throw new Error(t.requiredInvoice);
+    if (!form.party_type) throw new Error(t.requiredPartyType);
+    if (!form.party_id) throw new Error(t.requiredParty);
 
-      if (validation) {
-        toast(
-          "error",
-          validation
-        );
-
-        return;
-      }
-
-      setSaving(true);
-
-      try {
-        const payload = {
-          ...voucher,
-          items: prepareItems(),
+    const validItems = items
+      .map((row, idx) => {
+        const prod = products.find((p) => sameId(getProductId(p), row.product_id));
+        const enriched = {
+          ...row,
+          category_id: row.category_id || getProductCatId(prod || {}),
+          unit_id: row.unit_id || getProductUnitId(prod || {}),
+          product_type_id: row.product_type_id || getProductTypeId(prod || {}) || defaultFmsTypeId,
+          rate: row.rate || getProductPieceRate(prod || {}),
+          pieces_per_carton: row.pieces_per_carton || getProductPcsCtn(prod || {}),
         };
+        const calculated = calcRow(enriched);
+        const qty = toNum(calculated.qty || enriched.qty || enriched.pieces_qty || enriched.carton_qty);
+        const amount = toNum(calculated.amount || enriched.amount);
 
-        if (editingId) {
-          await axios.put(
-            `${API_BASE}/vouchers/${editingId}`,
-            payload
-          );
+        return {
+          sr: idx + 1,
+          category_id: Number(enriched.category_id) || null,
+          product_id: Number(enriched.product_id) || null,
+          product_type_id: Number(enriched.product_type_id) || null,
+          product_description: String(enriched.product_description || getProductDesc(prod || {}) || "").trim(),
+          description: String(enriched.product_description || getProductDesc(prod || {}) || "").trim(),
+          unit_id: Number(enriched.unit_id) || null,
+          sale_type: enriched.sale_type || "single",
+          carton_qty: toNum(enriched.carton_qty),
+          pieces_qty: toNum(calculated.pieces_qty || enriched.pieces_qty),
+          qty,
+          quantity: qty,
+          pieces_per_carton: toNum(calculated.pieces_per_carton || enriched.pieces_per_carton),
+          rate: toNum(calculated.rate || enriched.rate),
+          amount,
+        };
+      })
+      .filter((row) => row.product_id && row.qty > 0);
 
-          toast(
-            "success",
-            "Voucher updated successfully."
-          );
-        } else {
-          await axios.post(
-            `${API_BASE}/vouchers`,
-            payload
-          );
+    if (!validItems.length) throw new Error(t.requiredItem);
 
-          toast(
-            "success",
-            "Voucher saved successfully."
-          );
-        }
+    const partyId = Number(form.party_id);
+    const total = validItems.reduce((sum, row) => sum + toNum(row.amount), 0);
+    const delivery = toNum(form.delivery_charges);
+    const previous = toNum(form.previous_balance);
+    const discount = toNum(form.discount);
+    const partyName = partyOptions.find((p) => String(p.id) === String(form.party_id))?.name || "";
 
-        setShowVoucherModal(false);
-
-        resetVoucher();
-
-        await fetchRecords();
-      } catch (error) {
-        toast(
-          "error",
-          getError(error)
-        );
-      } finally {
-        setSaving(false);
-      }
+    return {
+      invoice_no: form.invoice_no.trim(),
+      reference_no: form.reference_no.trim(),
+      customer_type: form.party_type,
+      party_type: form.party_type,
+      party_id: partyId,
+      party_name: partyName,
+      customer_id: form.party_type === "customer" ? partyId : null,
+      employee_id: form.party_type === "employee" ? partyId : null,
+      supplier_id: form.party_type === "supplier" ? partyId : null,
+      general_ledger_id: form.party_type === "general_ledger" ? partyId : null,
+      invoice_date: form.invoice_date,
+      shipment_to: form.shipment_to || "",
+      previous_balance: previous,
+      delivery_charges: delivery,
+      discount,
+      invoice_total: total,
+      grand_total: total + previous + delivery - discount,
+      items: validItems,
     };
-
-  const deleteVoucher =
-    async (id) => {
-      if (
-        !window.confirm(
-          t.deleteConfirm
-        )
-      ) {
-        return;
-      }
-
-      try {
-        await axios.delete(
-          `${API_BASE}/vouchers/${id}`
-        );
-
-        toast(
-          "success",
-          "Voucher deleted successfully."
-        );
-
-        await fetchRecords();
-      } catch (error) {
-        toast(
-          "error",
-          getError(error)
-        );
-      }
-    };
-
-  const openAccountModal = (
-    rowId = null
-  ) => {
-    setAccountTargetRow(
-      rowId
-    );
-
-    setAccountForm({
-      account_code: "",
-      account_title: "",
-      group_id: "",
-      opening_balance: "",
-    });
-
-    setShowAccountModal(true);
   };
 
-  const saveAccount =
-    async () => {
-      if (
-        !accountForm.account_title.trim()
-      ) {
-        toast(
-          "error",
-          "Account title is required."
-        );
+  const handleSave = async () => {
+    let payload;
+    try {
+      payload = preparePayload();
+    } catch (err) {
+      toast("error", err.message);
+      return;
+    }
 
-        return;
+    try {
+      setSaving(true);
+      if (editingId) {
+        await axios.put(`${API_BASE}/${editingId}`, payload);
+        toast("success", t.updated);
+      } else {
+        await axios.post(API_BASE, payload);
+        toast("success", t.saved);
       }
+      setShowForm(false);
+      setEditingId(null);
+      setForm(emptyForm());
+      setItems(defaultInvoiceItems(5));
+      fetchInvoices();
+    } catch {
+      toast("error", t.saveError);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      setAccountSaving(true);
+  const handleDelete = async (id) => {
+    if (!window.confirm(t.deleteConfirm)) return;
+    try {
+      await axios.delete(`${API_BASE}/${id}`);
+      toast("success", t.deleted);
+      fetchInvoices();
+    } catch {
+      toast("error", t.loadError);
+    }
+  };
 
-      try {
-        const response =
-          await axios.post(
-            `${API_BASE}/accounts`,
-            accountForm
-          );
+  const handlePrint = async (id) => {
+    try {
+      const res = await axios.get(`${API_BASE}/${id}`);
+      const inv = res.data?.data || res.data;
+      const normItems = (inv.items || []).map((row, index) => ({
+        sr: row.sr || index + 1,
+        category_id: String(row.category_id ?? row.category?.id ?? ""),
+        product_id: String(row.product_id ?? row.product?.id ?? ""),
+        unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
+        product_description: row.product_description || row.description || "",
+        category_name: row.category_name || categoryMap[String(row.category_id ?? "")] || "",
+        product_name: row.product_name || productMap[String(row.product_id ?? "")] || "",
+        unit_name: row.unit_name || unitMap[String(row.unit_id ?? "")] || "",
+        sale_type: row.sale_type || "single",
+        carton_qty: row.carton_qty || "",
+        pieces_qty: row.pieces_qty || "",
+        pieces_per_carton: row.pieces_per_carton || 0,
+        qty: row.qty || row.quantity || "",
+        rate: row.rate || 0,
+        amount: row.amount || 0,
+      }));
 
-        const account =
-          response.data?.data ||
-          response.data?.account ||
-          response.data;
+      const partyName = getInvoicePartyName(inv);
+      printInvoice({ ...inv, party_name: inv.party_name || partyName, items: normItems }, { cat: categoryMap, prod: productMap, unit: unitMap }, t, isUrdu);
+    } catch {
+      toast("error", t.printError);
+    }
+  };
 
-        setLookups(
-          (current) => ({
-            ...current,
+  const normalizeInvoiceForPrint = useCallback(
+    (inv) => {
+      const normItems = (inv.items || []).map((row, index) => ({
+        sr: row.sr || index + 1,
+        category_id: String(row.category_id ?? row.category?.id ?? ""),
+        product_id: String(row.product_id ?? row.product?.id ?? ""),
+        unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
+        product_description: row.product_description || row.description || "",
+        category_name: row.category_name || categoryMap[String(row.category_id ?? "")] || "",
+        product_name: row.product_name || productMap[String(row.product_id ?? "")] || "",
+        unit_name: row.unit_name || unitMap[String(row.unit_id ?? "")] || "",
+        sale_type: row.sale_type || "single",
+        carton_qty: row.carton_qty || "",
+        pieces_qty: row.pieces_qty || "",
+        pieces_per_carton: row.pieces_per_carton || 0,
+        qty: row.qty || row.quantity || "",
+        rate: row.rate || 0,
+        amount: row.amount || 0,
+      }));
+      const partyName = getInvoicePartyName(inv);
+      return { ...inv, party_name: inv.party_name || partyName, items: normItems };
+    },
+    [categoryMap, productMap, unitMap, getInvoicePartyName]
+  );
 
-            general_ledger: [
-              account,
+  const handleBulkPrint = async () => {
+    if (!filtered.length) {
+      toast("error", t.noRecords);
+      return;
+    }
 
-              ...current.general_ledger.filter(
-                (row) =>
-                  String(row.id) !==
-                  String(
-                    account.id
-                  )
-              ),
-            ],
-          })
-        );
-
-        if (accountTargetRow) {
-          setRows((current) =>
-            current.map((row) =>
-              row.local_id ===
-              accountTargetRow
-                ? {
-                    ...row,
-
-                    account_type:
-                      "general_ledger",
-
-                    account_id:
-                      String(
-                        account.id
-                      ),
-
-                    description:
-                      row.description ||
-                      getAccountName(
-                        account
-                      ),
-                  }
-                : row
-            )
-          );
-        }
-
-        setShowAccountModal(false);
-
-        setAccountTargetRow(null);
-
-        toast(
-          "success",
-          "Account added and dropdown refreshed."
-        );
-      } catch (error) {
-        toast(
-          "error",
-          getError(error)
-        );
-      } finally {
-        setAccountSaving(false);
-      }
-    };
-
-  const printVoucher =
-    async (id) => {
-      try {
-        const response =
-          await axios.get(
-            `${API_BASE}/vouchers/${id}`
-          );
-
-        const record =
-          response.data?.data ||
-          response.data?.voucher ||
-          response.data;
-
-        const rowsHtml =
-          (
-            record.items || []
-          )
-            .map(
-              (
-                item,
-                index
-              ) => `
-                <tr>
-                  <td>${
-                    index + 1
-                  }</td>
-
-                  <td>${
-                    item.account_type_label ||
-                    item.account_type
-                  }</td>
-
-                  <td>${
-                    item.account_name ||
-                    "-"
-                  }</td>
-
-                  <td>${
-                    item.description ||
-                    "-"
-                  }</td>
-
-                  <td>${
-                    toNum(
-                      item.receive
-                    ) > 0
-                      ? money(
-                          item.receive
-                        )
-                      : "-"
-                  }</td>
-
-                  <td>${
-                    toNum(
-                      item.paid
-                    ) > 0
-                      ? money(
-                          item.paid
-                        )
-                      : "-"
-                  }</td>
-                </tr>
-              `
-            )
-            .join("");
-
-        const popup =
-          window.open(
-            "",
-            "_blank",
-            "width=1100,height=800"
-          );
-
-        if (!popup) {
-          throw new Error(
-            "Please allow pop-ups for printing."
-          );
-        }
-
-        popup.document.write(`
-          <!doctype html>
-
-          <html>
-            <head>
-              <title>
-                ${record.voucher_no}
-              </title>
-
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  padding: 28px;
-                  color: #172033;
-                }
-
-                h1 {
-                  text-align: center;
-                }
-
-                .meta {
-                  display: flex;
-                  justify-content: space-between;
-                  margin: 24px 0;
-                }
-
-                table {
-                  width: 100%;
-                  border-collapse: collapse;
-                }
-
-                th,
-                td {
-                  border: 1px solid #d5dae3;
-                  padding: 10px;
-                  text-align: left;
-                }
-
-                th {
-                  background: #111827;
-                  color: white;
-                }
-
-                .totals {
-                  display: flex;
-                  justify-content: flex-end;
-                  gap: 30px;
-                  margin-top: 18px;
-                  font-weight: bold;
-                }
-              </style>
-            </head>
-
-            <body>
-              <h1>
-                Cash Book Voucher
-              </h1>
-
-              <div class="meta">
-                <strong>
-                  Voucher No:
-                  ${record.voucher_no}
-                </strong>
-
-                <strong>
-                  Date:
-                  ${formatDate(
-                    record.voucher_date
-                  )}
-                </strong>
-              </div>
-
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>
-                      Account Type
-                    </th>
-                    <th>Account</th>
-                    <th>Description</th>
-                    <th>Receive</th>
-                    <th>Paid</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  ${rowsHtml}
-                </tbody>
-              </table>
-
-              <div class="totals">
-                <span>
-                  Total Receive:
-                  Rs ${money(
-                    record.total_receive
-                  )}
-                </span>
-
-                <span>
-                  Total Paid:
-                  Rs ${money(
-                    record.total_paid
-                  )}
-                </span>
-              </div>
-
-              <script>
-                window.onload = () =>
-                  setTimeout(
-                    () => window.print(),
-                    300
-                  );
-              </script>
-            </body>
-          </html>
-        `);
-
-        popup.document.close();
-      } catch (error) {
-        toast(
-          "error",
-          getError(error)
-        );
-      }
-    };
+    try {
+      setBulkPrinting(true);
+      const detailed = await Promise.all(
+        filtered.map(async (inv) => {
+          const res = await axios.get(`${API_BASE}/${inv.id}`);
+          return normalizeInvoiceForPrint(res.data?.data || res.data);
+        })
+      );
+      printBulkInvoices(detailed, { cat: categoryMap, prod: productMap, unit: unitMap }, t, isUrdu);
+    } catch {
+      toast("error", t.printError);
+    } finally {
+      setBulkPrinting(false);
+    }
+  };
 
   return (
-    <div
-      dir={dir}
-      className="invoice-page"
-    >
-      <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
+    <div dir={dir} className="invoice-page">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
+        *{box-sizing:border-box}
+        .invoice-page{min-height:100vh;background:linear-gradient(135deg,#f8fafc,#eef2ff);padding:18px;color:#0f172a;font-family:${isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif"};overflow-x:hidden}
+        @keyframes fadeSlide{from{opacity:0;transform:translateY(-12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .page-wrap{max-width:1220px;width:100%;margin:0 auto}.form-page-wrap{max-width:1220px;width:100%;margin:0 auto;animation:fadeSlide .22s ease-out both}.fullPageInputBox{width:100%!important;max-width:100%!important;min-height:calc(100vh - 36px);box-shadow:0 18px 48px rgba(15,23,42,.08)!important}.top-card{background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:22px;padding:20px 22px;box-shadow:0 18px 48px rgba(15,23,42,.08);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.title{margin:0;font-size:30px;font-weight:950;letter-spacing:-.8px}.subtitle{margin:5px 0 0;color:#64748b;font-size:13px}.btn{border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.12s;box-shadow:none}.btn:hover{background:#f8fafc;transform:none;filter:none}.btn-primary{background:white;color:#0f172a;border:1px solid #cbd5e1;box-shadow:none}.btn-soft{background:white;color:#0f172a;border:1px solid #cbd5e1}.btn-active{background:#f8fafc;color:#0f172a;border:1px solid #94a3b8}.btn-green{background:white;color:#0f172a;border:1px solid #cbd5e1}.btn-red{background:white;color:#0f172a;border:1px solid #cbd5e1}.btn-yellow{background:white;color:#0f172a;border:1px solid #cbd5e1}.summary-grid{animation:fadeSlide .24s ease-out both;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}.summary-card{background:white;border:1px solid #dbe3ee;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05);animation:pop .22s ease-out both}.summary-card small{display:block;color:#64748b;font-size:10.5px;font-weight:950;text-transform:uppercase;letter-spacing:.5px}.summary-card b{display:block;margin-top:7px;font-size:18px;font-weight:950;font-family:monospace}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.search{width:min(430px,100%);height:40px;border:1px solid #cbd5e1;border-radius:14px;padding:0 13px;font-size:13px;outline:none;background:white}.filter{height:36px;border:1px solid #cbd5e1;border-radius:12px;background:white;padding:0 10px;font-weight:800;color:#475569;cursor:pointer}.filter.active{background:#4f46e5;color:white;border-color:#4f46e5}.card{background:white;border:1px solid #dbe3ee;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.05);overflow:hidden}.table-wrap{overflow-x:auto}table.list{width:100%;border-collapse:collapse;table-layout:fixed}table.list th{background:#111827;color:rgba(255,255,255,.78);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:12px 9px}table.list td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:13px}table.list tr:hover td{background:#f8fafc}.toast{position:fixed;${isUrdu ? "left" : "right"}:18px;bottom:18px;z-index:120;color:white;padding:12px 16px;border-radius:14px;font-weight:900;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+        .modal-back{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(6px);z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.invoice-modal{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden;animation:fadeSlide .22s ease-out both}.modal-title{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px}.modal-title h2{margin:0;font-size:17px;font-weight:900}.mode-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);border-radius:999px;padding:3px 9px;font-size:9.5px;font-weight:900;margin-bottom:3px}.close-btn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer;font-size:18px}.modal-body{padding:14px;background:#f3f6fb;max-height:calc(100vh - 112px);overflow:auto}.form-box{background:white;border:1px solid #dbe3ee;border-radius:14px;padding:10px;box-shadow:0 8px 20px rgba(15,23,42,.045);margin-bottom:10px}.top-line{display:grid;grid-template-columns:150px 235px 130px 160px 120px 210px;gap:8px;align-items:end}.second-line{display:grid;grid-template-columns:1fr 145px 145px 145px;gap:8px;align-items:end}.label{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.input,.select,.product-input{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650;box-shadow:none;transition:.16s}.input:focus,.select:focus,.product-input:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.date-box{display:grid;grid-template-columns:105px 1fr;gap:6px}.date-preview{height:34px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc;padding:7px 9px;font-size:11px;font-weight:900;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.section-head{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a;box-shadow:0 10px 24px rgba(15,23,42,.045)}.section-body{background:white;border:1px solid #dbe3ee;border-top:none;border-radius:0 0 14px 14px;padding:8px;box-shadow:0 12px 28px rgba(15,23,42,.055);overflow:auto}.product-table{width:100%;min-width:1030px;border-collapse:collapse;background:white}.product-table th,.product-table td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.product-table th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.product-table tr:last-child td{border-bottom:none}.product-table td:last-child,.product-table th:last-child{border-right:none}.totals-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.total-box{border:1px solid #dbe3ee;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:18px;padding:12px 14px;box-shadow:0 8px 20px rgba(15,23,42,.045)}.total-box label{display:block;font-size:10.5px;color:#64748b;margin-bottom:6px;font-weight:950;text-transform:uppercase}.total-box b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:20px;letter-spacing:-.4px}.grand{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.footer{padding:14px 0 0;display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(248,250,252,0),#eef2f7 35%)}.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}.inputModalBox{width:min(1060px,100%);background:#f8fafc;border:1px solid #cbd5e1;border-radius:18px;box-shadow:0 30px 90px rgba(15,23,42,.28);overflow:hidden}.inputModalTitle{height:54px;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:17px;font-weight:900}.closeBtn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white;width:34px;height:32px;border-radius:10px;cursor:pointer}.inputModalBody{padding:14px}.form-box{background:transparent;border:none;border-radius:0;padding:0;box-shadow:none;margin-bottom:0}.formTopLine{display:grid;grid-template-columns:160px 260px 140px 120px 210px 140px;gap:10px;align-items:end;margin-bottom:10px}.basicLabel{font-size:11px;color:#334155;margin-bottom:5px;display:block;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.basicInput,.basicSelect,.productInput{width:100%;height:34px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 9px;font-size:13px;border-radius:10px;outline:none;font-weight:650}.basicInput[readonly]{background:#f1f5f9}.basicInput:focus,.basicSelect:focus,.productInput:focus,.search:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.10)}.sectionHead{height:38px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #cbd5e1;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;margin-top:12px;font-weight:950;color:#0f172a}.basicBtn{height:32px;border:1px solid #cbd5e1;background:white;color:#0f172a;padding:5px 12px;font-size:12px;cursor:pointer;border-radius:10px;font-weight:850}.basicBtn:hover{background:#f8fafc}.basicBtnGreen{background:white;border-color:#cbd5e1;color:#0f172a}.basicBtnRed{background:white;border-color:#cbd5e1;color:#0f172a}.basicProductTable{width:100%;border-collapse:collapse;background:white;min-width:1030px}.basicProductTable th,.basicProductTable td{border:1px solid #dbe3ee;padding:5px;font-size:12px}.basicProductTable th{background:#e2e8f0;text-align:center;color:#334155;font-weight:900}.paymentPanel{border:1px solid #cbd5e1;border-top:none;padding:12px;background:white;border-radius:0 0 14px 14px;overflow:auto}.finalTotalBar{margin-top:12px;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.totalBox{border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:10px 12px}.totalBox label{display:block;font-size:11px;color:#64748b;margin-bottom:6px;font-weight:900}.totalBox b{display:block;text-align:${isUrdu ? "left" : "right"};font-family:monospace;font-size:18px}.grandBox{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}.modalFooterBasic{padding:12px 0 0;display:flex;justify-content:flex-end;gap:8px}@media(max-width:1120px){.summary-grid{grid-template-columns:repeat(2,1fr)}.top-line,.second-line{grid-template-columns:1fr 1fr}.date-box{grid-template-columns:1fr}.totals-grid{grid-template-columns:repeat(2,1fr)}table.list{min-width:860px}}@media(max-width:650px){.summary-grid,.top-line,.second-line,.totals-grid{grid-template-columns:1fr}.title{font-size:24px}}
+
+        .inputModalBox{width:100%!important;max-width:100%!important}.inputModalBody{overflow-x:hidden}.formTopLine{grid-template-columns:150px 250px 140px 140px minmax(230px,1fr)!important}.formTopLine>div:nth-child(6){grid-column:1/-1}.date-box{display:grid;grid-template-columns:118px minmax(0,1fr)!important;gap:6px}.date-preview{min-width:0;text-overflow:ellipsis!important;white-space:nowrap}.paymentPanel{overflow-x:auto}.basicProductTable{min-width:1110px!important;table-layout:fixed}.basicProductTable th:nth-child(1),.basicProductTable td:nth-child(1){width:36px}.basicProductTable th:nth-child(2),.basicProductTable td:nth-child(2){width:170px}.basicProductTable th:nth-child(3),.basicProductTable td:nth-child(3){width:135px}.basicProductTable th:nth-child(4),.basicProductTable td:nth-child(4){width:145px}.basicProductTable th:nth-child(5),.basicProductTable td:nth-child(5){width:110px}.basicProductTable th:nth-child(6),.basicProductTable td:nth-child(6){width:110px}.basicProductTable th:nth-child(7),.basicProductTable td:nth-child(7){width:70px}.basicProductTable th:nth-child(8),.basicProductTable td:nth-child(8){width:85px}.basicProductTable th:nth-child(9),.basicProductTable td:nth-child(9){width:85px}.basicProductTable th:nth-child(10),.basicProductTable td:nth-child(10){width:70px}.basicProductTable th:nth-child(11),.basicProductTable td:nth-child(11){width:100px}.basicProductTable th:nth-child(12),.basicProductTable td:nth-child(12){width:36px}.productInput{min-width:0!important;padding:5px 6px!important}.finalTotalBar{grid-template-columns:repeat(3,1fr)!important}
+        @media(max-width:1250px){.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))!important}.formTopLine>div:nth-child(6){grid-column:1/-1}.date-box{grid-template-columns:125px minmax(0,1fr)!important}.inputModalBox{width:100%!important}.finalTotalBar{grid-template-columns:repeat(3,1fr)!important}}
+        @media(max-width:780px){.formTopLine{grid-template-columns:1fr!important}.formTopLine>div:nth-child(6){grid-column:1}.date-box{grid-template-columns:1fr!important}.date-preview{min-width:0}.finalTotalBar{grid-template-columns:1fr!important}.basicProductTable{min-width:980px!important}.inputModalBody{padding:10px!important}}
 
-        .invoice-page {
-          min-height: 100vh;
-          background:
-            linear-gradient(
-              135deg,
-              #f8fafc,
-              #eef2ff
-            );
-          padding: 18px;
-          color: #0f172a;
-          font-family:
-            ${
-              isUrdu
-                ? "'Noto Nastaliq Urdu', serif"
-                : "Arial, sans-serif"
-            };
-          overflow-x: hidden;
-        }
-
-        @keyframes fadeSlide {
-          from {
-            opacity: 0;
-            transform:
-              translateY(-12px)
-              scale(.985);
-          }
-
-          to {
-            opacity: 1;
-            transform:
-              translateY(0)
-              scale(1);
-          }
-        }
-
-        @keyframes pop {
-          from {
-            opacity: 0;
-            transform:
-              translateY(10px)
-              scale(.97);
-          }
-
-          to {
-            opacity: 1;
-            transform:
-              translateY(0)
-              scale(1);
-          }
-        }
-
-        .page-wrap {
-          max-width: 1220px;
-          width: 100%;
-          margin: 0 auto;
-        }
-
-        .top-card {
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              .94
-            );
-          border:
-            1px solid #dbe3ee;
-          border-radius: 22px;
-          padding: 20px 22px;
-          box-shadow:
-            0 18px 48px
-            rgba(
-              15,
-              23,
-              42,
-              .08
-            );
-          display: flex;
-          justify-content:
-            space-between;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-
-        .title {
-          margin: 0;
-          font-size: 30px;
-          font-weight: 950;
-          letter-spacing: -.8px;
-        }
-
-        .subtitle {
-          margin: 5px 0 0;
-          color: #64748b;
-          font-size: 13px;
-        }
-
-        .btn {
-          border:
-            1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
-          border-radius: 10px;
-          padding: 8px 12px;
-          font-weight: 800;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: .12s;
-          box-shadow: none;
-        }
-
-        .btn:hover {
-          background: #f8fafc;
-        }
-
-        .btn-primary {
-          background: white;
-          color: #0f172a;
-          border:
-            1px solid #cbd5e1;
-        }
-
-        .btn-soft {
-          background: white;
-          color: #0f172a;
-          border:
-            1px solid #cbd5e1;
-        }
-
-        .btn-active {
-          background: #f8fafc;
-          color: #0f172a;
-          border:
-            1px solid #94a3b8;
-        }
-
-        .summary-grid {
-          animation:
-            fadeSlide
-            .24s ease-out both;
-          display: grid;
-          grid-template-columns:
-            repeat(4, 1fr);
-          gap: 10px;
-          margin: 14px 0;
-        }
-
-        .summary-card {
-          background: white;
-          border:
-            1px solid #dbe3ee;
-          border-radius: 18px;
-          padding: 14px;
-          box-shadow:
-            0 8px 22px
-            rgba(
-              15,
-              23,
-              42,
-              .05
-            );
-          animation:
-            pop
-            .22s ease-out both;
-        }
-
-        .summary-card small {
-          display: block;
-          color: #64748b;
-          font-size: 10.5px;
-          font-weight: 950;
-          text-transform:
-            uppercase;
-          letter-spacing: .5px;
-        }
-
-        .summary-card b {
-          display: block;
-          margin-top: 7px;
-          font-size: 18px;
-          font-weight: 950;
-          font-family:
-            monospace;
-        }
-
-        .toolbar {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
-          margin:
-            14px 0 12px;
-        }
-
-        .search {
-          width:
-            min(430px, 100%);
-          height: 40px;
-          border:
-            1px solid #cbd5e1;
-          border-radius: 14px;
-          padding: 0 13px;
-          font-size: 13px;
-          outline: none;
-          background: white;
-        }
-
-        .search:focus {
-          border-color: #4f46e5;
-          box-shadow:
-            0 0 0 3px
-            rgba(
-              79,
-              70,
-              229,
-              .10
-            );
-        }
-
-        .card {
-          background: white;
-          border:
-            1px solid #dbe3ee;
-          border-radius: 18px;
-          box-shadow:
-            0 8px 24px
-            rgba(
-              15,
-              23,
-              42,
-              .05
-            );
-          overflow: hidden;
-        }
-
-        .table-wrap {
-          overflow-x: auto;
-        }
-
-        table.list {
-          width: 100%;
-          border-collapse:
-            collapse;
-          table-layout: fixed;
-          min-width: 850px;
-        }
-
-        table.list th {
-          background: #111827;
-          color:
-            rgba(
-              255,
-              255,
-              255,
-              .78
-            );
-          font-size: 10px;
-          text-transform:
-            uppercase;
-          letter-spacing: .5px;
-          padding: 12px 9px;
-        }
-
-        table.list td {
-          padding: 12px 9px;
-          border-bottom:
-            1px solid #eef2f7;
-          font-size: 13px;
-        }
-
-        table.list tr:hover td {
-          background: #f8fafc;
-        }
-
-        .toast {
-          position: fixed;
-          ${
-            isUrdu
-              ? "left"
-              : "right"
-          }: 18px;
-          bottom: 18px;
-          z-index: 120;
-          color: white;
-          padding: 12px 16px;
-          border-radius: 14px;
-          font-weight: 900;
-          box-shadow:
-            0 20px 50px
-            rgba(
-              15,
-              23,
-              42,
-              .25
-            );
-        }
-
-        .modal-back {
-          position: fixed;
-          inset: 0;
-          background:
-            rgba(
-              15,
-              23,
-              42,
-              .45
-            );
-          backdrop-filter:
-            blur(6px);
-          z-index: 80;
-          display: flex;
-          align-items:
-            flex-start;
-          justify-content:
-            center;
-          padding: 12px;
-          overflow: auto;
-        }
-
-        .invoice-modal {
-          width:
-            min(1060px, 100%);
-          background: #f8fafc;
-          border:
-            1px solid #cbd5e1;
-          border-radius: 18px;
-          box-shadow:
-            0 30px 90px
-            rgba(
-              15,
-              23,
-              42,
-              .28
-            );
-          overflow: hidden;
-          animation:
-            fadeSlide
-            .22s ease-out both;
-        }
-
-        .modal-title {
-          min-height: 54px;
-          background:
-            linear-gradient(
-              135deg,
-              #0f172a,
-              #1e293b
-            );
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content:
-            space-between;
-          padding: 8px 18px;
-          gap: 12px;
-        }
-
-        .modal-title h2 {
-          margin: 0;
-          font-size: 17px;
-          font-weight: 900;
-        }
-
-        .mode-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              .18
-            );
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              .10
-            );
-          border-radius: 999px;
-          padding: 3px 9px;
-          font-size: 9.5px;
-          font-weight: 900;
-          margin-bottom: 3px;
-        }
-
-        .modal-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .title-btn,
-        .close-btn {
-          border:
-            1px solid
-            rgba(
-              255,
-              255,
-              255,
-              .25
-            );
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              .08
-            );
-          color: white;
-          border-radius: 10px;
-          cursor: pointer;
-        }
-
-        .title-btn {
-          min-height: 32px;
-          padding: 5px 10px;
-          font-size: 11px;
-          font-weight: 850;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .close-btn {
-          width: 34px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-        }
-
-        .modal-body {
-          padding: 14px;
-          background: #f3f6fb;
-          max-height:
-            calc(100vh - 78px);
-          overflow: auto;
-        }
-
-        .formTopLine {
-          display: grid;
-          grid-template-columns:
-            180px
-            180px
-            minmax(260px, 1fr);
-          gap: 10px;
-          align-items: end;
-          margin-bottom: 10px;
-        }
-
-        .basicLabel {
-          font-size: 11px;
-          color: #334155;
-          margin-bottom: 5px;
-          display: block;
-          font-weight: 900;
-          text-transform:
-            uppercase;
-          letter-spacing: .35px;
-        }
-
-        .basicInput,
-        .basicSelect,
-        .productInput {
-          width: 100%;
-          height: 34px;
-          border:
-            1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
-          padding: 5px 9px;
-          font-size: 13px;
-          border-radius: 10px;
-          outline: none;
-          font-weight: 650;
-        }
-
-        .basicInput:focus,
-        .basicSelect:focus,
-        .productInput:focus {
-          border-color: #4f46e5;
-          box-shadow:
-            0 0 0 3px
-            rgba(
-              79,
-              70,
-              229,
-              .10
-            );
-        }
-
-        .sectionHead {
-          height: 38px;
-          background:
-            linear-gradient(
-              135deg,
-              #eef2ff,
-              #f8fafc
-            );
-          border:
-            1px solid #cbd5e1;
-          border-radius:
-            14px 14px 0 0;
-          display: flex;
-          align-items: center;
-          justify-content:
-            space-between;
-          padding: 0 12px;
-          margin-top: 12px;
-          font-weight: 950;
-          color: #0f172a;
-        }
-
-        .basicBtn {
-          height: 32px;
-          border:
-            1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
-          padding: 5px 12px;
-          font-size: 12px;
-          cursor: pointer;
-          border-radius: 10px;
-          font-weight: 850;
-          display: inline-flex;
-          align-items: center;
-          justify-content:
-            center;
-          gap: 6px;
-        }
-
-        .basicBtn:hover {
-          background: #f8fafc;
-        }
-
-        .basicBtn:disabled {
-          opacity: .6;
-          cursor: not-allowed;
-        }
-
-        .paymentPanel {
-          border:
-            1px solid #cbd5e1;
-          border-top: none;
-          padding: 8px;
-          background: white;
-          border-radius:
-            0 0 14px 14px;
-          overflow: auto;
-        }
-
-        .basicProductTable {
-          width: 100%;
-          border-collapse:
-            collapse;
-          background: white;
-          min-width: 960px;
-          table-layout: fixed;
-        }
-
-        .basicProductTable th,
-        .basicProductTable td {
-          border:
-            1px solid #dbe3ee;
-          padding: 5px;
-          font-size: 12px;
-        }
-
-        .basicProductTable th {
-          background: #e2e8f0;
-          text-align: center;
-          color: #334155;
-          font-weight: 900;
-        }
-
-        .accountSelectWrap {
-          display: grid;
-          grid-template-columns:
-            minmax(0, 1fr)
-            auto;
-          gap: 5px;
-          align-items: center;
-        }
-
-        .miniAdd {
-          width: 30px;
-          height: 30px;
-          display: grid;
-          place-items: center;
-          border:
-            1px solid #cbd5e1;
-          border-radius: 9px;
-          background: white;
-          color: #0f172a;
-          cursor: pointer;
-        }
-
-        .receiveInput {
-          color: #047857;
-          text-align: right;
-          font-weight: 900;
-        }
-
-        .paidInput {
-          color: #dc2626;
-          text-align: right;
-          font-weight: 900;
-        }
-
-        .rowDelete {
-          width: 24px;
-          height: 26px;
-          border:
-            1px solid #cbd5e1;
-          border-radius: 8px;
-          background: white;
-          color: #0f172a;
-          font-weight: 900;
-          cursor: pointer;
-        }
-
-        .finalTotalBar {
-          margin-top: 0;
-          display: grid;
-          grid-template-columns:
-            repeat(3, 1fr);
-          gap: 10px;
-        }
-
-        .totalBox {
-          border:
-            1px solid #dbe3ee;
-          background: #f8fafc;
-          border-radius: 14px;
-          padding: 10px 12px;
-        }
-
-        .totalBox label {
-          display: block;
-          font-size: 11px;
-          color: #64748b;
-          margin-bottom: 6px;
-          font-weight: 900;
-        }
-
-        .totalBox b {
-          display: block;
-          text-align:
-            ${
-              isUrdu
-                ? "left"
-                : "right"
-            };
-          font-family:
-            monospace;
-          font-size: 18px;
-        }
-
-        .grandBox {
-          background: #eef2ff;
-          border-color: #c7d2fe;
-          color: #3730a3;
-        }
-
-        .modalFooterBasic {
-          padding: 12px 0 0;
-          display: flex;
-          justify-content:
-            flex-end;
-          gap: 8px;
-          position: sticky;
-          bottom: 0;
-          background:
-            linear-gradient(
-              180deg,
-              rgba(
-                248,
-                250,
-                252,
-                0
-              ),
-              #eef2f7 35%
-            );
-        }
-
-        .account-modal {
-          z-index: 100;
-        }
-
-        .account-box {
-          width:
-            min(680px, 100%);
-        }
-
-        .account-grid {
-          display: grid;
-          grid-template-columns:
-            1fr 1fr;
-          gap: 10px;
-        }
-
-        .full {
-          grid-column: 1 / -1;
-        }
-
-        @media (max-width: 900px) {
-          .summary-grid {
-            grid-template-columns:
-              repeat(2, 1fr);
-          }
-
-          .formTopLine {
-            grid-template-columns:
-              1fr 1fr;
-          }
-
-          .finalTotalBar {
-            grid-template-columns:
-              1fr;
-          }
-
-          .title-btn {
-            display: none;
-          }
-        }
-
-        @media (max-width: 650px) {
-          .summary-grid,
-          .formTopLine,
-          .account-grid {
-            grid-template-columns:
-              1fr;
-          }
-
-          .title {
-            font-size: 24px;
-          }
-
-          .full {
-            grid-column: auto;
-          }
-
-          .invoice-page {
-            padding: 10px;
-          }
-
-          .modal-body {
-            padding: 10px;
-          }
-        }
       `}</style>
 
-      {message.text && (
-        <div
-          className="toast"
-          style={{
-            background:
-              message.type ===
-              "error"
-                ? "#dc2626"
-                : "#16a34a",
-          }}
-        >
-          {message.text}
-        </div>
-      )}
+      {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
 
-      <div className="page-wrap">
+      {!showForm && (
+        <div className="page-wrap">
         <div className="top-card">
           <div>
-            <h1 className="title">
-              {t.title}
-            </h1>
-
-            <p className="subtitle">
-              {t.subtitle}
-            </p>
+            <h1 className="title">{t.title}</h1>
+            <p className="subtitle">{t.subtitle}</p>
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              className="btn btn-soft"
-              onClick={() =>
-                setLang(
-                  isUrdu
-                    ? "en"
-                    : "ur"
-                )
-              }
-            >
-              <Languages size={15} />
-
-              {t.toggleLang}
-            </button>
-
-            <button
-              className={`btn ${
-                showSummary
-                  ? "btn-active"
-                  : "btn-soft"
-              }`}
-              onClick={() =>
-                setShowSummary(
-                  (value) => !value
-                )
-              }
-            >
-              {showSummary
-                ? t.hideSummary
-                : t.viewSummary}
-            </button>
-
-            <button
-              className="btn btn-soft"
-              onClick={loadPage}
-            >
-              <RefreshCw size={15} />
-
-              {loading
-                ? t.loading
-                : t.refresh}
-            </button>
-
-            <button
-              className="btn btn-soft"
-              onClick={() =>
-                openAccountModal()
-              }
-            >
-              <UserPlus size={15} />
-
-              {t.addAccount}
-            </button>
-
-            <button
-              className="btn btn-primary"
-              onClick={openAdd}
-            >
-              <Plus size={15} />
-
-              {t.newVoucher}
-            </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexDirection: isUrdu ? "row-reverse" : "row" }}>
+            <button className="btn btn-soft" onClick={() => setLang(isUrdu ? "en" : "ur")}>{t.toggleLang}</button>
+            <button className={`btn ${showSummary ? "btn-active" : "btn-soft"}`} onClick={() => setShowSummary((v) => !v)}>{showSummary ? t.hideSummary : t.viewSummary}</button>
+            <button className="btn btn-soft" onClick={fetchInvoices}>{loadingInv ? t.loading : t.refresh}</button>
+            <button className="btn btn-primary" onClick={openAdd}>+ {t.newInvoice}</button>
           </div>
         </div>
 
         {showSummary && (
           <div className="summary-grid">
             {[
-              [
-                t.totalVouchers,
-                summary.totalVouchers,
-              ],
-              [
-                t.totalReceive,
-                `Rs ${money(
-                  summary.totalReceive
-                )}`,
-              ],
-              [
-                t.totalPaid,
-                `Rs ${money(
-                  summary.totalPaid
-                )}`,
-              ],
-              [
-                t.netBalance,
-                `Rs ${money(
-                  summary.netBalance
-                )}`,
-              ],
-            ].map(
-              (
-                [
-                  label,
-                  value,
-                ],
-                index
-              ) => (
-                <div
-                  className="summary-card"
-                  key={label}
-                  style={{
-                    animationDelay: `${
-                      index * 30
-                    }ms`,
-                  }}
-                >
-                  <small>
-                    {label}
-                  </small>
-
-                  <b>{value}</b>
-                </div>
-              )
-            )}
+              [t.totalInvoices, summary.totalInvoices],
+              [t.totalItems, summary.totalItems],
+              [t.totalValue, money(summary.totalValue)],
+              [t.totalPrev, money(summary.totalPrev)],
+              [t.totalDelivery, money(summary.totalDelivery)],
+              [t.totalDiscount, money(summary.totalDiscount)],
+            ].map(([label, value], idx) => (
+              <div className="summary-card" key={label} style={{ animationDelay: `${idx * 30}ms` }}>
+                <small>{label}</small>
+                <b>{value}</b>
+              </div>
+            ))}
           </div>
         )}
 
         <div className="toolbar">
-          <div
-            style={{
-              position: "relative",
-              width:
-                "min(430px,100%)",
-            }}
-          >
-            <Search
-              size={16}
-              style={{
-                position:
-                  "absolute",
-                left: 13,
-                top: 12,
-                color: "#94a3b8",
-              }}
-            />
-
-            <input
-              className="search"
-              style={{
-                paddingLeft: 38,
-                width: "100%",
-              }}
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
-              placeholder={
-                t.searchPlaceholder
-              }
-            />
-          </div>
+          <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
+          <input className="search" style={{ width: "min(360px,100%)" }} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder={t.customerInvoicePlaceholder} />
+          <button className="btn btn-yellow" disabled={bulkPrinting || loadingInv || filtered.length === 0} onClick={handleBulkPrint}>{bulkPrinting ? t.bulkPrinting : `${t.bulkPrint} (${filtered.length})`}</button>
+          {customerFilter.trim() && <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#dcfce7", color: "#166534", fontWeight: 900, border: "1px solid #bbf7d0", fontSize: 12 }}>{t.allCustomerInvoices}</span>}
+          <button className={`filter ${selectedDate === today() ? "active" : ""}`} onClick={() => setSelectedDate(today())}>{t.todayFilter}</button>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
+            <span>{t.selectDate}</span>
+            <DateTextInput value={selectedDate} onChange={(v) => setSelectedDate(v || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent", width: 105 }} />
+          </label>
+          <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#eef2ff", color: "#3730a3", fontWeight: 900, border: "1px solid #c7d2fe", fontSize: 12 }}>
+            {t.showingDate}: {formatFullDate(selectedDate, lang)}
+          </span>
         </div>
 
         <div className="card table-wrap">
           <table className="list">
             <thead>
               <tr>
-                <th
-                  style={{
-                    width: 45,
-                  }}
-                >
-                  #
-                </th>
-
-                <th
-                  style={{
-                    width: 150,
-                  }}
-                >
-                  {t.voucherNo}
-                </th>
-
-                <th
-                  style={{
-                    width: 145,
-                  }}
-                >
-                  {t.date}
-                </th>
-
-                <th
-                  style={{
-                    width: 140,
-                    textAlign:
-                      "right",
-                  }}
-                >
-                  {t.totalReceive}
-                </th>
-
-                <th
-                  style={{
-                    width: 140,
-                    textAlign:
-                      "right",
-                  }}
-                >
-                  {t.totalPaid}
-                </th>
-
-                <th
-                  style={{
-                    width: 80,
-                  }}
-                >
-                  Lines
-                </th>
-
-                <th
-                  style={{
-                    width: 220,
-                  }}
-                >
-                  {t.actions}
-                </th>
+                <th style={{ width: 45 }}>#</th>
+                <th style={{ width: 145, textAlign: isUrdu ? "right" : "left" }}>{t.invoiceNo}</th>
+                <th style={{ textAlign: isUrdu ? "right" : "left" }}>{t.name}</th>
+                <th style={{ width: 180 }}>{t.dateFull}</th>
+                <th style={{ width: 115, textAlign: "right" }}>{t.invoiceTotal}</th>
+                <th style={{ width: 120, textAlign: "right" }}>{t.grandTotal}</th>
+                <th style={{ width: 185 }}>{t.actions}</th>
               </tr>
             </thead>
-
             <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    style={{
-                      textAlign:
-                        "center",
-                      padding: 44,
-                      color:
-                        "#94a3b8",
-                    }}
-                  >
-                    {t.loading}
+              {loadingInv ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.loading}</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: 44, color: "#94a3b8" }}>{t.noRecords}</td></tr>
+              ) : filtered.map((inv, idx) => (
+                <tr
+                  key={inv.id || idx}
+                  onClick={() => openEdit(inv.id)}
+                  title="Click to open invoice"
+                  style={{ cursor: "pointer" }}
+                >
+                  <td style={{ textAlign: "center", color: "#94a3b8", fontFamily: "monospace" }}>{idx + 1}</td>
+                  <td><b style={{ fontFamily: "monospace" }}>{inv.invoice_no}</b><div style={{ fontSize: 11, color: "#94a3b8" }}>{inv.reference_no || "-"}</div></td>
+                  <td><b>{getInvoicePartyName(inv)}</b><div style={{ fontSize: 11, color: "#64748b" }}>{getInvPartyType(inv)}</div></td>
+                  <td style={{ textAlign: "center", fontSize: 12, fontWeight: 800 }}>{formatFullDate(inv.invoice_date, lang)}</td>
+                  <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>{money(inv.invoice_total)}</td>
+                  <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(inv.grand_total)}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+                      <button className="btn btn-soft" style={{ padding: "6px 10px" }} onClick={(e) => { e.stopPropagation(); openEdit(inv.id); }}>{t.edit}</button>
+                      <button className="btn btn-soft" style={{ padding: "6px 10px" }} onClick={(e) => { e.stopPropagation(); handlePrint(inv.id); }}>{t.print}</button>
+                      <button className="btn btn-soft" style={{ padding: "6px 10px" }} onClick={(e) => { e.stopPropagation(); handleDelete(inv.id); }}>{t.delete}</button>
+                    </div>
                   </td>
                 </tr>
-              ) : filteredRecords.length ===
-                0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    style={{
-                      textAlign:
-                        "center",
-                      padding: 44,
-                      color:
-                        "#94a3b8",
-                    }}
-                  >
-                    {t.noRecords}
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map(
-                  (
-                    record,
-                    index
-                  ) => (
-                    <tr
-                      key={record.id}
-                      onClick={() =>
-                        openEdit(
-                          record.id
-                        )
-                      }
-                      style={{
-                        cursor:
-                          "pointer",
-                      }}
-                    >
-                      <td
-                        style={{
-                          textAlign:
-                            "center",
-                          color:
-                            "#94a3b8",
-                        }}
-                      >
-                        {index + 1}
-                      </td>
-
-                      <td
-                        style={{
-                          fontFamily:
-                            "monospace",
-                          fontWeight:
-                            900,
-                        }}
-                      >
-                        {
-                          record.voucher_no
-                        }
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "center",
-                          fontWeight:
-                            800,
-                        }}
-                      >
-                        {formatDate(
-                          record.voucher_date
-                        )}
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "right",
-                          fontFamily:
-                            "monospace",
-                          fontWeight:
-                            900,
-                          color:
-                            "#047857",
-                        }}
-                      >
-                        {money(
-                          record.total_receive
-                        )}
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "right",
-                          fontFamily:
-                            "monospace",
-                          fontWeight:
-                            900,
-                          color:
-                            "#dc2626",
-                        }}
-                      >
-                        {money(
-                          record.total_paid
-                        )}
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign:
-                            "center",
-                        }}
-                      >
-                        {record.items_count ||
-                          0}
-                      </td>
-
-                      <td>
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "center",
-                            gap: 6,
-                            flexWrap:
-                              "wrap",
-                          }}
-                        >
-                          <button
-                            className="btn btn-soft"
-                            style={{
-                              padding:
-                                "6px 10px",
-                            }}
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              openEdit(
-                                record.id
-                              );
-                            }}
-                          >
-                            <Edit3
-                              size={14}
-                            />
-
-                            {t.edit}
-                          </button>
-
-                          <button
-                            className="btn btn-soft"
-                            style={{
-                              padding:
-                                "6px 10px",
-                            }}
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              printVoucher(
-                                record.id
-                              );
-                            }}
-                          >
-                            <Printer
-                              size={14}
-                            />
-
-                            {t.print}
-                          </button>
-
-                          <button
-                            className="btn btn-soft"
-                            style={{
-                              padding:
-                                "6px 10px",
-                            }}
-                            onClick={(
-                              event
-                            ) => {
-                              event.stopPropagation();
-
-                              deleteVoucher(
-                                record.id
-                              );
-                            }}
-                          >
-                            <Trash2
-                              size={14}
-                            />
-
-                            {t.delete}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                )
-              )}
+              ))}
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+      )}
 
-      {showVoucherModal &&
-        createPortal(
-          <div
-            className="modal-back"
-            onMouseDown={(event) => {
-              if (
-                event.target ===
-                  event.currentTarget &&
-                !saving
-              ) {
-                setShowVoucherModal(
-                  false
-                );
-              }
-            }}
-          >
-            <div
-              className="invoice-modal"
-              onMouseDown={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="modal-title">
-                <div>
-                  <div className="mode-pill">
-                    {editingId
-                      ? t.editMode
-                      : t.createMode}
-                  </div>
+      {showForm && (
+        <div className="page-wrap form-page-wrap">
+          <div className="inputModalBox fullPageInputBox">
+            <div className="inputModalTitle">
+              <span>{editingId ? t.update : t.newInvoice}</span>
+              <button className="closeBtn" style={{ width: "auto", padding: "0 12px", fontWeight: 900 }} onClick={() => setShowForm(false)}>← {t.cancel}</button>
+            </div>
 
-                  <h2>
-                    {editingId
-                      ? t.update
-                      : t.newVoucher}
-                  </h2>
-                </div>
-
-                <div className="modal-actions">
-                  <button
-                    className="title-btn"
-                    type="button"
-                    onClick={() =>
-                      openAccountModal()
-                    }
-                  >
-                    <UserPlus
-                      size={14}
-                    />
-
-                    {t.addAccount}
-                  </button>
-
-                  <button
-                    className="close-btn"
-                    type="button"
-                    onClick={() =>
-                      !saving &&
-                      setShowVoucherModal(
-                        false
-                      )
-                    }
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="modal-body">
+            <div className="inputModalBody">
+              <div className="form-box">
                 <div className="formTopLine">
                   <div>
-                    <label className="basicLabel">
-                      {t.voucherNo}
-                    </label>
-
-                    <input
-                      className="basicInput"
-                      style={{
-                        fontFamily:
-                          "monospace",
-                        fontWeight:
-                          900,
-                      }}
-                      value={
-                        voucher.voucher_no
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setVoucher(
-                          (current) => ({
-                            ...current,
-
-                            voucher_no:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="basicLabel">
-                      {t.date}
-                    </label>
-
-                    <input
-                      type="date"
-                      className="basicInput"
-                      value={
-                        voucher.voucher_date
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setVoucher(
-                          (current) => ({
-                            ...current,
-
-                            voucher_date:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="basicLabel">
-                      {t.notes}
-                    </label>
-
-                    <input
-                      className="basicInput"
-                      value={
-                        voucher.notes
-                      }
-                      placeholder={
-                        t.optional
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setVoucher(
-                          (current) => ({
-                            ...current,
-
-                            notes:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="sectionHead">
-                  <span>
-                    {t.accountEntries}
-                  </span>
-
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    onClick={addRow}
-                  >
-                    {t.addRow}
-                  </button>
-                </div>
-
-                <div className="paymentPanel">
-                  <table className="basicProductTable">
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            width: 38,
-                          }}
-                        >
-                          #
-                        </th>
-
-                        <th
-                          style={{
-                            width: 160,
-                          }}
-                        >
-                          {t.accountType}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 230,
-                          }}
-                        >
-                          {t.account}
-                        </th>
-
-                        <th>
-                          {t.description}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 125,
-                          }}
-                        >
-                          {t.receive}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 125,
-                          }}
-                        >
-                          {t.paid}
-                        </th>
-
-                        <th
-                          style={{
-                            width: 42,
-                          }}
-                        />
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {rows.map(
-                        (
-                          row,
-                          index
-                        ) => (
-                          <tr
-                            key={
-                              row.local_id
-                            }
-                          >
-                            <td
-                              style={{
-                                textAlign:
-                                  "center",
-                                fontWeight:
-                                  900,
-                              }}
-                            >
-                              {index + 1}
-                            </td>
-
-                            <td>
-                              <select
-                                className="productInput"
-                                value={
-                                  row.account_type
-                                }
-                                onChange={(
-                                  event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "account_type",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              >
-                                {ACCOUNT_TYPES.map(
-                                  (
-                                    type
-                                  ) => (
-                                    <option
-                                      key={
-                                        type.value
-                                      }
-                                      value={
-                                        type.value
-                                      }
-                                    >
-                                      {isUrdu
-                                        ? type.ur
-                                        : type.en}
-                                    </option>
-                                  )
-                                )}
-                              </select>
-                            </td>
-
-                            <td>
-                              <div className="accountSelectWrap">
-                                <select
-                                  className="productInput"
-                                  value={
-                                    row.account_id
-                                  }
-                                  onChange={(
-                                    event
-                                  ) =>
-                                    updateRow(
-                                      row.local_id,
-                                      "account_id",
-                                      event
-                                        .target
-                                        .value
-                                    )
-                                  }
-                                >
-                                  <option value="">
-                                    {t.select}
-                                  </option>
-
-                                  {optionsFor(
-                                    row.account_type
-                                  ).map(
-                                    (
-                                      account
-                                    ) => (
-                                      <option
-                                        key={
-                                          account.id
-                                        }
-                                        value={
-                                          account.id
-                                        }
-                                      >
-                                        {getAccountName(
-                                          account
-                                        )}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
-
-                                {row.account_type ===
-                                  "general_ledger" && (
-                                  <button
-                                    className="miniAdd"
-                                    type="button"
-                                    onClick={() =>
-                                      openAccountModal(
-                                        row.local_id
-                                      )
-                                    }
-                                  >
-                                    <Plus
-                                      size={14}
-                                    />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-
-                            <td>
-                              <input
-                                className="productInput"
-                                value={
-                                  row.description
-                                }
-                                placeholder={
-                                  t.enter
-                                }
-                                onChange={(
-                                  event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "description",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="productInput receiveInput"
-                                value={
-                                  row.receive
-                                }
-                                placeholder={
-                                  t.enter
-                                }
-                                onChange={(
-                                  event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "receive",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="productInput paidInput"
-                                value={
-                                  row.paid
-                                }
-                                placeholder={
-                                  t.enter
-                                }
-                                onChange={(
-                                  event
-                                ) =>
-                                  updateRow(
-                                    row.local_id,
-                                    "paid",
-                                    event
-                                      .target
-                                      .value
-                                  )
-                                }
-                              />
-                            </td>
-
-                            <td
-                              style={{
-                                textAlign:
-                                  "center",
-                              }}
-                            >
-                              <button
-                                className="rowDelete"
-                                type="button"
-                                onClick={() =>
-                                  removeRow(
-                                    row.local_id
-                                  )
-                                }
-                              >
-                                ×
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="sectionHead">
-                  <span>
-                    {t.total}
-                  </span>
-                </div>
-
-                <div className="paymentPanel">
-                  <div className="finalTotalBar">
-                    <div className="totalBox">
-                      <label>
-                        {t.totalReceive}
-                      </label>
-
-                      <b
-                        style={{
-                          color:
-                            "#047857",
-                        }}
-                      >
-                        Rs{" "}
-                        {money(
-                          totals.receive
-                        )}
-                      </b>
-                    </div>
-
-                    <div className="totalBox">
-                      <label>
-                        {t.totalPaid}
-                      </label>
-
-                      <b
-                        style={{
-                          color:
-                            "#dc2626",
-                        }}
-                      >
-                        Rs{" "}
-                        {money(
-                          totals.paid
-                        )}
-                      </b>
-                    </div>
-
-                    <div className="totalBox grandBox">
-                      <label>
-                        {t.grandTotal}
-                      </label>
-
-                      <b>
-                        Rs{" "}
-                        {money(
-                          totals.receive -
-                            totals.paid
-                        )}
-                      </b>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modalFooterBasic">
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={saving}
-                    onClick={() =>
-                      setShowVoucherModal(
-                        false
-                      )
-                    }
-                  >
-                    {t.cancel}
-                  </button>
-
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={saving}
-                    onClick={
-                      saveVoucher
-                    }
-                  >
-                    {saving ? (
-                      <RefreshCw
-                        size={15}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <Save
-                        size={15}
-                      />
-                    )}
-
-                    {saving
-                      ? t.saving
-                      : editingId
-                      ? t.update
-                      : t.save}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>,
-
-          document.body
-        )}
-
-      {showAccountModal &&
-        createPortal(
-          <div
-            className="modal-back account-modal"
-            onMouseDown={(event) => {
-              if (
-                event.target ===
-                  event.currentTarget &&
-                !accountSaving
-              ) {
-                setShowAccountModal(
-                  false
-                );
-
-                setAccountTargetRow(
-                  null
-                );
-              }
-            }}
-          >
-            <div
-              className="invoice-modal account-box"
-              onMouseDown={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="modal-title">
-                <div>
-                  <div className="mode-pill">
-                    Account
-                  </div>
-
-                  <h2>
-                    {
-                      t.accountModalTitle
-                    }
-                  </h2>
-                </div>
-
-                <button
-                  className="close-btn"
-                  type="button"
-                  onClick={() => {
-                    if (
-                      !accountSaving
-                    ) {
-                      setShowAccountModal(
-                        false
-                      );
-
-                      setAccountTargetRow(
-                        null
-                      );
-                    }
-                  }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="modal-body">
-                <p
-                  style={{
-                    marginTop: 0,
-                    color: "#64748b",
-                    fontSize: 13,
-                  }}
-                >
-                  {
-                    t.accountModalText
-                  }
-                </p>
-
-                <div className="account-grid">
-                  <div>
-                    <label className="basicLabel">
-                      {t.accountCode}
-                    </label>
-
-                    <input
-                      className="basicInput"
-                      value={
-                        accountForm.account_code
-                      }
-                      placeholder={
-                        t.autoCode
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            account_code:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="basicLabel">
-                      {t.accountGroup}
-                    </label>
-
-                    <select
-                      className="basicSelect"
-                      value={
-                        accountForm.group_id
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            group_id:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    >
-                      <option value="">
-                        {t.optional}
-                      </option>
-
-                      {lookups.groups.map(
-                        (group) => (
-                          <option
-                            key={
-                              group.id
-                            }
-                            value={
-                              group.id
-                            }
-                          >
-                            {
-                              group.group_name
-                            }
-                          </option>
-                        )
-                      )}
+                    <label className="basicLabel">{t.customerType}</label>
+                    <select className="basicSelect" value={form.party_type} onChange={(e) => handlePartyTypeChange(e.target.value)}>
+                      <option value="">{t.select}</option>
+                      {PARTY_TYPES.map((p) => <option key={p.value} value={p.value}>{t[p.labelKey]}</option>)}
                     </select>
                   </div>
-
-                  <div className="full">
-                    <label className="basicLabel">
-                      {t.accountTitle} *
-                    </label>
-
-                    <input
-                      autoFocus
-                      className="basicInput"
-                      value={
-                        accountForm.account_title
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            account_title:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
+                  <div>
+                    <label className="basicLabel">{t.name} *</label>
+                    <select className="basicSelect" value={form.party_id} disabled={!form.party_type || mastersLoading} onChange={(e) => handlePartyChange(e.target.value)}>
+                      <option value="">{mastersLoading ? t.loading : t.selectName}</option>
+                      {partyOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
                   </div>
-
-                  <div className="full">
-                    <label className="basicLabel">
-                      {
-                        t.openingBalance
-                      }
-                    </label>
-
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="basicInput"
-                      value={
-                        accountForm.opening_balance
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setAccountForm(
-                          (current) => ({
-                            ...current,
-
-                            opening_balance:
-                              event
-                                .target
-                                .value,
-                          })
-                        )
-                      }
-                    />
+                  <div>
+                    <label className="basicLabel">{t.reference}</label>
+                    <input className="basicInput" value={form.reference_no} onChange={(e) => setForm((f) => ({ ...f, reference_no: e.target.value }))} />
                   </div>
-                </div>
-
-                <div className="modalFooterBasic">
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={
-                      accountSaving
-                    }
-                    onClick={() => {
-                      setShowAccountModal(
-                        false
-                      );
-
-                      setAccountTargetRow(
-                        null
-                      );
-                    }}
-                  >
-                    {t.cancel}
-                  </button>
-
-                  <button
-                    className="basicBtn"
-                    type="button"
-                    disabled={
-                      accountSaving
-                    }
-                    onClick={
-                      saveAccount
-                    }
-                  >
-                    {accountSaving ? (
-                      <RefreshCw
-                        size={15}
-                        className="animate-spin"
-                      />
-                    ) : (
-                      <UserPlus
-                        size={15}
-                      />
-                    )}
-
-                    {accountSaving
-                      ? t.saving
-                      : t.saveAccount}
-                  </button>
+                  <div>
+                    <label className="basicLabel">{t.invoiceNo}</label>
+                    <input className="basicInput" style={{ fontFamily: "monospace", fontWeight: 900 }} value={form.invoice_no} onChange={(e) => setForm((f) => ({ ...f, invoice_no: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.dateFull}</label>
+                    <div className="date-box">
+                      <DateTextInput className="basicInput" value={form.invoice_date} onChange={(v) => setForm((f) => ({ ...f, invoice_date: v }))} />
+                      <div className="date-preview">{formatFullDate(form.invoice_date, lang)}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.shipTo}</label>
+                    <input className="basicInput" value={form.shipment_to} onChange={(e) => setForm((f) => ({ ...f, shipment_to: e.target.value }))} />
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>,
 
-          document.body
-        )}
+              <div className="sectionHead">
+                <span>{t.products}</span>
+                <button className="basicBtn" type="button" onClick={addRow}>{t.addRow}</button>
+              </div>
+              <div className="paymentPanel">
+                <table className="basicProductTable">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 35 }}>#</th>
+                      <th style={{ width: 175 }}>{t.product}</th>
+                      <th>{t.desc}</th>
+                      <th style={{ width: 130 }}>{t.productType}</th>
+                      <th style={{ width: 145 }}>{t.category}</th>
+                      <th style={{ width: 115 }}>{t.unit}</th>
+                      <th style={{ width: 105 }}>{t.saleType}</th>
+                      <th style={{ width: 80 }}>{t.pcsCtn}</th>
+                      <th style={{ width: 90 }}>{t.cartonQty}</th>
+                      <th style={{ width: 75 }}>{t.qty}</th>
+                      <th style={{ width: 105 }}>{t.amount}</th>
+                      <th style={{ width: 35 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((row, idx) => {
+                      const product = products.find((p) => sameId(getProductId(p), row.product_id));
+                      const saleUnit = getProductSaleUnit(product || {});
+                      const isCartonProduct = saleUnit === "carton";
+                      return (
+                        <tr key={idx}>
+                          <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
+                          <td>
+                            <select className="productInput" value={row.product_id} onChange={(e) => handleItemChange(idx, "product_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {(() => {
+                                const selectedCategory = String(row.category_id || "");
+                                const matchedProducts = products.filter((p) => {
+                                  const productCatId = getProductCatId(p);
+                                  if (!selectedCategory) return true;
+                                  if (!productCatId) return true;
+                                  return sameId(productCatId, selectedCategory);
+                                });
+                                const list = selectedCategory && matchedProducts.length === 0 ? products : matchedProducts;
+                                return list.map((p) => (
+                                  <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>
+                                ));
+                              })()}
+                            </select>
+                          </td>
+                          <td>
+                            <input className="productInput" value={row.product_description} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} />
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.product_type_id || defaultFmsTypeId || "FMS"} onChange={(e) => handleItemChange(idx, "product_type_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {productTypes.map((tp) => <option key={getRecordId(tp)} value={getRecordId(tp)}>{getTypeName(tp)}</option>)}
+                              {!productTypes.length && <option value="FMS">FMS</option>}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
+                              <option value="">{t.select}</option>
+                              {units.map((u) => <option key={getUnitId(u)} value={getUnitId(u)}>{getUnitName(u)}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="productInput" value={row.sale_type} onChange={(e) => handleItemChange(idx, "sale_type", e.target.value)} disabled={!isCartonProduct}>
+                              <option value="single">{t.single}</option>
+                              {isCartonProduct && <option value="carton">{t.carton}</option>}
+                            </select>
+                          </td>
+                          <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc" }} value={row.pieces_per_carton} /></td>
+                          <td><input type="number" className="productInput" style={{ textAlign: "right" }} disabled={!isCartonProduct || row.sale_type !== "carton"} value={row.carton_qty} onChange={(e) => handleItemChange(idx, "carton_qty", e.target.value)} /></td>
+                          <td><input type="number" className="productInput" style={{ textAlign: "right", background: isCartonProduct && row.sale_type === "carton" ? "#eef2ff" : "white", color: isCartonProduct && row.sale_type === "carton" ? "#3730a3" : "#0f172a", fontWeight: isCartonProduct && row.sale_type === "carton" ? 900 : 650 }} readOnly={isCartonProduct && row.sale_type === "carton"} value={row.qty} onChange={(e) => handleItemChange(idx, "qty", e.target.value)} /></td>
+                          <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc", fontWeight: 900 }} value={money(row.amount)} /></td>
+                          <td style={{ textAlign: "center" }}><button type="button" className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeRow(idx)}>×</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="sectionHead"><span>{t.invoiceTotal}</span></div>
+              <div className="paymentPanel">
+                <div className="second-line" style={{ boxShadow: "none", border: "none", padding: 0, marginBottom: 12 }}>
+                  <div>
+                    <label className="basicLabel">{t.totalQty}</label>
+                    <input readOnly className="basicInput" value={money(totalQty)} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.previousBalance}</label>
+                    <input type="number" className="basicInput" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.deliveryCharges}</label>
+                    <input type="number" className="basicInput" value={form.delivery_charges} onChange={(e) => setForm((f) => ({ ...f, delivery_charges: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.discount}</label>
+                    <input type="number" className="basicInput" value={form.discount} onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="finalTotalBar">
+                  <div className="totalBox"><label>{t.totalQty}</label><b>{money(totalQty)}</b></div>
+                  <div className="totalBox"><label>{t.invoiceTotal}</label><b>{money(invTotal)}</b></div>
+                  <div className="totalBox"><label>{t.previousBalance}</label><b>{money(form.previous_balance)}</b></div>
+                  <div className="totalBox"><label>{t.deliveryCharges}</label><b>{money(form.delivery_charges)}</b></div>
+                  <div className="totalBox"><label>{t.discount}</label><b>{money(form.discount)}</b></div>
+                  <div className="totalBox grandBox"><label>{t.grandTotal}</label><b>{money(grandTotal)}</b></div>
+                </div>
+              </div>
+
+              <div className="modalFooterBasic">
+                <button className="basicBtn" type="button" onClick={() => setShowForm(false)}>{t.cancel}</button>
+                <button className="basicBtn basicBtnGreen" type="button" disabled={saving} onClick={handleSave}>{saving ? t.saving : editingId ? t.update : t.save}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+}i model bass aesay open ho input ka baqi thk hai 
