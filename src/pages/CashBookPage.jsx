@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 
 const API_ORIGIN = (
@@ -726,10 +727,7 @@ export default function CashBookPage() {
       )}
 
       <section className="cash-page-header">
-        <div>
-          <span className="cash-eyebrow">
-            ALI CAGE ERP · ACCOUNTS
-          </span>
+        <div className="cash-header-copy">
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
@@ -779,26 +777,25 @@ export default function CashBookPage() {
       </section>
 
       <section className="cash-entry-card">
-        <div className="cash-card-topbar">
-          <button
-            type="button"
-            className="cash-close-button"
-            onClick={resetVoucher}
-            title="Clear voucher"
-          >
-            ×
-          </button>
-
-          <div className="cash-book-pill">
-            {t.title}
+        <div className="cash-entry-toolbar">
+          <div>
+            <h2>
+              {editingId
+                ? t.updateVoucher
+                : t.newVoucher}
+            </h2>
+            <p>
+              {t.invoiceNo}, {t.date} aur account entries complete karein.
+            </p>
           </div>
 
           <button
             type="button"
-            className="cash-inline-account-button"
-            onClick={() => openAddAccount()}
+            className="cash-clear-voucher-button"
+            onClick={resetVoucher}
+            title="Clear voucher"
           >
-            ＋ {t.addAccount}
+            ×
           </button>
         </div>
 
@@ -1126,127 +1123,146 @@ export default function CashBookPage() {
         </div>
       </section>
 
-      {showAccountModal && (
-        <div
-          className="cash-modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setShowAccountModal(false);
-            }
-          }}
-        >
-          <div className="cash-account-modal">
-            <div className="cash-modal-head">
-              <div>
-                <span>CHART OF ACCOUNTS</span>
-                <h3>{t.accountModalTitle}</h3>
+      {showAccountModal &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="cash-modal-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setShowAccountModal(false);
+              }
+            }}
+          >
+            <section
+              className="cash-account-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cash-account-modal-title"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <header className="cash-modal-head">
+                <div>
+                  <h3 id="cash-account-modal-title">
+                    {t.accountModalTitle}
+                  </h3>
+                  <p>
+                    Naya General Ledger account add karein. Save hote hi
+                    account dropdown mein show hoga.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="cash-modal-close"
+                  onClick={() =>
+                    setShowAccountModal(false)
+                  }
+                  aria-label="Close modal"
+                >
+                  ×
+                </button>
+              </header>
+
+              <div className="cash-account-form">
+                <label>
+                  <span>{t.accountCode}</span>
+                  <input
+                    value={accountForm.account_code}
+                    placeholder={t.autoCode}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        account_code: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>{t.group}</span>
+                  <select
+                    value={accountForm.group_id}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        group_id: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">
+                      {t.optional}
+                    </option>
+
+                    {lookups.groups.map((group) => (
+                      <option
+                        key={group.id}
+                        value={group.id}
+                      >
+                        {group.group_name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="cash-full-field">
+                  <span>{t.accountTitle} *</span>
+                  <input
+                    autoFocus
+                    value={accountForm.account_title}
+                    placeholder="e.g. Office Expense"
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        account_title: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="cash-full-field">
+                  <span>{t.openingBalance}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={accountForm.opening_balance}
+                    placeholder="0"
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        opening_balance:
+                          event.target.value,
+                      }))
+                    }
+                  />
+                </label>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setShowAccountModal(false)
-                }
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="cash-account-form">
-              <label>
-                <span>{t.accountCode}</span>
-                <input
-                  value={accountForm.account_code}
-                  placeholder={t.autoCode}
-                  onChange={(event) =>
-                    setAccountForm((current) => ({
-                      ...current,
-                      account_code: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="cash-full-field">
-                <span>{t.accountTitle} *</span>
-                <input
-                  value={accountForm.account_title}
-                  placeholder="e.g. Office Expense"
-                  onChange={(event) =>
-                    setAccountForm((current) => ({
-                      ...current,
-                      account_title: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label>
-                <span>{t.group}</span>
-                <select
-                  value={accountForm.group_id}
-                  onChange={(event) =>
-                    setAccountForm((current) => ({
-                      ...current,
-                      group_id: event.target.value,
-                    }))
+              <footer className="cash-modal-footer">
+                <button
+                  type="button"
+                  className="cash-btn cash-btn-light"
+                  onClick={() =>
+                    setShowAccountModal(false)
                   }
                 >
-                  <option value="">
-                    {t.optional}
-                  </option>
+                  {t.cancel}
+                </button>
 
-                  {lookups.groups.map((group) => (
-                    <option
-                      key={group.id}
-                      value={group.id}
-                    >
-                      {group.group_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <button
+                  type="button"
+                  className="cash-btn cash-btn-primary"
+                  onClick={saveAccount}
+                >
+                  ＋ {t.saveAccount}
+                </button>
+              </footer>
+            </section>
+          </div>,
+          document.body
+        )}
 
-              <label>
-                <span>{t.openingBalance}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={accountForm.opening_balance}
-                  placeholder="0"
-                  onChange={(event) =>
-                    setAccountForm((current) => ({
-                      ...current,
-                      opening_balance:
-                        event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-
-            <div className="cash-modal-footer">
-              <button
-                type="button"
-                className="cash-btn cash-btn-light"
-                onClick={() =>
-                  setShowAccountModal(false)
-                }
-              >
-                {t.cancel}
-              </button>
-
-              <button
-                type="button"
-                className="cash-btn cash-btn-primary"
-                onClick={saveAccount}
-              >
-                {t.saveAccount}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         .cash-voucher-page {
@@ -1281,13 +1297,6 @@ export default function CashBookPage() {
           border-radius: 24px;
           background: #ffffff;
           box-shadow: 0 12px 32px rgba(24, 55, 105, 0.06);
-        }
-
-        .cash-eyebrow {
-          color: #60708f;
-          font-size: 11px;
-          font-weight: 850;
-          letter-spacing: 0.12em;
         }
 
         .cash-page-header h1 {
@@ -1356,64 +1365,59 @@ export default function CashBookPage() {
         .cash-records-card {
           overflow: hidden;
           margin-bottom: 18px;
-          border: 1px solid #d7e0ef;
-          border-radius: 24px;
-          background: #eef2f8;
-          box-shadow: 0 14px 38px rgba(25, 48, 91, 0.075);
+          border: 1px solid #d8e2f3;
+          border-radius: 22px;
+          background: #ffffff;
+          box-shadow: 0 12px 32px rgba(24, 55, 105, 0.06);
         }
 
-        .cash-card-topbar {
-          position: relative;
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
+        .cash-entry-toolbar {
+          display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 14px 18px 9px;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 19px 20px 8px;
         }
 
-        .cash-close-button {
+        .cash-entry-toolbar h2 {
+          margin: 0 0 4px;
+          color: #0b1935;
+          font-size: 19px;
+          font-weight: 850;
+        }
+
+        .cash-entry-toolbar p {
+          margin: 0;
+          color: #77859f;
+          font-size: 12px;
+        }
+
+        .cash-clear-voucher-button {
           display: grid;
           place-items: center;
-          width: 58px;
-          height: 45px;
-          border: 0;
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          border: 1px solid #fecaca;
           border-radius: 12px;
-          background: #ef7d8f;
-          color: #1f1720;
-          font-size: 30px;
+          background: #fff0f0;
+          color: #c62e3e;
+          font-size: 25px;
           line-height: 1;
           cursor: pointer;
+          transition: transform 0.18s ease, background 0.18s ease;
         }
 
-        .cash-book-pill {
-          min-width: 200px;
-          padding: 9px 28px;
-          border-radius: 15px;
-          background: #172b68;
-          color: white;
-          font-size: 21px;
-          font-weight: 850;
-          text-align: center;
-          box-shadow: 0 8px 18px rgba(23, 43, 104, 0.22);
-        }
-
-        .cash-inline-account-button {
-          justify-self: end;
-          min-height: 40px;
-          padding: 8px 15px;
-          border: 1px solid #bdcaf5;
-          border-radius: 12px;
-          background: #ffffff;
-          color: #274aca;
-          font-weight: 800;
-          cursor: pointer;
+        .cash-clear-voucher-button:hover {
+          transform: translateY(-1px);
+          background: #ffe4e6;
         }
 
         .cash-meta-grid {
           display: grid;
           grid-template-columns: 190px 190px minmax(240px, 1fr);
           gap: 12px;
-          padding: 10px 20px 16px;
+          padding: 14px 20px 18px;
         }
 
         .cash-meta-grid label,
@@ -1438,7 +1442,7 @@ export default function CashBookPage() {
           border: 1px solid #cbd5e5;
           border-radius: 11px;
           outline: none;
-          background: rgba(255, 255, 255, 0.9);
+          background: #ffffff;
           color: #172039;
           font: inherit;
         }
@@ -1782,74 +1786,134 @@ export default function CashBookPage() {
         .cash-modal-backdrop {
           position: fixed;
           inset: 0;
-          z-index: 9999;
+          z-index: 99999;
           display: grid;
           place-items: center;
-          padding: 18px;
-          background: rgba(6, 16, 38, 0.58);
+          overflow-y: auto;
+          padding: 24px;
+          background: rgba(7, 18, 42, 0.62);
           backdrop-filter: blur(5px);
         }
 
         .cash-account-modal {
-          width: min(620px, 100%);
+          width: min(720px, 100%);
           overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.75);
           border-radius: 22px;
           background: #ffffff;
-          box-shadow: 0 35px 90px rgba(4, 14, 38, 0.34);
+          box-shadow: 0 34px 90px rgba(3, 13, 36, 0.38);
+          animation: cashModalOpen 0.2s ease-out;
+        }
+
+        @keyframes cashModalOpen {
+          from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.985);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         .cash-modal-head {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 18px;
-          padding: 20px 22px;
-          border-bottom: 1px solid #e5e9f1;
-        }
-
-        .cash-modal-head span {
-          color: #71809b;
-          font-size: 10px;
-          font-weight: 850;
-          letter-spacing: 0.11em;
+          gap: 20px;
+          padding: 22px 24px;
+          border-bottom: 1px solid #e5eaf3;
+          background:
+            linear-gradient(
+              135deg,
+              rgba(49, 94, 251, 0.08),
+              rgba(79, 70, 229, 0.035)
+            ),
+            #ffffff;
         }
 
         .cash-modal-head h3 {
-          margin: 5px 0 0;
-          color: #0b1935;
-          font-size: 23px;
+          margin: 0 0 6px;
+          color: #0a1936;
+          font-size: 24px;
+          font-weight: 900;
+          letter-spacing: -0.025em;
         }
 
-        .cash-modal-head button {
+        .cash-modal-head p {
+          max-width: 500px;
+          margin: 0;
+          color: #71809b;
+          font-size: 13px;
+          line-height: 1.55;
+        }
+
+        .cash-modal-close {
           display: grid;
           place-items: center;
-          width: 38px;
-          height: 38px;
-          border: 0;
-          border-radius: 10px;
-          background: #feecec;
-          color: #bd2b2b;
-          font-size: 25px;
+          width: 40px;
+          height: 40px;
+          flex: 0 0 40px;
+          border: 1px solid #fecaca;
+          border-radius: 11px;
+          background: #fff0f0;
+          color: #c62e3e;
+          font-size: 26px;
+          line-height: 1;
           cursor: pointer;
         }
 
         .cash-account-form {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          padding: 22px;
+          gap: 17px;
+          padding: 24px;
         }
 
         .cash-full-field {
           grid-column: 1 / -1;
         }
 
+        .cash-account-form label {
+          display: grid;
+          gap: 8px;
+        }
+
+        .cash-account-form label span {
+          color: #53627e;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .cash-account-form input,
+        .cash-account-form select {
+          width: 100%;
+          min-height: 45px;
+          padding: 10px 13px;
+          border: 1px solid #cbd6e8;
+          border-radius: 12px;
+          outline: none;
+          background: #ffffff;
+          color: #17213b;
+          font: inherit;
+          transition:
+            border-color 0.18s ease,
+            box-shadow 0.18s ease;
+        }
+
+        .cash-account-form input:focus,
+        .cash-account-form select:focus {
+          border-color: #315efb;
+          box-shadow: 0 0 0 4px rgba(49, 94, 251, 0.12);
+        }
+
         .cash-modal-footer {
           display: flex;
           justify-content: flex-end;
           gap: 10px;
-          padding: 16px 22px;
-          border-top: 1px solid #e5e9f1;
+          padding: 16px 24px;
+          border-top: 1px solid #e5eaf3;
           background: #f8faff;
         }
 
@@ -1881,6 +1945,21 @@ export default function CashBookPage() {
         }
 
         @media (max-width: 680px) {
+          .cash-modal-backdrop {
+            padding: 12px;
+          }
+
+          .cash-account-modal {
+            border-radius: 18px;
+          }
+
+          .cash-modal-head,
+          .cash-account-form,
+          .cash-modal-footer {
+            padding-left: 17px;
+            padding-right: 17px;
+          }
+
           .cash-voucher-page {
             padding: 10px;
           }
@@ -1896,19 +1975,6 @@ export default function CashBookPage() {
 
           .cash-header-actions .cash-btn {
             flex: 1 1 145px;
-          }
-
-          .cash-card-topbar {
-            grid-template-columns: auto 1fr;
-          }
-
-          .cash-book-pill {
-            min-width: 0;
-          }
-
-          .cash-inline-account-button {
-            grid-column: 1 / -1;
-            justify-self: stretch;
           }
 
           .cash-meta-grid,
@@ -1943,9 +2009,7 @@ export default function CashBookPage() {
         @media print {
           .cash-page-header,
           .cash-records-card,
-          .cash-card-topbar button,
-          .cash-inline-account-button,
-          .cash-close-button {
+          .cash-clear-voucher-button {
             display: none !important;
           }
 
