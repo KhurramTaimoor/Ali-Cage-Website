@@ -268,7 +268,7 @@ const applyPremiumPurchaseUi = (root) => {
   }
 
   const summaryPattern =
-    /^(total invoices|total items|total value|previous balance|delivery charges|total discount|total returns|total amount|total debit|total credit|total invoice|total return|net purchases|records|opening balance|closing balance|debit|credit|balance|کل انوائسز|کل آئٹمز|کل رقم|کل ریٹرنز|سابقہ بیلنس|نیٹ پرچیز)$/i;
+    /^(total invoices|total items|total value|previous balance|delivery charges|total discount|total returns|total amount|total debit|total credit|total invoice|total return|net purchases|records|opening balance|closing balance|products purchased|products returned|purchased qty|debit|credit|balance|کل انوائسز|کل آئٹمز|کل رقم|کل ریٹرنز|سابقہ بیلنس|نیٹ پرچیز|خریدے گئے پروڈکٹس|واپس شدہ پروڈکٹس)$/i;
 
   root.querySelectorAll("span, p, div, strong, small").forEach((element) => {
     if (element.children.length > 0) return;
@@ -537,14 +537,34 @@ export default function SupplierLedgerPage() {
         border-radius: 20px !important;
       }
 
+      [data-page="supplier-ledger-customer-layout"] div:has(> .purchase-premium-stat) {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
       [data-page="supplier-ledger-customer-layout"] .purchase-premium-stat {
-        min-width: 0 !important;
+        flex: 1 1 160px !important;
+        min-width: 160px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
         padding: 16px 18px !important;
         border: 1px solid var(--purchase-border) !important;
         border-top: 3px solid var(--purchase-blue) !important;
         border-radius: 18px !important;
         background: #ffffff !important;
         box-shadow: 0 9px 24px rgba(24, 55, 105, 0.05) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      @media (max-width: 620px) {
+        [data-page="supplier-ledger-customer-layout"] .purchase-premium-stat {
+          flex: 1 1 130px !important;
+          min-width: 130px !important;
+        }
       }
 
       [data-page="supplier-ledger-customer-layout"] .purchase-premium-table-wrap {
@@ -756,8 +776,29 @@ export default function SupplierLedgerPage() {
           padding: 14px 12px !important;
         }
 
+        [data-page="supplier-ledger-customer-layout"] div:has(> .ledger-summary-card) {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          align-items: stretch !important;
+          gap: 14px !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
         [data-page="supplier-ledger-customer-layout"] .ledger-summary-card {
+          flex: 1 1 160px !important;
+          min-width: 160px !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+          overflow-wrap: break-word !important;
           border-top: 3px solid #315efb !important;
+        }
+
+        @media (max-width: 620px) {
+          [data-page="supplier-ledger-customer-layout"] .ledger-summary-card {
+            flex: 1 1 130px !important;
+            min-width: 130px !important;
+          }
         }
 
         [data-page="supplier-ledger-customer-layout"] .ledger-summary-debit {
