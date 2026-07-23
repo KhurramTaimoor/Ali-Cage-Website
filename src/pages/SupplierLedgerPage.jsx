@@ -273,6 +273,10 @@ const applyPremiumPurchaseUi = (root) => {
   root.querySelectorAll("span, p, div, strong, small").forEach((element) => {
     if (element.children.length > 0) return;
 
+    // Supplier information card ke PHONE, CITY aur OPENING BALANCE fields
+    // summary cards nahi hain. In par generic card styling apply nahi hogi.
+    if (element.closest(".ledger-customer-card")) return;
+
     const text = String(element.textContent || "")
       .replace(/\s+/g, " ")
       .trim();
@@ -295,11 +299,55 @@ const applyPremiumPurchaseUi = (root) => {
   });
 };
 
+
+const PRODUCT_SUMMARY_PATTERN =
+  /products?\s+purchased|products?\s+returned|purchased\s+qty|returned\s+qty|خریدے\s+گئے\s+پروڈکٹس|واپس\s+شدہ\s+پروڈکٹس|خریدی\s+گئی\s+مقدار|واپس\s+مقدار/i;
+
+const cleanElementText = (element) =>
+  String(element?.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const cleanSupplierLedgerLayout = (root) => {
+  if (!root) return;
+
+  // Generic premium-card class supplier information ke andar bilkul nahi
+  // rehni chahiye, warna supplier card ka grid flex layout mein toot jata hai.
+  root
+    .querySelectorAll(".ledger-customer-card .purchase-premium-stat")
+    .forEach((element) => {
+      element.classList.remove("purchase-premium-stat");
+    });
+
+  // Product quantity summary cards ledger ke top section se remove.
+  root.querySelectorAll(".ledger-summary-card").forEach((card) => {
+    const shouldHide = PRODUCT_SUMMARY_PATTERN.test(cleanElementText(card));
+
+    card.classList.toggle(
+      "ledger-hidden-product-summary",
+      shouldHide
+    );
+
+    if (shouldHide) {
+      card.setAttribute("aria-hidden", "true");
+    } else {
+      card.removeAttribute("aria-hidden");
+    }
+  });
+
+  // Remaining cards: Opening Balance, Total Invoices, Total Returns,
+  // Closing Balance — clean four-column arrangement.
+  root.querySelectorAll(".ledger-summary-grid").forEach((grid) => {
+    grid.classList.add("ledger-summary-grid-clean");
+  });
+};
+
 const transformSupplierLedgerDom = (root) => {
   if (!root) return;
 
   hideShipmentUi(root);
   applyPremiumPurchaseUi(root);
+  cleanSupplierLedgerLayout(root);
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes = [];
@@ -815,6 +863,209 @@ export default function SupplierLedgerPage() {
         }
         
     
+
+        /* -------------------------------------------------------------
+           SUPPLIER INFORMATION CARD — CLEAN ALIGNMENT
+        ------------------------------------------------------------- */
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-customer-card {
+          display: grid !important;
+          grid-template-columns:
+            58px
+            minmax(220px, 1.45fr)
+            repeat(3, minmax(145px, 0.75fr)) !important;
+          align-items: center !important;
+          gap: 18px !important;
+          width: 100% !important;
+          margin-top: 18px !important;
+          padding: 18px 20px !important;
+          border: 1px solid #d9e2f3 !important;
+          border-radius: 20px !important;
+          background: #ffffff !important;
+          box-shadow: 0 10px 28px rgba(24, 55, 105, 0.055) !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-customer-avatar {
+          display: grid !important;
+          place-items: center !important;
+          width: 54px !important;
+          height: 54px !important;
+          min-width: 54px !important;
+          border-radius: 16px !important;
+          background: linear-gradient(
+            135deg,
+            #315efb,
+            #4f46e5
+          ) !important;
+          color: #ffffff !important;
+          font-size: 20px !important;
+          font-weight: 900 !important;
+          box-shadow: 0 9px 20px rgba(49, 94, 251, 0.22) !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-customer-main {
+          min-width: 0 !important;
+          padding-right: 8px !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-customer-main
+          .ledger-muted-label {
+          display: block !important;
+          margin: 0 0 5px !important;
+          color: #70809d !important;
+          font-size: 11px !important;
+          font-weight: 850 !important;
+          letter-spacing: 0.08em !important;
+          text-transform: uppercase !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-customer-main h2 {
+          overflow: hidden !important;
+          margin: 0 !important;
+          color: #0b1730 !important;
+          font-size: 21px !important;
+          font-weight: 900 !important;
+          line-height: 1.25 !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-info-item {
+          display: block !important;
+          min-width: 0 !important;
+          min-height: 52px !important;
+          padding: 4px 0 4px 18px !important;
+          border-top: 0 !important;
+          border-right: 0 !important;
+          border-bottom: 0 !important;
+          border-left: 1px solid #dce4f2 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-info-item span {
+          display: block !important;
+          margin-bottom: 7px !important;
+          color: #70809d !important;
+          font-size: 10px !important;
+          font-weight: 850 !important;
+          letter-spacing: 0.075em !important;
+          line-height: 1.2 !important;
+          text-transform: uppercase !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-info-item strong {
+          display: block !important;
+          overflow: hidden !important;
+          margin: 0 !important;
+          color: #13213d !important;
+          font-size: 14px !important;
+          font-weight: 800 !important;
+          line-height: 1.35 !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+
+        /* Product Purchased / Returned quantity cards removed */
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-hidden-product-summary {
+          display: none !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-summary-grid-clean {
+          display: grid !important;
+          grid-template-columns: repeat(
+            4,
+            minmax(170px, 1fr)
+          ) !important;
+          gap: 14px !important;
+          width: 100% !important;
+          margin-top: 14px !important;
+        }
+
+        [data-page="supplier-ledger-customer-layout"]
+          .ledger-summary-grid-clean
+          .ledger-summary-card {
+          display: block !important;
+          min-width: 0 !important;
+          min-height: 108px !important;
+          padding: 17px 18px !important;
+        }
+
+        @media (max-width: 1050px) {
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-customer-card {
+            grid-template-columns:
+              58px
+              minmax(200px, 1fr)
+              repeat(2, minmax(145px, 0.75fr)) !important;
+          }
+
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-info-item:last-child {
+            grid-column: 3 / 5 !important;
+          }
+
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-summary-grid-clean {
+            grid-template-columns: repeat(
+              2,
+              minmax(170px, 1fr)
+            ) !important;
+          }
+        }
+
+        @media (max-width: 760px) {
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-customer-card {
+            grid-template-columns: 54px minmax(0, 1fr) !important;
+            gap: 14px !important;
+            padding: 16px !important;
+          }
+
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-customer-avatar {
+            width: 50px !important;
+            height: 50px !important;
+            min-width: 50px !important;
+          }
+
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-info-item,
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-info-item:last-child {
+            display: grid !important;
+            grid-column: 1 / -1 !important;
+            grid-template-columns: minmax(110px, 0.42fr) minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 12px !important;
+            min-height: 46px !important;
+            padding: 11px 0 0 !important;
+            border-top: 1px solid #e3e9f4 !important;
+            border-left: 0 !important;
+          }
+
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-info-item span {
+            margin: 0 !important;
+          }
+
+          [data-page="supplier-ledger-customer-layout"]
+            .ledger-summary-grid-clean {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
       `}</style>
     </div>
   );
