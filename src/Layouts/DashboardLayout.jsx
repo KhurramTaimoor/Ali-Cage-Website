@@ -1,5 +1,15 @@
-import React, { useState } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Outlet,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -16,23 +26,272 @@ import {
   BarChart3,
   X,
 } from "lucide-react";
+
 import { translations } from "../data/translations";
 
+const SALES_ITEMS = [
+  {
+    to: "/app/sales/customer",
+    key: "customer",
+    fallback: "Customer",
+  },
+  {
+    to: "/app/sales/customer-ledger",
+    key: "customerLedger",
+    fallback: "Customer Ledger",
+  },
+  {
+    to: "/app/sales/rate-list",
+    key: "rateList",
+    fallback: "Rate List",
+  },
+  {
+    to: "/app/sales/sale-order",
+    key: "saleOrder",
+    fallback: "Sale Order",
+  },
+  {
+    to: "/app/sales/invoice",
+    key: "salesInvoice",
+    fallback: "Sales Invoice",
+  },
+  {
+    to: "/app/sales/return",
+    key: "salesReturn",
+    fallback: "Sales Return",
+  },
+  {
+    divider: true,
+  },
+  {
+    to: "/app/sales/reports",
+    key: "salesReport",
+    fallback: "Sales Report",
+  },
+];
+
+const PURCHASE_ITEMS = [
+  {
+    to: "/app/purchase/supplier",
+    key: "supplier",
+    fallback: "Supplier",
+  },
+  {
+    to: "/app/purchase/rate",
+    key: "purchaseRate",
+    fallback: "Purchase Rate",
+  },
+  {
+    to: "/app/purchase/invoice",
+    key: "purchaseInvoice",
+    fallback: "Purchase Invoice",
+  },
+  {
+    to: "/app/purchase/return",
+    key: "purchaseReturn",
+    fallback: "Purchase Return",
+  },
+  {
+    to: "/app/purchase/supplier-ledger",
+    key: "supplierLedger",
+    fallback: "Supplier Ledger",
+  },
+  {
+    divider: true,
+  },
+  {
+    to: "/app/purchase/reports",
+    key: "purchaseReport",
+    fallback: "Purchase Report",
+  },
+];
+
+const INVENTORY_ITEMS = [
+  {
+    to: "/app/inventory/product-type",
+    key: "productType",
+    fallback: "Product Type",
+  },
+  {
+    to: "/app/inventory/category",
+    key: "category",
+    fallback: "Category",
+  },
+  {
+    to: "/app/inventory/product",
+    key: "product",
+    fallback: "Product",
+  },
+  {
+    to: "/app/inventory/unit",
+    key: "unit",
+    fallback: "Unit",
+  },
+  {
+    to: "/app/inventory/opening",
+    key: "openingStock",
+    fallback: "Opening Stock",
+  },
+  {
+    to: "/app/inventory/receive",
+    key: "stockReceive",
+    fallback: "Stock Receive",
+  },
+  {
+    to: "/app/inventory/issue",
+    key: "stockIssue",
+    fallback: "Stock Issue",
+  },
+  {
+    to: "/app/inventory/stock-demand",
+    key: "stockDemand",
+    fallback: "Stock Demand",
+  },
+  {
+    divider: true,
+  },
+  {
+    to: "/app/inventory/reports",
+    key: "inventoryReport",
+    fallback: "Inventory Report",
+  },
+  {
+    to: "/app/inventory/product-ledger",
+    key: "productLedger",
+    fallback: "Product Ledger",
+  },
+];
+
+const ACCOUNT_ITEMS = [
+  {
+    to: "/app/accounts/groups",
+    key: "accountGroups",
+    fallback: "Account Groups",
+  },
+  {
+    to: "/app/accounts/chart",
+    key: "chartOfAccounts",
+    fallback: "Chart of Accounts",
+  },
+  {
+    to: "/app/accounts/opening",
+    key: "openingBalance",
+    fallback: "Opening Balance",
+  },
+  {
+    to: "/app/accounts/journal",
+    key: "journalVoucher",
+    fallback: "Journal Voucher",
+  },
+  {
+    to: "/app/accounts/cashbook",
+    key: "cashBook",
+    fallback: "Cash Book",
+  },
+  {
+    divider: true,
+  },
+  {
+    to: "/app/accounts/ledger-summary",
+    key: "ledgerSummary",
+    fallback: "Ledger Summary",
+  },
+  {
+    to: "/app/accounts/gl-report",
+    key: "glReport",
+    fallback: "GL Report",
+  },
+  {
+    to: "/app/accounts/cash-report",
+    key: "cashBookReport",
+    fallback: "Cash Book Report",
+  },
+];
+
+const REPORT_ITEMS = [
+  {
+    to: "/app/reports/product-profit-loss",
+    key: "productProfitLoss",
+    fallback: "Product Profit / Loss",
+  },
+];
+
+const HR_ITEMS = [
+  {
+    to: "/app/hr/employee",
+    key: "employee",
+    fallback: "Employee",
+  },
+  {
+    divider: true,
+  },
+  {
+    to: "/app/hr/reports",
+    key: "employeeloan",
+    fallback: "Employee Loan",
+  },
+];
+
+const PRODUCTION_ITEMS = [
+  {
+    to: "/app/production/bom",
+    key: "bom",
+    fallback: "BOM",
+  },
+  {
+    to: "/app/production/assembly",
+    key: "assembly",
+    fallback: "Assembly",
+  },
+  {
+    to: "/app/production/invoice",
+    key: "prodInvoice",
+    fallback: "Production Invoice",
+  },
+  {
+    to: "/app/production/return-invoice",
+    key: "prodReturnInvoice",
+    fallback: "Production Return Invoice",
+  },
+  {
+    divider: true,
+  },
+  {
+    to: "/app/production/reports",
+    key: "prodReports",
+    fallback: "Production Reports",
+  },
+];
+
 const DashboardLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(true);
+
+  const [
+    mobileSidebarOpen,
+    setMobileSidebarOpen,
+  ] = useState(false);
+
   const [lang, setLang] = useState("en");
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const t = translations[lang] || translations.en || {};
+  const t =
+    translations[lang] ||
+    translations.en ||
+    {};
+
   const isRTL = lang === "ur";
 
-  const text = (key, fallback) => t?.[key] || fallback;
+  const text = (key, fallback) =>
+    t?.[key] || fallback;
 
   const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(`${path}/`);
+    location.pathname === path ||
+    location.pathname.startsWith(
+      `${path}/`
+    );
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -46,17 +305,43 @@ const DashboardLayout = () => {
       return;
     }
 
-    setSidebarOpen((prev) => !prev);
+    setSidebarOpen((previous) => !previous);
   };
 
   const closeMobileSidebar = () => {
     setMobileSidebarOpen(false);
   };
 
+  const renderItems = (items) =>
+    items.map((item, index) => {
+      if (item.divider) {
+        return (
+          <div
+            key={`divider-${index}`}
+            className="my-1 border-t border-slate-700 mx-4 opacity-50"
+          />
+        );
+      }
+
+      return (
+        <SidebarSubItem
+          key={item.to}
+          to={item.to}
+          label={text(
+            item.key,
+            item.fallback
+          )}
+          onNavigate={closeMobileSidebar}
+        />
+      );
+    });
+
   return (
     <div
       className={`flex h-screen bg-slate-50 font-sans overflow-hidden ${
-        isRTL ? "flex-row-reverse" : "flex-row"
+        isRTL
+          ? "flex-row-reverse"
+          : "flex-row"
       }`}
       dir={isRTL ? "rtl" : "ltr"}
     >
@@ -78,7 +363,11 @@ const DashboardLayout = () => {
               ? "translate-x-full lg:translate-x-0"
               : "-translate-x-full lg:translate-x-0"
           }
-          ${sidebarOpen ? "w-60" : "w-60 lg:w-16"}
+          ${
+            sidebarOpen
+              ? "w-60"
+              : "w-60 lg:w-16"
+          }
           bg-slate-900 text-slate-300 flex flex-col
           transition-all duration-300 shadow-xl shrink-0
         `}
@@ -97,8 +386,10 @@ const DashboardLayout = () => {
           </div>
 
           <button
+            type="button"
             onClick={closeMobileSidebar}
             className="lg:hidden w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center"
+            aria-label="Close sidebar"
           >
             <X size={18} />
           </button>
@@ -106,217 +397,103 @@ const DashboardLayout = () => {
 
         <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           <SidebarItem
-            icon={<LayoutDashboard size={18} />}
-            label={text("dashboard", "Dashboard")}
+            icon={
+              <LayoutDashboard size={18} />
+            }
+            label={text(
+              "dashboard",
+              "Dashboard"
+            )}
             to="/app/dashboard"
             isOpen={sidebarOpen}
-            active={isActive("/app/dashboard")}
+            active={isActive(
+              "/app/dashboard"
+            )}
             onNavigate={closeMobileSidebar}
           />
 
           <div
             className={`pt-3 pb-1 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${
-              !sidebarOpen && "lg:text-center"
+              !sidebarOpen
+                ? "lg:text-center"
+                : ""
             }`}
           >
             {sidebarOpen ? "Modules" : "M"}
           </div>
 
           <SidebarGroup
-            icon={<ShoppingCart size={18} />}
+            icon={
+              <ShoppingCart size={18} />
+            }
             label={text("sales", "Sales")}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive("/app/sales")}
           >
-            <SidebarSubItem
-              to="/app/sales/customer"
-              label={text("customer", "Customer")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <SidebarSubItem
-              to="/app/sales/customer-ledger"
-              label={text("customerLedger", "Customer Ledger")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <SidebarSubItem
-              to="/app/sales/rate-list"
-              label={text("rateList", "Rate List")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <SidebarSubItem
-              to="/app/sales/sale-order"
-              label={text("saleOrder", "Sale Order")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <SidebarSubItem
-              to="/app/sales/invoice"
-              label={text("salesInvoice", "Sales Invoice")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <SidebarSubItem
-              to="/app/sales/return"
-              label={text("salesReturn", "Sales Return")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <div className="my-1 border-t border-slate-700 mx-4 opacity-50" />
-
-            <SidebarSubItem
-              to="/app/sales/reports"
-              label={text("salesReport", "Sales Report")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(SALES_ITEMS)}
           </SidebarGroup>
 
           <SidebarGroup
             icon={<Truck size={18} />}
-            label={text("purchase", "Purchase")}
+            label={text(
+              "purchase",
+              "Purchase"
+            )}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive(
+              "/app/purchase"
+            )}
           >
-            <SidebarSubItem
-              to="/app/purchase/supplier"
-              label={text("supplier", "Supplier")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/purchase/rate"
-              label={text("purchaseRate", "Purchase Rate")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/purchase/invoice"
-              label={text("purchaseInvoice", "Purchase Invoice")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/purchase/return"
-              label={text("purchaseReturn", "Purchase Return")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/purchase/supplier-ledger"
-              label={text("supplierLedger", "Supplier Ledger")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <div className="my-1 border-t border-slate-700 mx-4 opacity-50" />
-
-            <SidebarSubItem
-              to="/app/purchase/reports"
-              label={text("purchaseReport", "Purchase Report")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(PURCHASE_ITEMS)}
           </SidebarGroup>
 
           <SidebarGroup
             icon={<Package size={18} />}
-            label={text("inventory", "Inventory")}
+            label={text(
+              "inventory",
+              "Inventory"
+            )}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive(
+              "/app/inventory"
+            )}
           >
-            <SidebarSubItem
-              to="/app/inventory/product-type"
-              label={text("productType", "Product Type")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/category"
-              label={text("category", "Category")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/product"
-              label={text("product", "Product")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/unit"
-              label={text("unit", "Unit")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/opening"
-              label={text("openingStock", "Opening Stock")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/receive"
-              label={text("stockReceive", "Stock Receive")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/issue"
-              label={text("stockIssue", "Stock Issue")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/stock-demand"
-              label={text("stockDemand", "Stock Demand")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <div className="my-1 border-t border-slate-700 mx-4 opacity-50" />
-
-            <SidebarSubItem
-              to="/app/inventory/reports"
-              label={text("inventoryReport", "Inventory Report")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/inventory/product-ledger"
-              label={text("productLedger", "Product Ledger")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(INVENTORY_ITEMS)}
           </SidebarGroup>
 
           <SidebarGroup
-            icon={<Calculator size={18} />}
-            label={text("accounts", "Accounts")}
+            icon={
+              <Calculator size={18} />
+            }
+            label={text(
+              "accounts",
+              "Accounts"
+            )}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive(
+              "/app/accounts"
+            )}
           >
-            <SidebarSubItem
-              to="/app/accounts/opening"
-              label={text("openingBalance", "Opening Balance")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/accounts/journal"
-              label={text("journalVoucher", "Journal Voucher")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <div className="my-1 border-t border-slate-700 mx-4 opacity-50" />
-
-            <SidebarSubItem
-              to="/app/accounts/gl-report"
-              label={text("glReport", "GL Report")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/accounts/cash-report"
-              label={text("cashBookReport", "Cash Book Report")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(ACCOUNT_ITEMS)}
           </SidebarGroup>
 
           <SidebarGroup
             icon={<BarChart3 size={18} />}
-            label={text("reports", "Reports")}
+            label={text(
+              "reports",
+              "Reports"
+            )}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive(
+              "/app/reports"
+            )}
           >
-            <SidebarSubItem
-              to="/app/reports/product-profit-loss"
-              label={text("productProfitLoss", "Product Profit / Loss")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(REPORT_ITEMS)}
           </SidebarGroup>
 
           <SidebarGroup
@@ -324,70 +501,46 @@ const DashboardLayout = () => {
             label={text("hr", "HR")}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive("/app/hr")}
           >
-            <SidebarSubItem
-              to="/app/hr/employee"
-              label={text("employee", "Employee")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <div className="my-1 border-t border-slate-700 mx-4 opacity-50" />
-
-            <SidebarSubItem
-              to="/app/hr/reports"
-              label={text("employeeloan", "Employee Loan")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(HR_ITEMS)}
           </SidebarGroup>
 
           <SidebarGroup
             icon={<Factory size={18} />}
-            label={text("production", "Production")}
+            label={text(
+              "production",
+              "Production"
+            )}
             isOpen={sidebarOpen}
             isRTL={isRTL}
+            active={isActive(
+              "/app/production"
+            )}
           >
-            <SidebarSubItem
-              to="/app/production/bom"
-              label={text("bom", "BOM")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/production/assembly"
-              label={text("assembly", "Assembly")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/production/invoice"
-              label={text("prodInvoice", "Production Invoice")}
-              onNavigate={closeMobileSidebar}
-            />
-            <SidebarSubItem
-              to="/app/production/return-invoice"
-              label={text("prodReturnInvoice", "Production Return Invoice")}
-              onNavigate={closeMobileSidebar}
-            />
-
-            <div className="my-1 border-t border-slate-700 mx-4 opacity-50" />
-
-            <SidebarSubItem
-              to="/app/production/reports"
-              label={text("prodReports", "Production Reports")}
-              onNavigate={closeMobileSidebar}
-            />
+            {renderItems(PRODUCTION_ITEMS)}
           </SidebarGroup>
 
           <SidebarItem
-            icon={<ShieldCheck size={18} />}
-            label={text("permissions", "Permissions")}
+            icon={
+              <ShieldCheck size={18} />
+            }
+            label={text(
+              "permissions",
+              "Permissions"
+            )}
             to="/app/permissions"
             isOpen={sidebarOpen}
-            active={isActive("/app/permissions")}
+            active={isActive(
+              "/app/permissions"
+            )}
             onNavigate={closeMobileSidebar}
           />
         </nav>
 
         <div className="p-3 border-t border-slate-800 shrink-0">
           <button
+            type="button"
             onClick={handleLogout}
             className="flex items-center text-slate-400 hover:text-white transition w-full hover:bg-slate-800 p-2 rounded-md group"
           >
@@ -398,7 +551,10 @@ const DashboardLayout = () => {
 
             {sidebarOpen && (
               <span className="mx-3 text-xs font-medium uppercase tracking-wide">
-                {text("logout", "Logout")}
+                {text(
+                  "logout",
+                  "Logout"
+                )}
               </span>
             )}
           </button>
@@ -407,22 +563,31 @@ const DashboardLayout = () => {
 
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
         <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 shadow-sm z-10 shrink-0">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <button
-              onClick={handleMenuClick}
-              className="text-slate-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-slate-100"
-            >
-              <Menu size={22} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleMenuClick}
+            className="text-slate-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-slate-100"
+            aria-label="Toggle sidebar"
+          >
+            <Menu size={22} />
+          </button>
 
           <div className="flex items-center gap-2 sm:gap-6">
             <button
-              onClick={() => setLang(lang === "en" ? "ur" : "en")}
+              type="button"
+              onClick={() =>
+                setLang(
+                  lang === "en"
+                    ? "ur"
+                    : "en"
+                )
+              }
               className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition text-xs font-bold"
             >
               <Globe size={14} />
-              {lang === "en" ? "اردو" : "EN"}
+              {lang === "en"
+                ? "اردو"
+                : "EN"}
             </button>
 
             <div className="hidden sm:block h-6 w-px bg-slate-200" />
@@ -430,12 +595,19 @@ const DashboardLayout = () => {
             <div className="flex items-center gap-3">
               <div
                 className={`hidden sm:block ${
-                  isRTL ? "text-left" : "text-right"
+                  isRTL
+                    ? "text-left"
+                    : "text-right"
                 }`}
               >
                 <div className="text-xs font-bold text-slate-700">
-                  {text("welcome", "Welcome")} Admin
+                  {text(
+                    "welcome",
+                    "Welcome"
+                  )}{" "}
+                  Admin
                 </div>
+
                 <div className="text-[10px] text-slate-400 uppercase tracking-wide">
                   Administrator
                 </div>
@@ -450,7 +622,13 @@ const DashboardLayout = () => {
 
         <main className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-[#f1f5f9] p-3 sm:p-4 lg:p-6">
           <div className="min-w-0 w-full">
-            <Outlet context={{ lang, t, isRTL }} />
+            <Outlet
+              context={{
+                lang,
+                t,
+                isRTL,
+              }}
+            />
           </div>
         </main>
       </div>
@@ -458,7 +636,14 @@ const DashboardLayout = () => {
   );
 };
 
-const SidebarItem = ({ icon, label, to, isOpen, active, onNavigate }) => (
+const SidebarItem = ({
+  icon,
+  label,
+  to,
+  isOpen,
+  active,
+  onNavigate,
+}) => (
   <Link
     to={to}
     onClick={onNavigate}
@@ -468,7 +653,9 @@ const SidebarItem = ({ icon, label, to, isOpen, active, onNavigate }) => (
         : "hover:bg-slate-800 text-slate-400 hover:text-white"
     }`}
   >
-    <div className="shrink-0">{icon}</div>
+    <div className="shrink-0">
+      {icon}
+    </div>
 
     {isOpen && (
       <span className="mx-3 text-xs font-medium whitespace-nowrap">
@@ -478,25 +665,67 @@ const SidebarItem = ({ icon, label, to, isOpen, active, onNavigate }) => (
   </Link>
 );
 
-const SidebarGroup = ({ icon, label, children, isOpen, isRTL }) => {
-  const [expanded, setExpanded] = useState(false);
+const SidebarGroup = ({
+  icon,
+  label,
+  children,
+  isOpen,
+  isRTL,
+  active = false,
+}) => {
+  const [expanded, setExpanded] =
+    useState(active);
+
+  useEffect(() => {
+    if (active) {
+      setExpanded(true);
+    }
+  }, [active]);
 
   if (!isOpen) {
-    return <SidebarItem icon={icon} label={label} to="#" isOpen={false} />;
+    return (
+      <div className="mx-2 mb-0.5">
+        <button
+          type="button"
+          title={label}
+          className={`w-full flex items-center justify-center px-3 py-2 rounded-md ${
+            active
+              ? "bg-blue-600 text-white"
+              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+          }`}
+        >
+          {icon}
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="mx-2 mb-0.5">
       <button
-        onClick={() => setExpanded((prev) => !prev)}
+        type="button"
+        onClick={() =>
+          setExpanded(
+            (previous) => !previous
+          )
+        }
         className={`w-full flex items-center justify-between px-4 py-2 rounded-md transition-colors ${
-          expanded
+          expanded || active
             ? "bg-slate-800 text-white"
             : "hover:bg-slate-800 text-slate-400 hover:text-white"
         }`}
       >
-        <div className={`flex items-center ${isRTL ? "flex-row-reverse" : ""}`}>
-          <div className="shrink-0">{icon}</div>
+        <div
+          className={`flex items-center ${
+            isRTL
+              ? "flex-row-reverse"
+              : ""
+          }`}
+        >
+          <div className="shrink-0">
+            {icon}
+          </div>
+
           <span className="mx-3 text-xs font-medium whitespace-nowrap">
             {label}
           </span>
@@ -504,7 +733,9 @@ const SidebarGroup = ({ icon, label, children, isOpen, isRTL }) => {
 
         <div
           className={`transition-transform duration-200 ${
-            expanded ? "rotate-180" : ""
+            expanded
+              ? "rotate-180"
+              : ""
           }`}
         >
           <ChevronDown size={14} />
@@ -513,12 +744,16 @@ const SidebarGroup = ({ icon, label, children, isOpen, isRTL }) => {
 
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          expanded ? "max-h-[760px] opacity-100 mt-1" : "max-h-0 opacity-0"
+          expanded
+            ? "max-h-[920px] opacity-100 mt-1"
+            : "max-h-0 opacity-0"
         }`}
       >
         <div
           className={`bg-slate-950/30 rounded-md py-1 border-slate-700 space-y-0.5 ${
-            isRTL ? "mr-4 border-r" : "ml-4 border-l"
+            isRTL
+              ? "mr-4 border-r"
+              : "ml-4 border-l"
           }`}
         >
           {children}
@@ -528,11 +763,18 @@ const SidebarGroup = ({ icon, label, children, isOpen, isRTL }) => {
   );
 };
 
-const SidebarSubItem = ({ to, label, onNavigate }) => {
+const SidebarSubItem = ({
+  to,
+  label,
+  onNavigate,
+}) => {
   const location = useLocation();
 
   const active =
-    location.pathname === to || location.pathname.startsWith(`${to}/`);
+    location.pathname === to ||
+    location.pathname.startsWith(
+      `${to}/`
+    );
 
   return (
     <Link
