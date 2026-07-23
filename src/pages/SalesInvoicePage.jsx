@@ -1434,4 +1434,4 @@ export default function SalesInvoicePage() {
       )}
     </div>
   );
-}i model bass aesay open ho input ka baqi thk hai 
+}
