@@ -10,196 +10,208 @@ const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
 
-const API_BASE = `${API_ROOT}/api`;
+const SALARY_API = `${API_ROOT}/api/employee-salary`;
+const EMPLOYEES_API = `${API_ROOT}/api/employees`;
 
 const LANG = {
   en: {
     title: "Employee Salary",
     subtitle:
-      "Prepare monthly payroll with attendance, overtime, deductions and advances",
-    addSalary: "New Salary",
+      "Calculate employee salary, attendance adjustments and advance balance",
+    newSalary: "New Salary",
+    refresh: "Refresh",
+    print: "Print",
+    pdf: "PDF",
+    toggleLang: "اردو",
+
     searchPlaceholder: "Search employee, month or status...",
     allMonths: "All Months",
     allStatuses: "All Statuses",
+
     employee: "Employee",
-    selectEmployee: "-- Select Employee --",
+    selectEmployee: "Select Employee",
     salaryMonth: "Salary Month",
+    status: "Status",
+    paid: "Paid",
+    pending: "Pending",
+    notes: "Notes",
+    notesPlaceholder: "Optional payroll note...",
+
+    salary: "Salary",
     basicSalary: "Basic Salary",
     perDaySalary: "Per Day Salary",
-    perHourSalary: "Per Hour Salary",
+
+    extraDay: "Extra Day",
     extraDays: "Extra Days",
     extraDayAmount: "Extra Day Amount",
+
+    absent: "Absent",
     absentDays: "Absent Days",
-    absentDeduction: "Absent Deduction",
+    absentAmount: "Absent Deduction",
+
+    timeDeduction: "Time Deduction",
+    timeDeductionHours: "Time Deduction Hours",
+    timeDeductionRate: "Deduction Rate / Hour",
+    timeDeductionAmount: "Time Deduction Amount",
+
+    overtime: "Overtime",
     overtimeHours: "Overtime Hours",
     overtimeRate: "Overtime Rate / Hour",
     overtimeAmount: "Overtime Amount",
-    timeDeduction: "Time Deduction",
-    currentAdvance: "Current Advance",
+
+    calculation: "Salary Calculation",
+    calculatedAmount: "Calculated Amount",
+    hisaabAmount: "Hisaab Amount",
+    advance: "Advance",
     previousAdvance: "Previous Advance",
-    grossSalary: "Gross Salary",
-    totalAdditions: "Total Additions",
-    totalDeductions: "Total Deductions",
-    netSalary: "Net Payable Salary",
-    status: "Status",
-    pending: "Pending",
-    paid: "Paid",
-    notes: "Notes",
-    notesPlaceholder: "Optional payroll note...",
+    totalAdvance: "Total Advance",
+    remainingBalance: "Remaining Balance",
+    baqayaHisaab: "Baqaya Hisaab",
+
+    inputValue: "Input",
+    calculatedValue: "Calculated Amount",
+    hours: "Hours",
+    days: "Days",
+
     save: "Save Salary",
+    update: "Update Salary",
     saving: "Saving...",
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",
     actions: "Actions",
+
+    loading: "Loading salary records...",
     noRecords: "No salary records found.",
-    loading: "Loading payroll...",
-    toggleLang: "اردو",
-    print: "Print",
-    pdf: "PDF",
-    refresh: "Refresh",
-    totalPayroll: "Total Payroll",
-    paidPayroll: "Paid Payroll",
-    pendingPayroll: "Pending Payroll",
-    totalAdvances: "Total Advances",
-    salaryDetails: "Salary Details",
-    attendanceAdditions: "Attendance & Additions",
-    deductionsAdvances: "Deductions & Advances",
-    calculationSummary: "Salary Calculation",
-    previousAdvanceHint:
-      "Automatically loaded from the employee or latest outstanding salary record.",
-    overtimeRateHint:
-      "Automatically calculated from basic salary; you can change it.",
-    successSave: "Salary record saved successfully.",
-    successUpdate: "Salary record updated successfully.",
-    successDelete: "Salary record deleted successfully.",
-    errorRequired: "Please select employee and salary month.",
-    deleteConfirm: "Are you sure you want to delete this salary record?",
-    apiFallback:
-      "API was unavailable, so demo records are being shown locally.",
-    printedOn: "Printed On",
+    noEmployees: "No employees found from backend.",
+    loadError: "Could not load salary data from backend.",
+    saveError: "Salary could not be saved. Check backend.",
+    deleteError: "Salary record could not be deleted.",
+    requiredError: "Employee, month and salary are required.",
+    successSave: "Salary saved successfully.",
+    successUpdate: "Salary updated successfully.",
+    successDelete: "Salary deleted successfully.",
+    deleteConfirm: "Delete this salary record?",
+
+    totalPayroll: "Total Calculated Salary",
+    totalAdvanceCard: "Total Advance",
+    totalBalance: "Total Remaining Balance",
+    totalRecords: "Salary Records",
+
+    employeeInformation: "Employee Information",
+    attendanceCalculation: "Attendance & Time Calculation",
+    advanceCalculation: "Advance & Final Balance",
+    automaticCalculation: "Automatically calculated",
+
+    formulaOne:
+      "Calculated Amount = Salary + Extra Day Amount + Overtime Amount − Absent Amount − Time Deduction Amount",
+    formulaTwo:
+      "Remaining Balance = Calculated Amount − Advance − Previous Advance",
+
     reportTitle: "Employee Salary Report",
-    formula:
-      "Net Salary = Basic + Extra Days + Overtime − Absents − Time Deduction − Current Advance − Previous Advance",
-    showing: "Showing",
-    records: "records",
-    employeeInfo: "Employee Information",
-    designation: "Designation",
-    department: "Department",
-    month: "Month",
+    printedOn: "Printed On",
   },
+
   ur: {
-    title: "ملازمین کی تنخواہ",
+    title: "ملازم کی تنخواہ",
     subtitle:
-      "حاضری، اوور ٹائم، کٹوتی اور ایڈوانس کے ساتھ ماہانہ تنخواہ تیار کریں",
-    addSalary: "نئی تنخواہ",
-    searchPlaceholder: "ملازم، مہینہ یا حالت سے تلاش کریں...",
+      "ملازم کی تنخواہ، حاضری، کٹوتی اور ایڈوانس کا حساب کریں",
+    newSalary: "نئی تنخواہ",
+    refresh: "ری فریش",
+    print: "پرنٹ",
+    pdf: "پی ڈی ایف",
+    toggleLang: "English",
+
+    searchPlaceholder: "ملازم، مہینہ یا حالت تلاش کریں...",
     allMonths: "تمام مہینے",
     allStatuses: "تمام حالتیں",
+
     employee: "ملازم",
-    selectEmployee: "-- ملازم منتخب کریں --",
+    selectEmployee: "ملازم منتخب کریں",
     salaryMonth: "تنخواہ کا مہینہ",
-    basicSalary: "بنیادی تنخواہ",
-    perDaySalary: "فی دن تنخواہ",
-    perHourSalary: "فی گھنٹہ تنخواہ",
-    extraDays: "اضافی دن",
-    extraDayAmount: "اضافی دنوں کی رقم",
-    absentDays: "غیر حاضر دن",
-    absentDeduction: "غیر حاضری کی کٹوتی",
-    overtimeHours: "اوور ٹائم گھنٹے",
-    overtimeRate: "اوور ٹائم فی گھنٹہ",
-    overtimeAmount: "اوور ٹائم رقم",
-    timeDeduction: "وقت کی کٹوتی",
-    currentAdvance: "موجودہ ایڈوانس",
-    previousAdvance: "سابقہ ایڈوانس",
-    grossSalary: "مجموعی تنخواہ",
-    totalAdditions: "کل اضافہ",
-    totalDeductions: "کل کٹوتی",
-    netSalary: "قابل ادائیگی خالص تنخواہ",
     status: "حالت",
-    pending: "زیر التواء",
     paid: "ادا شدہ",
+    pending: "زیر التواء",
     notes: "نوٹس",
     notesPlaceholder: "اختیاری تنخواہ نوٹ...",
+
+    salary: "تنخواہ",
+    basicSalary: "بنیادی تنخواہ",
+    perDaySalary: "فی دن تنخواہ",
+
+    extraDay: "اضافی دن",
+    extraDays: "اضافی دن",
+    extraDayAmount: "اضافی دن کی رقم",
+
+    absent: "غیر حاضر",
+    absentDays: "غیر حاضر دن",
+    absentAmount: "غیر حاضری کی کٹوتی",
+
+    timeDeduction: "ٹائم کٹوتی",
+    timeDeductionHours: "ٹائم کٹوتی کے گھنٹے",
+    timeDeductionRate: "فی گھنٹہ کٹوتی ریٹ",
+    timeDeductionAmount: "ٹائم کٹوتی کی رقم",
+
+    overtime: "اوور ٹائم",
+    overtimeHours: "اوور ٹائم گھنٹے",
+    overtimeRate: "فی گھنٹہ اوور ٹائم ریٹ",
+    overtimeAmount: "اوور ٹائم رقم",
+
+    calculation: "تنخواہ کا حساب",
+    calculatedAmount: "حساب رقم",
+    hisaabAmount: "حساب رقم",
+    advance: "ایڈوانس",
+    previousAdvance: "سابقہ ایڈوانس",
+    totalAdvance: "کل ایڈوانس",
+    remainingBalance: "بقایا حساب",
+    baqayaHisaab: "بقایا حساب",
+
+    inputValue: "ان پٹ",
+    calculatedValue: "حساب شدہ رقم",
+    hours: "گھنٹے",
+    days: "دن",
+
     save: "تنخواہ محفوظ کریں",
+    update: "تنخواہ اپڈیٹ کریں",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
     edit: "ترمیم",
     delete: "حذف",
     actions: "اقدامات",
+
+    loading: "تنخواہ ریکارڈ لوڈ ہو رہے ہیں...",
     noRecords: "تنخواہ کا کوئی ریکارڈ نہیں ملا۔",
-    loading: "پے رول لوڈ ہو رہا ہے...",
-    toggleLang: "English",
-    print: "پرنٹ",
-    pdf: "پی ڈی ایف",
-    refresh: "ری فریش",
-    totalPayroll: "کل پے رول",
-    paidPayroll: "ادا شدہ پے رول",
-    pendingPayroll: "زیر التواء پے رول",
-    totalAdvances: "کل ایڈوانس",
-    salaryDetails: "تنخواہ کی تفصیل",
-    attendanceAdditions: "حاضری اور اضافہ",
-    deductionsAdvances: "کٹوتی اور ایڈوانس",
-    calculationSummary: "تنخواہ کا حساب",
-    previousAdvanceHint:
-      "ملازم یا آخری بقایا تنخواہ ریکارڈ سے خودکار طور پر لوڈ ہوگا۔",
-    overtimeRateHint:
-      "بنیادی تنخواہ سے خودکار حساب، ضرورت پر تبدیل کیا جا سکتا ہے۔",
-    successSave: "تنخواہ کا ریکارڈ کامیابی سے محفوظ ہو گیا۔",
-    successUpdate: "تنخواہ کا ریکارڈ اپڈیٹ ہو گیا۔",
-    successDelete: "تنخواہ کا ریکارڈ حذف ہو گیا۔",
-    errorRequired: "براہ کرم ملازم اور تنخواہ کا مہینہ منتخب کریں۔",
-    deleteConfirm: "کیا آپ واقعی یہ تنخواہ ریکارڈ حذف کرنا چاہتے ہیں؟",
-    apiFallback:
-      "اے پی آئی دستیاب نہیں، اس لیے ڈیمو ریکارڈ مقامی طور پر دکھائے جا رہے ہیں۔",
+    noEmployees: "بیک اینڈ سے کوئی ملازم نہیں ملا۔",
+    loadError: "بیک اینڈ سے تنخواہ کا ڈیٹا لوڈ نہیں ہوا۔",
+    saveError: "تنخواہ محفوظ نہیں ہوئی، بیک اینڈ چیک کریں۔",
+    deleteError: "تنخواہ ریکارڈ حذف نہیں ہوا۔",
+    requiredError: "ملازم، مہینہ اور تنخواہ ضروری ہیں۔",
+    successSave: "تنخواہ کامیابی سے محفوظ ہو گئی۔",
+    successUpdate: "تنخواہ کامیابی سے اپڈیٹ ہو گئی۔",
+    successDelete: "تنخواہ کامیابی سے حذف ہو گئی۔",
+    deleteConfirm: "کیا یہ تنخواہ ریکارڈ حذف کرنا ہے؟",
+
+    totalPayroll: "کل حساب شدہ تنخواہ",
+    totalAdvanceCard: "کل ایڈوانس",
+    totalBalance: "کل بقایا حساب",
+    totalRecords: "تنخواہ ریکارڈ",
+
+    employeeInformation: "ملازم کی معلومات",
+    attendanceCalculation: "حاضری اور وقت کا حساب",
+    advanceCalculation: "ایڈوانس اور آخری بقایا",
+    automaticCalculation: "خودکار حساب",
+
+    formulaOne:
+      "حساب رقم = تنخواہ + اضافی دن کی رقم + اوور ٹائم رقم − غیر حاضری کی رقم − ٹائم کٹوتی کی رقم",
+    formulaTwo:
+      "بقایا حساب = حساب رقم − ایڈوانس − سابقہ ایڈوانس",
+
+    reportTitle: "ملازم کی تنخواہ رپورٹ",
     printedOn: "پرنٹ کی تاریخ",
-    reportTitle: "ملازمین کی تنخواہ رپورٹ",
-    formula:
-      "خالص تنخواہ = بنیادی + اضافی دن + اوور ٹائم − غیر حاضری − وقت کٹوتی − موجودہ ایڈوانس − سابقہ ایڈوانس",
-    showing: "دکھائے جا رہے ہیں",
-    records: "ریکارڈ",
-    employeeInfo: "ملازم کی معلومات",
-    designation: "عہدہ",
-    department: "محکمہ",
-    month: "مہینہ",
   },
 };
 
-const EMPTY_FORM = {
-  employee_id: "",
-  salary_month: "",
-  basic_salary: "",
-  extra_days: "0",
-  absent_days: "0",
-  overtime_hours: "0",
-  overtime_rate: "",
-  time_deduction: "0",
-  current_advance: "0",
-  previous_advance: "0",
-  status: "Pending",
-  notes: "",
-};
-
-const getList = (value) => {
-  if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.data)) return value.data;
-  if (Array.isArray(value?.rows)) return value.rows;
-  if (Array.isArray(value?.result)) return value.result;
-  return [];
-};
-
-const numberValue = (value) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const money = (value) =>
-  numberValue(value).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-
-const getCurrentMonth = () => {
+const currentMonth = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
     2,
@@ -207,19 +219,60 @@ const getCurrentMonth = () => {
   )}`;
 };
 
-const normalizeStatus = (status) =>
-  String(status || "Pending").toLowerCase() === "paid" ? "Paid" : "Pending";
+const emptyForm = () => ({
+  employee_id: "",
+  salary_month: currentMonth(),
+  basic_salary: "",
+  extra_days: "0",
+  absent_days: "0",
+  time_deduction_hours: "0",
+  time_deduction_rate: "",
+  overtime_hours: "0",
+  overtime_rate: "",
+  advance: "0",
+  previous_advance: "0",
+  status: "Pending",
+  notes: "",
+});
 
-const getEmployeeName = (record, employees) => {
-  if (record.employee_name) return record.employee_name;
-  const employee = employees.find(
-    (item) => String(item.id) === String(record.employee_id)
-  );
-  return employee?.full_name || employee?.name || "-";
+const getList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.rows)) return value.rows;
+  if (Array.isArray(value?.result)) return value.result;
+  if (Array.isArray(value?.employees)) return value.employees;
+  if (Array.isArray(value?.salaries)) return value.salaries;
+  return [];
 };
 
-const getEmployeeSalary = (employee) =>
-  numberValue(
+const toNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
+
+const money = (value) =>
+  toNumber(value).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+
+const getEmployeeId = (employee) =>
+  employee?.id ??
+  employee?.employee_id ??
+  employee?.EmployeeID ??
+  employee?.value ??
+  "";
+
+const getEmployeeName = (employee) =>
+  employee?.full_name ??
+  employee?.employee_name ??
+  employee?.name ??
+  employee?.name_en ??
+  employee?.title ??
+  "";
+
+const getEmployeeBasicSalary = (employee) =>
+  toNumber(
     employee?.basic_salary ??
       employee?.salary ??
       employee?.monthly_salary ??
@@ -227,22 +280,92 @@ const getEmployeeSalary = (employee) =>
   );
 
 const getEmployeePreviousAdvance = (employee) =>
-  numberValue(
+  toNumber(
     employee?.previous_advance ??
       employee?.outstanding_advance ??
       employee?.advance_balance ??
       employee?.remaining_advance
   );
 
-export default function EmployeeSalaryPage() {
+const getRecordEmployeeName = (record, employees) => {
+  if (record?.employee_name) return record.employee_name;
+
+  const employee = employees.find(
+    (item) =>
+      String(getEmployeeId(item)) === String(record?.employee_id)
+  );
+
+  return getEmployeeName(employee) || "-";
+};
+
+const normalizeStatus = (status) =>
+  String(status || "Pending").toLowerCase() === "paid"
+    ? "Paid"
+    : "Pending";
+
+const buildCalculations = (form) => {
+  const salary = toNumber(form.basic_salary);
+  const perDaySalary = salary / 30;
+
+  const extraDays = toNumber(form.extra_days);
+  const absentDays = toNumber(form.absent_days);
+
+  const timeDeductionHours = toNumber(form.time_deduction_hours);
+  const timeDeductionRate = toNumber(form.time_deduction_rate);
+
+  const overtimeHours = toNumber(form.overtime_hours);
+  const overtimeRate = toNumber(form.overtime_rate);
+
+  const advance = toNumber(form.advance);
+  const previousAdvance = toNumber(form.previous_advance);
+
+  const extraDayAmount = extraDays * perDaySalary;
+  const absentAmount = absentDays * perDaySalary;
+  const timeDeductionAmount =
+    timeDeductionHours * timeDeductionRate;
+  const overtimeAmount = overtimeHours * overtimeRate;
+
+  const calculatedAmount =
+    salary +
+    extraDayAmount +
+    overtimeAmount -
+    absentAmount -
+    timeDeductionAmount;
+
+  const totalAdvance = advance + previousAdvance;
+  const remainingBalance = calculatedAmount - totalAdvance;
+
+  return {
+    salary,
+    perDaySalary,
+    extraDays,
+    extraDayAmount,
+    absentDays,
+    absentAmount,
+    timeDeductionHours,
+    timeDeductionRate,
+    timeDeductionAmount,
+    overtimeHours,
+    overtimeRate,
+    overtimeAmount,
+    advance,
+    previousAdvance,
+    totalAdvance,
+    calculatedAmount,
+    remainingBalance,
+  };
+};
+
+export default function EmployeeRatePage() {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
-  const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [records, setRecords] = useState([]);
+
+  const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -252,12 +375,22 @@ export default function EmployeeSalaryPage() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [usingFallback, setUsingFallback] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
+  });
+
+  const calculations = useMemo(
+    () => buildCalculations(form),
+    [form]
+  );
 
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
-    window.setTimeout(() => setMessage({ type: "", text: "" }), 3200);
+
+    window.setTimeout(() => {
+      setMessage({ type: "", text: "" });
+    }, 3200);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -265,346 +398,231 @@ export default function EmployeeSalaryPage() {
 
     try {
       const [salaryResponse, employeeResponse] = await Promise.all([
-        axios.get(`${API_BASE}/employee-salary`),
-        axios.get(`${API_BASE}/employees`),
+        axios.get(SALARY_API),
+        axios.get(EMPLOYEES_API),
       ]);
 
       setRecords(getList(salaryResponse.data));
       setEmployees(getList(employeeResponse.data));
-      setUsingFallback(false);
     } catch (error) {
-      console.error("Employee salary fetch failed:", error);
-
-      const fallbackEmployees = [
-        {
-          id: 1,
-          full_name: "Ahmed Raza",
-          designation: "Machine Operator",
-          department_name: "Production",
-          basic_salary: 45000,
-          outstanding_advance: 3000,
-        },
-        {
-          id: 2,
-          full_name: "Hassan Ali",
-          designation: "Sales Executive",
-          department_name: "Sales",
-          basic_salary: 55000,
-          outstanding_advance: 0,
-        },
-        {
-          id: 3,
-          full_name: "Usman Khan",
-          designation: "Supervisor",
-          department_name: "Administration",
-          basic_salary: 65000,
-          outstanding_advance: 5000,
-        },
-      ];
-
-      const fallbackRecords = [
-        {
-          id: 1,
-          employee_id: 1,
-          employee_name: "Ahmed Raza",
-          salary_month: getCurrentMonth(),
-          basic_salary: 45000,
-          extra_days: 2,
-          extra_day_amount: 3000,
-          absent_days: 1,
-          absent_deduction: 1500,
-          overtime_hours: 8,
-          overtime_rate: 187.5,
-          overtime_amount: 1500,
-          time_deduction: 500,
-          current_advance: 2000,
-          previous_advance: 3000,
-          gross_salary: 49500,
-          total_deductions: 7000,
-          net_salary: 42500,
-          status: "Pending",
-          notes: "",
-        },
-        {
-          id: 2,
-          employee_id: 2,
-          employee_name: "Hassan Ali",
-          salary_month: getCurrentMonth(),
-          basic_salary: 55000,
-          extra_days: 0,
-          extra_day_amount: 0,
-          absent_days: 0,
-          absent_deduction: 0,
-          overtime_hours: 4,
-          overtime_rate: 229.17,
-          overtime_amount: 916.68,
-          time_deduction: 0,
-          current_advance: 0,
-          previous_advance: 0,
-          gross_salary: 55916.68,
-          total_deductions: 0,
-          net_salary: 55916.68,
-          status: "Paid",
-          notes: "",
-        },
-      ];
-
-      setEmployees(fallbackEmployees);
-      setRecords(fallbackRecords);
-      setUsingFallback(true);
+      console.error("Employee salary load error:", error);
+      setRecords([]);
+      setEmployees([]);
+      showToast("error", t.loadError);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast, t.loadError]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const selectedEmployee = useMemo(
-    () =>
-      employees.find(
-        (employee) => String(employee.id) === String(form.employee_id)
-      ) || null,
-    [employees, form.employee_id]
-  );
-
-  const calculations = useMemo(() => {
-    const basicSalary = numberValue(form.basic_salary);
-    const extraDays = numberValue(form.extra_days);
-    const absentDays = numberValue(form.absent_days);
-    const overtimeHours = numberValue(form.overtime_hours);
-    const overtimeRate = numberValue(form.overtime_rate);
-    const timeDeduction = numberValue(form.time_deduction);
-    const currentAdvance = numberValue(form.current_advance);
-    const previousAdvance = numberValue(form.previous_advance);
-
-    const perDaySalary = basicSalary / 30;
-    const perHourSalary = perDaySalary / 8;
-    const extraDayAmount = extraDays * perDaySalary;
-    const absentDeduction = absentDays * perDaySalary;
-    const overtimeAmount = overtimeHours * overtimeRate;
-    const totalAdditions = extraDayAmount + overtimeAmount;
-    const grossSalary = basicSalary + totalAdditions;
-    const totalDeductions =
-      absentDeduction +
-      timeDeduction +
-      currentAdvance +
-      previousAdvance;
-    const netSalary = Math.max(0, grossSalary - totalDeductions);
-
-    return {
-      basicSalary,
-      perDaySalary,
-      perHourSalary,
-      extraDayAmount,
-      absentDeduction,
-      overtimeAmount,
-      totalAdditions,
-      grossSalary,
-      totalDeductions,
-      netSalary,
-    };
-  }, [form]);
-
-  const getLatestPreviousAdvance = useCallback(
-    (employeeId) => {
-      const employee = employees.find(
-        (item) => String(item.id) === String(employeeId)
-      );
-      const employeeBalance = getEmployeePreviousAdvance(employee);
-
-      if (employeeBalance > 0) return employeeBalance;
-
-      const latestRecord = [...records]
-        .filter(
-          (record) =>
-            String(record.employee_id) === String(employeeId) &&
-            String(record.id) !== String(editingId || "")
-        )
-        .sort((a, b) =>
-          String(b.salary_month || "").localeCompare(
-            String(a.salary_month || "")
-          )
-        )[0];
-
-      return numberValue(
-        latestRecord?.remaining_advance ??
-          latestRecord?.advance_balance ??
-          latestRecord?.outstanding_advance ??
-          0
-      );
-    },
-    [employees, records, editingId]
-  );
+  const updateField = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
 
   const handleEmployeeChange = (employeeId) => {
     const employee = employees.find(
-      (item) => String(item.id) === String(employeeId)
+      (item) =>
+        String(getEmployeeId(item)) === String(employeeId)
     );
-    const basicSalary = getEmployeeSalary(employee);
-    const defaultHourlyRate = basicSalary > 0 ? basicSalary / 30 / 8 : 0;
-    const previousAdvance = getLatestPreviousAdvance(employeeId);
+
+    const salary = getEmployeeBasicSalary(employee);
+    const perDay = salary / 30;
 
     setForm((previous) => ({
       ...previous,
       employee_id: employeeId,
-      basic_salary: basicSalary ? String(basicSalary) : "",
-      overtime_rate: defaultHourlyRate
-        ? defaultHourlyRate.toFixed(2)
+      basic_salary: salary ? String(salary) : "",
+      overtime_rate: salary
+        ? (perDay / 8).toFixed(2)
         : "",
-      previous_advance: String(previousAdvance || 0),
+      time_deduction_rate: salary
+        ? (perDay / 10).toFixed(2)
+        : "",
+      previous_advance: String(
+        getEmployeePreviousAdvance(employee)
+      ),
+    }));
+  };
+
+  const handleSalaryChange = (salaryValue) => {
+    const salary = toNumber(salaryValue);
+    const perDay = salary / 30;
+
+    setForm((previous) => ({
+      ...previous,
+      basic_salary: salaryValue,
+      overtime_rate: salary
+        ? (perDay / 8).toFixed(2)
+        : "",
+      time_deduction_rate: salary
+        ? (perDay / 10).toFixed(2)
+        : "",
     }));
   };
 
   const openAdd = () => {
     setEditingId(null);
-    setForm({
-      ...EMPTY_FORM,
-      salary_month: getCurrentMonth(),
-    });
+    setForm(emptyForm());
     setShowForm(true);
   };
 
   const openEdit = (record) => {
-    const employee = employees.find(
-      (item) => String(item.id) === String(record.employee_id)
-    );
-    const basicSalary =
-      numberValue(record.basic_salary) || getEmployeeSalary(employee);
-    const hourlyRate =
-      numberValue(record.overtime_rate) ||
-      (basicSalary > 0 ? basicSalary / 30 / 8 : 0);
+    const salary = toNumber(record.basic_salary);
+    const perDay = salary / 30;
 
     setEditingId(record.id);
+
     setForm({
-      employee_id: String(record.employee_id || ""),
-      salary_month: record.salary_month || "",
-      basic_salary: String(basicSalary || ""),
+      employee_id: String(record.employee_id ?? ""),
+      salary_month: record.salary_month || currentMonth(),
+      basic_salary: String(record.basic_salary ?? ""),
       extra_days: String(record.extra_days ?? 0),
-      absent_days: String(record.absent_days ?? record.leaves ?? 0),
-      overtime_hours: String(record.overtime_hours ?? 0),
-      overtime_rate: String(hourlyRate ? hourlyRate.toFixed(2) : ""),
-      time_deduction: String(record.time_deduction ?? 0),
-      current_advance: String(
-        record.current_advance ?? record.advance ?? 0
+      absent_days: String(
+        record.absent_days ?? record.absent ?? 0
       ),
-      previous_advance: String(record.previous_advance ?? 0),
+      time_deduction_hours: String(
+        record.time_deduction_hours ??
+          record.time_deduction ??
+          0
+      ),
+      time_deduction_rate: String(
+        record.time_deduction_rate ??
+          (salary ? perDay / 10 : "")
+      ),
+      overtime_hours: String(record.overtime_hours ?? 0),
+      overtime_rate: String(
+        record.overtime_rate ??
+          (salary ? perDay / 8 : "")
+      ),
+      advance: String(
+        record.advance ??
+          record.current_advance ??
+          0
+      ),
+      previous_advance: String(
+        record.previous_advance ?? 0
+      ),
       status: normalizeStatus(record.status),
       notes: record.notes || "",
     });
+
     setShowForm(true);
   };
 
   const closeForm = () => {
     if (submitting) return;
+
     setShowForm(false);
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm(emptyForm());
   };
 
   const buildPayload = () => ({
     employee_id: Number(form.employee_id),
     salary_month: form.salary_month,
-    basic_salary: calculations.basicSalary,
-    extra_days: numberValue(form.extra_days),
+
+    basic_salary: calculations.salary,
+    per_day_salary: calculations.perDaySalary,
+
+    extra_days: calculations.extraDays,
     extra_day_amount: calculations.extraDayAmount,
-    absent_days: numberValue(form.absent_days),
-    absent_deduction: calculations.absentDeduction,
-    overtime_hours: numberValue(form.overtime_hours),
-    overtime_rate: numberValue(form.overtime_rate),
+
+    absent_days: calculations.absentDays,
+    absent_amount: calculations.absentAmount,
+
+    time_deduction_hours:
+      calculations.timeDeductionHours,
+    time_deduction_rate:
+      calculations.timeDeductionRate,
+    time_deduction_amount:
+      calculations.timeDeductionAmount,
+
+    overtime_hours: calculations.overtimeHours,
+    overtime_rate: calculations.overtimeRate,
     overtime_amount: calculations.overtimeAmount,
-    time_deduction: numberValue(form.time_deduction),
-    current_advance: numberValue(form.current_advance),
-    previous_advance: numberValue(form.previous_advance),
-    gross_salary: calculations.grossSalary,
-    total_additions: calculations.totalAdditions,
-    total_deductions: calculations.totalDeductions,
-    net_salary: calculations.netSalary,
+
+    calculated_amount: calculations.calculatedAmount,
+
+    advance: calculations.advance,
+    previous_advance: calculations.previousAdvance,
+    total_advance: calculations.totalAdvance,
+
+    remaining_balance: calculations.remainingBalance,
+
     status: form.status,
     notes: form.notes.trim(),
   });
 
   const handleSave = async () => {
-    if (!form.employee_id || !form.salary_month) {
-      showToast("error", t.errorRequired);
+    if (
+      !form.employee_id ||
+      !form.salary_month ||
+      calculations.salary <= 0
+    ) {
+      showToast("error", t.requiredError);
       return;
     }
-
-    const payload = buildPayload();
-    const employeeName =
-      selectedEmployee?.full_name || selectedEmployee?.name || "-";
 
     setSubmitting(true);
 
     try {
+      const payload = buildPayload();
+
       if (editingId) {
         await axios.put(
-          `${API_BASE}/employee-salary/${editingId}`,
+          `${SALARY_API}/${editingId}`,
           payload
         );
         showToast("success", t.successUpdate);
       } else {
-        await axios.post(`${API_BASE}/employee-salary`, payload);
+        await axios.post(SALARY_API, payload);
         showToast("success", t.successSave);
       }
 
       await fetchData();
-      setShowForm(false);
-      setEditingId(null);
-      setForm(EMPTY_FORM);
+      closeForm();
     } catch (error) {
-      console.error("Employee salary save failed:", error);
-
-      const localRecord = {
-        ...payload,
-        id: editingId || Date.now(),
-        employee_name: employeeName,
-      };
-
-      if (editingId) {
-        setRecords((previous) =>
-          previous.map((record) =>
-            String(record.id) === String(editingId)
-              ? localRecord
-              : record
-          )
-        );
-        showToast("success", t.successUpdate);
-      } else {
-        setRecords((previous) => [localRecord, ...previous]);
-        showToast("success", t.successSave);
-      }
-
-      setShowForm(false);
-      setEditingId(null);
-      setForm(EMPTY_FORM);
-      setUsingFallback(true);
+      console.error("Employee salary save error:", error);
+      showToast(
+        "error",
+        error?.response?.data?.message || t.saveError
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (recordId) => {
     if (!window.confirm(t.deleteConfirm)) return;
 
     try {
-      await axios.delete(`${API_BASE}/employee-salary/${id}`);
+      await axios.delete(`${SALARY_API}/${recordId}`);
       await fetchData();
       showToast("success", t.successDelete);
     } catch (error) {
-      console.error("Employee salary delete failed:", error);
-      setRecords((previous) =>
-        previous.filter((record) => String(record.id) !== String(id))
+      console.error("Employee salary delete error:", error);
+      showToast(
+        "error",
+        error?.response?.data?.message || t.deleteError
       );
-      setUsingFallback(true);
-      showToast("success", t.successDelete);
     }
   };
 
   const availableMonths = useMemo(
     () =>
-      [...new Set(records.map((record) => record.salary_month).filter(Boolean))]
+      [
+        ...new Set(
+          records
+            .map((record) => record.salary_month)
+            .filter(Boolean)
+        ),
+      ]
         .sort()
         .reverse(),
     [records]
@@ -614,7 +632,10 @@ export default function EmployeeSalaryPage() {
     const query = search.trim().toLowerCase();
 
     return records.filter((record) => {
-      const employeeName = getEmployeeName(record, employees);
+      const employeeName = getRecordEmployeeName(
+        record,
+        employees
+      );
       const status = normalizeStatus(record.status);
 
       const matchesSearch =
@@ -630,45 +651,66 @@ export default function EmployeeSalaryPage() {
           .includes(query);
 
       const matchesMonth =
-        !monthFilter || record.salary_month === monthFilter;
+        !monthFilter ||
+        record.salary_month === monthFilter;
+
       const matchesStatus =
         !statusFilter ||
-        status.toLowerCase() === statusFilter.toLowerCase();
+        status === statusFilter;
 
-      return matchesSearch && matchesMonth && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesMonth &&
+        matchesStatus
+      );
     });
-  }, [records, employees, search, monthFilter, statusFilter]);
+  }, [
+    records,
+    employees,
+    search,
+    monthFilter,
+    statusFilter,
+  ]);
 
-  const summary = useMemo(() => {
-    return filteredRecords.reduce(
-      (result, record) => {
-        const status = normalizeStatus(record.status);
-        const netSalary = numberValue(record.net_salary);
-        const totalAdvance =
-          numberValue(record.current_advance ?? record.advance) +
-          numberValue(record.previous_advance);
+  const totals = useMemo(
+    () =>
+      filteredRecords.reduce(
+        (result, record) => {
+          result.calculated += toNumber(
+            record.calculated_amount ??
+              record.hisaab_amount
+          );
 
-        result.totalPayroll += netSalary;
-        result.totalAdvances += totalAdvance;
+          result.advance +=
+            toNumber(
+              record.advance ??
+                record.current_advance
+            ) +
+            toNumber(record.previous_advance);
 
-        if (status === "Paid") result.paidPayroll += netSalary;
-        else result.pendingPayroll += netSalary;
+          result.balance += toNumber(
+            record.remaining_balance ??
+              record.baqaya_hisaab
+          );
 
-        return result;
-      },
-      {
-        totalPayroll: 0,
-        paidPayroll: 0,
-        pendingPayroll: 0,
-        totalAdvances: 0,
-      }
-    );
-  }, [filteredRecords]);
+          return result;
+        },
+        {
+          calculated: 0,
+          advance: 0,
+          balance: 0,
+        }
+      ),
+    [filteredRecords]
+  );
 
-  const printReport = (asPdf = false) => {
+  const printReport = (saveAsPdf = false) => {
     const rows = filteredRecords
       .map((record, index) => {
-        const employeeName = getEmployeeName(record, employees);
+        const employeeName = getRecordEmployeeName(
+          record,
+          employees
+        );
 
         return `
           <tr>
@@ -676,1052 +718,369 @@ export default function EmployeeSalaryPage() {
             <td><strong>${employeeName}</strong></td>
             <td class="center">${record.salary_month || "-"}</td>
             <td class="money">PKR ${money(record.basic_salary)}</td>
-            <td class="center">${numberValue(record.extra_days)}</td>
-            <td class="center">${numberValue(
-              record.absent_days ?? record.leaves
+            <td class="center">
+              ${money(record.extra_days)} ${t.days}
+              <small>PKR ${money(record.extra_day_amount)}</small>
+            </td>
+            <td class="center">
+              ${money(record.absent_days)} ${t.days}
+              <small>PKR ${money(
+                record.absent_amount ??
+                  record.absent_deduction
+              )}</small>
+            </td>
+            <td class="center">
+              ${money(
+                record.time_deduction_hours
+              )} ${t.hours}
+              <small>PKR ${money(
+                record.time_deduction_amount
+              )}</small>
+            </td>
+            <td class="center">
+              ${money(record.overtime_hours)} ${t.hours}
+              <small>PKR ${money(record.overtime_amount)}</small>
+            </td>
+            <td class="money strong">PKR ${money(
+              record.calculated_amount ??
+                record.hisaab_amount
             )}</td>
-            <td class="money">PKR ${money(record.overtime_amount)}</td>
-            <td class="money">PKR ${money(record.time_deduction)}</td>
             <td class="money">PKR ${money(
-              record.current_advance ?? record.advance
+              record.advance ??
+                record.current_advance
             )}</td>
-            <td class="money">PKR ${money(record.previous_advance)}</td>
-            <td class="money net">PKR ${money(record.net_salary)}</td>
-            <td class="center">${normalizeStatus(record.status)}</td>
+            <td class="money">PKR ${money(
+              record.previous_advance
+            )}</td>
+            <td class="money strong">PKR ${money(
+              record.remaining_balance ??
+                record.baqaya_hisaab
+            )}</td>
+            <td class="center">${normalizeStatus(
+              record.status
+            )}</td>
           </tr>
         `;
       })
       .join("");
 
-    const reportHtml = `<!DOCTYPE html>
-<html lang="${lang}" dir="${dir}">
-<head>
-  <meta charset="UTF-8" />
-  <title>${t.reportTitle}</title>
-  <style>
-    *{box-sizing:border-box}
-    body{font-family:Arial,sans-serif;color:#0f172a;background:#fff;margin:0;padding:22px}
-    .sheet{max-width:1450px;margin:0 auto}
-    .header{background:#0f172a;color:#fff;padding:22px 24px;border-radius:18px 18px 0 0;display:flex;justify-content:space-between;gap:20px;align-items:center}
-    h1{margin:0;font-size:25px}
-    .sub{margin-top:5px;color:#cbd5e1;font-size:13px}
-    .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;line-height:1.8}
-    .pdf-note{margin:14px 0;padding:10px 12px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;border-radius:10px;text-align:center}
-    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;background:#f8fafc;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px}
-    .card small{display:block;color:#64748b;margin-bottom:6px}
-    .card strong{font-size:17px}
-    table{width:100%;border-collapse:collapse;font-size:10px}
-    th{background:#1e293b;color:#fff;padding:9px 6px;border:1px solid #334155;text-align:${isUrdu ? "right" : "left"}}
-    td{padding:8px 6px;border:1px solid #e2e8f0;vertical-align:middle}
-    tbody tr:nth-child(even){background:#f8fafc}
-    .center{text-align:center}
-    .money{text-align:${isUrdu ? "left" : "right"};white-space:nowrap}
-    .net{font-weight:800;color:#4338ca}
-    .footer{background:#0f172a;color:#cbd5e1;padding:9px 14px;font-size:10px;border-radius:0 0 18px 18px;display:flex;justify-content:space-between}
-    @media print{
-      @page{size:A4 landscape;margin:7mm}
-      body{padding:0}
-      .pdf-note{display:none}
-      .header{border-radius:0}
-      .footer{border-radius:0}
-    }
-  </style>
-</head>
-<body>
-  <div class="sheet">
-    ${asPdf ? `<div class="pdf-note">Choose <strong>Save as PDF</strong> in the print destination.</div>` : ""}
-    <div class="header">
-      <div>
-        <h1>Ali Cages</h1>
-        <div class="sub">${t.reportTitle}</div>
-      </div>
-      <div class="meta">
-        <div>${t.printedOn}: ${new Date().toLocaleString(
-          isUrdu ? "ur-PK" : "en-PK"
-        )}</div>
-        <div>${t.showing}: ${filteredRecords.length} ${t.records}</div>
-      </div>
-    </div>
-
-    <div class="summary">
-      <div class="card"><small>${t.totalPayroll}</small><strong>PKR ${money(
-      summary.totalPayroll
-    )}</strong></div>
-      <div class="card"><small>${t.paidPayroll}</small><strong>PKR ${money(
-      summary.paidPayroll
-    )}</strong></div>
-      <div class="card"><small>${t.pendingPayroll}</small><strong>PKR ${money(
-      summary.pendingPayroll
-    )}</strong></div>
-      <div class="card"><small>${t.totalAdvances}</small><strong>PKR ${money(
-      summary.totalAdvances
-    )}</strong></div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th class="center">#</th>
-          <th>${t.employee}</th>
-          <th class="center">${t.month}</th>
-          <th>${t.basicSalary}</th>
-          <th class="center">${t.extraDays}</th>
-          <th class="center">${t.absentDays}</th>
-          <th>${t.overtimeAmount}</th>
-          <th>${t.timeDeduction}</th>
-          <th>${t.currentAdvance}</th>
-          <th>${t.previousAdvance}</th>
-          <th>${t.netSalary}</th>
-          <th class="center">${t.status}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${
-          rows ||
-          `<tr><td colspan="12" class="center" style="padding:30px">${t.noRecords}</td></tr>`
-        }
-      </tbody>
-    </table>
-
-    <div class="footer">
-      <span>${t.formula}</span>
-      <span>Ali Cages ERP</span>
-    </div>
-  </div>
-  <script>
-    window.onload = () => {
-      setTimeout(() => {
-        window.print();
-        ${asPdf ? "" : "window.onafterprint = () => window.close();"}
-      }, 250);
-    };
-  </script>
-</body>
-</html>`;
-
     const printWindow = window.open(
       "",
       "_blank",
-      "width=1450,height=900"
+      "width=1500,height=900"
     );
 
     if (!printWindow) return;
 
-    printWindow.document.open();
-    printWindow.document.write(reportHtml);
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="${lang}" dir="${dir}">
+        <head>
+          <meta charset="UTF-8" />
+          <title>${t.reportTitle}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              padding: 24px;
+              color: #0f172a;
+              background: white;
+              font-family: Arial, sans-serif;
+            }
+            .header {
+              padding: 18px 20px;
+              background: #0f172a;
+              color: white;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            h1 { margin: 0; font-size: 24px; }
+            .subtitle {
+              margin-top: 5px;
+              color: #cbd5e1;
+              font-size: 12px;
+            }
+            .meta { font-size: 11px; }
+            .pdf-message {
+              padding: 10px;
+              margin-bottom: 12px;
+              background: #ecfeff;
+              border: 1px solid #a5f3fc;
+              color: #155e75;
+              text-align: center;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 9px;
+            }
+            th {
+              padding: 8px 5px;
+              color: white;
+              background: #0e7490;
+              border: 1px solid #155e75;
+              white-space: nowrap;
+            }
+            td {
+              padding: 7px 5px;
+              border: 1px solid #cbd5e1;
+              vertical-align: middle;
+            }
+            tbody tr:nth-child(even) {
+              background: #f8fafc;
+            }
+            .center { text-align: center; }
+            .money {
+              text-align: right;
+              white-space: nowrap;
+            }
+            .strong {
+              color: #0e7490;
+              font-weight: bold;
+            }
+            small {
+              display: block;
+              margin-top: 3px;
+              color: #64748b;
+            }
+            @media print {
+              @page {
+                size: A4 landscape;
+                margin: 7mm;
+              }
+              body { padding: 0; }
+              .pdf-message { display: none; }
+            }
+          </style>
+        </head>
+
+        <body>
+          ${
+            saveAsPdf
+              ? `<div class="pdf-message">Select <strong>Save as PDF</strong> in print destination.</div>`
+              : ""
+          }
+
+          <div class="header">
+            <div>
+              <h1>Ali Cage</h1>
+              <div class="subtitle">${t.reportTitle}</div>
+            </div>
+            <div class="meta">
+              ${t.printedOn}: ${new Date().toLocaleString(
+      isUrdu ? "ur-PK" : "en-PK"
+    )}
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${t.employee}</th>
+                <th>${t.salaryMonth}</th>
+                <th>${t.salary}</th>
+                <th>${t.extraDay}</th>
+                <th>${t.absent}</th>
+                <th>${t.timeDeduction}</th>
+                <th>${t.overtime}</th>
+                <th>${t.calculatedAmount}</th>
+                <th>${t.advance}</th>
+                <th>${t.previousAdvance}</th>
+                <th>${t.remainingBalance}</th>
+                <th>${t.status}</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${
+                rows ||
+                `<tr><td colspan="13" class="center">${t.noRecords}</td></tr>`
+              }
+            </tbody>
+          </table>
+
+          <script>
+            window.onload = function () {
+              setTimeout(function () {
+                window.print();
+              }, 250);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
     printWindow.document.close();
   };
 
-  const updateField = (field, value) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+  const getTableValue = (record, keys) => {
+    for (const key of keys) {
+      if (
+        record?.[key] !== undefined &&
+        record?.[key] !== null &&
+        record?.[key] !== ""
+      ) {
+        return record[key];
+      }
+    }
+
+    return 0;
+  };
+
+  const calculationInputCards = [
+    {
+      key: "extra",
+      title: t.extraDay,
+      icon: "bi-calendar-plus",
+      accent: "emerald",
+      quantityLabel: t.extraDays,
+      quantityField: "extra_days",
+      quantityValue: form.extra_days,
+      unit: t.days,
+      amount: calculations.extraDayAmount,
+      rateLabel: null,
+      rateField: null,
+      rateValue: null,
+    },
+    {
+      key: "absent",
+      title: t.absent,
+      icon: "bi-calendar-x",
+      accent: "red",
+      quantityLabel: t.absentDays,
+      quantityField: "absent_days",
+      quantityValue: form.absent_days,
+      unit: t.days,
+      amount: calculations.absentAmount,
+      rateLabel: null,
+      rateField: null,
+      rateValue: null,
+    },
+    {
+      key: "deduction",
+      title: t.timeDeduction,
+      icon: "bi-clock-history",
+      accent: "amber",
+      quantityLabel: t.timeDeductionHours,
+      quantityField: "time_deduction_hours",
+      quantityValue: form.time_deduction_hours,
+      unit: t.hours,
+      amount: calculations.timeDeductionAmount,
+      rateLabel: t.timeDeductionRate,
+      rateField: "time_deduction_rate",
+      rateValue: form.time_deduction_rate,
+    },
+    {
+      key: "overtime",
+      title: t.overtime,
+      icon: "bi-clock-fill",
+      accent: "cyan",
+      quantityLabel: t.overtimeHours,
+      quantityField: "overtime_hours",
+      quantityValue: form.overtime_hours,
+      unit: t.hours,
+      amount: calculations.overtimeAmount,
+      rateLabel: t.overtimeRate,
+      rateField: "overtime_rate",
+      rateValue: form.overtime_rate,
+    },
+  ];
+
+  const accentClasses = {
+    emerald: {
+      header: "bg-emerald-50 border-emerald-200",
+      icon: "bg-emerald-100 text-emerald-700",
+      input:
+        "border-emerald-200 focus:ring-emerald-500",
+      amount: "text-emerald-700",
+    },
+    red: {
+      header: "bg-red-50 border-red-200",
+      icon: "bg-red-100 text-red-700",
+      input: "border-red-200 focus:ring-red-500",
+      amount: "text-red-700",
+    },
+    amber: {
+      header: "bg-amber-50 border-amber-200",
+      icon: "bg-amber-100 text-amber-700",
+      input:
+        "border-amber-200 focus:ring-amber-500",
+      amount: "text-amber-700",
+    },
+    cyan: {
+      header: "bg-cyan-50 border-cyan-200",
+      icon: "bg-cyan-100 text-cyan-700",
+      input: "border-cyan-200 focus:ring-cyan-500",
+      amount: "text-cyan-700",
+    },
   };
 
   return (
-    <div className="salary-page" dir={dir}>
+    <div
+      dir={dir}
+      className={`min-h-full w-full ${
+        isUrdu
+          ? "[font-family:'Noto_Nastaliq_Urdu',serif]"
+          : "font-sans"
+      }`}
+    >
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
       />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
 
-      <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        .salary-page {
-          min-height: 100vh;
-          padding: 18px;
-          color: #0f172a;
-          background:
-            radial-gradient(circle at top right, rgba(99,102,241,.12), transparent 28%),
-            linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
-          font-family: ${
-            isUrdu
-              ? "'Noto Nastaliq Urdu', Arial, sans-serif"
-              : "Inter, Helvetica, Arial, sans-serif"
-          };
-        }
-
-        .salary-wrap {
-          width: 100%;
-          max-width: 1450px;
-          margin: 0 auto;
-        }
-
-        .salary-header {
-          background: rgba(255,255,255,.96);
-          border: 1px solid #dbe3ee;
-          border-radius: 22px;
-          box-shadow: 0 18px 50px rgba(15,23,42,.08);
-          padding: 20px 22px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 15px;
-        }
-
-        .title-row {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-        }
-
-        .title-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 15px;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 21px;
-          box-shadow: 0 12px 25px rgba(79,70,229,.28);
-          flex-shrink: 0;
-        }
-
-        .page-title {
-          margin: 0;
-          font-size: 29px;
-          line-height: 1.2;
-          font-weight: 950;
-          letter-spacing: -.7px;
-        }
-
-        .page-subtitle {
-          margin: 5px 0 0;
-          color: #64748b;
-          font-size: 13px;
-        }
-
-        .header-actions,
-        .toolbar-actions {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .salary-btn {
-          border: 0;
-          border-radius: 12px;
-          padding: 10px 14px;
-          font-size: 13px;
-          font-weight: 850;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          transition: .15s ease;
-          white-space: nowrap;
-        }
-
-        .salary-btn:hover {
-          transform: translateY(-1px);
-          filter: brightness(.98);
-        }
-
-        .salary-btn:disabled {
-          opacity: .6;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .btn-primary {
-          background: #4f46e5;
-          color: #fff;
-          box-shadow: 0 12px 25px rgba(79,70,229,.25);
-        }
-
-        .btn-dark {
-          background: #0f172a;
-          color: #fff;
-        }
-
-        .btn-white {
-          background: #fff;
-          color: #475569;
-          border: 1px solid #cbd5e1;
-        }
-
-        .btn-danger {
-          background: #fee2e2;
-          color: #991b1b;
-        }
-
-        .btn-edit {
-          background: #eef2ff;
-          color: #4338ca;
-        }
-
-        .summary-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-          margin: 14px 0;
-        }
-
-        .summary-card {
-          background: rgba(255,255,255,.96);
-          border: 1px solid #dbe3ee;
-          border-radius: 18px;
-          padding: 16px;
-          box-shadow: 0 10px 30px rgba(15,23,42,.05);
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: 0;
-        }
-
-        .summary-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 13px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          font-size: 18px;
-        }
-
-        .summary-card:nth-child(1) .summary-icon {
-          background: #eef2ff;
-          color: #4f46e5;
-        }
-
-        .summary-card:nth-child(2) .summary-icon {
-          background: #dcfce7;
-          color: #15803d;
-        }
-
-        .summary-card:nth-child(3) .summary-icon {
-          background: #fef3c7;
-          color: #b45309;
-        }
-
-        .summary-card:nth-child(4) .summary-icon {
-          background: #fce7f3;
-          color: #be185d;
-        }
-
-        .summary-label {
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: .45px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .summary-value {
-          margin-top: 4px;
-          font-size: 20px;
-          font-weight: 950;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .fallback-alert {
-          margin-bottom: 14px;
-          background: #fff7ed;
-          border: 1px solid #fed7aa;
-          color: #9a3412;
-          border-radius: 14px;
-          padding: 11px 14px;
-          font-size: 12px;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .salary-toolbar {
-          background: rgba(255,255,255,.96);
-          border: 1px solid #dbe3ee;
-          border-radius: 18px;
-          padding: 14px;
-          box-shadow: 0 10px 30px rgba(15,23,42,.05);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 12px;
-          margin-bottom: 14px;
-        }
-
-        .filters {
-          display: flex;
-          align-items: center;
-          flex: 1;
-          min-width: 260px;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .search-box {
-          position: relative;
-          flex: 1;
-          min-width: 240px;
-        }
-
-        .search-box i {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #94a3b8;
-          ${isUrdu ? "right: 13px;" : "left: 13px;"}
-        }
-
-        .search-input,
-        .filter-select {
-          width: 100%;
-          height: 42px;
-          border: 1px solid #cbd5e1;
-          background: #fff;
-          border-radius: 11px;
-          color: #334155;
-          font-size: 13px;
-          outline: none;
-          transition: .15s;
-        }
-
-        .search-input {
-          ${isUrdu ? "padding: 0 39px 0 13px;" : "padding: 0 13px 0 39px;"}
-        }
-
-        .filter-select {
-          width: auto;
-          min-width: 145px;
-          padding: 0 12px;
-        }
-
-        .search-input:focus,
-        .filter-select:focus,
-        .field-input:focus,
-        .field-select:focus,
-        .field-textarea:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99,102,241,.12);
-        }
-
-        .table-card {
-          background: rgba(255,255,255,.97);
-          border: 1px solid #dbe3ee;
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: 0 18px 50px rgba(15,23,42,.07);
-        }
-
-        .table-scroll {
-          overflow: auto;
-          max-width: 100%;
-        }
-
-        .salary-table {
-          width: 100%;
-          min-width: 1540px;
-          border-collapse: collapse;
-          font-size: 12px;
-        }
-
-        .salary-table thead th {
-          background: #0f172a;
-          color: #fff;
-          padding: 12px 10px;
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: .45px;
-          font-weight: 850;
-          text-align: ${isUrdu ? "right" : "left"};
-          white-space: nowrap;
-          border-right: 1px solid rgba(255,255,255,.08);
-        }
-
-        .salary-table tbody td {
-          padding: 11px 10px;
-          color: #475569;
-          border-bottom: 1px solid #e5e7eb;
-          vertical-align: middle;
-          white-space: nowrap;
-        }
-
-        .salary-table tbody tr:hover td {
-          background: #f8faff;
-        }
-
-        .employee-cell {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          min-width: 185px;
-        }
-
-        .employee-avatar {
-          width: 33px;
-          height: 33px;
-          border-radius: 11px;
-          background: #eef2ff;
-          color: #4338ca;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          font-weight: 900;
-        }
-
-        .employee-name {
-          font-weight: 900;
-          color: #0f172a;
-        }
-
-        .employee-sub {
-          margin-top: 2px;
-          font-size: 10px;
-          color: #94a3b8;
-        }
-
-        .money-cell {
-          text-align: ${isUrdu ? "left" : "right"};
-          font-variant-numeric: tabular-nums;
-          font-weight: 750;
-        }
-
-        .positive {
-          color: #15803d !important;
-          background: #f0fdf4;
-        }
-
-        .negative {
-          color: #b91c1c !important;
-          background: #fff7f7;
-        }
-
-        .net-cell {
-          color: #4338ca !important;
-          background: #f5f3ff;
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .center {
-          text-align: center !important;
-        }
-
-        .status-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 5px 9px;
-          border-radius: 999px;
-          font-size: 10px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: .35px;
-        }
-
-        .status-paid {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .status-pending {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .row-actions {
-          display: flex;
-          justify-content: center;
-          gap: 6px;
-        }
-
-        .icon-btn {
-          width: 31px;
-          height: 31px;
-          border: 0;
-          border-radius: 9px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: .15s;
-        }
-
-        .icon-btn:hover {
-          transform: translateY(-1px);
-        }
-
-        .empty-state {
-          padding: 48px 20px !important;
-          text-align: center !important;
-          color: #94a3b8 !important;
-          font-size: 13px;
-        }
-
-        .table-footer {
-          padding: 11px 14px;
-          background: #f8fafc;
-          color: #64748b;
-          font-size: 11px;
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-          flex-wrap: wrap;
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .toast {
-          position: fixed;
-          bottom: 22px;
-          ${isUrdu ? "left: 22px;" : "right: 22px;"}
-          z-index: 120;
-          min-width: 260px;
-          max-width: 430px;
-          border-radius: 14px;
-          padding: 12px 14px;
-          color: #fff;
-          font-size: 12px;
-          font-weight: 800;
-          box-shadow: 0 20px 50px rgba(15,23,42,.25);
-          display: flex;
-          align-items: center;
-          gap: 9px;
-        }
-
-        .toast-success {
-          background: #059669;
-        }
-
-        .toast-error {
-          background: #dc2626;
-        }
-
-        .modal-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 100;
-          background: rgba(15,23,42,.64);
-          backdrop-filter: blur(4px);
-          padding: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .salary-modal {
-          width: 100%;
-          max-width: 1080px;
-          max-height: calc(100vh - 36px);
-          background: #fff;
-          border-radius: 22px;
-          box-shadow: 0 28px 90px rgba(15,23,42,.3);
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .modal-header {
-          padding: 18px 20px;
-          border-bottom: 1px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          background: linear-gradient(135deg, #ffffff, #f8faff);
-        }
-
-        .modal-title-row {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-        }
-
-        .modal-title-icon {
-          width: 41px;
-          height: 41px;
-          border-radius: 13px;
-          background: #eef2ff;
-          color: #4338ca;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-        }
-
-        .modal-title {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 950;
-        }
-
-        .modal-subtitle {
-          margin-top: 3px;
-          font-size: 11px;
-          color: #64748b;
-        }
-
-        .modal-close {
-          width: 36px;
-          height: 36px;
-          border-radius: 11px;
-          border: 1px solid #cbd5e1;
-          background: #fff;
-          color: #475569;
-          cursor: pointer;
-          font-size: 17px;
-        }
-
-        .modal-body {
-          padding: 18px;
-          overflow-y: auto;
-          background: #f8fafc;
-        }
-
-        .section-card {
-          background: #fff;
-          border: 1px solid #dbe3ee;
-          border-radius: 17px;
-          padding: 16px;
-          margin-bottom: 12px;
-        }
-
-        .section-title {
-          margin: 0 0 13px;
-          font-size: 13px;
-          font-weight: 950;
-          color: #0f172a;
-          display: flex;
-          align-items: center;
-          gap: 7px;
-        }
-
-        .section-title i {
-          color: #4f46e5;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .field {
-          min-width: 0;
-        }
-
-        .span-2 {
-          grid-column: span 2;
-        }
-
-        .span-4 {
-          grid-column: span 4;
-        }
-
-        .field-label {
-          display: block;
-          margin-bottom: 6px;
-          color: #475569;
-          font-size: 11px;
-          font-weight: 850;
-        }
-
-        .field-label .required {
-          color: #dc2626;
-        }
-
-        .field-input,
-        .field-select,
-        .field-textarea {
-          width: 100%;
-          border: 1px solid #cbd5e1;
-          border-radius: 11px;
-          background: #fff;
-          color: #0f172a;
-          font-size: 13px;
-          outline: none;
-          transition: .15s;
-        }
-
-        .field-input,
-        .field-select {
-          height: 42px;
-          padding: 0 11px;
-        }
-
-        .field-textarea {
-          min-height: 76px;
-          padding: 10px 11px;
-          resize: vertical;
-        }
-
-        .field-input[readonly] {
-          background: #f1f5f9;
-          color: #475569;
-          font-weight: 800;
-        }
-
-        .field-hint {
-          margin-top: 5px;
-          color: #94a3b8;
-          font-size: 9px;
-          line-height: 1.45;
-        }
-
-        .employee-info-strip {
-          margin-top: 12px;
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
-        }
-
-        .info-chip {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 11px;
-          padding: 9px 10px;
-        }
-
-        .info-chip small {
-          display: block;
-          color: #94a3b8;
-          font-size: 9px;
-          text-transform: uppercase;
-          font-weight: 850;
-          letter-spacing: .4px;
-        }
-
-        .info-chip strong {
-          display: block;
-          margin-top: 4px;
-          color: #334155;
-          font-size: 12px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .calculation-panel {
-          display: grid;
-          grid-template-columns: 1.1fr .9fr;
-          gap: 12px;
-        }
-
-        .formula-box {
-          border-radius: 16px;
-          padding: 15px;
-          background: linear-gradient(135deg, #eef2ff, #f5f3ff);
-          border: 1px solid #c7d2fe;
-        }
-
-        .formula-title {
-          color: #3730a3;
-          font-size: 12px;
-          font-weight: 950;
-          margin-bottom: 8px;
-        }
-
-        .formula-text {
-          color: #4f46e5;
-          font-size: 11px;
-          line-height: 1.6;
-        }
-
-        .calc-list {
-          background: #0f172a;
-          color: #fff;
-          border-radius: 16px;
-          padding: 14px 15px;
-        }
-
-        .calc-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 15px;
-          padding: 7px 0;
-          border-bottom: 1px solid rgba(255,255,255,.1);
-          font-size: 11px;
-        }
-
-        .calc-row:last-child {
-          border-bottom: 0;
-        }
-
-        .calc-row strong {
-          font-size: 12px;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .calc-net {
-          margin-top: 6px;
-          padding-top: 11px;
-          color: #c7d2fe;
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .calc-net strong {
-          color: #fff;
-          font-size: 18px;
-        }
-
-        .modal-footer {
-          padding: 14px 18px;
-          border-top: 1px solid #e2e8f0;
-          background: #fff;
-          display: flex;
-          justify-content: flex-end;
-          gap: 8px;
-        }
-
-        @media (max-width: 1100px) {
-          .summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .form-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .span-4 {
-            grid-column: span 2;
-          }
-        }
-
-        @media (max-width: 720px) {
-          .salary-page {
-            padding: 10px;
-          }
-
-          .salary-header {
-            padding: 16px;
-            border-radius: 17px;
-          }
-
-          .page-title {
-            font-size: 23px;
-          }
-
-          .header-actions,
-          .toolbar-actions,
-          .salary-btn {
-            width: 100%;
-          }
-
-          .header-actions .salary-btn,
-          .toolbar-actions .salary-btn {
-            flex: 1;
-          }
-
-          .summary-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .salary-toolbar,
-          .filters {
-            align-items: stretch;
-          }
-
-          .filters,
-          .search-box,
-          .filter-select {
-            width: 100%;
-            min-width: 100%;
-          }
-
-          .modal-backdrop {
-            padding: 7px;
-          }
-
-          .salary-modal {
-            max-height: calc(100vh - 14px);
-            border-radius: 16px;
-          }
-
-          .modal-header {
-            padding: 14px;
-          }
-
-          .modal-body {
-            padding: 10px;
-          }
-
-          .section-card {
-            padding: 12px;
-          }
-
-          .form-grid,
-          .employee-info-strip,
-          .calculation-panel {
-            grid-template-columns: 1fr;
-          }
-
-          .span-2,
-          .span-4 {
-            grid-column: span 1;
-          }
-
-          .modal-footer {
-            flex-direction: column-reverse;
-          }
-
-          .modal-footer .salary-btn {
-            width: 100%;
-          }
-        }
-      `}</style>
+      {isUrdu && (
+        <link
+          href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      )}
 
       {message.text && (
         <div
-          className={`toast ${
+          className={`fixed bottom-6 z-[80] max-w-md rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-2xl ${
+            isUrdu ? "left-6" : "right-6"
+          } ${
             message.type === "error"
-              ? "toast-error"
-              : "toast-success"
+              ? "bg-red-600"
+              : "bg-emerald-600"
           }`}
         >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          />
-          <span>{message.text}</span>
+          <div className="flex items-center gap-2">
+            <i
+              className={`bi ${
+                message.type === "error"
+                  ? "bi-exclamation-triangle"
+                  : "bi-check-circle"
+              }`}
+            />
+            <span>{message.text}</span>
+          </div>
         </div>
       )}
 
-      <div className="salary-wrap">
-        <header className="salary-header">
-          <div className="title-row">
-            <div className="title-icon">
-              <i className="bi bi-cash-stack" />
-            </div>
-            <div>
-              <h1 className="page-title">{t.title}</h1>
-              <p className="page-subtitle">{t.subtitle}</p>
-            </div>
+      <div className="mx-auto w-full max-w-[1600px]">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">
+              {t.title}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {t.subtitle}
+            </p>
           </div>
 
-          <div className="header-actions">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="salary-btn btn-dark"
-              onClick={() => setLang((previous) =>
-                previous === "en" ? "ur" : "en"
-              )}
+              onClick={() =>
+                setLang((previous) =>
+                  previous === "en" ? "ur" : "en"
+                )
+              }
+              className="flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600"
             >
               <i className="bi bi-translate" />
               {t.toggleLang}
@@ -1729,294 +1088,427 @@ export default function EmployeeSalaryPage() {
 
             <button
               type="button"
-              className="salary-btn btn-primary"
               onClick={openAdd}
+              className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-cyan-800"
             >
               <i className="bi bi-plus-lg" />
-              {t.addSalary}
+              {t.newSalary}
             </button>
           </div>
-        </header>
+        </div>
 
-        <section className="summary-grid">
-          <article className="summary-card">
-            <div className="summary-icon">
-              <i className="bi bi-wallet2" />
-            </div>
-            <div>
-              <div className="summary-label">{t.totalPayroll}</div>
-              <div className="summary-value">
-                PKR {money(summary.totalPayroll)}
+        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+                <i className="bi bi-cash-stack text-lg" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {t.totalPayroll}
+                </p>
+                <p className="truncate text-xl font-bold text-slate-800">
+                  PKR {money(totals.calculated)}
+                </p>
               </div>
             </div>
-          </article>
-
-          <article className="summary-card">
-            <div className="summary-icon">
-              <i className="bi bi-check2-circle" />
-            </div>
-            <div>
-              <div className="summary-label">{t.paidPayroll}</div>
-              <div className="summary-value">
-                PKR {money(summary.paidPayroll)}
-              </div>
-            </div>
-          </article>
-
-          <article className="summary-card">
-            <div className="summary-icon">
-              <i className="bi bi-hourglass-split" />
-            </div>
-            <div>
-              <div className="summary-label">{t.pendingPayroll}</div>
-              <div className="summary-value">
-                PKR {money(summary.pendingPayroll)}
-              </div>
-            </div>
-          </article>
-
-          <article className="summary-card">
-            <div className="summary-icon">
-              <i className="bi bi-cash-coin" />
-            </div>
-            <div>
-              <div className="summary-label">{t.totalAdvances}</div>
-              <div className="summary-value">
-                PKR {money(summary.totalAdvances)}
-              </div>
-            </div>
-          </article>
-        </section>
-
-        {usingFallback && (
-          <div className="fallback-alert">
-            <i className="bi bi-info-circle-fill" />
-            {t.apiFallback}
-          </div>
-        )}
-
-        <section className="salary-toolbar">
-          <div className="filters">
-            <div className="search-box">
-              <i className="bi bi-search" />
-              <input
-                className="search-input"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t.searchPlaceholder}
-              />
-            </div>
-
-            <select
-              className="filter-select"
-              value={monthFilter}
-              onChange={(event) => setMonthFilter(event.target.value)}
-            >
-              <option value="">{t.allMonths}</option>
-              {availableMonths.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="filter-select"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-            >
-              <option value="">{t.allStatuses}</option>
-              <option value="Paid">{t.paid}</option>
-              <option value="Pending">{t.pending}</option>
-            </select>
           </div>
 
-          <div className="toolbar-actions">
-            <button
-              type="button"
-              className="salary-btn btn-white"
-              onClick={fetchData}
-            >
-              <i className="bi bi-arrow-clockwise" />
-              {t.refresh}
-            </button>
-
-            <button
-              type="button"
-              className="salary-btn btn-white"
-              onClick={() => printReport(false)}
-              disabled={!filteredRecords.length}
-            >
-              <i className="bi bi-printer" />
-              {t.print}
-            </button>
-
-            <button
-              type="button"
-              className="salary-btn btn-white"
-              onClick={() => printReport(true)}
-              disabled={!filteredRecords.length}
-            >
-              <i className="bi bi-file-earmark-pdf text-danger" />
-              {t.pdf}
-            </button>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <i className="bi bi-wallet2 text-lg" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {t.totalAdvanceCard}
+                </p>
+                <p className="truncate text-xl font-bold text-slate-800">
+                  PKR {money(totals.advance)}
+                </p>
+              </div>
+            </div>
           </div>
-        </section>
 
-        <section className="table-card">
-          <div className="table-scroll">
-            <table className="salary-table">
-              <thead>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                  totals.balance < 0
+                    ? "bg-red-100 text-red-700"
+                    : "bg-emerald-100 text-emerald-700"
+                }`}
+              >
+                <i className="bi bi-calculator text-lg" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {t.totalBalance}
+                </p>
+                <p
+                  className={`truncate text-xl font-bold ${
+                    totals.balance < 0
+                      ? "text-red-600"
+                      : "text-emerald-700"
+                  }`}
+                >
+                  PKR {money(totals.balance)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                <i className="bi bi-receipt text-lg" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {t.totalRecords}
+                </p>
+                <p className="text-xl font-bold text-slate-800">
+                  {filteredRecords.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-[260px] flex-1 flex-wrap gap-2">
+              <div className="relative min-w-[240px] flex-1">
+                <i
+                  className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                    isUrdu ? "right-3" : "left-3"
+                  }`}
+                />
+
+                <input
+                  value={search}
+                  onChange={(event) =>
+                    setSearch(event.target.value)
+                  }
+                  placeholder={t.searchPlaceholder}
+                  className={`w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 text-sm text-slate-700 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 ${
+                    isUrdu
+                      ? "pl-3 pr-9 text-right"
+                      : "pl-9 pr-3"
+                  }`}
+                />
+              </div>
+
+              <select
+                value={monthFilter}
+                onChange={(event) =>
+                  setMonthFilter(event.target.value)
+                }
+                className="min-w-[145px] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+              >
+                <option value="">{t.allMonths}</option>
+                {availableMonths.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value)
+                }
+                className="min-w-[145px] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+              >
+                <option value="">{t.allStatuses}</option>
+                <option value="Paid">{t.paid}</option>
+                <option value="Pending">{t.pending}</option>
+              </select>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={fetchData}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <i className="bi bi-arrow-clockwise text-cyan-700" />
+                {t.refresh}
+              </button>
+
+              <button
+                type="button"
+                disabled={!filteredRecords.length}
+                onClick={() => printReport(false)}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <i className="bi bi-printer text-cyan-700" />
+                {t.print}
+              </button>
+
+              <button
+                type="button"
+                disabled={!filteredRecords.length}
+                onClick={() => printReport(true)}
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <i className="bi bi-file-earmark-pdf text-red-600" />
+                {t.pdf}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1550px] text-sm text-slate-600">
+              <thead className="border-b border-slate-200 bg-slate-900 text-xs font-bold uppercase tracking-wide text-white">
                 <tr>
-                  <th className="center">#</th>
-                  <th>{t.employee}</th>
-                  <th className="center">{t.salaryMonth}</th>
-                  <th>{t.basicSalary}</th>
-                  <th className="center">{t.extraDays}</th>
-                  <th>{t.extraDayAmount}</th>
-                  <th className="center">{t.absentDays}</th>
-                  <th>{t.absentDeduction}</th>
-                  <th>{t.overtimeAmount}</th>
-                  <th>{t.timeDeduction}</th>
-                  <th>{t.currentAdvance}</th>
-                  <th>{t.previousAdvance}</th>
-                  <th>{t.netSalary}</th>
-                  <th className="center">{t.status}</th>
-                  <th className="center">{t.actions}</th>
+                  <th className="px-3 py-3 text-center">
+                    #
+                  </th>
+                  <th
+                    className={`px-3 py-3 ${
+                      isUrdu ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {t.employee}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.salaryMonth}
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    {t.salary}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.extraDay}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.absent}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.timeDeduction}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.overtime}
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    {t.calculatedAmount}
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    {t.advance}
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    {t.previousAdvance}
+                  </th>
+                  <th className="px-3 py-3 text-right">
+                    {t.remainingBalance}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.status}
+                  </th>
+                  <th className="px-3 py-3 text-center">
+                    {t.actions}
+                  </th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="15" className="empty-state">
-                      <i className="bi bi-arrow-repeat" /> {t.loading}
+                    <td
+                      colSpan={14}
+                      className="px-6 py-14 text-center text-slate-400"
+                    >
+                      <i className="bi bi-arrow-repeat mr-2" />
+                      {t.loading}
                     </td>
                   </tr>
                 ) : filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan="15" className="empty-state">
-                      <i className="bi bi-inbox" /> {t.noRecords}
+                    <td
+                      colSpan={14}
+                      className="px-6 py-14 text-center text-slate-400"
+                    >
+                      <i className="bi bi-inbox mr-2" />
+                      {t.noRecords}
                     </td>
                   </tr>
                 ) : (
                   filteredRecords.map((record, index) => {
-                    const employeeName = getEmployeeName(
-                      record,
-                      employees
+                    const employeeName =
+                      getRecordEmployeeName(
+                        record,
+                        employees
+                      );
+
+                    const status = normalizeStatus(
+                      record.status
                     );
-                    const employee = employees.find(
-                      (item) =>
-                        String(item.id) === String(record.employee_id)
+
+                    const remainingBalance = toNumber(
+                      getTableValue(record, [
+                        "remaining_balance",
+                        "baqaya_hisaab",
+                      ])
                     );
-                    const status = normalizeStatus(record.status);
 
                     return (
-                      <tr key={record.id}>
-                        <td className="center">{index + 1}</td>
+                      <tr
+                        key={record.id}
+                        className="transition hover:bg-cyan-50/50"
+                      >
+                        <td className="px-3 py-3 text-center font-mono text-xs text-slate-400">
+                          {index + 1}
+                        </td>
 
-                        <td>
-                          <div className="employee-cell">
-                            <div className="employee-avatar">
-                              {employeeName.charAt(0).toUpperCase()}
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-100 font-bold text-cyan-700">
+                              {employeeName
+                                .charAt(0)
+                                .toUpperCase()}
                             </div>
+
                             <div>
-                              <div className="employee-name">
+                              <p className="font-bold text-slate-800">
                                 {employeeName}
-                              </div>
-                              <div className="employee-sub">
-                                {employee?.designation ||
-                                  employee?.department_name ||
-                                  "-"}
-                              </div>
+                              </p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="center">
+                        <td className="px-3 py-3 text-center font-mono text-xs">
                           {record.salary_month || "-"}
                         </td>
 
-                        <td className="money-cell">
+                        <td className="px-3 py-3 text-right font-mono font-bold text-slate-700">
                           PKR {money(record.basic_salary)}
                         </td>
 
-                        <td className="center">
-                          {numberValue(record.extra_days)}
+                        <td className="px-3 py-3 text-center">
+                          <p className="font-bold text-emerald-700">
+                            {money(record.extra_days)}{" "}
+                            {t.days}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            PKR{" "}
+                            {money(record.extra_day_amount)}
+                          </p>
                         </td>
 
-                        <td className="money-cell positive">
-                          + PKR {money(record.extra_day_amount)}
+                        <td className="px-3 py-3 text-center">
+                          <p className="font-bold text-red-600">
+                            {money(record.absent_days)}{" "}
+                            {t.days}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            PKR{" "}
+                            {money(
+                              getTableValue(record, [
+                                "absent_amount",
+                                "absent_deduction",
+                              ])
+                            )}
+                          </p>
                         </td>
 
-                        <td className="center">
-                          {numberValue(
-                            record.absent_days ?? record.leaves
-                          )}
+                        <td className="px-3 py-3 text-center">
+                          <p className="font-bold text-amber-700">
+                            {money(
+                              record.time_deduction_hours
+                            )}{" "}
+                            {t.hours}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            PKR{" "}
+                            {money(
+                              record.time_deduction_amount
+                            )}
+                          </p>
                         </td>
 
-                        <td className="money-cell negative">
-                          - PKR {money(record.absent_deduction)}
+                        <td className="px-3 py-3 text-center">
+                          <p className="font-bold text-cyan-700">
+                            {money(record.overtime_hours)}{" "}
+                            {t.hours}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            PKR{" "}
+                            {money(record.overtime_amount)}
+                          </p>
                         </td>
 
-                        <td className="money-cell positive">
-                          + PKR {money(record.overtime_amount)}
-                        </td>
-
-                        <td className="money-cell negative">
-                          - PKR {money(record.time_deduction)}
-                        </td>
-
-                        <td className="money-cell negative">
-                          - PKR{" "}
+                        <td className="bg-cyan-50/60 px-3 py-3 text-right font-mono font-bold text-cyan-800">
+                          PKR{" "}
                           {money(
-                            record.current_advance ?? record.advance
+                            getTableValue(record, [
+                              "calculated_amount",
+                              "hisaab_amount",
+                            ])
                           )}
                         </td>
 
-                        <td className="money-cell negative">
-                          - PKR {money(record.previous_advance)}
+                        <td className="px-3 py-3 text-right font-mono text-amber-700">
+                          PKR{" "}
+                          {money(
+                            getTableValue(record, [
+                              "advance",
+                              "current_advance",
+                            ])
+                          )}
                         </td>
 
-                        <td className="money-cell net-cell">
-                          PKR {money(record.net_salary)}
+                        <td className="px-3 py-3 text-right font-mono text-violet-700">
+                          PKR{" "}
+                          {money(record.previous_advance)}
                         </td>
 
-                        <td className="center">
+                        <td
+                          className={`px-3 py-3 text-right font-mono font-bold ${
+                            remainingBalance < 0
+                              ? "bg-red-50 text-red-600"
+                              : "bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
+                          PKR {money(remainingBalance)}
+                        </td>
+
+                        <td className="px-3 py-3 text-center">
                           <span
-                            className={`status-badge ${
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
                               status === "Paid"
-                                ? "status-paid"
-                                : "status-pending"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-amber-100 text-amber-700"
                             }`}
                           >
-                            <i
-                              className={`bi ${
-                                status === "Paid"
-                                  ? "bi-check-circle-fill"
-                                  : "bi-clock-fill"
-                              }`}
-                            />
-                            {status === "Paid" ? t.paid : t.pending}
+                            {status === "Paid"
+                              ? t.paid
+                              : t.pending}
                           </span>
                         </td>
 
-                        <td>
-                          <div className="row-actions">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               type="button"
-                              className="icon-btn btn-edit"
                               title={t.edit}
-                              onClick={() => openEdit(record)}
+                              onClick={() =>
+                                openEdit(record)
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 transition hover:bg-cyan-200"
                             >
                               <i className="bi bi-pencil-square" />
                             </button>
 
                             <button
                               type="button"
-                              className="icon-btn btn-danger"
                               title={t.delete}
-                              onClick={() => handleDelete(record.id)}
+                              onClick={() =>
+                                handleDelete(record.id)
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 transition hover:bg-red-100"
                             >
                               <i className="bi bi-trash3" />
                             </button>
@@ -2029,382 +1521,325 @@ export default function EmployeeSalaryPage() {
               </tbody>
             </table>
           </div>
-
-          <div className="table-footer">
-            <span>
-              {t.showing}: <strong>{filteredRecords.length}</strong>{" "}
-              {t.records}
-            </span>
-            <span>{t.formula}</span>
-          </div>
-        </section>
+        </div>
       </div>
 
       {showForm && (
         <div
-          className="modal-backdrop"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm sm:p-4"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeForm();
+            if (event.target === event.currentTarget) {
+              closeForm();
+            }
           }}
         >
-          <div className="salary-modal" dir={dir}>
-            <div className="modal-header">
-              <div className="modal-title-row">
-                <div className="modal-title-icon">
-                  <i className="bi bi-receipt-cutoff" />
+          <div
+            dir={dir}
+            className="flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+                  <i className="bi bi-cash-stack text-xl" />
                 </div>
+
                 <div>
-                  <h2 className="modal-title">
-                    {editingId ? t.edit : t.addSalary}
+                  <h2 className="text-xl font-bold text-slate-800">
+                    {editingId
+                      ? t.update
+                      : t.newSalary}
                   </h2>
-                  <div className="modal-subtitle">
-                    {t.formula}
-                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {t.formulaOne}
+                  </p>
                 </div>
               </div>
 
               <button
                 type="button"
-                className="modal-close"
                 onClick={closeForm}
-                aria-label="Close"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50"
               >
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            <div className="modal-body">
-              <section className="section-card">
-                <h3 className="section-title">
-                  <i className="bi bi-person-badge" />
-                  {t.salaryDetails}
-                </h3>
+            <div className="overflow-y-auto bg-slate-50 p-3 sm:p-5">
+              <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <i className="bi bi-person-badge text-cyan-700" />
+                  <h3 className="text-sm font-bold text-slate-800">
+                    {t.employeeInformation}
+                  </h3>
+                </div>
 
-                <div className="form-grid">
-                  <div className="field span-2">
-                    <label className="field-label">
-                      {t.employee}{" "}
-                      <span className="required">*</span>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="xl:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
+                      {t.employee} *
                     </label>
+
                     <select
-                      className="field-select"
                       value={form.employee_id}
                       onChange={(event) =>
-                        handleEmployeeChange(event.target.value)
+                        handleEmployeeChange(
+                          event.target.value
+                        )
                       }
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
                     >
-                      <option value="">{t.selectEmployee}</option>
+                      <option value="">
+                        {t.selectEmployee}
+                      </option>
+
                       {employees.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.full_name || employee.name}
+                        <option
+                          key={getEmployeeId(employee)}
+                          value={getEmployeeId(employee)}
+                        >
+                          {getEmployeeName(employee)}
                         </option>
                       ))}
                     </select>
+
+                    {!loading && employees.length === 0 && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {t.noEmployees}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="field">
-                    <label className="field-label">
-                      {t.salaryMonth}{" "}
-                      <span className="required">*</span>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
+                      {t.salaryMonth} *
                     </label>
+
                     <input
                       type="month"
-                      className="field-input"
                       value={form.salary_month}
                       onChange={(event) =>
-                        updateField("salary_month", event.target.value)
+                        updateField(
+                          "salary_month",
+                          event.target.value
+                        )
                       }
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
                     />
                   </div>
 
-                  <div className="field">
-                    <label className="field-label">{t.status}</label>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
+                      {t.status}
+                    </label>
+
                     <select
-                      className="field-select"
                       value={form.status}
                       onChange={(event) =>
-                        updateField("status", event.target.value)
+                        updateField(
+                          "status",
+                          event.target.value
+                        )
                       }
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
                     >
-                      <option value="Pending">{t.pending}</option>
+                      <option value="Pending">
+                        {t.pending}
+                      </option>
                       <option value="Paid">{t.paid}</option>
                     </select>
                   </div>
 
-                  <div className="field">
-                    <label className="field-label">
-                      {t.basicSalary}
+                  <div className="md:col-span-1 xl:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
+                      {t.basicSalary} *
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="field-input"
-                      value={form.basic_salary}
-                      onChange={(event) => {
-                        const salary = event.target.value;
-                        const hourly =
-                          numberValue(salary) > 0
-                            ? numberValue(salary) / 30 / 8
-                            : 0;
 
-                        setForm((previous) => ({
-                          ...previous,
-                          basic_salary: salary,
-                          overtime_rate: hourly
-                            ? hourly.toFixed(2)
-                            : "",
-                        }));
-                      }}
-                    />
+                    <div className="relative">
+                      <span
+                        className={`absolute top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 ${
+                          isUrdu ? "right-3" : "left-3"
+                        }`}
+                      >
+                        PKR
+                      </span>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.basic_salary}
+                        onChange={(event) =>
+                          handleSalaryChange(
+                            event.target.value
+                          )
+                        }
+                        placeholder="0"
+                        className={`w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 ${
+                          isUrdu
+                            ? "pl-3 pr-14"
+                            : "pl-14 pr-3"
+                        }`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="field">
-                    <label className="field-label">
+                  <div className="md:col-span-1 xl:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
                       {t.perDaySalary}
                     </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        calculations.perDaySalary
-                      )}`}
-                    />
-                  </div>
 
-                  <div className="field">
-                    <label className="field-label">
-                      {t.perHourSalary}
-                    </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        calculations.perHourSalary
-                      )}`}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.previousAdvance}
-                    </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        form.previous_advance
-                      )}`}
-                    />
-                    <div className="field-hint">
-                      {t.previousAdvanceHint}
+                    <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2.5 text-sm font-bold text-cyan-800">
+                      PKR{" "}
+                      {money(calculations.perDaySalary)}
                     </div>
-                  </div>
-                </div>
-
-                {selectedEmployee && (
-                  <div className="employee-info-strip">
-                    <div className="info-chip">
-                      <small>{t.employee}</small>
-                      <strong>
-                        {selectedEmployee.full_name ||
-                          selectedEmployee.name ||
-                          "-"}
-                      </strong>
-                    </div>
-
-                    <div className="info-chip">
-                      <small>{t.designation}</small>
-                      <strong>
-                        {selectedEmployee.designation || "-"}
-                      </strong>
-                    </div>
-
-                    <div className="info-chip">
-                      <small>{t.department}</small>
-                      <strong>
-                        {selectedEmployee.department_name ||
-                          selectedEmployee.department ||
-                          "-"}
-                      </strong>
-                    </div>
-                  </div>
-                )}
-              </section>
-
-              <section className="section-card">
-                <h3 className="section-title">
-                  <i className="bi bi-calendar2-check" />
-                  {t.attendanceAdditions}
-                </h3>
-
-                <div className="form-grid">
-                  <div className="field">
-                    <label className="field-label">{t.extraDays}</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      className="field-input"
-                      value={form.extra_days}
-                      onChange={(event) =>
-                        updateField("extra_days", event.target.value)
-                      }
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.extraDayAmount}
-                    </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        calculations.extraDayAmount
-                      )}`}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.absentDays}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      className="field-input"
-                      value={form.absent_days}
-                      onChange={(event) =>
-                        updateField("absent_days", event.target.value)
-                      }
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.absentDeduction}
-                    </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        calculations.absentDeduction
-                      )}`}
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.overtimeHours}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      className="field-input"
-                      value={form.overtime_hours}
-                      onChange={(event) =>
-                        updateField(
-                          "overtime_hours",
-                          event.target.value
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.overtimeRate}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="field-input"
-                      value={form.overtime_rate}
-                      onChange={(event) =>
-                        updateField(
-                          "overtime_rate",
-                          event.target.value
-                        )
-                      }
-                    />
-                    <div className="field-hint">
-                      {t.overtimeRateHint}
-                    </div>
-                  </div>
-
-                  <div className="field span-2">
-                    <label className="field-label">
-                      {t.overtimeAmount}
-                    </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        calculations.overtimeAmount
-                      )}`}
-                    />
                   </div>
                 </div>
               </section>
 
-              <section className="section-card">
-                <h3 className="section-title">
-                  <i className="bi bi-dash-circle" />
-                  {t.deductionsAdvances}
-                </h3>
+              <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <i className="bi bi-calendar2-check text-cyan-700" />
+                  <h3 className="text-sm font-bold text-slate-800">
+                    {t.attendanceCalculation}
+                  </h3>
+                </div>
 
-                <div className="form-grid">
-                  <div className="field">
-                    <label className="field-label">
-                      {t.timeDeduction}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {calculationInputCards.map((card) => {
+                    const accent =
+                      accentClasses[card.accent];
+
+                    return (
+                      <article
+                        key={card.key}
+                        className={`overflow-hidden rounded-xl border ${accent.header}`}
+                      >
+                        <div className="flex items-center justify-between border-b border-current/10 px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`flex h-9 w-9 items-center justify-center rounded-lg ${accent.icon}`}
+                            >
+                              <i
+                                className={`bi ${card.icon}`}
+                              />
+                            </div>
+
+                            <h4 className="text-sm font-bold text-slate-800">
+                              {card.title}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 bg-white p-3">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+                              {card.quantityLabel}
+                            </label>
+
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={card.quantityValue}
+                                onChange={(event) =>
+                                  updateField(
+                                    card.quantityField,
+                                    event.target.value
+                                  )
+                                }
+                                className={`w-full rounded-lg border bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 ${accent.input}`}
+                              />
+
+                              <span
+                                className={`absolute top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 ${
+                                  isUrdu
+                                    ? "left-3"
+                                    : "right-3"
+                                }`}
+                              >
+                                {card.unit}
+                              </span>
+                            </div>
+                          </div>
+
+                          {card.rateField && (
+                            <div>
+                              <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+                                {card.rateLabel}
+                              </label>
+
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={card.rateValue}
+                                onChange={(event) =>
+                                  updateField(
+                                    card.rateField,
+                                    event.target.value
+                                  )
+                                }
+                                className={`w-full rounded-lg border bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 ${accent.input}`}
+                              />
+                            </div>
+                          )}
+
+                          <div className="rounded-lg bg-slate-50 p-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                              {t.calculatedValue}
+                            </p>
+                            <p
+                              className={`mt-1 text-lg font-bold ${accent.amount}`}
+                            >
+                              PKR {money(card.amount)}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <i className="bi bi-calculator text-cyan-700" />
+                  <h3 className="text-sm font-bold text-slate-800">
+                    {t.advanceCalculation}
+                  </h3>
+                </div>
+
+                <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
+                      {t.advance}
                     </label>
+
                     <input
                       type="number"
                       min="0"
                       step="0.01"
-                      className="field-input"
-                      value={form.time_deduction}
+                      value={form.advance}
                       onChange={(event) =>
                         updateField(
-                          "time_deduction",
+                          "advance",
                           event.target.value
                         )
                       }
+                      className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-bold text-amber-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
                     />
                   </div>
 
-                  <div className="field">
-                    <label className="field-label">
-                      {t.currentAdvance}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="field-input"
-                      value={form.current_advance}
-                      onChange={(event) =>
-                        updateField(
-                          "current_advance",
-                          event.target.value
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
                       {t.previousAdvance}
                     </label>
+
                     <input
                       type="number"
                       min="0"
                       step="0.01"
-                      className="field-input"
                       value={form.previous_advance}
                       onChange={(event) =>
                         updateField(
@@ -2412,124 +1847,108 @@ export default function EmployeeSalaryPage() {
                           event.target.value
                         )
                       }
-                    />
-                  </div>
-
-                  <div className="field">
-                    <label className="field-label">
-                      {t.totalDeductions}
-                    </label>
-                    <input
-                      className="field-input"
-                      readOnly
-                      value={`PKR ${money(
-                        calculations.totalDeductions
-                      )}`}
-                    />
-                  </div>
-
-                  <div className="field span-4">
-                    <label className="field-label">{t.notes}</label>
-                    <textarea
-                      className="field-textarea"
-                      value={form.notes}
-                      placeholder={t.notesPlaceholder}
-                      onChange={(event) =>
-                        updateField("notes", event.target.value)
-                      }
+                      className="w-full rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm font-bold text-violet-800 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                     />
                   </div>
                 </div>
-              </section>
 
-              <section className="section-card">
-                <h3 className="section-title">
-                  <i className="bi bi-calculator" />
-                  {t.calculationSummary}
-                </h3>
-
-                <div className="calculation-panel">
-                  <div className="formula-box">
-                    <div className="formula-title">{t.formula}</div>
-                    <div className="formula-text">
-                      {t.basicSalary}: PKR{" "}
-                      {money(calculations.basicSalary)}
-                      <br />
-                      + {t.extraDayAmount}: PKR{" "}
-                      {money(calculations.extraDayAmount)}
-                      <br />
-                      + {t.overtimeAmount}: PKR{" "}
-                      {money(calculations.overtimeAmount)}
-                      <br />
-                      − {t.absentDeduction}: PKR{" "}
-                      {money(calculations.absentDeduction)}
-                      <br />
-                      − {t.timeDeduction}: PKR{" "}
-                      {money(form.time_deduction)}
-                      <br />
-                      − {t.currentAdvance}: PKR{" "}
-                      {money(form.current_advance)}
-                      <br />
-                      − {t.previousAdvance}: PKR{" "}
-                      {money(form.previous_advance)}
+                <div className="grid grid-cols-1 overflow-hidden rounded-xl border-2 border-slate-800 sm:grid-cols-2 xl:grid-cols-5">
+                  {[
+                    {
+                      label: t.salary,
+                      value: calculations.salary,
+                      className:
+                        "bg-slate-100 text-slate-800",
+                    },
+                    {
+                      label: t.calculatedAmount,
+                      value: calculations.calculatedAmount,
+                      className:
+                        "bg-cyan-50 text-cyan-800",
+                    },
+                    {
+                      label: t.advance,
+                      value: calculations.advance,
+                      className:
+                        "bg-amber-50 text-amber-800",
+                    },
+                    {
+                      label: t.remainingBalance,
+                      value: calculations.remainingBalance,
+                      className:
+                        calculations.remainingBalance < 0
+                          ? "bg-red-50 text-red-700"
+                          : "bg-emerald-50 text-emerald-700",
+                    },
+                    {
+                      label: t.previousAdvance,
+                      value: calculations.previousAdvance,
+                      className:
+                        "bg-violet-50 text-violet-800",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className={`border-b border-slate-300 p-3 text-center sm:border-r xl:border-b-0 ${item.className}`}
+                    >
+                      <p className="text-xs font-bold">
+                        {item.label}
+                      </p>
+                      <p className="mt-2 text-xl font-bold">
+                        {money(item.value)}
+                      </p>
                     </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-xs leading-6 text-cyan-900">
+                    <i className="bi bi-calculator mr-2" />
+                    {t.formulaOne}
                   </div>
 
-                  <div className="calc-list">
-                    <div className="calc-row">
-                      <span>{t.basicSalary}</span>
-                      <strong>
-                        PKR {money(calculations.basicSalary)}
-                      </strong>
-                    </div>
-
-                    <div className="calc-row">
-                      <span>{t.totalAdditions}</span>
-                      <strong>
-                        + PKR {money(calculations.totalAdditions)}
-                      </strong>
-                    </div>
-
-                    <div className="calc-row">
-                      <span>{t.grossSalary}</span>
-                      <strong>
-                        PKR {money(calculations.grossSalary)}
-                      </strong>
-                    </div>
-
-                    <div className="calc-row">
-                      <span>{t.totalDeductions}</span>
-                      <strong>
-                        − PKR {money(calculations.totalDeductions)}
-                      </strong>
-                    </div>
-
-                    <div className="calc-row calc-net">
-                      <span>{t.netSalary}</span>
-                      <strong>
-                        PKR {money(calculations.netSalary)}
-                      </strong>
-                    </div>
+                  <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-xs leading-6 text-violet-900">
+                    <i className="bi bi-wallet2 mr-2" />
+                    {t.formulaTwo}
                   </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="mb-1 block text-xs font-semibold text-slate-500">
+                    {t.notes}
+                  </label>
+
+                  <textarea
+                    value={form.notes}
+                    onChange={(event) =>
+                      updateField(
+                        "notes",
+                        event.target.value
+                      )
+                    }
+                    placeholder={t.notesPlaceholder}
+                    rows={3}
+                    className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+                  />
                 </div>
               </section>
             </div>
 
-            <div className="modal-footer">
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
               <button
                 type="button"
-                className="salary-btn btn-white"
-                onClick={closeForm}
                 disabled={submitting}
+                onClick={closeForm}
+                className="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 {t.cancel}
               </button>
 
               <button
                 type="button"
-                className="salary-btn btn-primary"
-                onClick={handleSave}
                 disabled={submitting}
+                onClick={handleSave}
+                className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <i
                   className={`bi ${
@@ -2538,7 +1957,11 @@ export default function EmployeeSalaryPage() {
                       : "bi-check2-circle"
                   }`}
                 />
-                {submitting ? t.saving : t.save}
+                {submitting
+                  ? t.saving
+                  : editingId
+                  ? t.update
+                  : t.save}
               </button>
             </div>
           </div>
