@@ -10,7 +10,7 @@ const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
 ).replace(/\/$/, "");
 
-const SALARY_API = `${API_ROOT}/api/employee-rate`;
+const SALARY_API = `${API_ROOT}/api/employee-rates`;
 const EMPLOYEES_API = `${API_ROOT}/api/employees`;
 
 const LANG = {
