@@ -1,15 +1,32 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import axios from "axios";
 
-const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
-const EMPLOYEES_API = `${API_ROOT}/api/employees`;
-const DEPARTMENTS_API = `${API_ROOT}/api/departments`;
-const DESIGNATIONS_API = `${API_ROOT}/api/designations`;
+const API_ROOT = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+/*
+  Only one API base is used by this page.
+
+  GET    /api/employees
+  POST   /api/employees
+  PUT    /api/employees/:id
+  DELETE /api/employees/:id
+  POST   /api/employees/departments
+  POST   /api/employees/designations
+*/
+const EMPLOYEE_API = `${API_ROOT}/api/employees`;
 
 const LANG = {
   en: {
     title: "Employee Registration",
-    subtitle: "Manage salaried and contractor employees, departments and designations",
+    subtitle:
+      "Manage salaried and contractor employees, departments and designations",
     newEmployee: "New Employee",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
@@ -17,7 +34,10 @@ const LANG = {
     downloadPdf: "Download PDF",
     refresh: "Refresh",
     toggleLang: "اردو",
-    searchPlaceholder: "Search employee, CNIC, phone, type, department or designation...",
+
+    searchPlaceholder:
+      "Search by employee, CNIC, phone, type, department or designation...",
+
     employee: "Employee",
     employeeName: "Employee Name",
     cnic: "CNIC",
@@ -29,8 +49,8 @@ const LANG = {
     department: "Department",
     designation: "Designation",
     joiningDate: "Joining Date",
-    basicSalary: "Basic Salary / Rate",
     viewDetails: "View Details",
+
     selectType: "-- Select Type --",
     selectDepartment: "-- Select Department --",
     selectDesignation: "-- Select Designation --",
@@ -38,15 +58,17 @@ const LANG = {
     addDesignation: "Add Designation",
     departmentName: "Department Name",
     designationName: "Designation Name",
+
     totalEmployees: "Total Employees",
     salariedEmployees: "Salaried Employees",
     contractorEmployees: "Contractors",
-    totalSalary: "Total Salary / Rate",
-    employeeDetails: "Employee Details",
+
+    detailsTitle: "Employee Details",
     addEmployeeTitle: "New Employee",
     editEmployeeTitle: "Edit Employee",
-    employeeFormSubtitle: "Enter employee identity, employment type and job information",
-    addMasterTitle: "Add New Option",
+    formSubtitle:
+      "Enter employee identity, employment type and job information",
+
     save: "Save",
     saveEmployee: "Save Employee",
     updateEmployee: "Update Employee",
@@ -55,32 +77,40 @@ const LANG = {
     close: "Close",
     edit: "Edit",
     delete: "Delete",
+
     loading: "Loading employees...",
     noRecords: "No employees found.",
     noDepartments: "No departments found.",
     noDesignations: "No designations found.",
-    loadError: "Employee master data could not be loaded.",
-    employeeRequired: "Employee name, phone, type, department and designation are required.",
-    salaryRequired: "Basic salary is required for a salaried employee.",
+
+    loadError: "Employee data could not be loaded from backend.",
+    requiredError:
+      "Employee name, phone, type, department and designation are required.",
     masterRequired: "Name is required.",
     saveError: "Employee could not be saved.",
     masterSaveError: "New option could not be saved.",
     deleteError: "Employee could not be deleted.",
-    employeeSaved: "Employee saved successfully.",
-    employeeUpdated: "Employee updated successfully.",
-    employeeDeleted: "Employee deleted successfully.",
+
+    saved: "Employee saved successfully.",
+    updated: "Employee updated successfully.",
+    deleted: "Employee deleted successfully.",
     departmentSaved: "Department added successfully.",
     designationSaved: "Designation added successfully.",
+
     duplicateCnic: "An employee with this CNIC already exists.",
     duplicatePhone: "An employee with this phone number already exists.",
     duplicateMaster: "This option already exists.",
-    deleteConfirm: "Are you sure you want to delete this employee?",
+    deleteConfirm:
+      "Are you sure you want to delete this employee?",
+
     reportTitle: "Employee List",
     printedOn: "Printed On",
   },
+
   ur: {
     title: "ملازمین کی رجسٹریشن",
-    subtitle: "تنخواہ دار اور کنٹریکٹر ملازمین، محکموں اور عہدوں کا انتظام کریں",
+    subtitle:
+      "تنخواہ دار اور کنٹریکٹر ملازمین، محکموں اور عہدوں کا انتظام کریں",
     newEmployee: "نیا ملازم",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
@@ -88,7 +118,10 @@ const LANG = {
     downloadPdf: "پی ڈی ایف ڈاؤنلوڈ",
     refresh: "ری فریش",
     toggleLang: "English",
-    searchPlaceholder: "ملازم، شناختی کارڈ، فون، قسم، محکمہ یا عہدے سے تلاش کریں...",
+
+    searchPlaceholder:
+      "ملازم، شناختی کارڈ، فون، قسم، محکمہ یا عہدے سے تلاش کریں...",
+
     employee: "ملازم",
     employeeName: "ملازم کا نام",
     cnic: "شناختی کارڈ",
@@ -100,8 +133,8 @@ const LANG = {
     department: "محکمہ",
     designation: "عہدہ",
     joiningDate: "تاریخ شمولیت",
-    basicSalary: "بنیادی تنخواہ / ریٹ",
     viewDetails: "تفصیل دیکھیں",
+
     selectType: "-- قسم منتخب کریں --",
     selectDepartment: "-- محکمہ منتخب کریں --",
     selectDesignation: "-- عہدہ منتخب کریں --",
@@ -109,15 +142,17 @@ const LANG = {
     addDesignation: "عہدہ شامل کریں",
     departmentName: "محکمے کا نام",
     designationName: "عہدے کا نام",
+
     totalEmployees: "کل ملازمین",
     salariedEmployees: "تنخواہ دار ملازمین",
     contractorEmployees: "کنٹریکٹر",
-    totalSalary: "کل تنخواہ / ریٹ",
-    employeeDetails: "ملازم کی تفصیل",
+
+    detailsTitle: "ملازم کی مکمل تفصیل",
     addEmployeeTitle: "نیا ملازم",
     editEmployeeTitle: "ملازم میں ترمیم",
-    employeeFormSubtitle: "ملازم کی شناخت، ملازمت کی قسم اور جاب کی معلومات درج کریں",
-    addMasterTitle: "نیا آپشن شامل کریں",
+    formSubtitle:
+      "ملازم کی شناخت، ملازمت کی قسم اور جاب کی معلومات درج کریں",
+
     save: "محفوظ کریں",
     saveEmployee: "ملازم محفوظ کریں",
     updateEmployee: "ملازم اپڈیٹ کریں",
@@ -126,26 +161,34 @@ const LANG = {
     close: "بند کریں",
     edit: "ترمیم",
     delete: "حذف",
+
     loading: "ملازمین لوڈ ہو رہے ہیں...",
     noRecords: "کوئی ملازم نہیں ملا۔",
     noDepartments: "کوئی محکمہ نہیں ملا۔",
     noDesignations: "کوئی عہدہ نہیں ملا۔",
-    loadError: "ملازمین کا ماسٹر ڈیٹا لوڈ نہیں ہوا۔",
-    employeeRequired: "ملازم کا نام، فون، قسم، محکمہ اور عہدہ ضروری ہیں۔",
-    salaryRequired: "تنخواہ دار ملازم کے لیے بنیادی تنخواہ ضروری ہے۔",
+
+    loadError: "بیک اینڈ سے ملازمین کا ڈیٹا لوڈ نہیں ہوا۔",
+    requiredError:
+      "ملازم کا نام، فون، قسم، محکمہ اور عہدہ ضروری ہیں۔",
     masterRequired: "نام درج کرنا ضروری ہے۔",
     saveError: "ملازم محفوظ نہیں ہوا۔",
     masterSaveError: "نیا آپشن محفوظ نہیں ہوا۔",
     deleteError: "ملازم حذف نہیں ہوا۔",
-    employeeSaved: "ملازم کامیابی سے محفوظ ہو گیا۔",
-    employeeUpdated: "ملازم کامیابی سے اپڈیٹ ہو گیا۔",
-    employeeDeleted: "ملازم کامیابی سے حذف ہو گیا۔",
+
+    saved: "ملازم کامیابی سے محفوظ ہو گیا۔",
+    updated: "ملازم کامیابی سے اپڈیٹ ہو گیا۔",
+    deleted: "ملازم کامیابی سے حذف ہو گیا۔",
     departmentSaved: "محکمہ کامیابی سے شامل ہو گیا۔",
     designationSaved: "عہدہ کامیابی سے شامل ہو گیا۔",
-    duplicateCnic: "اس شناختی کارڈ کے ساتھ ملازم پہلے سے موجود ہے۔",
-    duplicatePhone: "اس فون نمبر کے ساتھ ملازم پہلے سے موجود ہے۔",
+
+    duplicateCnic:
+      "اس شناختی کارڈ کے ساتھ ملازم پہلے سے موجود ہے۔",
+    duplicatePhone:
+      "اس فون نمبر کے ساتھ ملازم پہلے سے موجود ہے۔",
     duplicateMaster: "یہ آپشن پہلے سے موجود ہے۔",
-    deleteConfirm: "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
+    deleteConfirm:
+      "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
+
     reportTitle: "ملازمین کی فہرست",
     printedOn: "پرنٹ کی تاریخ",
   },
@@ -159,7 +202,6 @@ const emptyForm = () => ({
   department_id: "",
   designation_id: "",
   joining_date: "",
-  basic_salary: "",
 });
 
 const getList = (value) => {
@@ -167,41 +209,37 @@ const getList = (value) => {
   if (Array.isArray(value?.data)) return value.data;
   if (Array.isArray(value?.rows)) return value.rows;
   if (Array.isArray(value?.result)) return value.result;
-  if (Array.isArray(value?.employees)) return value.employees;
-  if (Array.isArray(value?.departments)) return value.departments;
-  if (Array.isArray(value?.designations)) return value.designations;
   return [];
 };
 
-const toNumber = (value) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
+const getEmployeeId = (record) =>
+  record?.id ?? record?.employee_id ?? "";
 
-const money = (value) =>
-  toNumber(value).toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+const getDepartmentId = (record) =>
+  record?.id ?? record?.department_id ?? "";
 
-const normalizeDate = (value) => (value ? String(value).slice(0, 10) : "");
-const employeeId = (row) => row?.id ?? row?.employee_id ?? "";
-const departmentId = (row) => row?.id ?? row?.department_id ?? "";
-const departmentName = (row) => row?.department_name ?? row?.name ?? "";
-const designationId = (row) => row?.id ?? row?.designation_id ?? "";
-const designationName = (row) => row?.designation_name ?? row?.designation ?? row?.name ?? "";
-const employeeType = (value) =>
-  String(value || "").toLowerCase() === "contractor" ? "Contractor" : "Salaried";
+const getDepartmentName = (record) =>
+  record?.department_name ??
+  record?.name ??
+  record?.name_en ??
+  "";
 
-const Button = ({ children, className = "", ...props }) => (
-  <button
-    type="button"
-    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 ${className}`}
-    {...props}
-  >
-    {children}
-  </button>
-);
+const getDesignationId = (record) =>
+  record?.id ?? record?.designation_id ?? "";
+
+const getDesignationName = (record) =>
+  record?.designation_name ??
+  record?.designation ??
+  record?.name ??
+  "";
+
+const normalizeDate = (value) =>
+  value ? String(value).slice(0, 10) : "";
+
+const normalizeType = (value) =>
+  String(value || "").toLowerCase() === "contractor"
+    ? "Contractor"
+    : "Salaried";
 
 export default function EmployeePage() {
   const [lang, setLang] = useState("en");
@@ -212,6 +250,7 @@ export default function EmployeePage() {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
+
   const [search, setSearch] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -224,65 +263,108 @@ export default function EmployeePage() {
   const [detailRecord, setDetailRecord] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  const [master, setMaster] = useState({ open: false, type: "", name: "" });
-  const [masterSubmitting, setMasterSubmitting] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [masterModal, setMasterModal] = useState({
+    open: false,
+    type: "",
+    name: "",
+  });
+  const [masterSubmitting, setMasterSubmitting] =
+    useState(false);
 
-  const departmentMap = useMemo(
-    () => Object.fromEntries(departments.map((row) => [String(departmentId(row)), departmentName(row)])),
-    [departments]
-  );
-  const designationMap = useMemo(
-    () => Object.fromEntries(designations.map((row) => [String(designationId(row)), designationName(row)])),
-    [designations]
-  );
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
+  });
 
-  const rowDepartment = useCallback(
-    (row) => row?.department_name || departmentMap[String(row?.department_id)] || "-",
+  const departmentMap = useMemo(() => {
+    const map = {};
+
+    departments.forEach((department) => {
+      map[String(getDepartmentId(department))] =
+        getDepartmentName(department);
+    });
+
+    return map;
+  }, [departments]);
+
+  const designationMap = useMemo(() => {
+    const map = {};
+
+    designations.forEach((designation) => {
+      map[String(getDesignationId(designation))] =
+        getDesignationName(designation);
+    });
+
+    return map;
+  }, [designations]);
+
+  const employeeDepartment = useCallback(
+    (record) =>
+      record?.department_name ||
+      departmentMap[String(record?.department_id)] ||
+      "-",
     [departmentMap]
   );
-  const rowDesignation = useCallback(
-    (row) =>
-      row?.designation_name || row?.designation || designationMap[String(row?.designation_id)] || "-",
+
+  const employeeDesignation = useCallback(
+    (record) =>
+      record?.designation_name ||
+      record?.designation ||
+      designationMap[String(record?.designation_id)] ||
+      "-",
     [designationMap]
   );
 
-  const toast = useCallback((type, text) => {
+  const showToast = useCallback((type, text) => {
     setMessage({ type, text });
-    window.setTimeout(() => setMessage({ type: "", text: "" }), 3200);
+
+    window.setTimeout(() => {
+      setMessage({ type: "", text: "" });
+    }, 3200);
   }, []);
 
-  const fetchMasterData = useCallback(async () => {
-    const [employeeRes, departmentRes, designationRes] = await Promise.all([
-      axios.get(EMPLOYEES_API),
-      axios.get(DEPARTMENTS_API),
-      axios.get(DESIGNATIONS_API),
-    ]);
-    setEmployees(getList(employeeRes.data));
-    setDepartments(getList(departmentRes.data));
-    setDesignations(getList(designationRes.data));
+  const applyResponseData = useCallback((responseData) => {
+    const data = responseData?.data ?? responseData;
+
+    setEmployees(getList(data?.employees));
+    setDepartments(getList(data?.departments));
+    setDesignations(getList(data?.designations));
   }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+
     try {
-      await fetchMasterData();
+      const response = await axios.get(EMPLOYEE_API);
+      applyResponseData(response.data);
     } catch (error) {
-      console.error("Employee master load error:", error);
+      console.error("Employee load error:", error);
+
       setEmployees([]);
       setDepartments([]);
       setDesignations([]);
-      toast("error", error?.response?.data?.message || error?.response?.data?.error || t.loadError);
+
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.loadError
+      );
     } finally {
       setLoading(false);
     }
-  }, [fetchMasterData, t.loadError, toast]);
+  }, [applyResponseData, showToast, t.loadError]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const update = (field, value) => setForm((previous) => ({ ...previous, [field]: value }));
+  const updateField = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
 
   const openAdd = () => {
     setEditingId(null);
@@ -290,24 +372,34 @@ export default function EmployeePage() {
     setShowForm(true);
   };
 
-  const openEdit = (row) => {
-    setEditingId(employeeId(row));
+  const openEdit = (record) => {
+    setEditingId(getEmployeeId(record));
+
     setForm({
-      full_name: row?.full_name || "",
-      cnic: row?.cnic || "",
-      phone: row?.phone || "",
-      employee_type: employeeType(row?.employee_type),
-      department_id: String(row?.department_id || ""),
-      designation_id: String(row?.designation_id || ""),
-      joining_date: normalizeDate(row?.joining_date),
-      basic_salary: String(row?.basic_salary ?? ""),
+      full_name: record?.full_name || "",
+      cnic: record?.cnic || "",
+      phone: record?.phone || "",
+      employee_type: normalizeType(
+        record?.employee_type
+      ),
+      department_id: String(
+        record?.department_id || ""
+      ),
+      designation_id: String(
+        record?.designation_id || ""
+      ),
+      joining_date: normalizeDate(
+        record?.joining_date
+      ),
     });
+
     setShowDetails(false);
     setShowForm(true);
   };
 
   const closeForm = () => {
     if (submitting) return;
+
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm());
@@ -321,87 +413,178 @@ export default function EmployeePage() {
     department_id: Number(form.department_id),
     designation_id: Number(form.designation_id),
     joining_date: form.joining_date || null,
-    basic_salary: toNumber(form.basic_salary),
   });
 
-  const saveEmployee = async () => {
-    if (!form.full_name.trim() || !form.phone.trim() || !form.employee_type || !form.department_id || !form.designation_id) {
-      toast("error", t.employeeRequired);
-      return;
-    }
-    if (form.employee_type === "Salaried" && toNumber(form.basic_salary) <= 0) {
-      toast("error", t.salaryRequired);
+  const handleSave = async () => {
+    if (
+      !form.full_name.trim() ||
+      !form.phone.trim() ||
+      !form.employee_type ||
+      !form.department_id ||
+      !form.designation_id
+    ) {
+      showToast("error", t.requiredError);
       return;
     }
 
     setSubmitting(true);
+
     try {
       if (editingId) {
-        await axios.put(`${EMPLOYEES_API}/${editingId}`, payload());
-        toast("success", t.employeeUpdated);
+        await axios.put(
+          `${EMPLOYEE_API}/${editingId}`,
+          payload()
+        );
+        showToast("success", t.updated);
       } else {
-        await axios.post(EMPLOYEES_API, payload());
-        toast("success", t.employeeSaved);
+        await axios.post(EMPLOYEE_API, payload());
+        showToast("success", t.saved);
       }
-      closeForm();
-      await fetchMasterData();
+
+      setShowForm(false);
+      setEditingId(null);
+      setForm(emptyForm());
+      await fetchData();
     } catch (error) {
-      const code = error?.response?.data?.code;
-      let text = error?.response?.data?.message || error?.response?.data?.error || t.saveError;
-      if (code === "DUPLICATE_CNIC") text = t.duplicateCnic;
-      if (code === "DUPLICATE_PHONE") text = t.duplicatePhone;
-      toast("error", text);
+      console.error("Employee save error:", error);
+
+      const code =
+        error?.response?.data?.code || "";
+
+      let text =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        t.saveError;
+
+      if (code === "DUPLICATE_CNIC") {
+        text = t.duplicateCnic;
+      } else if (code === "DUPLICATE_PHONE") {
+        text = t.duplicatePhone;
+      }
+
+      showToast("error", text);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const deleteEmployee = async (id) => {
+  const handleDelete = async (recordId) => {
     if (!window.confirm(t.deleteConfirm)) return;
+
     try {
-      await axios.delete(`${EMPLOYEES_API}/${id}`);
+      await axios.delete(
+        `${EMPLOYEE_API}/${recordId}`
+      );
+
       setShowDetails(false);
       setDetailRecord(null);
-      await fetchMasterData();
-      toast("success", t.employeeDeleted);
+      await fetchData();
+      showToast("success", t.deleted);
     } catch (error) {
-      toast("error", error?.response?.data?.message || error?.response?.data?.error || t.deleteError);
+      console.error("Employee delete error:", error);
+
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.deleteError
+      );
     }
   };
 
-  const openMaster = (type) => setMaster({ open: true, type, name: "" });
-  const closeMaster = () => {
-    if (!masterSubmitting) setMaster({ open: false, type: "", name: "" });
+  const openDetails = (record) => {
+    setDetailRecord(record);
+    setShowDetails(true);
   };
 
-  const saveMaster = async () => {
-    const name = master.name.trim();
+  const openMasterModal = (type) => {
+    setMasterModal({
+      open: true,
+      type,
+      name: "",
+    });
+  };
+
+  const closeMasterModal = () => {
+    if (masterSubmitting) return;
+
+    setMasterModal({
+      open: false,
+      type: "",
+      name: "",
+    });
+  };
+
+  const handleMasterSave = async () => {
+    const name = masterModal.name.trim();
+
     if (!name) {
-      toast("error", t.masterRequired);
+      showToast("error", t.masterRequired);
       return;
     }
 
     setMasterSubmitting(true);
+
     try {
-      if (master.type === "department") {
-        const response = await axios.post(DEPARTMENTS_API, {
-          department_name: name,
-          head_of_dept: null,
-          extension_no: null,
-        });
-        await fetchMasterData();
-        if (response?.data?.id) update("department_id", String(response.data.id));
-        toast("success", t.departmentSaved);
-      } else {
-        const response = await axios.post(DESIGNATIONS_API, { designation_name: name });
-        await fetchMasterData();
-        if (response?.data?.id) update("designation_id", String(response.data.id));
-        toast("success", t.designationSaved);
+      const endpoint =
+        masterModal.type === "department"
+          ? "departments"
+          : "designations";
+
+      const requestBody =
+        masterModal.type === "department"
+          ? { department_name: name }
+          : { designation_name: name };
+
+      const response = await axios.post(
+        `${EMPLOYEE_API}/${endpoint}`,
+        requestBody
+      );
+
+      const createdId =
+        response?.data?.id ??
+        response?.data?.data?.id;
+
+      await fetchData();
+
+      if (createdId) {
+        updateField(
+          masterModal.type === "department"
+            ? "department_id"
+            : "designation_id",
+          String(createdId)
+        );
       }
-      closeMaster();
+
+      showToast(
+        "success",
+        masterModal.type === "department"
+          ? t.departmentSaved
+          : t.designationSaved
+      );
+
+      setMasterModal({
+        open: false,
+        type: "",
+        name: "",
+      });
     } catch (error) {
-      const duplicate = error?.response?.status === 409 || error?.response?.data?.code === "ER_DUP_ENTRY";
-      toast("error", duplicate ? t.duplicateMaster : error?.response?.data?.message || t.masterSaveError);
+      console.error("Master save error:", error);
+
+      let text =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        t.masterSaveError;
+
+      if (
+        error?.response?.status === 409 ||
+        error?.response?.data?.code ===
+          "ER_DUP_ENTRY"
+      ) {
+        text = t.duplicateMaster;
+      }
+
+      showToast("error", text);
     } finally {
       setMasterSubmitting(false);
     }
@@ -409,196 +592,963 @@ export default function EmployeePage() {
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
+
     if (!query) return employees;
-    return employees.filter((row) =>
+
+    return employees.filter((record) =>
       [
-        row?.full_name,
-        row?.cnic,
-        row?.phone,
-        row?.employee_type,
-        rowDepartment(row),
-        rowDesignation(row),
-        row?.joining_date,
-        row?.basic_salary,
+        record?.full_name,
+        record?.cnic,
+        record?.phone,
+        record?.employee_type,
+        employeeDepartment(record),
+        employeeDesignation(record),
+        normalizeDate(record?.joining_date),
       ]
         .join(" ")
         .toLowerCase()
         .includes(query)
     );
-  }, [employees, rowDepartment, rowDesignation, search]);
+  }, [
+    employees,
+    search,
+    employeeDepartment,
+    employeeDesignation,
+  ]);
 
   const summary = useMemo(
     () => ({
       total: employees.length,
-      salaried: employees.filter((row) => employeeType(row.employee_type) === "Salaried").length,
-      contractors: employees.filter((row) => employeeType(row.employee_type) === "Contractor").length,
-      totalSalary: filtered.reduce((sum, row) => sum + toNumber(row.basic_salary), 0),
+      salaried: employees.filter(
+        (record) =>
+          normalizeType(record?.employee_type) ===
+          "Salaried"
+      ).length,
+      contractors: employees.filter(
+        (record) =>
+          normalizeType(record?.employee_type) ===
+          "Contractor"
+      ).length,
     }),
-    [employees, filtered]
+    [employees]
   );
 
-  const printDocument = (saveAsPdf = false) => {
-    const rows = filtered
-      .map(
-        (row, index) => `<tr>
-          <td>${index + 1}</td><td>${row.full_name || "-"}</td><td>${row.cnic || "-"}</td>
-          <td>${row.phone || "-"}</td><td>${employeeType(row.employee_type)}</td>
-          <td>${rowDepartment(row)}</td><td>${rowDesignation(row)}</td>
-          <td>${normalizeDate(row.joining_date) || "-"}</td><td>${money(row.basic_salary)}</td>
-        </tr>`
-      )
-      .join("");
-
-    const popup = window.open("", "_blank", "width=1250,height=850");
-    if (!popup) return;
-    popup.document.write(`<!doctype html><html dir="${dir}"><head><title>${t.reportTitle}</title>
-      <style>body{font-family:Arial;padding:20px;color:#0f172a}.head{background:#0f172a;color:white;padding:20px;display:flex;justify-content:space-between}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:white}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}.hint{background:#eef2ff;padding:10px;text-align:center}@media print{@page{size:A4 landscape;margin:8mm}.hint{display:none}body{padding:0}}</style>
-      </head><body>${saveAsPdf ? '<div class="hint">Select <b>Save as PDF</b> in print destination.</div>' : ""}
-      <div class="head"><b>Ali Cage — ${t.reportTitle}</b><span>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-US")}</span></div>
-      <table><thead><tr><th>#</th><th>${t.employeeName}</th><th>${t.cnic}</th><th>${t.phone}</th><th>${t.employeeType}</th><th>${t.department}</th><th>${t.designation}</th><th>${t.joiningDate}</th><th>${t.basicSalary}</th></tr></thead><tbody>${rows || `<tr><td colspan="9">${t.noRecords}</td></tr>`}</tbody></table>
-      <script>window.onload=()=>setTimeout(()=>window.print(),250)</script></body></html>`);
-    popup.document.close();
-  };
-
-  const details = detailRecord
+  const detailItems = detailRecord
     ? [
         [t.employeeName, detailRecord.full_name || "-"],
         [t.cnic, detailRecord.cnic || "-"],
         [t.phone, detailRecord.phone || "-"],
-        [t.employeeType, employeeType(detailRecord.employee_type) === "Contractor" ? t.contractor : t.salaried],
-        [t.department, rowDepartment(detailRecord)],
-        [t.designation, rowDesignation(detailRecord)],
-        [t.joiningDate, normalizeDate(detailRecord.joining_date) || "-"],
-        [t.basicSalary, money(detailRecord.basic_salary)],
+        [
+          t.employeeType,
+          normalizeType(detailRecord.employee_type) ===
+          "Contractor"
+            ? t.contractor
+            : t.salaried,
+        ],
+        [
+          t.department,
+          employeeDepartment(detailRecord),
+        ],
+        [
+          t.designation,
+          employeeDesignation(detailRecord),
+        ],
+        [
+          t.joiningDate,
+          normalizeDate(detailRecord.joining_date) ||
+            "-",
+        ],
       ]
     : [];
 
+  const printDocument = (saveAsPdf = false) => {
+    const rows = filtered
+      .map(
+        (record, index) => `
+          <tr>
+            <td class="center">${index + 1}</td>
+            <td><strong>${record.full_name || "-"}</strong></td>
+            <td>${record.cnic || "-"}</td>
+            <td>${record.phone || "-"}</td>
+            <td>${normalizeType(record.employee_type)}</td>
+            <td>${employeeDepartment(record)}</td>
+            <td>${employeeDesignation(record)}</td>
+            <td class="center">${normalizeDate(
+              record.joining_date
+            ) || "-"}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=1200,height=850"
+    );
+
+    if (!printWindow) return;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="${lang}" dir="${dir}">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${t.reportTitle}</title>
+        <style>
+          *{box-sizing:border-box}
+          body{font-family:Arial,sans-serif;color:#0f172a;padding:20px}
+          .sheet{max-width:1200px;margin:auto;border:1px solid #dbe3ee}
+          .header{background:#0f172a;color:#fff;padding:20px;display:flex;justify-content:space-between}
+          h1{margin:0;font-size:24px}
+          .sub{margin-top:4px;color:#cbd5e1;font-size:12px}
+          .hint{padding:10px;background:#eef2ff;color:#3730a3;text-align:center}
+          table{width:100%;border-collapse:collapse;font-size:11px}
+          th{background:#0f172a;color:#fff;padding:10px 8px;border:1px solid #334155}
+          td{padding:9px 8px;border:1px solid #e2e8f0}
+          tbody tr:nth-child(even){background:#f8fafc}
+          .center{text-align:center}
+          @media print{
+            @page{size:A4 landscape;margin:8mm}
+            body{padding:0}
+            .hint{display:none}
+          }
+        </style>
+      </head>
+      <body>
+        ${
+          saveAsPdf
+            ? `<div class="hint">Select <strong>Save as PDF</strong> in print destination.</div>`
+            : ""
+        }
+
+        <div class="sheet">
+          <div class="header">
+            <div>
+              <h1>Ali Cage</h1>
+              <div class="sub">${t.reportTitle}</div>
+            </div>
+            <div>
+              ${t.printedOn}: ${new Date().toLocaleString(
+      isUrdu ? "ur-PK" : "en-US"
+    )}
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${t.employeeName}</th>
+                <th>${t.cnic}</th>
+                <th>${t.phone}</th>
+                <th>${t.employeeType}</th>
+                <th>${t.department}</th>
+                <th>${t.designation}</th>
+                <th>${t.joiningDate}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                rows ||
+                `<tr><td colspan="8" class="center">${t.noRecords}</td></tr>`
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
   return (
-    <div
-      dir={dir}
-      className={`min-h-full bg-gradient-to-br from-indigo-50 via-slate-50 to-slate-100 p-3 text-slate-900 sm:p-5 ${
-        isUrdu ? "[font-family:'Noto_Nastaliq_Urdu',serif]" : "font-sans"
-      }`}
-    >
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
-      {isUrdu && <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />}
+    <div className="employee-page" dir={dir}>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+      />
+
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+
+      <style>{`
+        *{box-sizing:border-box}
+
+        .employee-page{
+          min-height:100vh;
+          padding:18px;
+          color:#0f172a;
+          background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);
+          font-family:${
+            isUrdu
+              ? "'Noto Nastaliq Urdu',Arial,sans-serif"
+              : "Inter,Helvetica,Arial,sans-serif"
+          };
+        }
+
+        .page-wrap{
+          width:100%;
+          max-width:1220px;
+          margin:0 auto;
+        }
+
+        .top-card{
+          padding:25px 22px 20px;
+          background:rgba(255,255,255,.95);
+          border:1px solid #dbe3ee;
+          border-radius:22px;
+          box-shadow:0 18px 50px rgba(15,23,42,.08);
+        }
+
+        .page-title{
+          margin:0;
+          font-size:30px;
+          font-weight:950;
+          letter-spacing:-.8px;
+        }
+
+        .page-subtitle{
+          margin:7px 0 0;
+          color:#64748b;
+          font-size:13px;
+        }
+
+        .actions{
+          display:flex;
+          flex-wrap:wrap;
+          gap:8px;
+          margin-top:16px;
+        }
+
+        .btn{
+          border:1px solid transparent;
+          border-radius:12px;
+          padding:10px 14px;
+          font-size:13px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:7px;
+          transition:.15s ease;
+          white-space:nowrap;
+        }
+
+        .btn:hover{transform:translateY(-1px)}
+        .btn:disabled{
+          opacity:.55;
+          cursor:not-allowed;
+          transform:none;
+        }
+
+        .btn-white{
+          background:#fff;
+          color:#475569;
+          border-color:#cbd5e1;
+        }
+
+        .btn-summary{
+          background:#eef2ff;
+          color:#4338ca;
+          border-color:#c7d2fe;
+        }
+
+        .btn-dark{
+          background:#0f172a;
+          color:#fff;
+        }
+
+        .btn-primary{
+          background:#4f46e5;
+          color:#fff;
+          box-shadow:0 12px 24px rgba(79,70,229,.25);
+        }
+
+        .btn-danger{
+          background:#fee2e2;
+          color:#991b1b;
+        }
+
+        .btn-add{
+          width:42px;
+          height:42px;
+          padding:0;
+          flex:0 0 auto;
+          background:#ecfdf5;
+          color:#047857;
+          border-color:#bbf7d0;
+        }
+
+        .summary-grid{
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:12px;
+          margin-top:14px;
+        }
+
+        .summary-card{
+          background:#fff;
+          border:1px solid #dbe3ee;
+          border-radius:16px;
+          padding:15px;
+          box-shadow:0 8px 24px rgba(15,23,42,.05);
+        }
+
+        .summary-label{
+          color:#64748b;
+          font-size:10px;
+          font-weight:850;
+          text-transform:uppercase;
+          letter-spacing:.4px;
+        }
+
+        .summary-value{
+          margin-top:6px;
+          color:#0f172a;
+          font-size:21px;
+          font-weight:950;
+        }
+
+        .search-row{margin:14px 0}
+
+        .search-box{
+          position:relative;
+          width:100%;
+          max-width:520px;
+        }
+
+        .search-icon{
+          position:absolute;
+          top:50%;
+          transform:translateY(-50%);
+          color:#94a3b8;
+          ${isUrdu ? "right:14px" : "left:14px"};
+        }
+
+        .search-input{
+          width:100%;
+          height:43px;
+          border:1px solid #cbd5e1;
+          border-radius:12px;
+          background:#fff;
+          color:#334155;
+          font-size:13px;
+          outline:none;
+          ${
+            isUrdu
+              ? "padding:0 42px 0 13px"
+              : "padding:0 13px 0 42px"
+          };
+        }
+
+        .search-input:focus,
+        .field-input:focus,
+        .field-select:focus{
+          border-color:#6366f1;
+          box-shadow:0 0 0 3px rgba(99,102,241,.12);
+        }
+
+        .table-card{
+          overflow:hidden;
+          background:#fff;
+          border:1px solid #dbe3ee;
+          border-radius:18px;
+          box-shadow:0 18px 45px rgba(15,23,42,.07);
+        }
+
+        .employee-table{
+          width:100%;
+          table-layout:fixed;
+          border-collapse:collapse;
+        }
+
+        .employee-table th{
+          padding:14px 9px;
+          background:#0f172a;
+          color:#fff;
+          font-size:9px;
+          font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.4px;
+        }
+
+        .employee-table td{
+          padding:15px 9px;
+          border-bottom:1px solid #e5e7eb;
+          color:#475569;
+          font-size:12px;
+          vertical-align:middle;
+        }
+
+        .employee-table tbody tr:last-child td{
+          border-bottom:0;
+        }
+
+        .employee-table tbody tr:hover td{
+          background:#f8faff;
+        }
+
+        .employee-cell{
+          display:flex;
+          align-items:center;
+          gap:10px;
+          min-width:0;
+        }
+
+        .avatar{
+          width:37px;
+          height:37px;
+          border-radius:12px;
+          flex-shrink:0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#eef2ff;
+          color:#4f46e5;
+          font-weight:950;
+        }
+
+        .employee-copy{min-width:0}
+
+        .employee-name{
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          color:#0f172a;
+          font-weight:900;
+        }
+
+        .employee-phone{
+          margin-top:3px;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          color:#94a3b8;
+          font-size:10px;
+        }
+
+        .pill{
+          display:inline-flex;
+          max-width:100%;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          border:1px solid #e2e8f0;
+          border-radius:999px;
+          padding:6px 9px;
+          background:#f1f5f9;
+          color:#334155;
+          font-size:9px;
+          font-weight:900;
+        }
+
+        .type-salaried{
+          border-color:#bbf7d0;
+          background:#ecfdf5;
+          color:#047857;
+        }
+
+        .type-contractor{
+          border-color:#fed7aa;
+          background:#fff7ed;
+          color:#c2410c;
+        }
+
+        .department-pill{
+          border-color:#c7d2fe;
+          background:#eef2ff;
+          color:#4338ca;
+        }
+
+        .view-btn{
+          border:1px solid #c7d2fe;
+          border-radius:10px;
+          background:#eef2ff;
+          color:#4338ca;
+          padding:8px 10px;
+          font-size:10px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          gap:5px;
+        }
+
+        .empty{
+          padding:50px 20px!important;
+          text-align:center!important;
+          color:#94a3b8!important;
+        }
+
+        .toast{
+          position:fixed;
+          bottom:22px;
+          ${isUrdu ? "left:22px" : "right:22px"};
+          z-index:150;
+          max-width:430px;
+          border-radius:14px;
+          padding:12px 15px;
+          color:#fff;
+          font-size:12px;
+          font-weight:850;
+          box-shadow:0 20px 50px rgba(15,23,42,.25);
+        }
+
+        .toast-success{background:#059669}
+        .toast-error{background:#dc2626}
+
+        .modal-backdrop{
+          position:fixed;
+          inset:0;
+          z-index:100;
+          padding:12px;
+          background:rgba(15,23,42,.62);
+          backdrop-filter:blur(3px);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        }
+
+        .modal{
+          width:100%;
+          max-width:880px;
+          max-height:calc(100vh - 24px);
+          overflow:hidden;
+          background:#fff;
+          border-radius:18px;
+          box-shadow:0 30px 90px rgba(15,23,42,.3);
+          display:flex;
+          flex-direction:column;
+        }
+
+        .details-modal{max-width:760px}
+        .master-modal{max-width:450px}
+
+        .modal-header{
+          padding:17px 19px;
+          border-bottom:1px solid #e2e8f0;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:12px;
+        }
+
+        .modal-title{
+          margin:0;
+          font-size:20px;
+          font-weight:950;
+        }
+
+        .modal-subtitle{
+          margin-top:4px;
+          color:#64748b;
+          font-size:11px;
+        }
+
+        .close-btn{
+          width:36px;
+          height:36px;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          background:#fff;
+          color:#475569;
+          cursor:pointer;
+        }
+
+        .modal-body{
+          padding:18px;
+          overflow-y:auto;
+          background:#f8fafc;
+        }
+
+        .form-grid{
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:12px;
+        }
+
+        .field-label{
+          display:block;
+          margin-bottom:6px;
+          color:#475569;
+          font-size:11px;
+          font-weight:850;
+        }
+
+        .field-input,
+        .field-select{
+          width:100%;
+          height:42px;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          background:#fff;
+          color:#0f172a;
+          padding:0 11px;
+          font-size:13px;
+          outline:none;
+        }
+
+        .select-add-row{
+          display:flex;
+          align-items:center;
+          gap:7px;
+        }
+
+        .select-add-row .field-select{
+          flex:1;
+          min-width:0;
+        }
+
+        .modal-footer{
+          padding:14px 18px;
+          border-top:1px solid #e2e8f0;
+          background:#fff;
+          display:flex;
+          justify-content:flex-end;
+          gap:8px;
+        }
+
+        .details-grid{
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:10px;
+        }
+
+        .detail-card{
+          border:1px solid #dbe3ee;
+          border-radius:12px;
+          padding:12px;
+          background:#fff;
+        }
+
+        .detail-label{
+          color:#94a3b8;
+          font-size:9px;
+          font-weight:850;
+          text-transform:uppercase;
+          letter-spacing:.35px;
+        }
+
+        .detail-value{
+          margin-top:6px;
+          color:#0f172a;
+          font-size:13px;
+          font-weight:900;
+          word-break:break-word;
+        }
+
+        @media(max-width:720px){
+          .employee-page{padding:10px}
+          .top-card{padding:19px 15px}
+          .page-title{font-size:25px}
+          .actions .btn{flex:1}
+
+          .summary-grid,
+          .form-grid,
+          .details-grid{
+            grid-template-columns:1fr;
+          }
+
+          .employee-table th,
+          .employee-table td{
+            padding:12px 4px;
+          }
+
+          .employee-table th{font-size:7px}
+          .employee-phone{display:none}
+          .view-btn span{display:none}
+
+          .modal-footer{
+            flex-direction:column-reverse;
+          }
+
+          .modal-footer .btn{width:100%}
+        }
+      `}</style>
 
       {message.text && (
         <div
-          className={`fixed bottom-5 z-[150] max-w-md rounded-xl px-4 py-3 text-sm font-bold text-white shadow-2xl ${
-            isUrdu ? "left-5" : "right-5"
-          } ${message.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}
+          className={`toast ${
+            message.type === "error"
+              ? "toast-error"
+              : "toast-success"
+          }`}
         >
           {message.text}
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-[1220px]">
-        <section className="rounded-[22px] border border-slate-200 bg-white/95 px-5 py-6 shadow-xl shadow-slate-900/5">
-          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{t.title}</h1>
-          <p className="mt-2 text-sm text-slate-500">{t.subtitle}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button className="border border-slate-300 bg-white text-slate-600" onClick={() => setLang(isUrdu ? "en" : "ur")}>
-              <i className="bi bi-translate" /> {t.toggleLang}
-            </Button>
-            <Button className="border border-indigo-200 bg-indigo-50 text-indigo-700" onClick={() => setShowSummary((value) => !value)}>
-              <i className="bi bi-bar-chart-fill" /> {showSummary ? t.hideSummary : t.viewSummary}
-            </Button>
-            <Button className="bg-slate-900 text-white" disabled={!filtered.length} onClick={() => printDocument(false)}>
-              <i className="bi bi-printer" /> {t.printList}
-            </Button>
-            <Button className="border border-slate-300 bg-white text-slate-600" disabled={!filtered.length} onClick={() => printDocument(true)}>
-              <i className="bi bi-file-earmark-pdf" /> {t.downloadPdf}
-            </Button>
-            <Button className="border border-slate-300 bg-white text-slate-600" onClick={fetchData}>
-              <i className="bi bi-arrow-clockwise" /> {t.refresh}
-            </Button>
-            <Button className="bg-indigo-600 text-white shadow-lg shadow-indigo-600/25" onClick={openAdd}>
-              <i className="bi bi-person-plus-fill" /> {t.newEmployee}
-            </Button>
+      <div className="page-wrap">
+        <section className="top-card">
+          <h1 className="page-title">{t.title}</h1>
+          <p className="page-subtitle">
+            {t.subtitle}
+          </p>
+
+          <div className="actions">
+            <button
+              type="button"
+              className="btn btn-white"
+              onClick={() =>
+                setLang((previous) =>
+                  previous === "en" ? "ur" : "en"
+                )
+              }
+            >
+              <i className="bi bi-translate" />
+              {t.toggleLang}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-summary"
+              onClick={() =>
+                setShowSummary((previous) => !previous)
+              }
+            >
+              <i className="bi bi-bar-chart-fill" />
+              {showSummary
+                ? t.hideSummary
+                : t.viewSummary}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-dark"
+              disabled={!filtered.length}
+              onClick={() => printDocument(false)}
+            >
+              <i className="bi bi-printer" />
+              {t.printList}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-white"
+              disabled={!filtered.length}
+              onClick={() => printDocument(true)}
+            >
+              <i className="bi bi-file-earmark-pdf" />
+              {t.downloadPdf}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-white"
+              onClick={fetchData}
+            >
+              <i className="bi bi-arrow-clockwise" />
+              {t.refresh}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={openAdd}
+            >
+              <i className="bi bi-person-plus-fill" />
+              {t.newEmployee}
+            </button>
           </div>
         </section>
 
         {showSummary && (
-          <section className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              [t.totalEmployees, summary.total],
-              [t.salariedEmployees, summary.salaried],
-              [t.contractorEmployees, summary.contractors],
-              [t.totalSalary, money(summary.totalSalary)],
-            ].map(([label, value]) => (
-              <article key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
-                <p className="mt-2 text-2xl font-black text-slate-800">{value}</p>
-              </article>
-            ))}
+          <section className="summary-grid">
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.totalEmployees}
+              </div>
+              <div className="summary-value">
+                {summary.total}
+              </div>
+            </article>
+
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.salariedEmployees}
+              </div>
+              <div className="summary-value">
+                {summary.salaried}
+              </div>
+            </article>
+
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.contractorEmployees}
+              </div>
+              <div className="summary-value">
+                {summary.contractors}
+              </div>
+            </article>
           </section>
         )}
 
-        <div className="relative my-4 max-w-xl">
-          <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-4" : "left-4"}`} />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={t.searchPlaceholder}
-            className={`h-11 w-full rounded-xl border border-slate-300 bg-white text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
-              isUrdu ? "pl-4 pr-11" : "pl-11 pr-4"
-            }`}
-          />
+        <div className="search-row">
+          <div className="search-box">
+            <i className="bi bi-search search-icon" />
+
+            <input
+              className="search-input"
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder={t.searchPlaceholder}
+            />
+          </div>
         </div>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5">
-          <table className="w-full table-fixed">
+        <section className="table-card">
+          <table className="employee-table">
             <colgroup>
-              <col className="w-[6%]" /><col className="w-[30%]" /><col className="w-[14%]" />
-              <col className="w-[18%]" /><col className="w-[18%]" /><col className="w-[14%]" />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "30%" }} />
+              <col style={{ width: "14%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "14%" }} />
             </colgroup>
-            <thead className="bg-slate-900 text-white">
-              <tr className="text-[9px] font-black uppercase tracking-wide">
-                <th className="px-2 py-4 text-center">#</th>
-                <th className={`px-2 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.employee}</th>
-                <th className="px-2 py-4 text-center">{t.employeeType}</th>
-                <th className="px-2 py-4 text-center">{t.department}</th>
-                <th className="px-2 py-4 text-center">{t.designation}</th>
-                <th className="px-2 py-4 text-center">{t.viewDetails}</th>
+
+            <thead>
+              <tr>
+                <th style={{ textAlign: "center" }}>
+                  #
+                </th>
+                <th
+                  style={{
+                    textAlign: isUrdu
+                      ? "right"
+                      : "left",
+                  }}
+                >
+                  {t.employee}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.employeeType}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.department}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.designation}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.viewDetails}
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+
+            <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-14 text-center text-sm text-slate-400">{t.loading}</td></tr>
+                <tr>
+                  <td colSpan="6" className="empty">
+                    <i className="bi bi-arrow-repeat" />{" "}
+                    {t.loading}
+                  </td>
+                </tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-14 text-center text-sm text-slate-400">{t.noRecords}</td></tr>
+                <tr>
+                  <td colSpan="6" className="empty">
+                    <i className="bi bi-inbox" />{" "}
+                    {t.noRecords}
+                  </td>
+                </tr>
               ) : (
-                filtered.map((row, index) => {
-                  const type = employeeType(row.employee_type);
+                filtered.map((record, index) => {
+                  const type = normalizeType(
+                    record.employee_type
+                  );
+
                   return (
-                    <tr key={employeeId(row)} className="hover:bg-indigo-50/40">
-                      <td className="px-2 py-4 text-center text-xs text-slate-400">{index + 1}</td>
-                      <td className="px-2 py-4">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 font-black text-indigo-600">
-                            {(row.full_name || "?").charAt(0).toUpperCase()}
+                    <tr key={getEmployeeId(record)}>
+                      <td
+                        style={{
+                          textAlign: "center",
+                          color: "#94a3b8",
+                        }}
+                      >
+                        {index + 1}
+                      </td>
+
+                      <td>
+                        <div className="employee-cell">
+                          <div className="avatar">
+                            {(record.full_name || "?")
+                              .charAt(0)
+                              .toUpperCase()}
                           </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-black text-slate-800">{row.full_name || "-"}</p>
-                            <p className="truncate text-[10px] font-semibold text-slate-400">{row.phone || "-"}</p>
+
+                          <div className="employee-copy">
+                            <div className="employee-name">
+                              {record.full_name || "-"}
+                            </div>
+                            <div className="employee-phone">
+                              {record.phone || "-"}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-2 py-4 text-center">
-                        <span className={`inline-flex rounded-full border px-2 py-1 text-[9px] font-black ${
-                          type === "Contractor"
-                            ? "border-orange-200 bg-orange-50 text-orange-700"
-                            : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        }`}>
-                          {type === "Contractor" ? t.contractor : t.salaried}
+
+                      <td
+                        style={{ textAlign: "center" }}
+                      >
+                        <span
+                          className={`pill ${
+                            type === "Contractor"
+                              ? "type-contractor"
+                              : "type-salaried"
+                          }`}
+                        >
+                          {type === "Contractor"
+                            ? t.contractor
+                            : t.salaried}
                         </span>
                       </td>
-                      <td className="px-2 py-4 text-center"><span className="inline-flex max-w-full truncate rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1 text-[9px] font-black text-indigo-700">{rowDepartment(row)}</span></td>
-                      <td className="px-2 py-4 text-center"><span className="inline-flex max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-black text-slate-600">{rowDesignation(row)}</span></td>
-                      <td className="px-2 py-4 text-center">
-                        <button className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[10px] font-black text-indigo-700" onClick={() => { setDetailRecord(row); setShowDetails(true); }}>
-                          <i className="bi bi-eye-fill" /><span className="hidden sm:inline">{t.viewDetails}</span>
+
+                      <td
+                        style={{ textAlign: "center" }}
+                      >
+                        <span className="pill department-pill">
+                          {employeeDepartment(record)}
+                        </span>
+                      </td>
+
+                      <td
+                        style={{ textAlign: "center" }}
+                      >
+                        <span className="pill">
+                          {employeeDesignation(record)}
+                        </span>
+                      </td>
+
+                      <td
+                        style={{ textAlign: "center" }}
+                      >
+                        <button
+                          type="button"
+                          className="view-btn"
+                          onClick={() =>
+                            openDetails(record)
+                          }
+                        >
+                          <i className="bi bi-eye-fill" />
+                          <span>
+                            {t.viewDetails}
+                          </span>
                         </button>
                       </td>
                     </tr>
@@ -611,110 +1561,494 @@ export default function EmployeePage() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && closeForm()}>
-          <div dir={dir} className="flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div><h2 className="text-xl font-black">{editingId ? t.editEmployeeTitle : t.addEmployeeTitle}</h2><p className="mt-1 text-xs text-slate-500">{t.employeeFormSubtitle}</p></div>
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200" onClick={closeForm}><i className="bi bi-x-lg" /></button>
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              closeForm();
+            }
+          }}
+        >
+          <div className="modal" dir={dir}>
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">
+                  {editingId
+                    ? t.editEmployeeTitle
+                    : t.addEmployeeTitle}
+                </h2>
+                <div className="modal-subtitle">
+                  {t.formSubtitle}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="close-btn"
+                onClick={closeForm}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
             </div>
 
-            <div className="overflow-y-auto bg-slate-50 p-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={`${t.employeeName} *`}><input className="field" value={form.full_name} onChange={(e) => update("full_name", e.target.value)} /></Field>
-                <Field label={t.cnicOptional}><input className="field" placeholder="XXXXX-XXXXXXX-X" value={form.cnic} onChange={(e) => update("cnic", e.target.value)} /></Field>
-                <Field label={`${t.phone} *`}><input className="field" placeholder="03XX-XXXXXXX" value={form.phone} onChange={(e) => update("phone", e.target.value)} /></Field>
-                <Field label={`${t.employeeType} *`}>
-                  <select className="field" value={form.employee_type} onChange={(e) => update("employee_type", e.target.value)}>
-                    <option value="">{t.selectType}</option><option value="Salaried">{t.salaried}</option><option value="Contractor">{t.contractor}</option>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <label className="field-label">
+                    {t.employeeName} *
+                  </label>
+
+                  <input
+                    className="field-input"
+                    value={form.full_name}
+                    onChange={(event) =>
+                      updateField(
+                        "full_name",
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.cnicOptional}
+                  </label>
+
+                  <input
+                    className="field-input"
+                    value={form.cnic}
+                    placeholder="XXXXX-XXXXXXX-X"
+                    onChange={(event) =>
+                      updateField(
+                        "cnic",
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.phone} *
+                  </label>
+
+                  <input
+                    className="field-input"
+                    value={form.phone}
+                    placeholder="03XX-XXXXXXX"
+                    onChange={(event) =>
+                      updateField(
+                        "phone",
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.employeeType} *
+                  </label>
+
+                  <select
+                    className="field-select"
+                    value={form.employee_type}
+                    onChange={(event) =>
+                      updateField(
+                        "employee_type",
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="">
+                      {t.selectType}
+                    </option>
+                    <option value="Salaried">
+                      {t.salaried}
+                    </option>
+                    <option value="Contractor">
+                      {t.contractor}
+                    </option>
                   </select>
-                </Field>
+                </div>
 
-                <Field label={`${t.department} *`}>
-                  <div className="flex gap-2">
-                    <select className="field min-w-0 flex-1" value={form.department_id} onChange={(e) => update("department_id", e.target.value)}>
-                      <option value="">{t.selectDepartment}</option>
-                      {departments.map((row) => <option key={departmentId(row)} value={departmentId(row)}>{departmentName(row)}</option>)}
+                <div>
+                  <label className="field-label">
+                    {t.department} *
+                  </label>
+
+                  <div className="select-add-row">
+                    <select
+                      className="field-select"
+                      value={form.department_id}
+                      onChange={(event) =>
+                        updateField(
+                          "department_id",
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="">
+                        {t.selectDepartment}
+                      </option>
+
+                      {departments.map(
+                        (department) => (
+                          <option
+                            key={getDepartmentId(
+                              department
+                            )}
+                            value={getDepartmentId(
+                              department
+                            )}
+                          >
+                            {getDepartmentName(
+                              department
+                            )}
+                          </option>
+                        )
+                      )}
                     </select>
-                    <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700" title={t.addDepartment} onClick={() => openMaster("department")}><i className="bi bi-plus-lg" /></button>
-                  </div>
-                  {!loading && departments.length === 0 && <p className="mt-1 text-[10px] text-red-500">{t.noDepartments}</p>}
-                </Field>
 
-                <Field label={`${t.designation} *`}>
-                  <div className="flex gap-2">
-                    <select className="field min-w-0 flex-1" value={form.designation_id} onChange={(e) => update("designation_id", e.target.value)}>
-                      <option value="">{t.selectDesignation}</option>
-                      {designations.map((row) => <option key={designationId(row)} value={designationId(row)}>{designationName(row)}</option>)}
+                    <button
+                      type="button"
+                      className="btn btn-add"
+                      title={t.addDepartment}
+                      onClick={() =>
+                        openMasterModal(
+                          "department"
+                        )
+                      }
+                    >
+                      <i className="bi bi-plus-lg" />
+                    </button>
+                  </div>
+
+                  {!loading &&
+                    departments.length === 0 && (
+                      <div
+                        style={{
+                          marginTop: 5,
+                          color: "#dc2626",
+                          fontSize: 10,
+                        }}
+                      >
+                        {t.noDepartments}
+                      </div>
+                    )}
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.designation} *
+                  </label>
+
+                  <div className="select-add-row">
+                    <select
+                      className="field-select"
+                      value={form.designation_id}
+                      onChange={(event) =>
+                        updateField(
+                          "designation_id",
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="">
+                        {t.selectDesignation}
+                      </option>
+
+                      {designations.map(
+                        (designation) => (
+                          <option
+                            key={getDesignationId(
+                              designation
+                            )}
+                            value={getDesignationId(
+                              designation
+                            )}
+                          >
+                            {getDesignationName(
+                              designation
+                            )}
+                          </option>
+                        )
+                      )}
                     </select>
-                    <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700" title={t.addDesignation} onClick={() => openMaster("designation")}><i className="bi bi-plus-lg" /></button>
-                  </div>
-                  {!loading && designations.length === 0 && <p className="mt-1 text-[10px] text-red-500">{t.noDesignations}</p>}
-                </Field>
 
-                <Field label={t.joiningDate}><input type="date" className="field" value={form.joining_date} onChange={(e) => update("joining_date", e.target.value)} /></Field>
-                <Field label={`${t.basicSalary}${form.employee_type === "Salaried" ? " *" : ""}`}>
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2"><input type="number" min="0" step="0.01" className="field" value={form.basic_salary} onChange={(e) => update("basic_salary", e.target.value)} /></div>
-                </Field>
+                    <button
+                      type="button"
+                      className="btn btn-add"
+                      title={t.addDesignation}
+                      onClick={() =>
+                        openMasterModal(
+                          "designation"
+                        )
+                      }
+                    >
+                      <i className="bi bi-plus-lg" />
+                    </button>
+                  </div>
+
+                  {!loading &&
+                    designations.length === 0 && (
+                      <div
+                        style={{
+                          marginTop: 5,
+                          color: "#dc2626",
+                          fontSize: 10,
+                        }}
+                      >
+                        {t.noDesignations}
+                      </div>
+                    )}
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.joiningDate}
+                  </label>
+
+                  <input
+                    type="date"
+                    className="field-input"
+                    value={form.joining_date}
+                    onChange={(event) =>
+                      updateField(
+                        "joining_date",
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
-              <Button className="border border-slate-300 bg-white text-slate-600" disabled={submitting} onClick={closeForm}>{t.cancel}</Button>
-              <Button className="bg-indigo-600 text-white" disabled={submitting} onClick={saveEmployee}><i className="bi bi-check2-circle" />{submitting ? t.saving : editingId ? t.updateEmployee : t.saveEmployee}</Button>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-white"
+                disabled={submitting}
+                onClick={closeForm}
+              >
+                {t.cancel}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={submitting}
+                onClick={handleSave}
+              >
+                <i
+                  className={`bi ${
+                    submitting
+                      ? "bi-arrow-repeat"
+                      : "bi-check2-circle"
+                  }`}
+                />
+
+                {submitting
+                  ? t.saving
+                  : editingId
+                  ? t.updateEmployee
+                  : t.saveEmployee}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {showDetails && detailRecord && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && setShowDetails(false)}>
-          <div dir={dir} className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div><h2 className="text-xl font-black">{t.employeeDetails}</h2><p className="mt-1 text-xs text-slate-500">{detailRecord.full_name}</p></div>
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200" onClick={() => setShowDetails(false)}><i className="bi bi-x-lg" /></button>
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              setShowDetails(false);
+            }
+          }}
+        >
+          <div
+            className="modal details-modal"
+            dir={dir}
+          >
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">
+                  {t.detailsTitle}
+                </h2>
+                <div className="modal-subtitle">
+                  {detailRecord.full_name || "-"}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() =>
+                  setShowDetails(false)
+                }
+              >
+                <i className="bi bi-x-lg" />
+              </button>
             </div>
-            <div className="grid gap-3 overflow-y-auto bg-slate-50 p-4 sm:grid-cols-2">
-              {details.map(([label, value]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-2 break-words text-sm font-black text-slate-800">{value}</p></div>)}
+
+            <div className="modal-body">
+              <div className="details-grid">
+                {detailItems.map(([label, value]) => (
+                  <div
+                    className="detail-card"
+                    key={label}
+                  >
+                    <div className="detail-label">
+                      {label}
+                    </div>
+                    <div className="detail-value">
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
-              <Button className="border border-slate-300 bg-white text-slate-600" onClick={() => setShowDetails(false)}>{t.close}</Button>
-              <Button className="border border-indigo-200 bg-indigo-50 text-indigo-700" onClick={() => openEdit(detailRecord)}><i className="bi bi-pencil-square" />{t.edit}</Button>
-              <Button className="bg-red-100 text-red-700" onClick={() => deleteEmployee(employeeId(detailRecord))}><i className="bi bi-trash3" />{t.delete}</Button>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-white"
+                onClick={() =>
+                  setShowDetails(false)
+                }
+              >
+                {t.close}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-summary"
+                onClick={() =>
+                  openEdit(detailRecord)
+                }
+              >
+                <i className="bi bi-pencil-square" />
+                {t.edit}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() =>
+                  handleDelete(
+                    getEmployeeId(detailRecord)
+                  )
+                }
+              >
+                <i className="bi bi-trash3" />
+                {t.delete}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {master.open && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/65 p-3 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && closeMaster()}>
-          <div dir={dir} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div><h2 className="text-lg font-black">{master.type === "department" ? t.addDepartment : t.addDesignation}</h2><p className="mt-1 text-xs text-slate-500">{t.addMasterTitle}</p></div>
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200" onClick={closeMaster}><i className="bi bi-x-lg" /></button>
+      {masterModal.open && (
+        <div
+          className="modal-backdrop"
+          style={{ zIndex: 130 }}
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              closeMasterModal();
+            }
+          }}
+        >
+          <div
+            className="modal master-modal"
+            dir={dir}
+          >
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">
+                  {masterModal.type ===
+                  "department"
+                    ? t.addDepartment
+                    : t.addDesignation}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="close-btn"
+                onClick={closeMasterModal}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
             </div>
-            <div className="bg-slate-50 p-5">
-              <Field label={`${master.type === "department" ? t.departmentName : t.designationName} *`}>
-                <input autoFocus className="field" value={master.name} onChange={(e) => setMaster((previous) => ({ ...previous, name: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && saveMaster()} />
-              </Field>
+
+            <div className="modal-body">
+              <label className="field-label">
+                {masterModal.type ===
+                "department"
+                  ? t.departmentName
+                  : t.designationName}{" "}
+                *
+              </label>
+
+              <input
+                autoFocus
+                className="field-input"
+                value={masterModal.name}
+                onChange={(event) =>
+                  setMasterModal((previous) => ({
+                    ...previous,
+                    name: event.target.value,
+                  }))
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleMasterSave();
+                  }
+                }}
+              />
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
-              <Button className="border border-slate-300 bg-white text-slate-600" disabled={masterSubmitting} onClick={closeMaster}>{t.cancel}</Button>
-              <Button className="bg-indigo-600 text-white" disabled={masterSubmitting} onClick={saveMaster}>{masterSubmitting ? t.saving : t.save}</Button>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-white"
+                disabled={masterSubmitting}
+                onClick={closeMasterModal}
+              >
+                {t.cancel}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={masterSubmitting}
+                onClick={handleMasterSave}
+              >
+                <i
+                  className={`bi ${
+                    masterSubmitting
+                      ? "bi-arrow-repeat"
+                      : "bi-check2-circle"
+                  }`}
+                />
+
+                {masterSubmitting
+                  ? t.saving
+                  : t.save}
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      <style>{`.field{height:44px;width:100%;border:1px solid #cbd5e1;border-radius:12px;background:#fff;padding:0 12px;font-size:13px;outline:none}.field:focus{border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.1)}`}</style>
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <div className="min-w-0">
-      <label className="mb-1.5 block text-[11px] font-bold text-slate-600">{label}</label>
-      {children}
     </div>
   );
 }
