@@ -1,162 +1,163 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-const API_ROOT = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-).replace(/\/$/, "");
-
+const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 const EMPLOYEES_API = `${API_ROOT}/api/employees`;
 const DEPARTMENTS_API = `${API_ROOT}/api/departments`;
+const DESIGNATIONS_API = `${API_ROOT}/api/designations`;
 
 const LANG = {
   en: {
     title: "Employee Registration",
-    subtitle:
-      "Manage company employees, departments, designations and salaries",
-    addBtn: "New Employee",
-    searchPlaceholder:
-      "Search by name, designation, department, CNIC or phone...",
-    toggleLang: "اردو",
+    subtitle: "Manage salaried and contractor employees, departments and designations",
+    newEmployee: "New Employee",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
-    printBtn: "Print List",
-    pdfBtn: "Download PDF",
+    printList: "Print List",
+    downloadPdf: "Download PDF",
     refresh: "Refresh",
-
+    toggleLang: "اردو",
+    searchPlaceholder: "Search employee, CNIC, phone, type, department or designation...",
     employee: "Employee",
-    designation: "Designation",
-    department: "Department",
-    viewDetails: "View Details",
-    actions: "Actions",
-    status: "Status",
-    active: "Active",
-
-    totalEmployees: "Total Employees",
-    visibleRecords: "Visible Records",
-    totalSalary: "Total Basic Salary",
-
-    fullName: "Full Name",
-    fatherName: "Father Name",
+    employeeName: "Employee Name",
     cnic: "CNIC",
-    phone: "Phone No",
-    selectDepartment: "-- Select Department --",
+    cnicOptional: "CNIC (Optional)",
+    phone: "Phone Number",
+    employeeType: "Employee Type",
+    salaried: "Salaried",
+    contractor: "Contractor",
+    department: "Department",
+    designation: "Designation",
     joiningDate: "Joining Date",
-    basicSalary: "Basic Salary",
-
+    basicSalary: "Basic Salary / Rate",
+    viewDetails: "View Details",
+    selectType: "-- Select Type --",
+    selectDepartment: "-- Select Department --",
+    selectDesignation: "-- Select Designation --",
+    addDepartment: "Add Department",
+    addDesignation: "Add Designation",
+    departmentName: "Department Name",
+    designationName: "Designation Name",
+    totalEmployees: "Total Employees",
+    salariedEmployees: "Salaried Employees",
+    contractorEmployees: "Contractors",
+    totalSalary: "Total Salary / Rate",
     employeeDetails: "Employee Details",
-    formSubtitle:
-      "Employee personal, employment and salary information",
-    addTitle: "New Employee",
-    editTitle: "Edit Employee",
-    detailsTitle: "Employee Details",
-
-    save: "Save Employee",
-    update: "Update Employee",
+    addEmployeeTitle: "New Employee",
+    editEmployeeTitle: "Edit Employee",
+    employeeFormSubtitle: "Enter employee identity, employment type and job information",
+    addMasterTitle: "Add New Option",
+    save: "Save",
+    saveEmployee: "Save Employee",
+    updateEmployee: "Update Employee",
     saving: "Saving...",
     cancel: "Cancel",
     close: "Close",
     edit: "Edit",
     delete: "Delete",
-
-    notes: "Information",
-    noRecords: "No employees found.",
-    noDepartments: "No departments found from backend.",
     loading: "Loading employees...",
-    loadError: "Employees could not be loaded from backend.",
+    noRecords: "No employees found.",
+    noDepartments: "No departments found.",
+    noDesignations: "No designations found.",
+    loadError: "Employee master data could not be loaded.",
+    employeeRequired: "Employee name, phone, type, department and designation are required.",
+    salaryRequired: "Basic salary is required for a salaried employee.",
+    masterRequired: "Name is required.",
     saveError: "Employee could not be saved.",
+    masterSaveError: "New option could not be saved.",
     deleteError: "Employee could not be deleted.",
-    requiredError:
-      "Full name, designation and department are required.",
-    successSave: "Employee saved successfully.",
-    successUpdate: "Employee updated successfully.",
-    successDelete: "Employee deleted successfully.",
-    deleteConfirm:
-      "Are you sure you want to delete this employee?",
-
-    reportHeader: "Employees List",
+    employeeSaved: "Employee saved successfully.",
+    employeeUpdated: "Employee updated successfully.",
+    employeeDeleted: "Employee deleted successfully.",
+    departmentSaved: "Department added successfully.",
+    designationSaved: "Designation added successfully.",
+    duplicateCnic: "An employee with this CNIC already exists.",
+    duplicatePhone: "An employee with this phone number already exists.",
+    duplicateMaster: "This option already exists.",
+    deleteConfirm: "Are you sure you want to delete this employee?",
+    reportTitle: "Employee List",
     printedOn: "Printed On",
   },
-
   ur: {
     title: "ملازمین کی رجسٹریشن",
-    subtitle:
-      "کمپنی کے ملازمین، محکموں، عہدوں اور تنخواہوں کا انتظام کریں",
-    addBtn: "نیا ملازم",
-    searchPlaceholder:
-      "نام، عہدہ، محکمہ، شناختی کارڈ یا فون سے تلاش کریں...",
-    toggleLang: "English",
+    subtitle: "تنخواہ دار اور کنٹریکٹر ملازمین، محکموں اور عہدوں کا انتظام کریں",
+    newEmployee: "نیا ملازم",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
-    printBtn: "فہرست پرنٹ کریں",
-    pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
+    printList: "فہرست پرنٹ کریں",
+    downloadPdf: "پی ڈی ایف ڈاؤنلوڈ",
     refresh: "ری فریش",
-
+    toggleLang: "English",
+    searchPlaceholder: "ملازم، شناختی کارڈ، فون، قسم، محکمہ یا عہدے سے تلاش کریں...",
     employee: "ملازم",
-    designation: "عہدہ",
-    department: "محکمہ",
-    viewDetails: "تفصیل دیکھیں",
-    actions: "ایکشن",
-    status: "حالت",
-    active: "فعال",
-
-    totalEmployees: "کل ملازمین",
-    visibleRecords: "نظر آنے والے ریکارڈ",
-    totalSalary: "کل بنیادی تنخواہ",
-
-    fullName: "پورا نام",
-    fatherName: "والد کا نام",
-    cnic: "شناختی کارڈ نمبر",
+    employeeName: "ملازم کا نام",
+    cnic: "شناختی کارڈ",
+    cnicOptional: "شناختی کارڈ (اختیاری)",
     phone: "فون نمبر",
-    selectDepartment: "-- محکمہ منتخب کریں --",
+    employeeType: "ملازم کی قسم",
+    salaried: "تنخواہ دار",
+    contractor: "کنٹریکٹر",
+    department: "محکمہ",
+    designation: "عہدہ",
     joiningDate: "تاریخ شمولیت",
-    basicSalary: "بنیادی تنخواہ",
-
+    basicSalary: "بنیادی تنخواہ / ریٹ",
+    viewDetails: "تفصیل دیکھیں",
+    selectType: "-- قسم منتخب کریں --",
+    selectDepartment: "-- محکمہ منتخب کریں --",
+    selectDesignation: "-- عہدہ منتخب کریں --",
+    addDepartment: "محکمہ شامل کریں",
+    addDesignation: "عہدہ شامل کریں",
+    departmentName: "محکمے کا نام",
+    designationName: "عہدے کا نام",
+    totalEmployees: "کل ملازمین",
+    salariedEmployees: "تنخواہ دار ملازمین",
+    contractorEmployees: "کنٹریکٹر",
+    totalSalary: "کل تنخواہ / ریٹ",
     employeeDetails: "ملازم کی تفصیل",
-    formSubtitle:
-      "ملازم کی ذاتی، ملازمت اور تنخواہ کی معلومات",
-    addTitle: "نیا ملازم",
-    editTitle: "ملازم میں ترمیم",
-    detailsTitle: "ملازم کی مکمل تفصیل",
-
-    save: "ملازم محفوظ کریں",
-    update: "ملازم اپڈیٹ کریں",
+    addEmployeeTitle: "نیا ملازم",
+    editEmployeeTitle: "ملازم میں ترمیم",
+    employeeFormSubtitle: "ملازم کی شناخت، ملازمت کی قسم اور جاب کی معلومات درج کریں",
+    addMasterTitle: "نیا آپشن شامل کریں",
+    save: "محفوظ کریں",
+    saveEmployee: "ملازم محفوظ کریں",
+    updateEmployee: "ملازم اپڈیٹ کریں",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
     close: "بند کریں",
     edit: "ترمیم",
     delete: "حذف",
-
-    notes: "معلومات",
-    noRecords: "کوئی ملازم نہیں ملا۔",
-    noDepartments: "بیک اینڈ سے کوئی محکمہ نہیں ملا۔",
     loading: "ملازمین لوڈ ہو رہے ہیں...",
-    loadError: "بیک اینڈ سے ملازمین لوڈ نہیں ہوئے۔",
+    noRecords: "کوئی ملازم نہیں ملا۔",
+    noDepartments: "کوئی محکمہ نہیں ملا۔",
+    noDesignations: "کوئی عہدہ نہیں ملا۔",
+    loadError: "ملازمین کا ماسٹر ڈیٹا لوڈ نہیں ہوا۔",
+    employeeRequired: "ملازم کا نام، فون، قسم، محکمہ اور عہدہ ضروری ہیں۔",
+    salaryRequired: "تنخواہ دار ملازم کے لیے بنیادی تنخواہ ضروری ہے۔",
+    masterRequired: "نام درج کرنا ضروری ہے۔",
     saveError: "ملازم محفوظ نہیں ہوا۔",
+    masterSaveError: "نیا آپشن محفوظ نہیں ہوا۔",
     deleteError: "ملازم حذف نہیں ہوا۔",
-    requiredError: "پورا نام، عہدہ اور محکمہ ضروری ہیں۔",
-    successSave: "ملازم کامیابی سے محفوظ ہو گیا۔",
-    successUpdate: "ملازم کامیابی سے اپڈیٹ ہو گیا۔",
-    successDelete: "ملازم کامیابی سے حذف ہو گیا۔",
-    deleteConfirm:
-      "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
-
-    reportHeader: "ملازمین کی فہرست",
+    employeeSaved: "ملازم کامیابی سے محفوظ ہو گیا۔",
+    employeeUpdated: "ملازم کامیابی سے اپڈیٹ ہو گیا۔",
+    employeeDeleted: "ملازم کامیابی سے حذف ہو گیا۔",
+    departmentSaved: "محکمہ کامیابی سے شامل ہو گیا۔",
+    designationSaved: "عہدہ کامیابی سے شامل ہو گیا۔",
+    duplicateCnic: "اس شناختی کارڈ کے ساتھ ملازم پہلے سے موجود ہے۔",
+    duplicatePhone: "اس فون نمبر کے ساتھ ملازم پہلے سے موجود ہے۔",
+    duplicateMaster: "یہ آپشن پہلے سے موجود ہے۔",
+    deleteConfirm: "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
+    reportTitle: "ملازمین کی فہرست",
     printedOn: "پرنٹ کی تاریخ",
   },
 };
 
-const createEmptyForm = () => ({
+const emptyForm = () => ({
   full_name: "",
-  father_name: "",
   cnic: "",
   phone: "",
-  designation: "",
+  employee_type: "",
   department_id: "",
+  designation_id: "",
   joining_date: "",
   basic_salary: "",
 });
@@ -168,6 +169,7 @@ const getList = (value) => {
   if (Array.isArray(value?.result)) return value.result;
   if (Array.isArray(value?.employees)) return value.employees;
   if (Array.isArray(value?.departments)) return value.departments;
+  if (Array.isArray(value?.designations)) return value.designations;
   return [];
 };
 
@@ -177,31 +179,29 @@ const toNumber = (value) => {
 };
 
 const money = (value) =>
-  toNumber(value).toLocaleString("en-PK", {
+  toNumber(value).toLocaleString("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
 
-const getDepartmentId = (department) =>
-  department?.id ?? department?.department_id ?? "";
+const normalizeDate = (value) => (value ? String(value).slice(0, 10) : "");
+const employeeId = (row) => row?.id ?? row?.employee_id ?? "";
+const departmentId = (row) => row?.id ?? row?.department_id ?? "";
+const departmentName = (row) => row?.department_name ?? row?.name ?? "";
+const designationId = (row) => row?.id ?? row?.designation_id ?? "";
+const designationName = (row) => row?.designation_name ?? row?.designation ?? row?.name ?? "";
+const employeeType = (value) =>
+  String(value || "").toLowerCase() === "contractor" ? "Contractor" : "Salaried";
 
-const getDepartmentLabel = (department) =>
-  department?.department_name ??
-  department?.name ??
-  department?.name_en ??
-  "";
-
-const getEmployeeId = (record) =>
-  record?.id ?? record?.employee_id ?? "";
-
-const normalizeDate = (value) => {
-  if (!value) return "";
-
-  const stringValue = String(value);
-  return stringValue.includes("T")
-    ? stringValue.slice(0, 10)
-    : stringValue.slice(0, 10);
-};
+const Button = ({ children, className = "", ...props }) => (
+  <button
+    type="button"
+    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 ${className}`}
+    {...props}
+  >
+    {children}
+  </button>
+);
 
 export default function EmployeePage() {
   const [lang, setLang] = useState("en");
@@ -209,1126 +209,401 @@ export default function EmployeePage() {
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
-  const [records, setRecords] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [search, setSearch] = useState("");
   const [showSummary, setShowSummary] = useState(false);
-
-  const [showForm, setShowForm] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [detailRecord, setDetailRecord] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(createEmptyForm());
-
   const [loading, setLoading] = useState(true);
+
+  const [form, setForm] = useState(emptyForm());
+  const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState({
-    type: "",
-    text: "",
-  });
 
-  const departmentMap = useMemo(() => {
-    const map = {};
+  const [detailRecord, setDetailRecord] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
-    departments.forEach((department) => {
-      map[String(getDepartmentId(department))] =
-        getDepartmentLabel(department);
-    });
+  const [master, setMaster] = useState({ open: false, type: "", name: "" });
+  const [masterSubmitting, setMasterSubmitting] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
 
-    return map;
-  }, [departments]);
-
-  const getDepartmentName = useCallback(
-    (record) =>
-      record?.department_name ||
-      departmentMap[String(record?.department_id)] ||
-      "-",
-    [departmentMap]
+  const departmentMap = useMemo(
+    () => Object.fromEntries(departments.map((row) => [String(departmentId(row)), departmentName(row)])),
+    [departments]
+  );
+  const designationMap = useMemo(
+    () => Object.fromEntries(designations.map((row) => [String(designationId(row)), designationName(row)])),
+    [designations]
   );
 
-  const showToast = useCallback((type, text) => {
-    setMessage({ type, text });
+  const rowDepartment = useCallback(
+    (row) => row?.department_name || departmentMap[String(row?.department_id)] || "-",
+    [departmentMap]
+  );
+  const rowDesignation = useCallback(
+    (row) =>
+      row?.designation_name || row?.designation || designationMap[String(row?.designation_id)] || "-",
+    [designationMap]
+  );
 
-    window.setTimeout(() => {
-      setMessage({
-        type: "",
-        text: "",
-      });
-    }, 3200);
+  const toast = useCallback((type, text) => {
+    setMessage({ type, text });
+    window.setTimeout(() => setMessage({ type: "", text: "" }), 3200);
+  }, []);
+
+  const fetchMasterData = useCallback(async () => {
+    const [employeeRes, departmentRes, designationRes] = await Promise.all([
+      axios.get(EMPLOYEES_API),
+      axios.get(DEPARTMENTS_API),
+      axios.get(DESIGNATIONS_API),
+    ]);
+    setEmployees(getList(employeeRes.data));
+    setDepartments(getList(departmentRes.data));
+    setDesignations(getList(designationRes.data));
   }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-
     try {
-      const [employeeResponse, departmentResponse] =
-        await Promise.all([
-          axios.get(EMPLOYEES_API),
-          axios.get(DEPARTMENTS_API),
-        ]);
-
-      setRecords(getList(employeeResponse.data));
-      setDepartments(getList(departmentResponse.data));
+      await fetchMasterData();
     } catch (error) {
-      console.error("Employee load error:", error);
-      setRecords([]);
+      console.error("Employee master load error:", error);
+      setEmployees([]);
       setDepartments([]);
-
-      showToast(
-        "error",
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          t.loadError
-      );
+      setDesignations([]);
+      toast("error", error?.response?.data?.message || error?.response?.data?.error || t.loadError);
     } finally {
       setLoading(false);
     }
-  }, [showToast, t.loadError]);
+  }, [fetchMasterData, t.loadError, toast]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const updateField = (field, value) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-  };
+  const update = (field, value) => setForm((previous) => ({ ...previous, [field]: value }));
 
   const openAdd = () => {
     setEditingId(null);
-    setForm(createEmptyForm());
+    setForm(emptyForm());
     setShowForm(true);
   };
 
-  const openEdit = (record) => {
-    setEditingId(getEmployeeId(record));
-
+  const openEdit = (row) => {
+    setEditingId(employeeId(row));
     setForm({
-      full_name: record?.full_name || "",
-      father_name: record?.father_name || "",
-      cnic: record?.cnic || "",
-      phone: record?.phone || "",
-      designation: record?.designation || "",
-      department_id: String(
-        record?.department_id || ""
-      ),
-      joining_date: normalizeDate(
-        record?.joining_date
-      ),
-      basic_salary: String(
-        record?.basic_salary ?? ""
-      ),
+      full_name: row?.full_name || "",
+      cnic: row?.cnic || "",
+      phone: row?.phone || "",
+      employee_type: employeeType(row?.employee_type),
+      department_id: String(row?.department_id || ""),
+      designation_id: String(row?.designation_id || ""),
+      joining_date: normalizeDate(row?.joining_date),
+      basic_salary: String(row?.basic_salary ?? ""),
     });
-
     setShowDetails(false);
     setShowForm(true);
   };
 
   const closeForm = () => {
     if (submitting) return;
-
     setShowForm(false);
     setEditingId(null);
-    setForm(createEmptyForm());
+    setForm(emptyForm());
   };
 
-  const buildPayload = () => ({
+  const payload = () => ({
     full_name: form.full_name.trim(),
-    father_name: form.father_name.trim() || null,
     cnic: form.cnic.trim() || null,
-    phone: form.phone.trim() || null,
-    designation: form.designation.trim(),
+    phone: form.phone.trim(),
+    employee_type: form.employee_type,
     department_id: Number(form.department_id),
+    designation_id: Number(form.designation_id),
     joining_date: form.joining_date || null,
     basic_salary: toNumber(form.basic_salary),
   });
 
-  const handleSave = async () => {
-    if (
-      !form.full_name.trim() ||
-      !form.designation.trim() ||
-      !form.department_id
-    ) {
-      showToast("error", t.requiredError);
+  const saveEmployee = async () => {
+    if (!form.full_name.trim() || !form.phone.trim() || !form.employee_type || !form.department_id || !form.designation_id) {
+      toast("error", t.employeeRequired);
+      return;
+    }
+    if (form.employee_type === "Salaried" && toNumber(form.basic_salary) <= 0) {
+      toast("error", t.salaryRequired);
       return;
     }
 
     setSubmitting(true);
-
     try {
       if (editingId) {
-        await axios.put(
-          `${EMPLOYEES_API}/${editingId}`,
-          buildPayload()
-        );
-        showToast("success", t.successUpdate);
+        await axios.put(`${EMPLOYEES_API}/${editingId}`, payload());
+        toast("success", t.employeeUpdated);
       } else {
-        await axios.post(
-          EMPLOYEES_API,
-          buildPayload()
-        );
-        showToast("success", t.successSave);
+        await axios.post(EMPLOYEES_API, payload());
+        toast("success", t.employeeSaved);
       }
-
-      setShowForm(false);
-      setEditingId(null);
-      setForm(createEmptyForm());
-      await fetchData();
+      closeForm();
+      await fetchMasterData();
     } catch (error) {
-      console.error("Employee save error:", error);
-
-      showToast(
-        "error",
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          t.saveError
-      );
+      const code = error?.response?.data?.code;
+      let text = error?.response?.data?.message || error?.response?.data?.error || t.saveError;
+      if (code === "DUPLICATE_CNIC") text = t.duplicateCnic;
+      if (code === "DUPLICATE_PHONE") text = t.duplicatePhone;
+      toast("error", text);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (recordId) => {
+  const deleteEmployee = async (id) => {
     if (!window.confirm(t.deleteConfirm)) return;
-
     try {
-      await axios.delete(
-        `${EMPLOYEES_API}/${recordId}`
-      );
-
+      await axios.delete(`${EMPLOYEES_API}/${id}`);
       setShowDetails(false);
       setDetailRecord(null);
-      await fetchData();
-      showToast("success", t.successDelete);
+      await fetchMasterData();
+      toast("success", t.employeeDeleted);
     } catch (error) {
-      console.error("Employee delete error:", error);
-
-      showToast(
-        "error",
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          t.deleteError
-      );
+      toast("error", error?.response?.data?.message || error?.response?.data?.error || t.deleteError);
     }
   };
 
-  const openDetails = (record) => {
-    setDetailRecord(record);
-    setShowDetails(true);
+  const openMaster = (type) => setMaster({ open: true, type, name: "" });
+  const closeMaster = () => {
+    if (!masterSubmitting) setMaster({ open: false, type: "", name: "" });
   };
 
-  const filteredRecords = useMemo(() => {
+  const saveMaster = async () => {
+    const name = master.name.trim();
+    if (!name) {
+      toast("error", t.masterRequired);
+      return;
+    }
+
+    setMasterSubmitting(true);
+    try {
+      if (master.type === "department") {
+        const response = await axios.post(DEPARTMENTS_API, {
+          department_name: name,
+          head_of_dept: null,
+          extension_no: null,
+        });
+        await fetchMasterData();
+        if (response?.data?.id) update("department_id", String(response.data.id));
+        toast("success", t.departmentSaved);
+      } else {
+        const response = await axios.post(DESIGNATIONS_API, { designation_name: name });
+        await fetchMasterData();
+        if (response?.data?.id) update("designation_id", String(response.data.id));
+        toast("success", t.designationSaved);
+      }
+      closeMaster();
+    } catch (error) {
+      const duplicate = error?.response?.status === 409 || error?.response?.data?.code === "ER_DUP_ENTRY";
+      toast("error", duplicate ? t.duplicateMaster : error?.response?.data?.message || t.masterSaveError);
+    } finally {
+      setMasterSubmitting(false);
+    }
+  };
+
+  const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-
-    if (!query) return records;
-
-    return records.filter((record) =>
+    if (!query) return employees;
+    return employees.filter((row) =>
       [
-        record?.full_name,
-        record?.father_name,
-        record?.cnic,
-        record?.phone,
-        record?.designation,
-        getDepartmentName(record),
-        normalizeDate(record?.joining_date),
-        record?.basic_salary,
+        row?.full_name,
+        row?.cnic,
+        row?.phone,
+        row?.employee_type,
+        rowDepartment(row),
+        rowDesignation(row),
+        row?.joining_date,
+        row?.basic_salary,
       ]
         .join(" ")
         .toLowerCase()
         .includes(query)
     );
-  }, [records, search, getDepartmentName]);
+  }, [employees, rowDepartment, rowDesignation, search]);
 
   const summary = useMemo(
     () => ({
-      totalEmployees: records.length,
-      visibleRecords: filteredRecords.length,
-      totalSalary: filteredRecords.reduce(
-        (sum, record) =>
-          sum + toNumber(record?.basic_salary),
-        0
-      ),
+      total: employees.length,
+      salaried: employees.filter((row) => employeeType(row.employee_type) === "Salaried").length,
+      contractors: employees.filter((row) => employeeType(row.employee_type) === "Contractor").length,
+      totalSalary: filtered.reduce((sum, row) => sum + toNumber(row.basic_salary), 0),
     }),
-    [records, filteredRecords]
+    [employees, filtered]
   );
 
   const printDocument = (saveAsPdf = false) => {
-    const rows = filteredRecords
+    const rows = filtered
       .map(
-        (record, index) => `
-          <tr>
-            <td class="center">${index + 1}</td>
-            <td>
-              <strong>${record.full_name || "-"}</strong>
-              <small>S/O ${record.father_name || "-"}</small>
-            </td>
-            <td>${record.cnic || "-"}</td>
-            <td>${record.phone || "-"}</td>
-            <td>${record.designation || "-"}</td>
-            <td>${getDepartmentName(record)}</td>
-            <td class="center">${normalizeDate(
-              record.joining_date
-            ) || "-"}</td>
-            <td class="money">PKR ${money(
-              record.basic_salary
-            )}</td>
-          </tr>
-        `
+        (row, index) => `<tr>
+          <td>${index + 1}</td><td>${row.full_name || "-"}</td><td>${row.cnic || "-"}</td>
+          <td>${row.phone || "-"}</td><td>${employeeType(row.employee_type)}</td>
+          <td>${rowDepartment(row)}</td><td>${rowDesignation(row)}</td>
+          <td>${normalizeDate(row.joining_date) || "-"}</td><td>${money(row.basic_salary)}</td>
+        </tr>`
       )
       .join("");
 
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=1200,height=850"
-    );
-
-    if (!printWindow) return;
-
-    printWindow.document.open();
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html lang="${lang}" dir="${dir}">
-      <head>
-        <meta charset="UTF-8" />
-        <title>${t.reportHeader}</title>
-        <style>
-          *{box-sizing:border-box}
-          body{font-family:Arial,sans-serif;background:#fff;color:#0f172a;padding:20px}
-          .sheet{max-width:1200px;margin:auto;border:1px solid #dbe3ee}
-          .header{background:#0f172a;color:#fff;padding:20px;display:flex;justify-content:space-between}
-          h1{margin:0;font-size:24px}
-          .sub{margin-top:4px;color:#cbd5e1;font-size:12px}
-          .hint{padding:10px;background:#eef2ff;color:#3730a3;text-align:center}
-          table{width:100%;border-collapse:collapse;font-size:11px}
-          th{background:#0f172a;color:#fff;padding:10px 8px;border:1px solid #334155}
-          td{padding:9px 8px;border:1px solid #e2e8f0}
-          tbody tr:nth-child(even){background:#f8fafc}
-          .center{text-align:center}
-          .money{text-align:right;white-space:nowrap;font-weight:bold;color:#047857}
-          small{display:block;margin-top:3px;color:#64748b}
-          @media print{
-            @page{size:A4 landscape;margin:8mm}
-            body{padding:0}
-            .hint{display:none}
-          }
-        </style>
-      </head>
-      <body>
-        ${
-          saveAsPdf
-            ? `<div class="hint">Select <strong>Save as PDF</strong> in print destination.</div>`
-            : ""
-        }
-
-        <div class="sheet">
-          <div class="header">
-            <div>
-              <h1>Ali Cage</h1>
-              <div class="sub">${t.reportHeader}</div>
-            </div>
-            <div>
-              ${t.printedOn}: ${new Date().toLocaleString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}
-            </div>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>${t.employee}</th>
-                <th>${t.cnic}</th>
-                <th>${t.phone}</th>
-                <th>${t.designation}</th>
-                <th>${t.department}</th>
-                <th>${t.joiningDate}</th>
-                <th>${t.basicSalary}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                rows ||
-                `<tr><td colspan="8" class="center">${t.noRecords}</td></tr>`
-              }
-            </tbody>
-          </table>
-        </div>
-
-        <script>
-          window.onload = function () {
-            setTimeout(function () {
-              window.print();
-            }, 250);
-          };
-        </script>
-      </body>
-      </html>
-    `);
-
-    printWindow.document.close();
+    const popup = window.open("", "_blank", "width=1250,height=850");
+    if (!popup) return;
+    popup.document.write(`<!doctype html><html dir="${dir}"><head><title>${t.reportTitle}</title>
+      <style>body{font-family:Arial;padding:20px;color:#0f172a}.head{background:#0f172a;color:white;padding:20px;display:flex;justify-content:space-between}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:white}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}.hint{background:#eef2ff;padding:10px;text-align:center}@media print{@page{size:A4 landscape;margin:8mm}.hint{display:none}body{padding:0}}</style>
+      </head><body>${saveAsPdf ? '<div class="hint">Select <b>Save as PDF</b> in print destination.</div>' : ""}
+      <div class="head"><b>Ali Cage — ${t.reportTitle}</b><span>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-US")}</span></div>
+      <table><thead><tr><th>#</th><th>${t.employeeName}</th><th>${t.cnic}</th><th>${t.phone}</th><th>${t.employeeType}</th><th>${t.department}</th><th>${t.designation}</th><th>${t.joiningDate}</th><th>${t.basicSalary}</th></tr></thead><tbody>${rows || `<tr><td colspan="9">${t.noRecords}</td></tr>`}</tbody></table>
+      <script>window.onload=()=>setTimeout(()=>window.print(),250)</script></body></html>`);
+    popup.document.close();
   };
 
-  const detailItems = detailRecord
+  const details = detailRecord
     ? [
-        [t.fullName, detailRecord.full_name || "-"],
-        [t.fatherName, detailRecord.father_name || "-"],
+        [t.employeeName, detailRecord.full_name || "-"],
         [t.cnic, detailRecord.cnic || "-"],
         [t.phone, detailRecord.phone || "-"],
-        [t.designation, detailRecord.designation || "-"],
-        [t.department, getDepartmentName(detailRecord)],
-        [
-          t.joiningDate,
-          normalizeDate(detailRecord.joining_date) ||
-            "-",
-        ],
-        [
-          t.basicSalary,
-          `PKR ${money(detailRecord.basic_salary)}`,
-        ],
+        [t.employeeType, employeeType(detailRecord.employee_type) === "Contractor" ? t.contractor : t.salaried],
+        [t.department, rowDepartment(detailRecord)],
+        [t.designation, rowDesignation(detailRecord)],
+        [t.joiningDate, normalizeDate(detailRecord.joining_date) || "-"],
+        [t.basicSalary, money(detailRecord.basic_salary)],
       ]
     : [];
 
   return (
-    <div className="employee-page" dir={dir}>
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-      />
-
-      <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
-
-      <style>{`
-        *{box-sizing:border-box}
-
-        .employee-page{
-          min-height:100vh;
-          padding:18px;
-          color:#0f172a;
-          background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);
-          font-family:${
-            isUrdu
-              ? "'Noto Nastaliq Urdu',Arial,sans-serif"
-              : "Inter,Helvetica,Arial,sans-serif"
-          };
-        }
-
-        .page-wrap{
-          width:100%;
-          max-width:1220px;
-          margin:0 auto;
-        }
-
-        .top-card{
-          background:rgba(255,255,255,.95);
-          border:1px solid #dbe3ee;
-          border-radius:22px;
-          padding:25px 22px 20px;
-          box-shadow:0 18px 50px rgba(15,23,42,.08);
-        }
-
-        .page-title{
-          margin:0;
-          font-size:30px;
-          line-height:1.2;
-          font-weight:950;
-          letter-spacing:-.8px;
-        }
-
-        .page-subtitle{
-          margin:7px 0 0;
-          color:#64748b;
-          font-size:13px;
-        }
-
-        .actions{
-          display:flex;
-          flex-wrap:wrap;
-          gap:8px;
-          margin-top:16px;
-        }
-
-        .btn{
-          border:1px solid transparent;
-          border-radius:12px;
-          padding:10px 14px;
-          font-size:13px;
-          font-weight:900;
-          cursor:pointer;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          gap:7px;
-          transition:.15s ease;
-          white-space:nowrap;
-        }
-
-        .btn:hover{transform:translateY(-1px)}
-        .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
-
-        .btn-language{
-          background:#fff;
-          color:#475569;
-          border-color:#cbd5e1;
-        }
-
-        .btn-summary{
-          background:#eef2ff;
-          color:#4338ca;
-          border-color:#c7d2fe;
-        }
-
-        .btn-dark{
-          background:#0f172a;
-          color:#fff;
-        }
-
-        .btn-white{
-          background:#fff;
-          color:#475569;
-          border-color:#cbd5e1;
-        }
-
-        .btn-primary{
-          background:#4f46e5;
-          color:#fff;
-          box-shadow:0 12px 24px rgba(79,70,229,.25);
-        }
-
-        .btn-danger{
-          background:#fee2e2;
-          color:#991b1b;
-        }
-
-        .summary-grid{
-          display:grid;
-          grid-template-columns:repeat(3,minmax(0,1fr));
-          gap:12px;
-          margin-top:14px;
-        }
-
-        .summary-card{
-          background:#fff;
-          border:1px solid #dbe3ee;
-          border-radius:16px;
-          padding:15px;
-          box-shadow:0 8px 24px rgba(15,23,42,.05);
-        }
-
-        .summary-label{
-          color:#64748b;
-          font-size:11px;
-          font-weight:850;
-          text-transform:uppercase;
-          letter-spacing:.4px;
-        }
-
-        .summary-value{
-          margin-top:6px;
-          color:#0f172a;
-          font-size:21px;
-          font-weight:950;
-        }
-
-        .search-row{
-          margin:14px 0;
-        }
-
-        .search-box{
-          position:relative;
-          width:100%;
-          max-width:460px;
-        }
-
-        .search-icon{
-          position:absolute;
-          top:50%;
-          transform:translateY(-50%);
-          color:#94a3b8;
-          ${isUrdu ? "right:14px" : "left:14px"};
-        }
-
-        .search-input{
-          width:100%;
-          height:43px;
-          border:1px solid #cbd5e1;
-          border-radius:12px;
-          background:#fff;
-          color:#334155;
-          font-size:13px;
-          outline:none;
-          ${
-            isUrdu
-              ? "padding:0 42px 0 13px"
-              : "padding:0 13px 0 42px"
-          };
-        }
-
-        .search-input:focus,
-        .field-input:focus,
-        .field-select:focus{
-          border-color:#6366f1;
-          box-shadow:0 0 0 3px rgba(99,102,241,.12);
-        }
-
-        .table-card{
-          width:100%;
-          background:#fff;
-          border:1px solid #dbe3ee;
-          border-radius:18px;
-          overflow:hidden;
-          box-shadow:0 18px 45px rgba(15,23,42,.07);
-        }
-
-        .employee-table{
-          width:100%;
-          table-layout:fixed;
-          border-collapse:collapse;
-        }
-
-        .employee-table th{
-          padding:14px 13px;
-          background:#0f172a;
-          color:#fff;
-          font-size:10px;
-          font-weight:900;
-          text-transform:uppercase;
-          letter-spacing:.45px;
-        }
-
-        .employee-table td{
-          padding:16px 13px;
-          border-bottom:1px solid #e5e7eb;
-          color:#475569;
-          font-size:13px;
-          vertical-align:middle;
-        }
-
-        .employee-table tbody tr:last-child td{
-          border-bottom:0;
-        }
-
-        .employee-table tbody tr:hover td{
-          background:#f8faff;
-        }
-
-        .employee-cell{
-          display:flex;
-          align-items:center;
-          gap:11px;
-          min-width:0;
-        }
-
-        .avatar{
-          width:38px;
-          height:38px;
-          border-radius:13px;
-          flex-shrink:0;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          background:#eef2ff;
-          color:#4f46e5;
-          font-weight:950;
-        }
-
-        .employee-copy{
-          min-width:0;
-        }
-
-        .employee-name{
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-          color:#0f172a;
-          font-weight:900;
-        }
-
-        .employee-sub{
-          margin-top:3px;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-          color:#94a3b8;
-          font-size:10px;
-          font-weight:750;
-        }
-
-        .pill{
-          display:inline-flex;
-          max-width:100%;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          white-space:nowrap;
-          border:1px solid #e2e8f0;
-          border-radius:999px;
-          padding:6px 10px;
-          background:#f1f5f9;
-          color:#334155;
-          font-size:10px;
-          font-weight:900;
-        }
-
-        .department-pill{
-          border-color:#c7d2fe;
-          background:#eef2ff;
-          color:#4338ca;
-        }
-
-        .view-btn{
-          border:1px solid #c7d2fe;
-          border-radius:10px;
-          background:#eef2ff;
-          color:#4338ca;
-          padding:8px 12px;
-          font-size:11px;
-          font-weight:900;
-          cursor:pointer;
-          display:inline-flex;
-          align-items:center;
-          gap:6px;
-        }
-
-        .empty{
-          padding:50px 20px!important;
-          text-align:center!important;
-          color:#94a3b8!important;
-        }
-
-        .toast{
-          position:fixed;
-          bottom:22px;
-          ${isUrdu ? "left:22px" : "right:22px"};
-          z-index:120;
-          max-width:420px;
-          border-radius:14px;
-          padding:12px 15px;
-          color:#fff;
-          font-size:12px;
-          font-weight:850;
-          box-shadow:0 20px 50px rgba(15,23,42,.25);
-        }
-
-        .toast-success{background:#059669}
-        .toast-error{background:#dc2626}
-
-        .modal-backdrop{
-          position:fixed;
-          inset:0;
-          z-index:100;
-          padding:12px;
-          background:rgba(15,23,42,.62);
-          backdrop-filter:blur(3px);
-          display:flex;
-          align-items:center;
-          justify-content:center;
-        }
-
-        .modal{
-          width:100%;
-          max-width:850px;
-          max-height:calc(100vh - 24px);
-          background:#fff;
-          border-radius:18px;
-          overflow:hidden;
-          box-shadow:0 30px 90px rgba(15,23,42,.3);
-          display:flex;
-          flex-direction:column;
-        }
-
-        .details-modal{
-          max-width:800px;
-        }
-
-        .modal-header{
-          padding:17px 19px;
-          border-bottom:1px solid #e2e8f0;
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:12px;
-        }
-
-        .modal-title{
-          margin:0;
-          font-size:20px;
-          font-weight:950;
-        }
-
-        .modal-subtitle{
-          margin-top:4px;
-          color:#64748b;
-          font-size:11px;
-        }
-
-        .close-btn{
-          width:36px;
-          height:36px;
-          border:1px solid #cbd5e1;
-          border-radius:10px;
-          background:#fff;
-          color:#475569;
-          cursor:pointer;
-        }
-
-        .modal-body{
-          padding:18px;
-          background:#f8fafc;
-          overflow-y:auto;
-        }
-
-        .form-grid{
-          display:grid;
-          grid-template-columns:repeat(2,minmax(0,1fr));
-          gap:12px;
-        }
-
-        .field-label{
-          display:block;
-          margin-bottom:6px;
-          color:#475569;
-          font-size:11px;
-          font-weight:850;
-        }
-
-        .field-input,
-        .field-select{
-          width:100%;
-          height:42px;
-          border:1px solid #cbd5e1;
-          border-radius:10px;
-          background:#fff;
-          color:#0f172a;
-          padding:0 11px;
-          font-size:13px;
-          outline:none;
-        }
-
-        .modal-footer{
-          padding:14px 18px;
-          border-top:1px solid #e2e8f0;
-          background:#fff;
-          display:flex;
-          justify-content:flex-end;
-          gap:8px;
-        }
-
-        .details-grid{
-          display:grid;
-          grid-template-columns:repeat(2,minmax(0,1fr));
-          gap:10px;
-        }
-
-        .detail-card{
-          border:1px solid #dbe3ee;
-          border-radius:12px;
-          padding:12px;
-          background:#fff;
-        }
-
-        .detail-label{
-          color:#94a3b8;
-          font-size:9px;
-          font-weight:850;
-          text-transform:uppercase;
-          letter-spacing:.35px;
-        }
-
-        .detail-value{
-          margin-top:6px;
-          color:#0f172a;
-          font-size:13px;
-          font-weight:900;
-          word-break:break-word;
-        }
-
-        @media(max-width:800px){
-          .summary-grid{
-            grid-template-columns:1fr;
-          }
-
-          .form-grid,
-          .details-grid{
-            grid-template-columns:1fr;
-          }
-        }
-
-        @media(max-width:640px){
-          .employee-page{padding:10px}
-          .top-card{padding:19px 15px;border-radius:17px}
-          .page-title{font-size:25px}
-          .actions .btn{flex:1}
-          .employee-table th,
-          .employee-table td{padding:12px 7px}
-          .employee-table th{font-size:8px}
-          .employee-sub{display:none}
-          .view-btn span{display:none}
-          .modal-footer{flex-direction:column-reverse}
-          .modal-footer .btn{width:100%}
-        }
-      `}</style>
+    <div
+      dir={dir}
+      className={`min-h-full bg-gradient-to-br from-indigo-50 via-slate-50 to-slate-100 p-3 text-slate-900 sm:p-5 ${
+        isUrdu ? "[font-family:'Noto_Nastaliq_Urdu',serif]" : "font-sans"
+      }`}
+    >
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+      {isUrdu && <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />}
 
       {message.text && (
         <div
-          className={`toast ${
-            message.type === "error"
-              ? "toast-error"
-              : "toast-success"
-          }`}
+          className={`fixed bottom-5 z-[150] max-w-md rounded-xl px-4 py-3 text-sm font-bold text-white shadow-2xl ${
+            isUrdu ? "left-5" : "right-5"
+          } ${message.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}
         >
           {message.text}
         </div>
       )}
 
-      <div className="page-wrap">
-        <section className="top-card">
-          <h1 className="page-title">{t.title}</h1>
-          <p className="page-subtitle">
-            {t.subtitle}
-          </p>
-
-          <div className="actions">
-            <button
-              type="button"
-              className="btn btn-language"
-              onClick={() =>
-                setLang((previous) =>
-                  previous === "en" ? "ur" : "en"
-                )
-              }
-            >
-              <i className="bi bi-translate" />
-              {t.toggleLang}
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-summary"
-              onClick={() =>
-                setShowSummary((previous) => !previous)
-              }
-            >
-              <i className="bi bi-bar-chart-fill" />
-              {showSummary
-                ? t.hideSummary
-                : t.viewSummary}
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-dark"
-              disabled={!filteredRecords.length}
-              onClick={() => printDocument(false)}
-            >
-              <i className="bi bi-printer" />
-              {t.printBtn}
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-white"
-              disabled={!filteredRecords.length}
-              onClick={() => printDocument(true)}
-            >
-              <i className="bi bi-file-earmark-pdf" />
-              {t.pdfBtn}
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-white"
-              onClick={fetchData}
-            >
-              <i className="bi bi-arrow-clockwise" />
-              {t.refresh}
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={openAdd}
-            >
-              <i className="bi bi-person-plus-fill" />
-              {t.addBtn}
-            </button>
+      <div className="mx-auto w-full max-w-[1220px]">
+        <section className="rounded-[22px] border border-slate-200 bg-white/95 px-5 py-6 shadow-xl shadow-slate-900/5">
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{t.title}</h1>
+          <p className="mt-2 text-sm text-slate-500">{t.subtitle}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button className="border border-slate-300 bg-white text-slate-600" onClick={() => setLang(isUrdu ? "en" : "ur")}>
+              <i className="bi bi-translate" /> {t.toggleLang}
+            </Button>
+            <Button className="border border-indigo-200 bg-indigo-50 text-indigo-700" onClick={() => setShowSummary((value) => !value)}>
+              <i className="bi bi-bar-chart-fill" /> {showSummary ? t.hideSummary : t.viewSummary}
+            </Button>
+            <Button className="bg-slate-900 text-white" disabled={!filtered.length} onClick={() => printDocument(false)}>
+              <i className="bi bi-printer" /> {t.printList}
+            </Button>
+            <Button className="border border-slate-300 bg-white text-slate-600" disabled={!filtered.length} onClick={() => printDocument(true)}>
+              <i className="bi bi-file-earmark-pdf" /> {t.downloadPdf}
+            </Button>
+            <Button className="border border-slate-300 bg-white text-slate-600" onClick={fetchData}>
+              <i className="bi bi-arrow-clockwise" /> {t.refresh}
+            </Button>
+            <Button className="bg-indigo-600 text-white shadow-lg shadow-indigo-600/25" onClick={openAdd}>
+              <i className="bi bi-person-plus-fill" /> {t.newEmployee}
+            </Button>
           </div>
         </section>
 
         {showSummary && (
-          <section className="summary-grid">
-            <article className="summary-card">
-              <div className="summary-label">
-                {t.totalEmployees}
-              </div>
-              <div className="summary-value">
-                {summary.totalEmployees}
-              </div>
-            </article>
-
-            <article className="summary-card">
-              <div className="summary-label">
-                {t.visibleRecords}
-              </div>
-              <div className="summary-value">
-                {summary.visibleRecords}
-              </div>
-            </article>
-
-            <article className="summary-card">
-              <div className="summary-label">
-                {t.totalSalary}
-              </div>
-              <div className="summary-value">
-                PKR {money(summary.totalSalary)}
-              </div>
-            </article>
+          <section className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              [t.totalEmployees, summary.total],
+              [t.salariedEmployees, summary.salaried],
+              [t.contractorEmployees, summary.contractors],
+              [t.totalSalary, money(summary.totalSalary)],
+            ].map(([label, value]) => (
+              <article key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+                <p className="mt-2 text-2xl font-black text-slate-800">{value}</p>
+              </article>
+            ))}
           </section>
         )}
 
-        <div className="search-row">
-          <div className="search-box">
-            <i className="bi bi-search search-icon" />
-            <input
-              className="search-input"
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              placeholder={t.searchPlaceholder}
-            />
-          </div>
+        <div className="relative my-4 max-w-xl">
+          <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-4" : "left-4"}`} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t.searchPlaceholder}
+            className={`h-11 w-full rounded-xl border border-slate-300 bg-white text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
+              isUrdu ? "pl-4 pr-11" : "pl-11 pr-4"
+            }`}
+          />
         </div>
 
-        <section className="table-card">
-          <table className="employee-table">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5">
+          <table className="w-full table-fixed">
             <colgroup>
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "40%" }} />
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "14%" }} />
+              <col className="w-[6%]" /><col className="w-[30%]" /><col className="w-[14%]" />
+              <col className="w-[18%]" /><col className="w-[18%]" /><col className="w-[14%]" />
             </colgroup>
-
-            <thead>
-              <tr>
-                <th style={{ textAlign: "center" }}>
-                  #
-                </th>
-                <th
-                  style={{
-                    textAlign: isUrdu
-                      ? "right"
-                      : "left",
-                  }}
-                >
-                  {t.employee}
-                </th>
-                <th style={{ textAlign: "center" }}>
-                  {t.designation}
-                </th>
-                <th style={{ textAlign: "center" }}>
-                  {t.department}
-                </th>
-                <th style={{ textAlign: "center" }}>
-                  {t.viewDetails}
-                </th>
+            <thead className="bg-slate-900 text-white">
+              <tr className="text-[9px] font-black uppercase tracking-wide">
+                <th className="px-2 py-4 text-center">#</th>
+                <th className={`px-2 py-4 ${isUrdu ? "text-right" : "text-left"}`}>{t.employee}</th>
+                <th className="px-2 py-4 text-center">{t.employeeType}</th>
+                <th className="px-2 py-4 text-center">{t.department}</th>
+                <th className="px-2 py-4 text-center">{t.designation}</th>
+                <th className="px-2 py-4 text-center">{t.viewDetails}</th>
               </tr>
             </thead>
-
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="empty">
-                    <i className="bi bi-arrow-repeat" />{" "}
-                    {t.loading}
-                  </td>
-                </tr>
-              ) : filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="empty">
-                    <i className="bi bi-inbox" />{" "}
-                    {t.noRecords}
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-4 py-14 text-center text-sm text-slate-400">{t.loading}</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="px-4 py-14 text-center text-sm text-slate-400">{t.noRecords}</td></tr>
               ) : (
-                filteredRecords.map(
-                  (record, index) => {
-                    const employeeName =
-                      record.full_name || "-";
-
-                    return (
-                      <tr key={getEmployeeId(record)}>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            color: "#94a3b8",
-                          }}
-                        >
-                          {index + 1}
-                        </td>
-
-                        <td>
-                          <div className="employee-cell">
-                            <div className="avatar">
-                              {employeeName
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
-
-                            <div className="employee-copy">
-                              <div className="employee-name">
-                                {employeeName}
-                              </div>
-                              <div className="employee-sub">
-                                S/O{" "}
-                                {record.father_name || "-"}
-                              </div>
-                            </div>
+                filtered.map((row, index) => {
+                  const type = employeeType(row.employee_type);
+                  return (
+                    <tr key={employeeId(row)} className="hover:bg-indigo-50/40">
+                      <td className="px-2 py-4 text-center text-xs text-slate-400">{index + 1}</td>
+                      <td className="px-2 py-4">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 font-black text-indigo-600">
+                            {(row.full_name || "?").charAt(0).toUpperCase()}
                           </div>
-                        </td>
-
-                        <td
-                          style={{ textAlign: "center" }}
-                        >
-                          <span className="pill">
-                            {record.designation || "-"}
-                          </span>
-                        </td>
-
-                        <td
-                          style={{ textAlign: "center" }}
-                        >
-                          <span className="pill department-pill">
-                            {getDepartmentName(record)}
-                          </span>
-                        </td>
-
-                        <td
-                          style={{ textAlign: "center" }}
-                        >
-                          <button
-                            type="button"
-                            className="view-btn"
-                            onClick={() =>
-                              openDetails(record)
-                            }
-                          >
-                            <i className="bi bi-eye-fill" />
-                            <span>
-                              {t.viewDetails}
-                            </span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  }
-                )
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-black text-slate-800">{row.full_name || "-"}</p>
+                            <p className="truncate text-[10px] font-semibold text-slate-400">{row.phone || "-"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-4 text-center">
+                        <span className={`inline-flex rounded-full border px-2 py-1 text-[9px] font-black ${
+                          type === "Contractor"
+                            ? "border-orange-200 bg-orange-50 text-orange-700"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        }`}>
+                          {type === "Contractor" ? t.contractor : t.salaried}
+                        </span>
+                      </td>
+                      <td className="px-2 py-4 text-center"><span className="inline-flex max-w-full truncate rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1 text-[9px] font-black text-indigo-700">{rowDepartment(row)}</span></td>
+                      <td className="px-2 py-4 text-center"><span className="inline-flex max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-black text-slate-600">{rowDesignation(row)}</span></td>
+                      <td className="px-2 py-4 text-center">
+                        <button className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[10px] font-black text-indigo-700" onClick={() => { setDetailRecord(row); setShowDetails(true); }}>
+                          <i className="bi bi-eye-fill" /><span className="hidden sm:inline">{t.viewDetails}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -1336,334 +611,110 @@ export default function EmployeePage() {
       </div>
 
       {showForm && (
-        <div
-          className="modal-backdrop"
-          onMouseDown={(event) => {
-            if (
-              event.target === event.currentTarget
-            ) {
-              closeForm();
-            }
-          }}
-        >
-          <div className="modal" dir={dir}>
-            <div className="modal-header">
-              <div>
-                <h2 className="modal-title">
-                  {editingId
-                    ? t.editTitle
-                    : t.addTitle}
-                </h2>
-                <div className="modal-subtitle">
-                  {t.formSubtitle}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="close-btn"
-                onClick={closeForm}
-              >
-                <i className="bi bi-x-lg" />
-              </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && closeForm()}>
+          <div dir={dir} className="flex max-h-[96vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div><h2 className="text-xl font-black">{editingId ? t.editEmployeeTitle : t.addEmployeeTitle}</h2><p className="mt-1 text-xs text-slate-500">{t.employeeFormSubtitle}</p></div>
+              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200" onClick={closeForm}><i className="bi bi-x-lg" /></button>
             </div>
 
-            <div className="modal-body">
-              <div className="form-grid">
-                <div>
-                  <label className="field-label">
-                    {t.fullName} *
-                  </label>
-                  <input
-                    className="field-input"
-                    value={form.full_name}
-                    onChange={(event) =>
-                      updateField(
-                        "full_name",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="field-label">
-                    {t.fatherName}
-                  </label>
-                  <input
-                    className="field-input"
-                    value={form.father_name}
-                    onChange={(event) =>
-                      updateField(
-                        "father_name",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="field-label">
-                    {t.cnic}
-                  </label>
-                  <input
-                    className="field-input"
-                    value={form.cnic}
-                    onChange={(event) =>
-                      updateField(
-                        "cnic",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="field-label">
-                    {t.phone}
-                  </label>
-                  <input
-                    className="field-input"
-                    value={form.phone}
-                    onChange={(event) =>
-                      updateField(
-                        "phone",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="field-label">
-                    {t.designation} *
-                  </label>
-                  <input
-                    className="field-input"
-                    value={form.designation}
-                    onChange={(event) =>
-                      updateField(
-                        "designation",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="field-label">
-                    {t.department} *
-                  </label>
-                  <select
-                    className="field-select"
-                    value={form.department_id}
-                    onChange={(event) =>
-                      updateField(
-                        "department_id",
-                        event.target.value
-                      )
-                    }
-                  >
-                    <option value="">
-                      {t.selectDepartment}
-                    </option>
-
-                    {departments.map(
-                      (department) => (
-                        <option
-                          key={getDepartmentId(
-                            department
-                          )}
-                          value={getDepartmentId(
-                            department
-                          )}
-                        >
-                          {getDepartmentLabel(
-                            department
-                          )}
-                        </option>
-                      )
-                    )}
+            <div className="overflow-y-auto bg-slate-50 p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label={`${t.employeeName} *`}><input className="field" value={form.full_name} onChange={(e) => update("full_name", e.target.value)} /></Field>
+                <Field label={t.cnicOptional}><input className="field" placeholder="XXXXX-XXXXXXX-X" value={form.cnic} onChange={(e) => update("cnic", e.target.value)} /></Field>
+                <Field label={`${t.phone} *`}><input className="field" placeholder="03XX-XXXXXXX" value={form.phone} onChange={(e) => update("phone", e.target.value)} /></Field>
+                <Field label={`${t.employeeType} *`}>
+                  <select className="field" value={form.employee_type} onChange={(e) => update("employee_type", e.target.value)}>
+                    <option value="">{t.selectType}</option><option value="Salaried">{t.salaried}</option><option value="Contractor">{t.contractor}</option>
                   </select>
+                </Field>
 
-                  {!loading &&
-                    departments.length === 0 && (
-                      <div
-                        style={{
-                          marginTop: 5,
-                          color: "#dc2626",
-                          fontSize: 10,
-                        }}
-                      >
-                        {t.noDepartments}
-                      </div>
-                    )}
-                </div>
+                <Field label={`${t.department} *`}>
+                  <div className="flex gap-2">
+                    <select className="field min-w-0 flex-1" value={form.department_id} onChange={(e) => update("department_id", e.target.value)}>
+                      <option value="">{t.selectDepartment}</option>
+                      {departments.map((row) => <option key={departmentId(row)} value={departmentId(row)}>{departmentName(row)}</option>)}
+                    </select>
+                    <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700" title={t.addDepartment} onClick={() => openMaster("department")}><i className="bi bi-plus-lg" /></button>
+                  </div>
+                  {!loading && departments.length === 0 && <p className="mt-1 text-[10px] text-red-500">{t.noDepartments}</p>}
+                </Field>
 
-                <div>
-                  <label className="field-label">
-                    {t.joiningDate}
-                  </label>
-                  <input
-                    type="date"
-                    className="field-input"
-                    value={form.joining_date}
-                    onChange={(event) =>
-                      updateField(
-                        "joining_date",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
+                <Field label={`${t.designation} *`}>
+                  <div className="flex gap-2">
+                    <select className="field min-w-0 flex-1" value={form.designation_id} onChange={(e) => update("designation_id", e.target.value)}>
+                      <option value="">{t.selectDesignation}</option>
+                      {designations.map((row) => <option key={designationId(row)} value={designationId(row)}>{designationName(row)}</option>)}
+                    </select>
+                    <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700" title={t.addDesignation} onClick={() => openMaster("designation")}><i className="bi bi-plus-lg" /></button>
+                  </div>
+                  {!loading && designations.length === 0 && <p className="mt-1 text-[10px] text-red-500">{t.noDesignations}</p>}
+                </Field>
 
-                <div>
-                  <label className="field-label">
-                    {t.basicSalary}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="field-input"
-                    value={form.basic_salary}
-                    onChange={(event) =>
-                      updateField(
-                        "basic_salary",
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
+                <Field label={t.joiningDate}><input type="date" className="field" value={form.joining_date} onChange={(e) => update("joining_date", e.target.value)} /></Field>
+                <Field label={`${t.basicSalary}${form.employee_type === "Salaried" ? " *" : ""}`}>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2"><input type="number" min="0" step="0.01" className="field" value={form.basic_salary} onChange={(e) => update("basic_salary", e.target.value)} /></div>
+                </Field>
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-white"
-                disabled={submitting}
-                onClick={closeForm}
-              >
-                {t.cancel}
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={submitting}
-                onClick={handleSave}
-              >
-                <i
-                  className={`bi ${
-                    submitting
-                      ? "bi-arrow-repeat"
-                      : "bi-check2-circle"
-                  }`}
-                />
-                {submitting
-                  ? t.saving
-                  : editingId
-                  ? t.update
-                  : t.save}
-              </button>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
+              <Button className="border border-slate-300 bg-white text-slate-600" disabled={submitting} onClick={closeForm}>{t.cancel}</Button>
+              <Button className="bg-indigo-600 text-white" disabled={submitting} onClick={saveEmployee}><i className="bi bi-check2-circle" />{submitting ? t.saving : editingId ? t.updateEmployee : t.saveEmployee}</Button>
             </div>
           </div>
         </div>
       )}
 
       {showDetails && detailRecord && (
-        <div
-          className="modal-backdrop"
-          onMouseDown={(event) => {
-            if (
-              event.target === event.currentTarget
-            ) {
-              setShowDetails(false);
-            }
-          }}
-        >
-          <div
-            className="modal details-modal"
-            dir={dir}
-          >
-            <div className="modal-header">
-              <div>
-                <h2 className="modal-title">
-                  {t.detailsTitle}
-                </h2>
-                <div className="modal-subtitle">
-                  {detailRecord.full_name || "-"}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="close-btn"
-                onClick={() =>
-                  setShowDetails(false)
-                }
-              >
-                <i className="bi bi-x-lg" />
-              </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && setShowDetails(false)}>
+          <div dir={dir} className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div><h2 className="text-xl font-black">{t.employeeDetails}</h2><p className="mt-1 text-xs text-slate-500">{detailRecord.full_name}</p></div>
+              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200" onClick={() => setShowDetails(false)}><i className="bi bi-x-lg" /></button>
             </div>
-
-            <div className="modal-body">
-              <div className="details-grid">
-                {detailItems.map(([label, value]) => (
-                  <div
-                    className="detail-card"
-                    key={label}
-                  >
-                    <div className="detail-label">
-                      {label}
-                    </div>
-                    <div className="detail-value">
-                      {value}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="grid gap-3 overflow-y-auto bg-slate-50 p-4 sm:grid-cols-2">
+              {details.map(([label, value]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-2 break-words text-sm font-black text-slate-800">{value}</p></div>)}
             </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-white"
-                onClick={() =>
-                  setShowDetails(false)
-                }
-              >
-                {t.close}
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-summary"
-                onClick={() =>
-                  openEdit(detailRecord)
-                }
-              >
-                <i className="bi bi-pencil-square" />
-                {t.edit}
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={() =>
-                  handleDelete(
-                    getEmployeeId(detailRecord)
-                  )
-                }
-              >
-                <i className="bi bi-trash3" />
-                {t.delete}
-              </button>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
+              <Button className="border border-slate-300 bg-white text-slate-600" onClick={() => setShowDetails(false)}>{t.close}</Button>
+              <Button className="border border-indigo-200 bg-indigo-50 text-indigo-700" onClick={() => openEdit(detailRecord)}><i className="bi bi-pencil-square" />{t.edit}</Button>
+              <Button className="bg-red-100 text-red-700" onClick={() => deleteEmployee(employeeId(detailRecord))}><i className="bi bi-trash3" />{t.delete}</Button>
             </div>
           </div>
         </div>
       )}
+
+      {master.open && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/65 p-3 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && closeMaster()}>
+          <div dir={dir} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div><h2 className="text-lg font-black">{master.type === "department" ? t.addDepartment : t.addDesignation}</h2><p className="mt-1 text-xs text-slate-500">{t.addMasterTitle}</p></div>
+              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200" onClick={closeMaster}><i className="bi bi-x-lg" /></button>
+            </div>
+            <div className="bg-slate-50 p-5">
+              <Field label={`${master.type === "department" ? t.departmentName : t.designationName} *`}>
+                <input autoFocus className="field" value={master.name} onChange={(e) => setMaster((previous) => ({ ...previous, name: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && saveMaster()} />
+              </Field>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+              <Button className="border border-slate-300 bg-white text-slate-600" disabled={masterSubmitting} onClick={closeMaster}>{t.cancel}</Button>
+              <Button className="bg-indigo-600 text-white" disabled={masterSubmitting} onClick={saveMaster}>{masterSubmitting ? t.saving : t.save}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`.field{height:44px;width:100%;border:1px solid #cbd5e1;border-radius:12px;background:#fff;padding:0 12px;font-size:13px;outline:none}.field:focus{border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.1)}`}</style>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div className="min-w-0">
+      <label className="mb-1.5 block text-[11px] font-bold text-slate-600">{label}</label>
+      {children}
     </div>
   );
 }
