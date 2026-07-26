@@ -16,25 +16,35 @@ const EMPLOYEES_API = `${API_ROOT}/api/employees`;
 const LANG = {
   en: {
     title: "Employee Salary",
-    subtitle: "Create and manage monthly employee salary records",
+    subtitle: "Manage monthly salary, attendance, overtime and advances",
     newSalary: "New Salary",
-    toggleLang: "اردو",
+    viewSummary: "View Summary",
+    hideSummary: "Hide Summary",
+    printList: "Print List",
+    downloadPdf: "Download PDF",
     refresh: "Refresh",
-    searchPlaceholder: "Search employee, month or status...",
-    allMonths: "All Months",
-    allStatuses: "All Statuses",
+    toggleLang: "اردو",
 
+    searchPlaceholder: "Search by employee name, month or status...",
     employee: "Employee",
-    selectEmployee: "-- Select Employee --",
     salaryMonth: "Salary Month",
     status: "Status",
     paid: "Paid",
     pending: "Pending",
     viewDetails: "View Details",
-    details: "Salary Details",
-    close: "Close",
+    noRecords: "No salary records found.",
+    loading: "Loading salary records...",
 
-    salary: "Salary",
+    totalRecords: "Total Records",
+    paidRecords: "Paid Records",
+    pendingRecords: "Pending Records",
+    totalBalance: "Total Balance",
+
+    createTitle: "New Employee Salary",
+    editTitle: "Edit Employee Salary",
+    formSubtitle: "Enter salary, attendance, overtime and advance values",
+    selectEmployee: "-- Select Employee --",
+    basicSalary: "Basic Salary",
     perDaySalary: "Per Day Salary",
     extraDays: "Extra Days",
     extraDayAmount: "Extra Day Amount",
@@ -53,61 +63,64 @@ const LANG = {
     remainingBalance: "Remaining Balance",
     notes: "Notes",
     notesPlaceholder: "Optional note...",
-
-    employeeInformation: "Employee Information",
-    attendanceInformation: "Attendance & Time",
-    salaryCalculation: "Salary Calculation",
-
-    save: "Save Salary",
-    update: "Update Salary",
+    save: "Save",
+    update: "Update",
     saving: "Saving...",
     cancel: "Cancel",
+    close: "Close",
     edit: "Edit",
     delete: "Delete",
+    detailsTitle: "Salary Details",
 
-    loading: "Loading salary records...",
-    loadingDetails: "Loading details...",
-    noRecords: "No salary records found.",
-    noEmployees: "No employees found from backend.",
+    requiredError: "Employee, salary month and basic salary are required.",
     loadError: "Salary data could not be loaded from backend.",
-    saveError: "Salary could not be saved. Check backend.",
+    saveError: "Salary record could not be saved.",
     deleteError: "Salary record could not be deleted.",
-    requiredError: "Employee, salary month and salary are required.",
-    saved: "Salary saved successfully.",
-    updated: "Salary updated successfully.",
-    deleted: "Salary deleted successfully.",
+    saved: "Salary record saved successfully.",
+    updated: "Salary record updated successfully.",
+    deleted: "Salary record deleted successfully.",
     deleteConfirm: "Are you sure you want to delete this salary record?",
+    noEmployees: "No employees found from backend.",
 
-    days: "days",
-    hours: "hours",
-    automatic: "Automatic",
     formula:
-      "Calculated Amount = Salary + Extra Day + Overtime − Absent − Time Deduction",
+      "Calculated Amount = Salary + Extra Day + Overtime - Absent - Time Deduction",
     balanceFormula:
-      "Remaining Balance = Calculated Amount − Advance − Previous Advance",
+      "Remaining Balance = Calculated Amount - Advance - Previous Advance",
+    printedOn: "Printed On",
+    reportTitle: "Employee Salary List",
   },
 
   ur: {
     title: "ملازم کی تنخواہ",
-    subtitle: "ملازمین کی ماہانہ تنخواہ کا ریکارڈ بنائیں اور منظم کریں",
+    subtitle: "ماہانہ تنخواہ، حاضری، اوور ٹائم اور ایڈوانس کا انتظام کریں",
     newSalary: "نئی تنخواہ",
-    toggleLang: "English",
+    viewSummary: "سمری دیکھیں",
+    hideSummary: "سمری بند کریں",
+    printList: "فہرست پرنٹ کریں",
+    downloadPdf: "پی ڈی ایف ڈاؤنلوڈ",
     refresh: "ری فریش",
-    searchPlaceholder: "ملازم، مہینہ یا حالت تلاش کریں...",
-    allMonths: "تمام مہینے",
-    allStatuses: "تمام حالتیں",
+    toggleLang: "English",
 
+    searchPlaceholder: "ملازم کے نام، مہینے یا حالت سے تلاش کریں...",
     employee: "ملازم",
-    selectEmployee: "-- ملازم منتخب کریں --",
     salaryMonth: "تنخواہ کا مہینہ",
     status: "حالت",
     paid: "ادا شدہ",
     pending: "زیر التواء",
     viewDetails: "تفصیل دیکھیں",
-    details: "تنخواہ کی تفصیل",
-    close: "بند کریں",
+    noRecords: "تنخواہ کا کوئی ریکارڈ نہیں ملا۔",
+    loading: "تنخواہ ریکارڈ لوڈ ہو رہے ہیں...",
 
-    salary: "تنخواہ",
+    totalRecords: "کل ریکارڈ",
+    paidRecords: "ادا شدہ ریکارڈ",
+    pendingRecords: "زیر التواء ریکارڈ",
+    totalBalance: "کل بقایا حساب",
+
+    createTitle: "نئی ملازم تنخواہ",
+    editTitle: "ملازم تنخواہ میں ترمیم",
+    formSubtitle: "تنخواہ، حاضری، اوور ٹائم اور ایڈوانس کی معلومات درج کریں",
+    selectEmployee: "-- ملازم منتخب کریں --",
+    basicSalary: "بنیادی تنخواہ",
     perDaySalary: "فی دن تنخواہ",
     extraDays: "اضافی دن",
     extraDayAmount: "اضافی دن کی رقم",
@@ -126,44 +139,38 @@ const LANG = {
     remainingBalance: "بقایا حساب",
     notes: "نوٹس",
     notesPlaceholder: "اختیاری نوٹ...",
-
-    employeeInformation: "ملازم کی معلومات",
-    attendanceInformation: "حاضری اور وقت",
-    salaryCalculation: "تنخواہ کا حساب",
-
-    save: "تنخواہ محفوظ کریں",
-    update: "تنخواہ اپڈیٹ کریں",
+    save: "محفوظ کریں",
+    update: "اپڈیٹ",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
+    close: "بند کریں",
     edit: "ترمیم",
     delete: "حذف",
+    detailsTitle: "تنخواہ کی تفصیل",
 
-    loading: "تنخواہ ریکارڈ لوڈ ہو رہے ہیں...",
-    loadingDetails: "تفصیل لوڈ ہو رہی ہے...",
-    noRecords: "تنخواہ کا کوئی ریکارڈ نہیں ملا۔",
-    noEmployees: "بیک اینڈ سے کوئی ملازم نہیں ملا۔",
+    requiredError: "ملازم، تنخواہ کا مہینہ اور بنیادی تنخواہ ضروری ہیں۔",
     loadError: "بیک اینڈ سے تنخواہ کا ڈیٹا لوڈ نہیں ہوا۔",
-    saveError: "تنخواہ محفوظ نہیں ہوئی، بیک اینڈ چیک کریں۔",
-    deleteError: "تنخواہ ریکارڈ حذف نہیں ہوا۔",
-    requiredError: "ملازم، تنخواہ کا مہینہ اور تنخواہ ضروری ہیں۔",
-    saved: "تنخواہ کامیابی سے محفوظ ہو گئی۔",
-    updated: "تنخواہ کامیابی سے اپڈیٹ ہو گئی۔",
-    deleted: "تنخواہ کامیابی سے حذف ہو گئی۔",
-    deleteConfirm: "کیا آپ یہ تنخواہ ریکارڈ حذف کرنا چاہتے ہیں؟",
+    saveError: "تنخواہ کا ریکارڈ محفوظ نہیں ہوا۔",
+    deleteError: "تنخواہ کا ریکارڈ حذف نہیں ہوا۔",
+    saved: "تنخواہ کا ریکارڈ کامیابی سے محفوظ ہو گیا۔",
+    updated: "تنخواہ کا ریکارڈ کامیابی سے اپڈیٹ ہو گیا۔",
+    deleted: "تنخواہ کا ریکارڈ کامیابی سے حذف ہو گیا۔",
+    deleteConfirm: "کیا آپ واقعی یہ تنخواہ ریکارڈ حذف کرنا چاہتے ہیں؟",
+    noEmployees: "بیک اینڈ سے کوئی ملازم نہیں ملا۔",
 
-    days: "دن",
-    hours: "گھنٹے",
-    automatic: "خودکار",
     formula:
-      "حساب رقم = تنخواہ + اضافی دن + اوور ٹائم − غیر حاضری − ٹائم کٹوتی",
+      "حساب رقم = تنخواہ + اضافی دن + اوور ٹائم - غیر حاضری - ٹائم کٹوتی",
     balanceFormula:
-      "بقایا حساب = حساب رقم − ایڈوانس − سابقہ ایڈوانس",
+      "بقایا حساب = حساب رقم - ایڈوانس - سابقہ ایڈوانس",
+    printedOn: "پرنٹ کی تاریخ",
+    reportTitle: "ملازم تنخواہ فہرست",
   },
 };
 
 const currentMonth = () => {
-  const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
     2,
     "0"
   )}`;
@@ -192,6 +199,7 @@ const getList = (value) => {
   if (Array.isArray(value?.result)) return value.result;
   if (Array.isArray(value?.employees)) return value.employees;
   if (Array.isArray(value?.salaries)) return value.salaries;
+
   return [];
 };
 
@@ -210,7 +218,6 @@ const getEmployeeId = (employee) =>
   employee?.id ??
   employee?.employee_id ??
   employee?.EmployeeID ??
-  employee?.value ??
   "";
 
 const getEmployeeName = (employee) =>
@@ -218,7 +225,6 @@ const getEmployeeName = (employee) =>
   employee?.employee_name ??
   employee?.name ??
   employee?.name_en ??
-  employee?.title ??
   "";
 
 const getEmployeeSalary = (employee) =>
@@ -229,78 +235,55 @@ const getEmployeeSalary = (employee) =>
       employee?.current_salary
   );
 
-const getEmployeePreviousAdvance = (employee) =>
-  toNumber(
-    employee?.previous_advance ??
-      employee?.outstanding_advance ??
-      employee?.advance_balance ??
-      employee?.remaining_advance
-  );
-
 const getRecordId = (record) =>
-  record?.id ??
-  record?.salary_id ??
-  record?.employee_salary_id ??
-  record?.EmployeeSalaryID ??
-  "";
-
-const getRecordEmployeeName = (record, employees) => {
-  if (record?.employee_name) return record.employee_name;
-
-  const employee = employees.find(
-    (item) =>
-      String(getEmployeeId(item)) === String(record?.employee_id)
-  );
-
-  return getEmployeeName(employee) || "-";
-};
+  record?.id ?? record?.salary_id ?? "";
 
 const normalizeStatus = (status) =>
   String(status || "Pending").toLowerCase() === "paid"
     ? "Paid"
     : "Pending";
 
-const pickValue = (record, keys, fallback = 0) => {
-  for (const key of keys) {
-    const value = record?.[key];
-    if (value !== undefined && value !== null && value !== "") {
-      return value;
-    }
-  }
-  return fallback;
-};
-
-const calculationsFromForm = (form) => {
-  const salary = toNumber(form.basic_salary);
-  const perDaySalary = salary / 30;
+const calculateSalary = (form) => {
+  const basicSalary = toNumber(form.basic_salary);
+  const perDaySalary = basicSalary / 30;
 
   const extraDays = toNumber(form.extra_days);
-  const absentDays = toNumber(form.absent_days);
-  const timeDeductionHours = toNumber(form.time_deduction_hours);
-  const timeDeductionRate = toNumber(form.time_deduction_rate);
-  const overtimeHours = toNumber(form.overtime_hours);
-  const overtimeRate = toNumber(form.overtime_rate);
-  const advance = toNumber(form.advance);
-  const previousAdvance = toNumber(form.previous_advance);
-
   const extraDayAmount = extraDays * perDaySalary;
+
+  const absentDays = toNumber(form.absent_days);
   const absentAmount = absentDays * perDaySalary;
+
+  const timeDeductionHours = toNumber(
+    form.time_deduction_hours
+  );
+  const timeDeductionRate = toNumber(
+    form.time_deduction_rate
+  );
   const timeDeductionAmount =
     timeDeductionHours * timeDeductionRate;
+
+  const overtimeHours = toNumber(form.overtime_hours);
+  const overtimeRate = toNumber(form.overtime_rate);
   const overtimeAmount = overtimeHours * overtimeRate;
 
+  const advance = toNumber(form.advance);
+  const previousAdvance = toNumber(
+    form.previous_advance
+  );
+  const totalAdvance = advance + previousAdvance;
+
   const calculatedAmount =
-    salary +
+    basicSalary +
     extraDayAmount +
     overtimeAmount -
     absentAmount -
     timeDeductionAmount;
 
-  const totalAdvance = advance + previousAdvance;
-  const remainingBalance = calculatedAmount - totalAdvance;
+  const remainingBalance =
+    calculatedAmount - totalAdvance;
 
   return {
-    salary,
+    basicSalary,
     perDaySalary,
     extraDays,
     extraDayAmount,
@@ -320,115 +303,73 @@ const calculationsFromForm = (form) => {
   };
 };
 
-function FormField({
-  label,
-  value,
-  onChange,
-  type = "number",
-  min = "0",
-  step = "0.01",
-  readOnly = false,
-  required = false,
-  children,
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
-        {label}
-        {required ? <span className="text-red-500"> *</span> : null}
-      </label>
-
-      {children || (
-        <input
-          type={type}
-          min={type === "number" ? min : undefined}
-          step={type === "number" ? step : undefined}
-          value={value}
-          onChange={onChange}
-          readOnly={readOnly}
-          className={`h-10 w-full rounded-lg border px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-            readOnly
-              ? "border-slate-200 bg-slate-100 font-semibold text-slate-600"
-              : "border-slate-300 bg-white text-slate-800"
-          }`}
-        />
-      )}
-    </div>
-  );
-}
-
-function DetailItem({ label, value, important = false, negative = false }) {
-  return (
-    <div
-      className={`rounded-lg border p-3 ${
-        important
-          ? negative
-            ? "border-red-200 bg-red-50"
-            : "border-emerald-200 bg-emerald-50"
-          : "border-slate-200 bg-slate-50"
-      }`}
-    >
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p
-        className={`mt-1 break-words text-sm font-bold ${
-          important
-            ? negative
-              ? "text-red-700"
-              : "text-emerald-700"
-            : "text-slate-800"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
 export default function EmployeeRatePage() {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
 
-  const [employees, setEmployees] = useState([]);
   const [records, setRecords] = useState([]);
-
-  const [form, setForm] = useState(emptyForm());
-  const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-
-  const [detailRecord, setDetailRecord] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-
+  const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
-  const [monthFilter, setMonthFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailRecord, setDetailRecord] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm());
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
+  });
 
   const calculations = useMemo(
-    () => calculationsFromForm(form),
+    () => calculateSalary(form),
     [form]
+  );
+
+  const employeeMap = useMemo(() => {
+    const map = {};
+
+    employees.forEach((employee) => {
+      map[String(getEmployeeId(employee))] =
+        getEmployeeName(employee);
+    });
+
+    return map;
+  }, [employees]);
+
+  const getRecordEmployeeName = useCallback(
+    (record) =>
+      record?.employee_name ||
+      employeeMap[String(record?.employee_id)] ||
+      "-",
+    [employeeMap]
   );
 
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
-    window.setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+
+    window.setTimeout(() => {
+      setMessage({
+        type: "",
+        text: "",
+      });
+    }, 3000);
   }, []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-
     try {
-      const [salaryResponse, employeeResponse] = await Promise.all([
-        axios.get(SALARY_API),
-        axios.get(EMPLOYEES_API),
-      ]);
+      setLoading(true);
+
+      const [salaryResponse, employeeResponse] =
+        await Promise.all([
+          axios.get(SALARY_API),
+          axios.get(EMPLOYEES_API),
+        ]);
 
       setRecords(getList(salaryResponse.data));
       setEmployees(getList(employeeResponse.data));
@@ -436,47 +377,61 @@ export default function EmployeeRatePage() {
       console.error("Employee salary load error:", error);
       setRecords([]);
       setEmployees([]);
-      showToast("error", LANG[lang].loadError);
+      showToast("error", t.loadError);
     } finally {
       setLoading(false);
     }
-  }, [lang, showToast]);
+  }, [showToast, t.loadError]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const updateField = (field, value) => {
-    setForm((previous) => ({ ...previous, [field]: value }));
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
   };
 
   const handleEmployeeChange = (employeeId) => {
     const employee = employees.find(
-      (item) => String(getEmployeeId(item)) === String(employeeId)
+      (item) =>
+        String(getEmployeeId(item)) ===
+        String(employeeId)
     );
 
-    const salary = getEmployeeSalary(employee);
-    const perDay = salary / 30;
+    const basicSalary = getEmployeeSalary(employee);
+    const perDaySalary = basicSalary / 30;
 
     setForm((previous) => ({
       ...previous,
       employee_id: employeeId,
-      basic_salary: salary ? String(salary) : "",
-      overtime_rate: salary ? (perDay / 8).toFixed(2) : "0",
-      time_deduction_rate: salary ? (perDay / 10).toFixed(2) : "0",
-      previous_advance: String(getEmployeePreviousAdvance(employee)),
+      basic_salary: basicSalary
+        ? String(basicSalary)
+        : "",
+      overtime_rate: basicSalary
+        ? (perDaySalary / 8).toFixed(2)
+        : "0",
+      time_deduction_rate: basicSalary
+        ? (perDaySalary / 10).toFixed(2)
+        : "0",
     }));
   };
 
-  const handleSalaryChange = (salaryValue) => {
-    const salary = toNumber(salaryValue);
-    const perDay = salary / 30;
+  const handleSalaryChange = (value) => {
+    const basicSalary = toNumber(value);
+    const perDaySalary = basicSalary / 30;
 
     setForm((previous) => ({
       ...previous,
-      basic_salary: salaryValue,
-      overtime_rate: salary ? (perDay / 8).toFixed(2) : "0",
-      time_deduction_rate: salary ? (perDay / 10).toFixed(2) : "0",
+      basic_salary: value,
+      overtime_rate: basicSalary
+        ? (perDaySalary / 8).toFixed(2)
+        : "0",
+      time_deduction_rate: basicSalary
+        ? (perDaySalary / 10).toFixed(2)
+        : "0",
     }));
   };
 
@@ -486,48 +441,34 @@ export default function EmployeeRatePage() {
     setShowForm(true);
   };
 
-  const recordToForm = (record) => {
-    const salary = toNumber(record?.basic_salary);
-    const perDay = salary / 30;
-
-    return {
-      employee_id: String(record?.employee_id ?? ""),
-      salary_month: record?.salary_month || currentMonth(),
-      basic_salary: String(record?.basic_salary ?? ""),
-      extra_days: String(record?.extra_days ?? 0),
-      absent_days: String(
-        pickValue(record, ["absent_days", "absent"], 0)
-      ),
-      time_deduction_hours: String(
-        pickValue(
-          record,
-          ["time_deduction_hours", "time_deduction"],
-          0
-        )
-      ),
-      time_deduction_rate: String(
-        pickValue(
-          record,
-          ["time_deduction_rate"],
-          salary ? perDay / 10 : 0
-        )
-      ),
-      overtime_hours: String(record?.overtime_hours ?? 0),
-      overtime_rate: String(
-        pickValue(
-          record,
-          ["overtime_rate"],
-          salary ? perDay / 8 : 0
-        )
-      ),
-      advance: String(
-        pickValue(record, ["advance", "current_advance"], 0)
-      ),
-      previous_advance: String(record?.previous_advance ?? 0),
-      status: normalizeStatus(record?.status),
-      notes: record?.notes || "",
-    };
-  };
+  const recordToForm = (record) => ({
+    employee_id: String(record?.employee_id || ""),
+    salary_month:
+      record?.salary_month || currentMonth(),
+    basic_salary: String(
+      record?.basic_salary ?? ""
+    ),
+    extra_days: String(record?.extra_days ?? 0),
+    absent_days: String(record?.absent_days ?? 0),
+    time_deduction_hours: String(
+      record?.time_deduction_hours ?? 0
+    ),
+    time_deduction_rate: String(
+      record?.time_deduction_rate ?? 0
+    ),
+    overtime_hours: String(
+      record?.overtime_hours ?? 0
+    ),
+    overtime_rate: String(
+      record?.overtime_rate ?? 0
+    ),
+    advance: String(record?.advance ?? 0),
+    previous_advance: String(
+      record?.previous_advance ?? 0
+    ),
+    status: normalizeStatus(record?.status),
+    notes: record?.notes || "",
+  });
 
   const openEdit = (record) => {
     setEditingId(getRecordId(record));
@@ -538,6 +479,7 @@ export default function EmployeeRatePage() {
 
   const closeForm = () => {
     if (submitting) return;
+
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm());
@@ -546,23 +488,23 @@ export default function EmployeeRatePage() {
   const buildPayload = () => ({
     employee_id: Number(form.employee_id),
     salary_month: form.salary_month,
-    basic_salary: calculations.salary,
-    per_day_salary: calculations.perDaySalary,
+    basic_salary: calculations.basicSalary,
+
     extra_days: calculations.extraDays,
-    extra_day_amount: calculations.extraDayAmount,
     absent_days: calculations.absentDays,
-    absent_amount: calculations.absentAmount,
-    time_deduction_hours: calculations.timeDeductionHours,
-    time_deduction_rate: calculations.timeDeductionRate,
-    time_deduction_amount: calculations.timeDeductionAmount,
+
+    time_deduction_hours:
+      calculations.timeDeductionHours,
+    time_deduction_rate:
+      calculations.timeDeductionRate,
+
     overtime_hours: calculations.overtimeHours,
     overtime_rate: calculations.overtimeRate,
-    overtime_amount: calculations.overtimeAmount,
-    calculated_amount: calculations.calculatedAmount,
+
     advance: calculations.advance,
-    previous_advance: calculations.previousAdvance,
-    total_advance: calculations.totalAdvance,
-    remaining_balance: calculations.remainingBalance,
+    previous_advance:
+      calculations.previousAdvance,
+
     status: form.status,
     notes: form.notes.trim(),
   });
@@ -571,22 +513,26 @@ export default function EmployeeRatePage() {
     if (
       !form.employee_id ||
       !form.salary_month ||
-      calculations.salary <= 0
+      calculations.basicSalary <= 0
     ) {
       showToast("error", t.requiredError);
       return;
     }
 
-    setSubmitting(true);
-
     try {
-      const payload = buildPayload();
+      setSubmitting(true);
 
       if (editingId) {
-        await axios.put(`${SALARY_API}/${editingId}`, payload);
+        await axios.put(
+          `${SALARY_API}/${editingId}`,
+          buildPayload()
+        );
         showToast("success", t.updated);
       } else {
-        await axios.post(SALARY_API, payload);
+        await axios.post(
+          SALARY_API,
+          buildPayload()
+        );
         showToast("success", t.saved);
       }
 
@@ -598,7 +544,8 @@ export default function EmployeeRatePage() {
       console.error("Employee salary save error:", error);
       showToast(
         "error",
-        error?.response?.data?.message || t.saveError
+        error?.response?.data?.message ||
+          t.saveError
       );
     } finally {
       setSubmitting(false);
@@ -609,16 +556,23 @@ export default function EmployeeRatePage() {
     if (!window.confirm(t.deleteConfirm)) return;
 
     try {
-      await axios.delete(`${SALARY_API}/${recordId}`);
+      await axios.delete(
+        `${SALARY_API}/${recordId}`
+      );
+
       setShowDetails(false);
       setDetailRecord(null);
       await fetchData();
       showToast("success", t.deleted);
     } catch (error) {
-      console.error("Employee salary delete error:", error);
+      console.error(
+        "Employee salary delete error:",
+        error
+      );
       showToast(
         "error",
-        error?.response?.data?.message || t.deleteError
+        error?.response?.data?.message ||
+          t.deleteError
       );
     }
   };
@@ -627,148 +581,799 @@ export default function EmployeeRatePage() {
     setDetailRecord(record);
     setShowDetails(true);
 
-    const recordId = getRecordId(record);
-    if (!recordId) return;
-
-    setDetailLoading(true);
-
     try {
-      const response = await axios.get(`${SALARY_API}/${recordId}`);
-      const responseRecord =
+      const response = await axios.get(
+        `${SALARY_API}/${getRecordId(record)}`
+      );
+
+      const data =
         response?.data?.data ??
-        response?.data?.result ??
         response?.data?.salary ??
         response?.data;
 
-      if (responseRecord && !Array.isArray(responseRecord)) {
-        setDetailRecord((previous) => ({
-          ...previous,
-          ...responseRecord,
-        }));
+      if (data && !Array.isArray(data)) {
+        setDetailRecord(data);
       }
     } catch (error) {
-      // The list record is still displayed when a dedicated detail endpoint
-      // is not available on the backend.
-      console.warn("Salary detail endpoint unavailable:", error);
-    } finally {
-      setDetailLoading(false);
+      console.warn(
+        "Detail endpoint did not return data:",
+        error
+      );
     }
   };
-
-  const availableMonths = useMemo(
-    () =>
-      [
-        ...new Set(
-          records
-            .map((record) => record.salary_month)
-            .filter(Boolean)
-        ),
-      ]
-        .sort()
-        .reverse(),
-    [records]
-  );
 
   const filteredRecords = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return records.filter((record) => {
-      const employeeName = getRecordEmployeeName(record, employees);
-      const status = normalizeStatus(record.status);
+    if (!query) return records;
 
-      const matchesSearch =
-        !query ||
-        [employeeName, record.salary_month, status, record.notes]
-          .join(" ")
-          .toLowerCase()
-          .includes(query);
+    return records.filter((record) =>
+      [
+        getRecordEmployeeName(record),
+        record?.salary_month,
+        normalizeStatus(record?.status),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [records, search, getRecordEmployeeName]);
 
-      const matchesMonth =
-        !monthFilter || record.salary_month === monthFilter;
-
-      const matchesStatus =
-        !statusFilter || status === statusFilter;
-
-      return matchesSearch && matchesMonth && matchesStatus;
-    });
-  }, [records, employees, search, monthFilter, statusFilter]);
-
-  const selectedDetailName = detailRecord
-    ? getRecordEmployeeName(detailRecord, employees)
-    : "-";
-
-  const detailBalance = toNumber(
-    pickValue(
-      detailRecord,
-      ["remaining_balance", "baqaya_hisaab"],
-      0
-    )
+  const summary = useMemo(
+    () => ({
+      totalRecords: filteredRecords.length,
+      paidRecords: filteredRecords.filter(
+        (record) =>
+          normalizeStatus(record.status) ===
+          "Paid"
+      ).length,
+      pendingRecords: filteredRecords.filter(
+        (record) =>
+          normalizeStatus(record.status) ===
+          "Pending"
+      ).length,
+      totalBalance: filteredRecords.reduce(
+        (sum, record) =>
+          sum +
+          toNumber(record.remaining_balance),
+        0
+      ),
+    }),
+    [filteredRecords]
   );
 
+  const printDocument = (saveAsPdf = false) => {
+    const rows = filteredRecords
+      .map(
+        (record, index) => `
+          <tr>
+            <td class="center">${index + 1}</td>
+            <td><strong>${getRecordEmployeeName(
+              record
+            )}</strong></td>
+            <td class="center">${
+              record.salary_month || "-"
+            }</td>
+            <td class="money">PKR ${money(
+              record.basic_salary
+            )}</td>
+            <td class="money">PKR ${money(
+              record.calculated_amount
+            )}</td>
+            <td class="money">PKR ${money(
+              record.advance
+            )}</td>
+            <td class="money">PKR ${money(
+              record.previous_advance
+            )}</td>
+            <td class="money strong">PKR ${money(
+              record.remaining_balance
+            )}</td>
+            <td class="center">${normalizeStatus(
+              record.status
+            )}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=1200,height=850"
+    );
+
+    if (!printWindow) return;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="${lang}" dir="${dir}">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${t.reportTitle}</title>
+        <style>
+          *{box-sizing:border-box}
+          body{font-family:Arial,sans-serif;background:#fff;color:#0f172a;padding:20px}
+          .sheet{max-width:1200px;margin:auto;border:1px solid #dbe3ee}
+          .header{background:#0f172a;color:#fff;padding:20px;display:flex;justify-content:space-between}
+          h1{margin:0;font-size:24px}
+          .sub{margin-top:4px;color:#cbd5e1;font-size:12px}
+          table{width:100%;border-collapse:collapse;font-size:11px}
+          th{background:#0f172a;color:#fff;padding:10px 8px;border:1px solid #334155}
+          td{padding:9px 8px;border:1px solid #e2e8f0}
+          tbody tr:nth-child(even){background:#f8fafc}
+          .center{text-align:center}
+          .money{text-align:right;white-space:nowrap}
+          .strong{font-weight:800;color:#4f46e5}
+          .hint{padding:10px;background:#eef2ff;color:#3730a3;text-align:center}
+          @media print{
+            @page{size:A4 landscape;margin:8mm}
+            body{padding:0}
+            .hint{display:none}
+          }
+        </style>
+      </head>
+      <body>
+        ${
+          saveAsPdf
+            ? `<div class="hint">Select <strong>Save as PDF</strong> in the print destination.</div>`
+            : ""
+        }
+        <div class="sheet">
+          <div class="header">
+            <div>
+              <h1>Ali Cage</h1>
+              <div class="sub">${t.reportTitle}</div>
+            </div>
+            <div>${t.printedOn}: ${new Date().toLocaleString(
+      isUrdu ? "ur-PK" : "en-PK"
+    )}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${t.employee}</th>
+                <th>${t.salaryMonth}</th>
+                <th>${t.basicSalary}</th>
+                <th>${t.calculatedAmount}</th>
+                <th>${t.advance}</th>
+                <th>${t.previousAdvance}</th>
+                <th>${t.remainingBalance}</th>
+                <th>${t.status}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                rows ||
+                `<tr><td colspan="9" class="center">${t.noRecords}</td></tr>`
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const details = detailRecord
+    ? [
+        [t.employee, getRecordEmployeeName(detailRecord)],
+        [t.salaryMonth, detailRecord.salary_month || "-"],
+        [t.basicSalary, `PKR ${money(detailRecord.basic_salary)}`],
+        [t.perDaySalary, `PKR ${money(detailRecord.per_day_salary)}`],
+        [t.extraDays, money(detailRecord.extra_days)],
+        [t.extraDayAmount, `PKR ${money(detailRecord.extra_day_amount)}`],
+        [t.absentDays, money(detailRecord.absent_days)],
+        [t.absentAmount, `PKR ${money(detailRecord.absent_amount)}`],
+        [t.timeDeductionHours, money(detailRecord.time_deduction_hours)],
+        [t.timeDeductionRate, `PKR ${money(detailRecord.time_deduction_rate)}`],
+        [t.timeDeductionAmount, `PKR ${money(detailRecord.time_deduction_amount)}`],
+        [t.overtimeHours, money(detailRecord.overtime_hours)],
+        [t.overtimeRate, `PKR ${money(detailRecord.overtime_rate)}`],
+        [t.overtimeAmount, `PKR ${money(detailRecord.overtime_amount)}`],
+        [t.calculatedAmount, `PKR ${money(detailRecord.calculated_amount)}`],
+        [t.advance, `PKR ${money(detailRecord.advance)}`],
+        [t.previousAdvance, `PKR ${money(detailRecord.previous_advance)}`],
+        [t.totalAdvance, `PKR ${money(detailRecord.total_advance)}`],
+        [t.remainingBalance, `PKR ${money(detailRecord.remaining_balance)}`],
+        [
+          t.status,
+          normalizeStatus(detailRecord.status) === "Paid"
+            ? t.paid
+            : t.pending,
+        ],
+      ]
+    : [];
+
   return (
-    <div
-      dir={dir}
-      className={`min-h-full w-full ${
-        isUrdu
-          ? "[font-family:'Noto_Nastaliq_Urdu',serif]"
-          : "font-sans"
-      }`}
-    >
+    <div className="employee-salary-page" dir={dir}>
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
       />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
 
-      {isUrdu && (
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      )}
+      <style>{`
+        *{box-sizing:border-box}
+
+        .employee-salary-page{
+          min-height:100vh;
+          padding:18px;
+          color:#0f172a;
+          background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);
+          font-family:${
+            isUrdu
+              ? "'Noto Nastaliq Urdu',Arial,sans-serif"
+              : "Inter,Helvetica,Arial,sans-serif"
+          };
+        }
+
+        .page-wrap{
+          width:100%;
+          max-width:1220px;
+          margin:0 auto;
+        }
+
+        .top-card{
+          background:rgba(255,255,255,.95);
+          border:1px solid #dbe3ee;
+          border-radius:22px;
+          padding:25px 22px 20px;
+          box-shadow:0 18px 50px rgba(15,23,42,.08);
+        }
+
+        .page-title{
+          margin:0;
+          font-size:30px;
+          line-height:1.2;
+          font-weight:950;
+          letter-spacing:-.8px;
+        }
+
+        .page-subtitle{
+          margin:7px 0 0;
+          color:#64748b;
+          font-size:13px;
+        }
+
+        .actions{
+          display:flex;
+          flex-wrap:wrap;
+          gap:8px;
+          margin-top:16px;
+        }
+
+        .btn{
+          border:1px solid transparent;
+          border-radius:12px;
+          padding:10px 14px;
+          font-size:13px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:7px;
+          transition:.15s ease;
+          white-space:nowrap;
+        }
+
+        .btn:hover{transform:translateY(-1px)}
+        .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+        .btn-language{
+          background:#fff;
+          color:#475569;
+          border-color:#cbd5e1;
+        }
+
+        .btn-summary{
+          background:#eef2ff;
+          color:#4338ca;
+          border-color:#c7d2fe;
+        }
+
+        .btn-dark{
+          background:#0f172a;
+          color:#fff;
+        }
+
+        .btn-white{
+          background:#fff;
+          color:#475569;
+          border-color:#cbd5e1;
+        }
+
+        .btn-primary{
+          background:#4f46e5;
+          color:#fff;
+          box-shadow:0 12px 24px rgba(79,70,229,.25);
+        }
+
+        .summary-grid{
+          display:grid;
+          grid-template-columns:repeat(4,minmax(0,1fr));
+          gap:12px;
+          margin-top:14px;
+        }
+
+        .summary-card{
+          background:#fff;
+          border:1px solid #dbe3ee;
+          border-radius:16px;
+          padding:15px;
+          box-shadow:0 8px 24px rgba(15,23,42,.05);
+        }
+
+        .summary-label{
+          color:#64748b;
+          font-size:11px;
+          font-weight:850;
+          text-transform:uppercase;
+          letter-spacing:.4px;
+        }
+
+        .summary-value{
+          margin-top:6px;
+          color:#0f172a;
+          font-size:21px;
+          font-weight:950;
+        }
+
+        .search-row{
+          margin:14px 0;
+          display:flex;
+          align-items:center;
+          gap:10px;
+        }
+
+        .search-box{
+          position:relative;
+          width:100%;
+          max-width:460px;
+        }
+
+        .search-icon{
+          position:absolute;
+          top:50%;
+          transform:translateY(-50%);
+          color:#94a3b8;
+          ${isUrdu ? "right:14px" : "left:14px"};
+        }
+
+        .search-input{
+          width:100%;
+          height:43px;
+          border:1px solid #cbd5e1;
+          border-radius:12px;
+          background:#fff;
+          color:#334155;
+          font-size:13px;
+          outline:none;
+          ${
+            isUrdu
+              ? "padding:0 42px 0 13px"
+              : "padding:0 13px 0 42px"
+          };
+        }
+
+        .search-input:focus,
+        .field-input:focus,
+        .field-select:focus,
+        .field-textarea:focus{
+          border-color:#6366f1;
+          box-shadow:0 0 0 3px rgba(99,102,241,.12);
+        }
+
+        .table-card{
+          width:100%;
+          background:#fff;
+          border:1px solid #dbe3ee;
+          border-radius:18px;
+          overflow:hidden;
+          box-shadow:0 18px 45px rgba(15,23,42,.07);
+        }
+
+        .salary-table{
+          width:100%;
+          table-layout:fixed;
+          border-collapse:collapse;
+        }
+
+        .salary-table th{
+          padding:14px 16px;
+          background:#0f172a;
+          color:#fff;
+          font-size:11px;
+          font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.5px;
+        }
+
+        .salary-table td{
+          padding:16px;
+          border-bottom:1px solid #e5e7eb;
+          color:#475569;
+          font-size:13px;
+          vertical-align:middle;
+        }
+
+        .salary-table tbody tr:last-child td{border-bottom:0}
+        .salary-table tbody tr:hover td{background:#f8faff}
+
+        .employee-cell{
+          display:flex;
+          align-items:center;
+          gap:11px;
+          min-width:0;
+        }
+
+        .avatar{
+          width:38px;
+          height:38px;
+          border-radius:13px;
+          flex-shrink:0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#eef2ff;
+          color:#4f46e5;
+          font-weight:950;
+        }
+
+        .employee-name{
+          min-width:0;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          color:#0f172a;
+          font-weight:900;
+        }
+
+        .status-badge{
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          padding:6px 11px;
+          border-radius:999px;
+          font-size:10px;
+          font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.35px;
+        }
+
+        .status-paid{
+          background:#dcfce7;
+          color:#166534;
+        }
+
+        .status-pending{
+          background:#fef3c7;
+          color:#92400e;
+        }
+
+        .view-btn{
+          border:1px solid #c7d2fe;
+          border-radius:10px;
+          background:#eef2ff;
+          color:#4338ca;
+          padding:8px 12px;
+          font-size:11px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+        }
+
+        .empty{
+          padding:50px 20px!important;
+          text-align:center!important;
+          color:#94a3b8!important;
+        }
+
+        .toast{
+          position:fixed;
+          bottom:22px;
+          ${isUrdu ? "left:22px" : "right:22px"};
+          z-index:120;
+          max-width:420px;
+          border-radius:14px;
+          padding:12px 15px;
+          color:#fff;
+          font-size:12px;
+          font-weight:850;
+          box-shadow:0 20px 50px rgba(15,23,42,.25);
+        }
+
+        .toast-success{background:#059669}
+        .toast-error{background:#dc2626}
+
+        .modal-backdrop{
+          position:fixed;
+          inset:0;
+          z-index:100;
+          padding:12px;
+          background:rgba(15,23,42,.62);
+          backdrop-filter:blur(3px);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        }
+
+        .modal{
+          width:100%;
+          max-width:980px;
+          max-height:calc(100vh - 24px);
+          background:#fff;
+          border-radius:18px;
+          overflow:hidden;
+          box-shadow:0 30px 90px rgba(15,23,42,.3);
+          display:flex;
+          flex-direction:column;
+        }
+
+        .details-modal{max-width:900px}
+
+        .modal-header{
+          padding:17px 19px;
+          border-bottom:1px solid #e2e8f0;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:12px;
+        }
+
+        .modal-title{
+          margin:0;
+          font-size:20px;
+          font-weight:950;
+        }
+
+        .modal-subtitle{
+          margin-top:4px;
+          color:#64748b;
+          font-size:11px;
+        }
+
+        .close-btn{
+          width:36px;
+          height:36px;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          background:#fff;
+          color:#475569;
+          cursor:pointer;
+        }
+
+        .modal-body{
+          padding:18px;
+          background:#f8fafc;
+          overflow-y:auto;
+        }
+
+        .form-grid{
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:12px;
+        }
+
+        .span-2{grid-column:span 2}
+        .span-3{grid-column:span 3}
+
+        .field-label{
+          display:block;
+          margin-bottom:6px;
+          color:#475569;
+          font-size:11px;
+          font-weight:850;
+        }
+
+        .field-input,
+        .field-select,
+        .field-textarea{
+          width:100%;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          background:#fff;
+          color:#0f172a;
+          font-size:13px;
+          outline:none;
+        }
+
+        .field-input,
+        .field-select{
+          height:41px;
+          padding:0 11px;
+        }
+
+        .field-textarea{
+          min-height:75px;
+          padding:10px 11px;
+          resize:vertical;
+        }
+
+        .readonly{
+          background:#f1f5f9;
+          color:#475569;
+          font-weight:850;
+        }
+
+        .calculation-box{
+          margin-top:14px;
+          border:1px solid #c7d2fe;
+          border-radius:14px;
+          padding:14px;
+          background:#eef2ff;
+        }
+
+        .calculation-grid{
+          display:grid;
+          grid-template-columns:repeat(4,minmax(0,1fr));
+          gap:10px;
+        }
+
+        .calculation-item{
+          border-radius:10px;
+          padding:10px;
+          background:#fff;
+          border:1px solid #dbe3ee;
+        }
+
+        .calculation-item small{
+          display:block;
+          color:#64748b;
+          font-size:9px;
+          text-transform:uppercase;
+          font-weight:850;
+        }
+
+        .calculation-item strong{
+          display:block;
+          margin-top:5px;
+          color:#0f172a;
+          font-size:14px;
+        }
+
+        .balance-item{
+          background:#0f172a;
+        }
+
+        .balance-item small{color:#cbd5e1}
+        .balance-item strong{color:#fff}
+
+        .formula{
+          margin-top:10px;
+          color:#4338ca;
+          font-size:10px;
+          line-height:1.6;
+        }
+
+        .modal-footer{
+          padding:14px 18px;
+          border-top:1px solid #e2e8f0;
+          background:#fff;
+          display:flex;
+          justify-content:flex-end;
+          gap:8px;
+        }
+
+        .details-grid{
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:10px;
+        }
+
+        .detail-card{
+          border:1px solid #dbe3ee;
+          border-radius:12px;
+          padding:11px;
+          background:#fff;
+        }
+
+        .detail-label{
+          color:#94a3b8;
+          font-size:9px;
+          font-weight:850;
+          text-transform:uppercase;
+          letter-spacing:.35px;
+        }
+
+        .detail-value{
+          margin-top:6px;
+          color:#0f172a;
+          font-size:13px;
+          font-weight:900;
+          word-break:break-word;
+        }
+
+        .notes-card{
+          margin-top:10px;
+          border:1px solid #dbe3ee;
+          border-radius:12px;
+          padding:12px;
+          background:#fff;
+        }
+
+        @media(max-width:900px){
+          .summary-grid,
+          .calculation-grid{
+            grid-template-columns:repeat(2,minmax(0,1fr));
+          }
+
+          .form-grid,
+          .details-grid{
+            grid-template-columns:repeat(2,minmax(0,1fr));
+          }
+
+          .span-3{grid-column:span 2}
+        }
+
+        @media(max-width:640px){
+          .employee-salary-page{padding:10px}
+          .top-card{padding:19px 15px;border-radius:17px}
+          .page-title{font-size:25px}
+          .actions .btn{flex:1}
+          .summary-grid,
+          .form-grid,
+          .details-grid,
+          .calculation-grid{
+            grid-template-columns:1fr;
+          }
+          .span-2,
+          .span-3{grid-column:span 1}
+          .salary-table th,
+          .salary-table td{padding:12px 8px}
+          .salary-table th{font-size:9px}
+          .view-btn span{display:none}
+          .modal-footer{flex-direction:column-reverse}
+          .modal-footer .btn{width:100%}
+        }
+      `}</style>
 
       {message.text && (
         <div
-          className={`fixed bottom-6 z-[100] max-w-sm rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-2xl ${
-            isUrdu ? "left-6" : "right-6"
-          } ${
+          className={`toast ${
             message.type === "error"
-              ? "bg-red-600"
-              : "bg-emerald-600"
+              ? "toast-error"
+              : "toast-success"
           }`}
         >
-          <div className="flex items-center gap-2">
-            <i
-              className={`bi ${
-                message.type === "error"
-                  ? "bi-exclamation-triangle"
-                  : "bi-check-circle"
-              }`}
-            />
-            <span>{message.text}</span>
-          </div>
+          {message.text}
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-[1450px]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">
-              {t.title}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {t.subtitle}
-            </p>
-          </div>
+      <div className="page-wrap">
+        <section className="top-card">
+          <h1 className="page-title">{t.title}</h1>
+          <p className="page-subtitle">
+            {t.subtitle}
+          </p>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="actions">
             <button
               type="button"
+              className="btn btn-language"
               onClick={() =>
                 setLang((previous) =>
                   previous === "en" ? "ur" : "en"
                 )
               }
-              className="flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-600"
             >
               <i className="bi bi-translate" />
               {t.toggleLang}
@@ -776,312 +1381,454 @@ export default function EmployeeRatePage() {
 
             <button
               type="button"
-              onClick={openAdd}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="btn btn-summary"
+              onClick={() =>
+                setShowSummary((previous) => !previous)
+              }
             >
-              <i className="bi bi-plus-lg" />
-              {t.newSalary}
+              <i className="bi bi-bar-chart-fill" />
+              {showSummary
+                ? t.hideSummary
+                : t.viewSummary}
             </button>
-          </div>
-        </div>
-
-        <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(220px,1fr)_170px_170px_auto]">
-            <div className="relative">
-              <i
-                className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                  isUrdu ? "right-3" : "left-3"
-                }`}
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t.searchPlaceholder}
-                className={`h-10 w-full rounded-lg border border-slate-300 bg-white text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                  isUrdu ? "pl-3 pr-9" : "pl-9 pr-3"
-                }`}
-              />
-            </div>
-
-            <select
-              value={monthFilter}
-              onChange={(event) => setMonthFilter(event.target.value)}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">{t.allMonths}</option>
-              {availableMonths.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">{t.allStatuses}</option>
-              <option value="Paid">{t.paid}</option>
-              <option value="Pending">{t.pending}</option>
-            </select>
 
             <button
               type="button"
-              onClick={fetchData}
-              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="btn btn-dark"
+              disabled={!filteredRecords.length}
+              onClick={() => printDocument(false)}
             >
-              <i className="bi bi-arrow-clockwise text-blue-600" />
+              <i className="bi bi-printer" />
+              {t.printList}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-white"
+              disabled={!filteredRecords.length}
+              onClick={() => printDocument(true)}
+            >
+              <i className="bi bi-file-earmark-pdf" />
+              {t.downloadPdf}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-white"
+              onClick={fetchData}
+            >
+              <i className="bi bi-arrow-clockwise" />
               {t.refresh}
             </button>
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={openAdd}
+            >
+              <i className="bi bi-person-plus-fill" />
+              {t.newSalary}
+            </button>
+          </div>
+        </section>
+
+        {showSummary && (
+          <section className="summary-grid">
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.totalRecords}
+              </div>
+              <div className="summary-value">
+                {summary.totalRecords}
+              </div>
+            </article>
+
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.paidRecords}
+              </div>
+              <div className="summary-value">
+                {summary.paidRecords}
+              </div>
+            </article>
+
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.pendingRecords}
+              </div>
+              <div className="summary-value">
+                {summary.pendingRecords}
+              </div>
+            </article>
+
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.totalBalance}
+              </div>
+              <div className="summary-value">
+                PKR {money(summary.totalBalance)}
+              </div>
+            </article>
+          </section>
+        )}
+
+        <div className="search-row">
+          <div className="search-box">
+            <i className="bi bi-search search-icon" />
+            <input
+              className="search-input"
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder={t.searchPlaceholder}
+            />
           </div>
         </div>
 
-        <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full table-fixed border-collapse">
+        <section className="table-card">
+          <table className="salary-table">
             <colgroup>
-              <col className="w-[50%]" />
-              <col className="w-[22%]" />
-              <col className="w-[28%]" />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "50%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "22%" }} />
             </colgroup>
 
-            <thead className="bg-slate-900 text-white">
+            <thead>
               <tr>
+                <th style={{ textAlign: "center" }}>#</th>
                 <th
-                  className={`px-4 py-3 text-xs font-bold uppercase tracking-wide ${
-                    isUrdu ? "text-right" : "text-left"
-                  }`}
+                  style={{
+                    textAlign: isUrdu
+                      ? "right"
+                      : "left",
+                  }}
                 >
                   {t.employee}
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold uppercase tracking-wide">
+                <th style={{ textAlign: "center" }}>
                   {t.status}
                 </th>
-                <th className="px-3 py-3 text-center text-xs font-bold uppercase tracking-wide">
+                <th style={{ textAlign: "center" }}>
                   {t.viewDetails}
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={3}
-                    className="px-4 py-14 text-center text-sm text-slate-400"
-                  >
-                    <i className="bi bi-arrow-repeat mx-2" />
+                  <td colSpan="4" className="empty">
+                    <i className="bi bi-arrow-repeat" />{" "}
                     {t.loading}
                   </td>
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={3}
-                    className="px-4 py-14 text-center text-sm text-slate-400"
-                  >
-                    <i className="bi bi-inbox mx-2" />
+                  <td colSpan="4" className="empty">
+                    <i className="bi bi-inbox" />{" "}
                     {t.noRecords}
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map((record) => {
-                  const employeeName = getRecordEmployeeName(
-                    record,
-                    employees
-                  );
-                  const status = normalizeStatus(record.status);
+                filteredRecords.map(
+                  (record, index) => {
+                    const employeeName =
+                      getRecordEmployeeName(record);
+                    const status = normalizeStatus(
+                      record.status
+                    );
 
-                  return (
-                    <tr
-                      key={getRecordId(record)}
-                      className="transition hover:bg-slate-50"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                            {employeeName.charAt(0).toUpperCase()}
+                    return (
+                      <tr key={getRecordId(record)}>
+                        <td
+                          style={{
+                            textAlign: "center",
+                            color: "#94a3b8",
+                          }}
+                        >
+                          {index + 1}
+                        </td>
+
+                        <td>
+                          <div className="employee-cell">
+                            <div className="avatar">
+                              {employeeName
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                            <div className="employee-name">
+                              {employeeName}
+                            </div>
                           </div>
-                          <span className="min-w-0 break-words text-sm font-bold text-slate-800">
-                            {employeeName}
-                          </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="px-3 py-3 text-center">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${
-                            status === "Paid"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
+                        <td
+                          style={{ textAlign: "center" }}
                         >
-                          {status === "Paid" ? t.paid : t.pending}
-                        </span>
-                      </td>
-
-                      <td className="px-3 py-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => openDetails(record)}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 sm:px-4"
-                        >
-                          <i className="bi bi-eye" />
-                          <span className="hidden sm:inline">
-                            {t.viewDetails}
+                          <span
+                            className={`status-badge ${
+                              status === "Paid"
+                                ? "status-paid"
+                                : "status-pending"
+                            }`}
+                          >
+                            {status === "Paid"
+                              ? t.paid
+                              : t.pending}
                           </span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
+                        </td>
+
+                        <td
+                          style={{ textAlign: "center" }}
+                        >
+                          <button
+                            type="button"
+                            className="view-btn"
+                            onClick={() =>
+                              openDetails(record)
+                            }
+                          >
+                            <i className="bi bi-eye-fill" />
+                            <span>
+                              {t.viewDetails}
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+                )
               )}
             </tbody>
           </table>
-        </div>
+        </section>
       </div>
 
       {showForm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-2 backdrop-blur-[2px] sm:p-4"
+          className="modal-backdrop"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeForm();
+            if (
+              event.target === event.currentTarget
+            ) {
+              closeForm();
+            }
           }}
         >
-          <div
-            dir={dir}
-            className="flex max-h-[96vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-          >
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5">
+          <div className="modal" dir={dir}>
+            <div className="modal-header">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">
-                  {editingId ? t.update : t.newSalary}
+                <h2 className="modal-title">
+                  {editingId
+                    ? t.editTitle
+                    : t.createTitle}
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {t.formula}
-                </p>
+                <div className="modal-subtitle">
+                  {t.formSubtitle}
+                </div>
               </div>
 
               <button
                 type="button"
+                className="close-btn"
                 onClick={closeForm}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
               >
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            <div className="overflow-y-auto bg-slate-50 p-3 sm:p-5">
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <h3 className="mb-3 border-b border-slate-100 pb-2 text-sm font-bold text-slate-800">
-                  {t.employeeInformation}
-                </h3>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="span-2">
+                  <label className="field-label">
+                    {t.employee} *
+                  </label>
+                  <select
+                    className="field-select"
+                    value={form.employee_id}
+                    onChange={(event) =>
+                      handleEmployeeChange(
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="">
+                      {t.selectEmployee}
+                    </option>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <FormField label={t.employee} required>
-                    <select
-                      value={form.employee_id}
-                      onChange={(event) =>
-                        handleEmployeeChange(event.target.value)
-                      }
-                      className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="">{t.selectEmployee}</option>
-                      {employees.map((employee) => (
-                        <option
-                          key={getEmployeeId(employee)}
-                          value={getEmployeeId(employee)}
-                        >
-                          {getEmployeeName(employee)}
-                        </option>
-                      ))}
-                    </select>
-                  </FormField>
+                    {employees.map((employee) => (
+                      <option
+                        key={getEmployeeId(employee)}
+                        value={getEmployeeId(employee)}
+                      >
+                        {getEmployeeName(employee)}
+                      </option>
+                    ))}
+                  </select>
 
-                  <FormField
-                    label={t.salaryMonth}
+                  {!loading &&
+                    employees.length === 0 && (
+                      <div
+                        style={{
+                          marginTop: 5,
+                          color: "#dc2626",
+                          fontSize: 10,
+                        }}
+                      >
+                        {t.noEmployees}
+                      </div>
+                    )}
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.salaryMonth} *
+                  </label>
+                  <input
                     type="month"
+                    className="field-input"
                     value={form.salary_month}
                     onChange={(event) =>
-                      updateField("salary_month", event.target.value)
+                      updateField(
+                        "salary_month",
+                        event.target.value
+                      )
                     }
-                    required
-                  />
-
-                  <FormField label={t.status}>
-                    <select
-                      value={form.status}
-                      onChange={(event) =>
-                        updateField("status", event.target.value)
-                      }
-                      className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="Pending">{t.pending}</option>
-                      <option value="Paid">{t.paid}</option>
-                    </select>
-                  </FormField>
-
-                  <FormField
-                    label={t.salary}
-                    value={form.basic_salary}
-                    onChange={(event) =>
-                      handleSalaryChange(event.target.value)
-                    }
-                    required
-                  />
-
-                  <FormField
-                    label={t.perDaySalary}
-                    value={`PKR ${money(calculations.perDaySalary)}`}
-                    readOnly
-                    type="text"
                   />
                 </div>
 
-                {!loading && employees.length === 0 && (
-                  <p className="mt-2 text-xs font-semibold text-red-500">
-                    {t.noEmployees}
-                  </p>
-                )}
+                <div>
+                  <label className="field-label">
+                    {t.basicSalary} *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
+                    value={form.basic_salary}
+                    onChange={(event) =>
+                      handleSalaryChange(
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
 
-                <h3 className="mb-3 mt-5 border-b border-slate-100 pb-2 text-sm font-bold text-slate-800">
-                  {t.attendanceInformation}
-                </h3>
+                <div>
+                  <label className="field-label">
+                    {t.perDaySalary}
+                  </label>
+                  <input
+                    className="field-input readonly"
+                    readOnly
+                    value={`PKR ${money(
+                      calculations.perDaySalary
+                    )}`}
+                  />
+                </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField
-                    label={t.extraDays}
+                <div>
+                  <label className="field-label">
+                    {t.status}
+                  </label>
+                  <select
+                    className="field-select"
+                    value={form.status}
+                    onChange={(event) =>
+                      updateField(
+                        "status",
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="Pending">
+                      {t.pending}
+                    </option>
+                    <option value="Paid">
+                      {t.paid}
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.extraDays}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    className="field-input"
                     value={form.extra_days}
                     onChange={(event) =>
-                      updateField("extra_days", event.target.value)
+                      updateField(
+                        "extra_days",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <FormField
-                    label={t.extraDayAmount}
-                    value={`PKR ${money(calculations.extraDayAmount)}`}
+                <div>
+                  <label className="field-label">
+                    {t.extraDayAmount}
+                  </label>
+                  <input
+                    className="field-input readonly"
                     readOnly
-                    type="text"
+                    value={`PKR ${money(
+                      calculations.extraDayAmount
+                    )}`}
                   />
+                </div>
 
-                  <FormField
-                    label={t.absentDays}
+                <div>
+                  <label className="field-label">
+                    {t.absentDays}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    className="field-input"
                     value={form.absent_days}
                     onChange={(event) =>
-                      updateField("absent_days", event.target.value)
+                      updateField(
+                        "absent_days",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <FormField
-                    label={t.absentAmount}
-                    value={`PKR ${money(calculations.absentAmount)}`}
+                <div>
+                  <label className="field-label">
+                    {t.absentAmount}
+                  </label>
+                  <input
+                    className="field-input readonly"
                     readOnly
-                    type="text"
+                    value={`PKR ${money(
+                      calculations.absentAmount
+                    )}`}
                   />
+                </div>
 
-                  <FormField
-                    label={t.timeDeductionHours}
-                    value={form.time_deduction_hours}
+                <div>
+                  <label className="field-label">
+                    {t.timeDeductionHours}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
+                    value={
+                      form.time_deduction_hours
+                    }
                     onChange={(event) =>
                       updateField(
                         "time_deduction_hours",
@@ -1089,9 +1836,17 @@ export default function EmployeeRatePage() {
                       )
                     }
                   />
+                </div>
 
-                  <FormField
-                    label={t.timeDeductionRate}
+                <div>
+                  <label className="field-label">
+                    {t.timeDeductionRate}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
                     value={form.time_deduction_rate}
                     onChange={(event) =>
                       updateField(
@@ -1100,55 +1855,100 @@ export default function EmployeeRatePage() {
                       )
                     }
                   />
+                </div>
 
-                  <FormField
-                    label={t.overtimeHours}
+                <div>
+                  <label className="field-label">
+                    {t.timeDeductionAmount}
+                  </label>
+                  <input
+                    className="field-input readonly"
+                    readOnly
+                    value={`PKR ${money(
+                      calculations.timeDeductionAmount
+                    )}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.overtimeHours}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
                     value={form.overtime_hours}
                     onChange={(event) =>
-                      updateField("overtime_hours", event.target.value)
-                    }
-                  />
-
-                  <FormField
-                    label={t.overtimeRate}
-                    value={form.overtime_rate}
-                    onChange={(event) =>
-                      updateField("overtime_rate", event.target.value)
+                      updateField(
+                        "overtime_hours",
+                        event.target.value
+                      )
                     }
                   />
                 </div>
 
-                <h3 className="mb-3 mt-5 border-b border-slate-100 pb-2 text-sm font-bold text-slate-800">
-                  {t.salaryCalculation}
-                </h3>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField
-                    label={t.timeDeductionAmount}
-                    value={`PKR ${money(
-                      calculations.timeDeductionAmount
-                    )}`}
-                    readOnly
-                    type="text"
-                  />
-
-                  <FormField
-                    label={t.overtimeAmount}
-                    value={`PKR ${money(calculations.overtimeAmount)}`}
-                    readOnly
-                    type="text"
-                  />
-
-                  <FormField
-                    label={t.advance}
-                    value={form.advance}
+                <div>
+                  <label className="field-label">
+                    {t.overtimeRate}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
+                    value={form.overtime_rate}
                     onChange={(event) =>
-                      updateField("advance", event.target.value)
+                      updateField(
+                        "overtime_rate",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <FormField
-                    label={t.previousAdvance}
+                <div>
+                  <label className="field-label">
+                    {t.overtimeAmount}
+                  </label>
+                  <input
+                    className="field-input readonly"
+                    readOnly
+                    value={`PKR ${money(
+                      calculations.overtimeAmount
+                    )}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.advance}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
+                    value={form.advance}
+                    onChange={(event) =>
+                      updateField(
+                        "advance",
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">
+                    {t.previousAdvance}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
                     value={form.previous_advance}
                     onChange={(event) =>
                       updateField(
@@ -1159,94 +1959,99 @@ export default function EmployeeRatePage() {
                   />
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                    <p className="text-[10px] font-bold uppercase text-blue-600">
-                      {t.calculatedAmount}
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-blue-800">
-                      PKR {money(calculations.calculatedAmount)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
-                    <p className="text-[10px] font-bold uppercase text-violet-600">
-                      {t.totalAdvance}
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-violet-800">
-                      PKR {money(calculations.totalAdvance)}
-                    </p>
-                  </div>
-
-                  <div
-                    className={`rounded-lg border p-3 ${
-                      calculations.remainingBalance < 0
-                        ? "border-red-200 bg-red-50"
-                        : "border-emerald-200 bg-emerald-50"
-                    }`}
-                  >
-                    <p
-                      className={`text-[10px] font-bold uppercase ${
-                        calculations.remainingBalance < 0
-                          ? "text-red-600"
-                          : "text-emerald-600"
-                      }`}
-                    >
-                      {t.remainingBalance}
-                    </p>
-                    <p
-                      className={`mt-1 text-lg font-bold ${
-                        calculations.remainingBalance < 0
-                          ? "text-red-700"
-                          : "text-emerald-700"
-                      }`}
-                    >
-                      PKR {money(calculations.remainingBalance)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
+                <div className="span-3">
+                  <label className="field-label">
                     {t.notes}
                   </label>
                   <textarea
-                    rows={3}
+                    className="field-textarea"
                     value={form.notes}
-                    onChange={(event) =>
-                      updateField("notes", event.target.value)
-                    }
                     placeholder={t.notesPlaceholder}
-                    className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    onChange={(event) =>
+                      updateField(
+                        "notes",
+                        event.target.value
+                      )
+                    }
                   />
                 </div>
+              </div>
 
-                <div className="mt-3 rounded-lg bg-slate-100 p-3 text-xs leading-6 text-slate-600">
-                  <p>{t.formula}</p>
-                  <p>{t.balanceFormula}</p>
+              <div className="calculation-box">
+                <div className="calculation-grid">
+                  <div className="calculation-item">
+                    <small>
+                      {t.calculatedAmount}
+                    </small>
+                    <strong>
+                      PKR{" "}
+                      {money(
+                        calculations.calculatedAmount
+                      )}
+                    </strong>
+                  </div>
+
+                  <div className="calculation-item">
+                    <small>{t.advance}</small>
+                    <strong>
+                      PKR {money(calculations.advance)}
+                    </strong>
+                  </div>
+
+                  <div className="calculation-item">
+                    <small>
+                      {t.previousAdvance}
+                    </small>
+                    <strong>
+                      PKR{" "}
+                      {money(
+                        calculations.previousAdvance
+                      )}
+                    </strong>
+                  </div>
+
+                  <div className="calculation-item balance-item">
+                    <small>
+                      {t.remainingBalance}
+                    </small>
+                    <strong>
+                      PKR{" "}
+                      {money(
+                        calculations.remainingBalance
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="formula">
+                  {t.formula}
+                  <br />
+                  {t.balanceFormula}
                 </div>
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:justify-end sm:px-5">
+            <div className="modal-footer">
               <button
                 type="button"
-                onClick={closeForm}
+                className="btn btn-white"
                 disabled={submitting}
-                className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                onClick={closeForm}
               >
                 {t.cancel}
               </button>
 
               <button
                 type="button"
-                onClick={handleSave}
+                className="btn btn-primary"
                 disabled={submitting}
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={handleSave}
               >
                 <i
                   className={`bi ${
-                    submitting ? "bi-arrow-repeat" : "bi-check2-circle"
+                    submitting
+                      ? "bi-arrow-repeat"
+                      : "bi-check2-circle"
                   }`}
                 />
                 {submitting
@@ -1262,197 +2067,81 @@ export default function EmployeeRatePage() {
 
       {showDetails && detailRecord && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-2 backdrop-blur-[2px] sm:p-4"
+          className="modal-backdrop"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (
+              event.target === event.currentTarget
+            ) {
               setShowDetails(false);
             }
           }}
         >
-          <div
-            dir={dir}
-            className="flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-          >
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5">
+          <div className="modal details-modal" dir={dir}>
+            <div className="modal-header">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">
-                  {t.details}
+                <h2 className="modal-title">
+                  {t.detailsTitle}
                 </h2>
-                <p className="mt-0.5 text-sm font-semibold text-blue-700">
-                  {selectedDetailName}
-                </p>
+                <div className="modal-subtitle">
+                  {getRecordEmployeeName(detailRecord)}
+                </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setShowDetails(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                className="close-btn"
+                onClick={() =>
+                  setShowDetails(false)
+                }
               >
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            <div className="overflow-y-auto bg-white p-4 sm:p-5">
-              {detailLoading && (
-                <div className="mb-3 rounded-lg bg-blue-50 p-3 text-center text-sm text-blue-700">
-                  <i className="bi bi-arrow-repeat mx-2" />
-                  {t.loadingDetails}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <DetailItem label={t.employee} value={selectedDetailName} />
-                <DetailItem
-                  label={t.salaryMonth}
-                  value={detailRecord.salary_month || "-"}
-                />
-                <DetailItem
-                  label={t.status}
-                  value={
-                    normalizeStatus(detailRecord.status) === "Paid"
-                      ? t.paid
-                      : t.pending
-                  }
-                />
-                <DetailItem
-                  label={t.salary}
-                  value={`PKR ${money(detailRecord.basic_salary)}`}
-                />
-
-                <DetailItem
-                  label={t.perDaySalary}
-                  value={`PKR ${money(
-                    pickValue(detailRecord, ["per_day_salary"], 0)
-                  )}`}
-                />
-                <DetailItem
-                  label={t.extraDays}
-                  value={`${money(detailRecord.extra_days)} ${t.days}`}
-                />
-                <DetailItem
-                  label={t.extraDayAmount}
-                  value={`PKR ${money(detailRecord.extra_day_amount)}`}
-                />
-                <DetailItem
-                  label={t.absentDays}
-                  value={`${money(
-                    pickValue(
-                      detailRecord,
-                      ["absent_days", "absent"],
-                      0
-                    )
-                  )} ${t.days}`}
-                />
-
-                <DetailItem
-                  label={t.absentAmount}
-                  value={`PKR ${money(
-                    pickValue(
-                      detailRecord,
-                      ["absent_amount", "absent_deduction"],
-                      0
-                    )
-                  )}`}
-                />
-                <DetailItem
-                  label={t.timeDeductionHours}
-                  value={`${money(
-                    pickValue(
-                      detailRecord,
-                      ["time_deduction_hours", "time_deduction"],
-                      0
-                    )
-                  )} ${t.hours}`}
-                />
-                <DetailItem
-                  label={t.timeDeductionRate}
-                  value={`PKR ${money(
-                    detailRecord.time_deduction_rate
-                  )}`}
-                />
-                <DetailItem
-                  label={t.timeDeductionAmount}
-                  value={`PKR ${money(
-                    detailRecord.time_deduction_amount
-                  )}`}
-                />
-
-                <DetailItem
-                  label={t.overtimeHours}
-                  value={`${money(detailRecord.overtime_hours)} ${
-                    t.hours
-                  }`}
-                />
-                <DetailItem
-                  label={t.overtimeRate}
-                  value={`PKR ${money(detailRecord.overtime_rate)}`}
-                />
-                <DetailItem
-                  label={t.overtimeAmount}
-                  value={`PKR ${money(detailRecord.overtime_amount)}`}
-                />
-                <DetailItem
-                  label={t.calculatedAmount}
-                  value={`PKR ${money(
-                    pickValue(
-                      detailRecord,
-                      ["calculated_amount", "hisaab_amount"],
-                      0
-                    )
-                  )}`}
-                />
-
-                <DetailItem
-                  label={t.advance}
-                  value={`PKR ${money(
-                    pickValue(
-                      detailRecord,
-                      ["advance", "current_advance"],
-                      0
-                    )
-                  )}`}
-                />
-                <DetailItem
-                  label={t.previousAdvance}
-                  value={`PKR ${money(detailRecord.previous_advance)}`}
-                />
-                <DetailItem
-                  label={t.totalAdvance}
-                  value={`PKR ${money(
-                    pickValue(detailRecord, ["total_advance"], 0)
-                  )}`}
-                />
-                <DetailItem
-                  label={t.remainingBalance}
-                  value={`PKR ${money(detailBalance)}`}
-                  important
-                  negative={detailBalance < 0}
-                />
+            <div className="modal-body">
+              <div className="details-grid">
+                {details.map(([label, value]) => (
+                  <div
+                    className="detail-card"
+                    key={label}
+                  >
+                    <div className="detail-label">
+                      {label}
+                    </div>
+                    <div className="detail-value">
+                      {value}
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              <div className="notes-card">
+                <div className="detail-label">
                   {t.notes}
-                </p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                </div>
+                <div className="detail-value">
                   {detailRecord.notes || "-"}
-                </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:justify-end sm:px-5">
+            <div className="modal-footer">
               <button
                 type="button"
-                onClick={() => setShowDetails(false)}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="btn btn-white"
+                onClick={() =>
+                  setShowDetails(false)
+                }
               >
                 {t.close}
               </button>
 
               <button
                 type="button"
-                onClick={() => openEdit(detailRecord)}
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="btn btn-summary"
+                onClick={() =>
+                  openEdit(detailRecord)
+                }
               >
                 <i className="bi bi-pencil-square" />
                 {t.edit}
@@ -1460,8 +2149,16 @@ export default function EmployeeRatePage() {
 
               <button
                 type="button"
-                onClick={() => handleDelete(getRecordId(detailRecord))}
-                className="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+                className="btn"
+                style={{
+                  background: "#fee2e2",
+                  color: "#991b1b",
+                }}
+                onClick={() =>
+                  handleDelete(
+                    getRecordId(detailRecord)
+                  )
+                }
               >
                 <i className="bi bi-trash3" />
                 {t.delete}
