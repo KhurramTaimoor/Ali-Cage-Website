@@ -1,97 +1,156 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000/api";
+const API_ROOT = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+const EMPLOYEES_API = `${API_ROOT}/api/employees`;
+const DEPARTMENTS_API = `${API_ROOT}/api/departments`;
 
 const LANG = {
   en: {
     title: "Employee Registration",
-    subtitle: "Manage company employees, designations, and salaries",
+    subtitle:
+      "Manage company employees, departments, designations and salaries",
     addBtn: "New Employee",
-    searchPlaceholder: "Search by name, designation, department, CNIC or phone...",
+    searchPlaceholder:
+      "Search by name, designation, department, CNIC or phone...",
+    toggleLang: "اردو",
+    viewSummary: "View Summary",
+    hideSummary: "Hide Summary",
+    printBtn: "Print List",
+    pdfBtn: "Download PDF",
+    refresh: "Refresh",
+
+    employee: "Employee",
+    designation: "Designation",
+    department: "Department",
+    viewDetails: "View Details",
+    actions: "Actions",
+    status: "Status",
+    active: "Active",
+
+    totalEmployees: "Total Employees",
+    visibleRecords: "Visible Records",
+    totalSalary: "Total Basic Salary",
+
     fullName: "Full Name",
     fatherName: "Father Name",
     cnic: "CNIC",
     phone: "Phone No",
-    designation: "Designation",
-    department: "Department",
     selectDepartment: "-- Select Department --",
     joiningDate: "Joining Date",
     basicSalary: "Basic Salary",
-    save: "Save",
+
+    employeeDetails: "Employee Details",
+    formSubtitle:
+      "Employee personal, employment and salary information",
+    addTitle: "New Employee",
+    editTitle: "Edit Employee",
+    detailsTitle: "Employee Details",
+
+    save: "Save Employee",
+    update: "Update Employee",
     saving: "Saving...",
     cancel: "Cancel",
+    close: "Close",
     edit: "Edit",
     delete: "Delete",
-    actions: "Action",
+
+    notes: "Information",
     noRecords: "No employees found.",
-    toggleLang: "اردو",
-    printBtn: "Print List",
-    pdfBtn: "Download PDF",
+    noDepartments: "No departments found from backend.",
+    loading: "Loading employees...",
+    loadError: "Employees could not be loaded from backend.",
+    saveError: "Employee could not be saved.",
+    deleteError: "Employee could not be deleted.",
+    requiredError:
+      "Full name, designation and department are required.",
+    successSave: "Employee saved successfully.",
+    successUpdate: "Employee updated successfully.",
+    successDelete: "Employee deleted successfully.",
+    deleteConfirm:
+      "Are you sure you want to delete this employee?",
+
     reportHeader: "Employees List",
     printedOn: "Printed On",
-    successSave: "Employee saved successfully!",
-    successUpdate: "Employee updated successfully!",
-    successDelete: "Employee deleted successfully!",
-    errorMsg: "Please fill all required fields: Name, Designation and Department.",
-    deleteConfirm: "Are you sure you want to delete this employee?",
-    refresh: "Refresh",
-    viewSummary: "View Summary",
-    hideSummary: "Hide Summary",
-    totalEmployees: "Total Employees",
-    visibleRecords: "Visible Records",
-    totalSalary: "Total Salary",
-    employeeDetails: "Employee Details",
-    salaryInfo: "Salary Information",
-    formSubtitle: "Employee personal, job and salary information",
-    loading: "Loading employees...",
   },
 
   ur: {
     title: "ملازمین کی رجسٹریشن",
-    subtitle: "کمپنی کے ملازمین، عہدوں اور تنخواہوں کا انتظام کریں",
+    subtitle:
+      "کمپنی کے ملازمین، محکموں، عہدوں اور تنخواہوں کا انتظام کریں",
     addBtn: "نیا ملازم",
-    searchPlaceholder: "نام، عہدہ، محکمہ، شناختی کارڈ یا فون سے تلاش کریں...",
+    searchPlaceholder:
+      "نام، عہدہ، محکمہ، شناختی کارڈ یا فون سے تلاش کریں...",
+    toggleLang: "English",
+    viewSummary: "سمری دیکھیں",
+    hideSummary: "سمری بند کریں",
+    printBtn: "فہرست پرنٹ کریں",
+    pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
+    refresh: "ری فریش",
+
+    employee: "ملازم",
+    designation: "عہدہ",
+    department: "محکمہ",
+    viewDetails: "تفصیل دیکھیں",
+    actions: "ایکشن",
+    status: "حالت",
+    active: "فعال",
+
+    totalEmployees: "کل ملازمین",
+    visibleRecords: "نظر آنے والے ریکارڈ",
+    totalSalary: "کل بنیادی تنخواہ",
+
     fullName: "پورا نام",
     fatherName: "والد کا نام",
     cnic: "شناختی کارڈ نمبر",
     phone: "فون نمبر",
-    designation: "عہدہ",
-    department: "محکمہ",
     selectDepartment: "-- محکمہ منتخب کریں --",
     joiningDate: "تاریخ شمولیت",
     basicSalary: "بنیادی تنخواہ",
-    save: "محفوظ کریں",
+
+    employeeDetails: "ملازم کی تفصیل",
+    formSubtitle:
+      "ملازم کی ذاتی، ملازمت اور تنخواہ کی معلومات",
+    addTitle: "نیا ملازم",
+    editTitle: "ملازم میں ترمیم",
+    detailsTitle: "ملازم کی مکمل تفصیل",
+
+    save: "ملازم محفوظ کریں",
+    update: "ملازم اپڈیٹ کریں",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
+    close: "بند کریں",
     edit: "ترمیم",
     delete: "حذف",
-    actions: "ایکشن",
+
+    notes: "معلومات",
     noRecords: "کوئی ملازم نہیں ملا۔",
-    toggleLang: "English",
-    printBtn: "فہرست پرنٹ کریں",
-    pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
+    noDepartments: "بیک اینڈ سے کوئی محکمہ نہیں ملا۔",
+    loading: "ملازمین لوڈ ہو رہے ہیں...",
+    loadError: "بیک اینڈ سے ملازمین لوڈ نہیں ہوئے۔",
+    saveError: "ملازم محفوظ نہیں ہوا۔",
+    deleteError: "ملازم حذف نہیں ہوا۔",
+    requiredError: "پورا نام، عہدہ اور محکمہ ضروری ہیں۔",
+    successSave: "ملازم کامیابی سے محفوظ ہو گیا۔",
+    successUpdate: "ملازم کامیابی سے اپڈیٹ ہو گیا۔",
+    successDelete: "ملازم کامیابی سے حذف ہو گیا۔",
+    deleteConfirm:
+      "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
+
     reportHeader: "ملازمین کی فہرست",
     printedOn: "پرنٹ کی تاریخ",
-    successSave: "ملازم کامیابی سے محفوظ ہو گیا!",
-    successUpdate: "ملازم کا ریکارڈ اپڈیٹ ہو گیا!",
-    successDelete: "ملازم حذف ہو گیا!",
-    errorMsg: "براہ کرم لازمی خانے پُر کریں: نام، عہدہ اور محکمہ۔",
-    deleteConfirm: "کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟",
-    refresh: "ری فریش",
-    viewSummary: "سمری دیکھیں",
-    hideSummary: "سمری بند کریں",
-    totalEmployees: "کل ملازمین",
-    visibleRecords: "نظر آنے والے ریکارڈز",
-    totalSalary: "کل تنخواہ",
-    employeeDetails: "ملازم کی تفصیل",
-    salaryInfo: "تنخواہ معلومات",
-    formSubtitle: "ملازم کی ذاتی، جاب اور تنخواہ معلومات",
-    loading: "ملازمین لوڈ ہو رہے ہیں...",
   },
 };
 
-const defaultForm = {
+const createEmptyForm = () => ({
   full_name: "",
   father_name: "",
   cnic: "",
@@ -100,21 +159,49 @@ const defaultForm = {
   department_id: "",
   joining_date: "",
   basic_salary: "",
-};
+});
 
 const getList = (value) => {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
   if (Array.isArray(value?.rows)) return value.rows;
   if (Array.isArray(value?.result)) return value.result;
+  if (Array.isArray(value?.employees)) return value.employees;
+  if (Array.isArray(value?.departments)) return value.departments;
   return [];
 };
 
-const fmt = (value) =>
-  Number(value || 0).toLocaleString("en-PK", {
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const money = (value) =>
+  toNumber(value).toLocaleString("en-PK", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+
+const getDepartmentId = (department) =>
+  department?.id ?? department?.department_id ?? "";
+
+const getDepartmentLabel = (department) =>
+  department?.department_name ??
+  department?.name ??
+  department?.name_en ??
+  "";
+
+const getEmployeeId = (record) =>
+  record?.id ?? record?.employee_id ?? "";
+
+const normalizeDate = (value) => {
+  if (!value) return "";
+
+  const stringValue = String(value);
+  return stringValue.includes("T")
+    ? stringValue.slice(0, 10)
+    : stringValue.slice(0, 10);
+};
 
 export default function EmployeePage() {
   const [lang, setLang] = useState("en");
@@ -125,28 +212,27 @@ export default function EmployeePage() {
   const [records, setRecords] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
 
+  const [showForm, setShowForm] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailRecord, setDetailRecord] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(createEmptyForm());
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({
     type: "",
     text: "",
   });
 
-  const [form, setForm] = useState(defaultForm);
-
   const departmentMap = useMemo(() => {
     const map = {};
 
     departments.forEach((department) => {
-      map[String(department.id)] =
-        department.department_name ||
-        department.name ||
-        department.name_en ||
-        `#${department.id}`;
+      map[String(getDepartmentId(department))] =
+        getDepartmentLabel(department);
     });
 
     return map;
@@ -154,8 +240,8 @@ export default function EmployeePage() {
 
   const getDepartmentName = useCallback(
     (record) =>
-      record.department_name ||
-      departmentMap[String(record.department_id)] ||
+      record?.department_name ||
+      departmentMap[String(record?.department_id)] ||
       "-",
     [departmentMap]
   );
@@ -163,176 +249,191 @@ export default function EmployeePage() {
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       setMessage({
         type: "",
         text: "",
       });
-    }, 3000);
+    }, 3200);
   }, []);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
+
     try {
-      setLoading(true);
+      const [employeeResponse, departmentResponse] =
+        await Promise.all([
+          axios.get(EMPLOYEES_API),
+          axios.get(DEPARTMENTS_API),
+        ]);
 
-      const [resEmp, resDept] = await Promise.all([
-        axios.get(`${API_BASE}/employees`),
-        axios.get(`${API_BASE}/departments`),
-      ]);
+      setRecords(getList(employeeResponse.data));
+      setDepartments(getList(departmentResponse.data));
+    } catch (error) {
+      console.error("Employee load error:", error);
+      setRecords([]);
+      setDepartments([]);
 
-      setRecords(getList(resEmp.data));
-      setDepartments(getList(resDept.data));
-    } catch (err) {
-      setDepartments([
-        {
-          id: 1,
-          department_name: "Production",
-        },
-        {
-          id: 2,
-          department_name: "Sales",
-        },
-        {
-          id: 3,
-          department_name: "Administration",
-        },
-      ]);
-
-      setRecords([
-        {
-          id: 1,
-          full_name: "Ahmed Raza",
-          father_name: "Ali Raza",
-          cnic: "37405-1234567-1",
-          phone: "0300-1234567",
-          designation: "Machine Operator",
-          department_id: 1,
-          department_name: "Production",
-          joining_date: "2023-01-15",
-          basic_salary: 45000,
-        },
-        {
-          id: 2,
-          full_name: "Hassan Ali",
-          father_name: "Sajjad Ali",
-          cnic: "37405-7654321-3",
-          phone: "0333-9876543",
-          designation: "Sales Executive",
-          department_id: 2,
-          department_name: "Sales",
-          joining_date: "2023-05-10",
-          basic_salary: 55000,
-        },
-      ]);
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.loadError
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast, t.loadError]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  const updateField = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
+
   const openAdd = () => {
-    setForm(defaultForm);
     setEditingId(null);
+    setForm(createEmptyForm());
     setShowForm(true);
   };
 
   const openEdit = (record) => {
+    setEditingId(getEmployeeId(record));
+
     setForm({
-      full_name: record.full_name || "",
-      father_name: record.father_name || "",
-      cnic: record.cnic || "",
-      phone: record.phone || "",
-      designation: record.designation || "",
-      department_id: record.department_id || "",
-      joining_date: record.joining_date || "",
-      basic_salary: record.basic_salary || "",
+      full_name: record?.full_name || "",
+      father_name: record?.father_name || "",
+      cnic: record?.cnic || "",
+      phone: record?.phone || "",
+      designation: record?.designation || "",
+      department_id: String(
+        record?.department_id || ""
+      ),
+      joining_date: normalizeDate(
+        record?.joining_date
+      ),
+      basic_salary: String(
+        record?.basic_salary ?? ""
+      ),
     });
 
-    setEditingId(record.id);
+    setShowDetails(false);
     setShowForm(true);
   };
 
+  const closeForm = () => {
+    if (submitting) return;
+
+    setShowForm(false);
+    setEditingId(null);
+    setForm(createEmptyForm());
+  };
+
+  const buildPayload = () => ({
+    full_name: form.full_name.trim(),
+    father_name: form.father_name.trim() || null,
+    cnic: form.cnic.trim() || null,
+    phone: form.phone.trim() || null,
+    designation: form.designation.trim(),
+    department_id: Number(form.department_id),
+    joining_date: form.joining_date || null,
+    basic_salary: toNumber(form.basic_salary),
+  });
+
   const handleSave = async () => {
-    if (!form.full_name || !form.designation || !form.department_id) {
-      showToast("error", t.errorMsg);
+    if (
+      !form.full_name.trim() ||
+      !form.designation.trim() ||
+      !form.department_id
+    ) {
+      showToast("error", t.requiredError);
       return;
     }
 
+    setSubmitting(true);
+
     try {
-      setSubmitting(true);
-
       if (editingId) {
-        await axios.put(`${API_BASE}/employees/${editingId}`, form);
-        showToast("success", t.successUpdate);
-      } else {
-        await axios.post(`${API_BASE}/employees`, form);
-        showToast("success", t.successSave);
-      }
-
-      await fetchData();
-      setShowForm(false);
-      setEditingId(null);
-      setForm(defaultForm);
-    } catch (err) {
-      const department = departments.find(
-        (item) => String(item.id) === String(form.department_id)
-      );
-
-      const newRecord = {
-        ...form,
-        id: editingId || Date.now(),
-        department_name: department?.department_name || "-",
-      };
-
-      if (editingId) {
-        setRecords((prev) =>
-          prev.map((record) => (record.id === editingId ? newRecord : record))
+        await axios.put(
+          `${EMPLOYEES_API}/${editingId}`,
+          buildPayload()
         );
         showToast("success", t.successUpdate);
       } else {
-        setRecords((prev) => [newRecord, ...prev]);
+        await axios.post(
+          EMPLOYEES_API,
+          buildPayload()
+        );
         showToast("success", t.successSave);
       }
 
       setShowForm(false);
       setEditingId(null);
-      setForm(defaultForm);
+      setForm(createEmptyForm());
+      await fetchData();
+    } catch (error) {
+      console.error("Employee save error:", error);
+
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.saveError
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (recordId) => {
     if (!window.confirm(t.deleteConfirm)) return;
 
     try {
-      await axios.delete(`${API_BASE}/employees/${id}`);
+      await axios.delete(
+        `${EMPLOYEES_API}/${recordId}`
+      );
+
+      setShowDetails(false);
+      setDetailRecord(null);
       await fetchData();
       showToast("success", t.successDelete);
-    } catch (err) {
-      setRecords((prev) => prev.filter((record) => record.id !== id));
-      showToast("success", t.successDelete);
+    } catch (error) {
+      console.error("Employee delete error:", error);
+
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.deleteError
+      );
     }
   };
 
-  const filtered = useMemo(() => {
+  const openDetails = (record) => {
+    setDetailRecord(record);
+    setShowDetails(true);
+  };
+
+  const filteredRecords = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     if (!query) return records;
 
     return records.filter((record) =>
       [
-        record.full_name,
-        record.father_name,
-        record.designation,
+        record?.full_name,
+        record?.father_name,
+        record?.cnic,
+        record?.phone,
+        record?.designation,
         getDepartmentName(record),
-        record.cnic,
-        record.phone,
-        record.joining_date,
-        String(record.basic_salary || ""),
+        normalizeDate(record?.joining_date),
+        record?.basic_salary,
       ]
         .join(" ")
         .toLowerCase()
@@ -343,172 +444,153 @@ export default function EmployeePage() {
   const summary = useMemo(
     () => ({
       totalEmployees: records.length,
-      visibleRecords: filtered.length,
-      totalSalary: filtered.reduce(
-        (sum, record) => sum + Number(record.basic_salary || 0),
+      visibleRecords: filteredRecords.length,
+      totalSalary: filteredRecords.reduce(
+        (sum, record) =>
+          sum + toNumber(record?.basic_salary),
         0
       ),
     }),
-    [records, filtered]
+    [records, filteredRecords]
   );
 
-  const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu
-      ? "'Noto Nastaliq Urdu', serif"
-      : "Inter, Arial, sans-serif";
-
-    const rowsHtml = filtered
+  const printDocument = (saveAsPdf = false) => {
+    const rows = filteredRecords
       .map(
         (record, index) => `
           <tr>
             <td class="center">${index + 1}</td>
             <td>
               <strong>${record.full_name || "-"}</strong>
-              <br/>
-              <span class="muted">S/O ${record.father_name || "-"}</span>
+              <small>S/O ${record.father_name || "-"}</small>
             </td>
-            <td class="mono">${record.cnic || "-"}</td>
-            <td class="mono">${record.phone || "-"}</td>
+            <td>${record.cnic || "-"}</td>
+            <td>${record.phone || "-"}</td>
             <td>${record.designation || "-"}</td>
             <td>${getDepartmentName(record)}</td>
-            <td>${record.joining_date || "-"}</td>
-            <td class="num">PKR ${fmt(record.basic_salary)}</td>
+            <td class="center">${normalizeDate(
+              record.joining_date
+            ) || "-"}</td>
+            <td class="money">PKR ${money(
+              record.basic_salary
+            )}</td>
           </tr>
         `
       )
       .join("");
 
-    const html = `<!DOCTYPE html>
-<html dir="${dir}" lang="${lang}">
-<head>
-<meta charset="UTF-8"/>
-<title>${t.title}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:${font};background:#f8fafc;color:#0f172a;padding:20px}
-.page{width:100%;min-height:100vh;background:#f8fafc;padding:20px}
-.sheet{max-width:1200px;margin:0 auto;background:#fff;border:1px solid #dbe3ee;box-shadow:0 12px 40px rgba(15,23,42,.08);border-radius:20px;overflow:hidden}
-.header{background:#0f172a;color:#fff;padding:24px 28px}
-.header-row{display:flex;justify-content:space-between;align-items:center;gap:20px}
-.brand{display:flex;align-items:center;gap:14px}
-.logo{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
-h1{font-size:28px;font-weight:900;margin:0}
-.subtitle{font-size:13px;color:rgba(255,255,255,.72);margin-top:5px}
-.meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:rgba(255,255,255,.85);line-height:1.8}
-.content{padding:18px;display:flex;flex-direction:column;gap:14px}
-.hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.card{border-radius:16px;padding:14px 16px;border:1px solid #dbe3ee;background:#f8fafc}
-.card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px}
-.card .value{font-size:22px;font-weight:900;color:#0f172a}
-table{width:100%;border-collapse:collapse}
-thead th{background:#0f172a;color:#fff;font-size:11px;padding:12px 10px;text-align:${isUrdu ? "right" : "left"};text-transform:uppercase;letter-spacing:.5px}
-tbody td{border:1px solid #e5e7eb;padding:10px;font-size:12px;color:#334155;vertical-align:top}
-tbody tr:nth-child(even) td{background:#f8fafc}
-.center{text-align:center!important}
-.muted{font-size:11px;color:#64748b}
-.mono{font-family:Inter,Arial,sans-serif;font-weight:700}
-.num{text-align:${isUrdu ? "left" : "right"}!important;font-family:Inter,Arial,sans-serif;font-weight:900;color:#059669}
-.footer{background:#0f172a;color:rgba(255,255,255,.8);padding:10px 16px;display:flex;justify-content:space-between;font-size:11px}
-@media print{@page{size:A4 landscape;margin:8mm}body{background:white;padding:0}.page{padding:0;background:white}.sheet{box-shadow:none;border:none;border-radius:0;max-width:none}.hint{display:none}}
-</style>
-</head>
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=1200,height=850"
+    );
 
-<body>
-<div class="page">
-  <div class="sheet">
-    <div class="header">
-      <div class="header-row">
-        <div class="brand">
-          <div class="logo">EMP</div>
-          <div>
-            <h1>Ali Cages</h1>
-            <div class="subtitle">${t.reportHeader}</div>
-          </div>
-        </div>
-
-        <div class="meta">
-          <div>${t.printedOn}: ${new Date().toLocaleString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}</div>
-          <div>${t.totalEmployees}: <strong style="color:white">${
-      filtered.length
-    }</strong></div>
-          <div>${t.totalSalary}: <strong style="color:white">PKR ${fmt(
-      summary.totalSalary
-    )}</strong></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="content">
-      ${
-        isPdf
-          ? `<div class="hint">Choose <strong>Save as PDF</strong> in print dialog.</div>`
-          : ""
-      }
-
-      <div class="summary">
-        <div class="card"><small>${t.totalEmployees}</small><div class="value">${
-      filtered.length
-    }</div></div>
-        <div class="card"><small>${t.totalSalary}</small><div class="value">PKR ${fmt(
-      summary.totalSalary
-    )}</div></div>
-        <div class="card"><small>${
-          t.reportHeader
-        }</small><div class="value">${new Date().toLocaleDateString(
-      isUrdu ? "ur-PK" : "en-PK"
-    )}</div></div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th class="center">#</th>
-            <th>${t.fullName}</th>
-            <th>${t.cnic}</th>
-            <th>${t.phone}</th>
-            <th>${t.designation}</th>
-            <th>${t.department}</th>
-            <th>${t.joiningDate}</th>
-            <th class="num">${t.basicSalary}</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          ${
-            filtered.length > 0
-              ? rowsHtml
-              : `<tr><td colspan="8" style="text-align:center;padding:30px;color:#94a3b8">${t.noRecords}</td></tr>`
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <div class="footer">
-      <span>Ali Cages — ${t.reportHeader}</span>
-      <span>Page 1 / 1</span>
-    </div>
-  </div>
-</div>
-
-<script>
-window.onload=()=>{setTimeout(()=>{window.print();${
-      !isPdf ? "window.onafterprint=()=>window.close();" : ""
-    }},300);};
-</script>
-</body>
-</html>`;
-
-    const printWindow = window.open("", "_blank", "width=1200,height=850");
     if (!printWindow) return;
 
     printWindow.document.open();
-    printWindow.document.write(html);
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="${lang}" dir="${dir}">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${t.reportHeader}</title>
+        <style>
+          *{box-sizing:border-box}
+          body{font-family:Arial,sans-serif;background:#fff;color:#0f172a;padding:20px}
+          .sheet{max-width:1200px;margin:auto;border:1px solid #dbe3ee}
+          .header{background:#0f172a;color:#fff;padding:20px;display:flex;justify-content:space-between}
+          h1{margin:0;font-size:24px}
+          .sub{margin-top:4px;color:#cbd5e1;font-size:12px}
+          .hint{padding:10px;background:#eef2ff;color:#3730a3;text-align:center}
+          table{width:100%;border-collapse:collapse;font-size:11px}
+          th{background:#0f172a;color:#fff;padding:10px 8px;border:1px solid #334155}
+          td{padding:9px 8px;border:1px solid #e2e8f0}
+          tbody tr:nth-child(even){background:#f8fafc}
+          .center{text-align:center}
+          .money{text-align:right;white-space:nowrap;font-weight:bold;color:#047857}
+          small{display:block;margin-top:3px;color:#64748b}
+          @media print{
+            @page{size:A4 landscape;margin:8mm}
+            body{padding:0}
+            .hint{display:none}
+          }
+        </style>
+      </head>
+      <body>
+        ${
+          saveAsPdf
+            ? `<div class="hint">Select <strong>Save as PDF</strong> in print destination.</div>`
+            : ""
+        }
+
+        <div class="sheet">
+          <div class="header">
+            <div>
+              <h1>Ali Cage</h1>
+              <div class="sub">${t.reportHeader}</div>
+            </div>
+            <div>
+              ${t.printedOn}: ${new Date().toLocaleString(
+      isUrdu ? "ur-PK" : "en-PK"
+    )}
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${t.employee}</th>
+                <th>${t.cnic}</th>
+                <th>${t.phone}</th>
+                <th>${t.designation}</th>
+                <th>${t.department}</th>
+                <th>${t.joiningDate}</th>
+                <th>${t.basicSalary}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                rows ||
+                `<tr><td colspan="8" class="center">${t.noRecords}</td></tr>`
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <script>
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+
     printWindow.document.close();
   };
+
+  const detailItems = detailRecord
+    ? [
+        [t.fullName, detailRecord.full_name || "-"],
+        [t.fatherName, detailRecord.father_name || "-"],
+        [t.cnic, detailRecord.cnic || "-"],
+        [t.phone, detailRecord.phone || "-"],
+        [t.designation, detailRecord.designation || "-"],
+        [t.department, getDepartmentName(detailRecord)],
+        [
+          t.joiningDate,
+          normalizeDate(detailRecord.joining_date) ||
+            "-",
+        ],
+        [
+          t.basicSalary,
+          `PKR ${money(detailRecord.basic_salary)}`,
+        ],
+      ]
+    : [];
 
   return (
     <div className="employee-page" dir={dir}>
@@ -523,1455 +605,1065 @@ window.onload=()=>{setTimeout(()=>{window.print();${
       />
 
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
+        *{box-sizing:border-box}
 
-        .employee-page {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
-          padding: 18px;
-          color: #0f172a;
-          font-family: ${
+        .employee-page{
+          min-height:100vh;
+          padding:18px;
+          color:#0f172a;
+          background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);
+          font-family:${
             isUrdu
-              ? "'Noto Nastaliq Urdu', Arial, sans-serif"
-              : "Inter, Helvetica, Arial, sans-serif"
+              ? "'Noto Nastaliq Urdu',Arial,sans-serif"
+              : "Inter,Helvetica,Arial,sans-serif"
           };
         }
 
-        .page-wrap {
-          max-width: 1220px;
-          margin: 0 auto;
+        .page-wrap{
+          width:100%;
+          max-width:1220px;
+          margin:0 auto;
         }
 
-        .top-card {
-          background: rgba(255,255,255,.94);
-          border: 1px solid #dbe3ee;
-          border-radius: 22px;
-          padding: 20px 22px;
-          box-shadow: 0 18px 50px rgba(15,23,42,.08);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 14px;
-          flex-wrap: wrap;
+        .top-card{
+          background:rgba(255,255,255,.95);
+          border:1px solid #dbe3ee;
+          border-radius:22px;
+          padding:25px 22px 20px;
+          box-shadow:0 18px 50px rgba(15,23,42,.08);
         }
 
-        .title {
-          margin: 0;
-          font-size: 30px;
-          font-weight: 950;
-          letter-spacing: -.8px;
+        .page-title{
+          margin:0;
+          font-size:30px;
+          line-height:1.2;
+          font-weight:950;
+          letter-spacing:-.8px;
         }
 
-        .subtitle {
-          margin: 5px 0 0;
-          color: #64748b;
-          font-size: 13px;
+        .page-subtitle{
+          margin:7px 0 0;
+          color:#64748b;
+          font-size:13px;
         }
 
-        .btn {
-          border: none;
-          border-radius: 12px;
-          padding: 10px 15px;
-          font-weight: 900;
-          cursor: pointer;
-          transition: .15s;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          text-decoration: none;
-          white-space: nowrap;
-          font-size: 13px;
+        .actions{
+          display:flex;
+          flex-wrap:wrap;
+          gap:8px;
+          margin-top:16px;
         }
 
-        .btn:hover {
-          transform: translateY(-1px);
-          filter: brightness(.98);
+        .btn{
+          border:1px solid transparent;
+          border-radius:12px;
+          padding:10px 14px;
+          font-size:13px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:7px;
+          transition:.15s ease;
+          white-space:nowrap;
         }
 
-        .btn:disabled {
-          opacity: .65;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .btn-primary {
-          background: #4f46e5;
-          color: white;
-          box-shadow: 0 12px 25px rgba(79,70,229,.28);
-        }
-
-        .btn-summary {
-          background: #eef2ff;
-          color: #3730a3;
-          border: 1px solid #c7d2fe;
-        }
-
-        .btn-summary-active {
-          background: #4f46e5;
-          color: white;
-          border: 1px solid #4f46e5;
-          box-shadow: 0 12px 25px rgba(79,70,229,.25);
-        }
-
-        .btn-soft {
-          background: white;
-          color: #475569;
-          border: 1px solid #cbd5e1;
-        }
-
-        .btn-green {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .btn-red {
-          background: #fee2e2;
-          color: #991b1b;
-        }
-
-        .headerPrintBtn {
-          background: #0f172a !important;
-          color: white !important;
-          border: 1px solid #0f172a !important;
-          box-shadow: 0 10px 22px rgba(15,23,42,.18) !important;
-        }
-
-        .summary-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-          margin: 14px 0;
-        }
-
-        .summary-card {
-          background: white;
-          border: 1px solid #dbe3ee;
-          border-radius: 18px;
-          padding: 14px;
-          box-shadow: 0 8px 22px rgba(15,23,42,.05);
-        }
-
-        .summary-card-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 13px;
-          background: #eef2ff;
-          color: #4f46e5;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 10px;
-          font-size: 18px;
-        }
-
-        .summary-card small {
-          display: block;
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: .4px;
-        }
-
-        .summary-card b {
-          display: block;
-          margin-top: 7px;
-          font-size: 22px;
-          font-weight: 950;
-          color: #0f172a;
-          font-family: monospace;
-        }
-
-        .toolbar {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
-          margin: 14px 0 12px;
-        }
-
-        .search {
-          width: min(460px, 100%);
-          height: 42px;
-          border: 1px solid #cbd5e1;
-          border-radius: 14px;
-          padding: 0 13px;
-          font-size: 13px;
-          outline: none;
-          background: white;
-        }
-
-        .search:focus,
-        .input-field:focus {
-          border-color: #4f46e5;
-          box-shadow: 0 0 0 3px rgba(79,70,229,.10);
-        }
-
-        .card {
-          background: white;
-          border: 1px solid #dbe3ee;
-          border-radius: 18px;
-          box-shadow: 0 8px 24px rgba(15,23,42,.05);
-          overflow: hidden;
-        }
-
-        .table-wrap {
-          overflow-x: auto;
-        }
-
-        .employees-desktop {
-          display: block;
-        }
-
-        .employees-mobile {
-          display: none;
-        }
-
-        table.employees-table {
-          width: 100%;
-          min-width: 1180px;
-          border-collapse: collapse;
-          table-layout: fixed;
-        }
-
-        table.employees-table th {
-          background: #0f172a;
-          color: rgba(255,255,255,.82);
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: .5px;
-          padding: 15px 14px;
-          white-space: nowrap;
-        }
-
-        table.employees-table td {
-          padding: 13px 14px;
-          border-bottom: 1px solid #eef2f7;
-          font-size: 13px;
-          vertical-align: middle;
-        }
-
-        table.employees-table tr:hover td {
-          background: #f8fafc;
-        }
-
-        .employee-name-cell {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
-        }
-
-        .employee-avatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 13px;
-          background: #eef2ff;
-          color: #4f46e5;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex: 0 0 auto;
-        }
-
-        .employee-title {
-          font-weight: 900;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .employee-subtitle {
-          margin-top: 3px;
-          color: #94a3b8;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 5px 10px;
-          border-radius: 999px;
-          background: #f1f5f9;
-          color: #334155;
-          border: 1px solid #e2e8f0;
-          font-size: 11px;
-          font-weight: 900;
-          max-width: 100%;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .dept-pill {
-          background: #eef2ff;
-          color: #3730a3;
-          border-color: #c7d2fe;
-        }
-
-        .money {
-          font-family: monospace;
-          font-weight: 950;
-          color: #059669;
-        }
-
-        .action-row {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-
-        .action-row .btn {
-          padding: 7px 10px;
-          font-size: 12px;
-        }
-
-        .employee-mobile-list {
-          padding: 12px;
-          display: grid;
-          gap: 12px;
-        }
-
-        .employee-mobile-card {
-          background: #ffffff;
-          border: 1px solid #dbe3ee;
-          border-radius: 18px;
-          padding: 14px;
-          box-shadow: 0 8px 24px rgba(15,23,42,.06);
-        }
-
-        .employee-mobile-top {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        .employee-mobile-title {
-          min-width: 0;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .employee-mobile-index {
-          color: #94a3b8;
-          font-size: 11px;
-          font-weight: 900;
-          font-family: monospace;
-        }
-
-        .employee-mobile-name {
-          margin-top: 3px;
-          font-size: 15px;
-          font-weight: 950;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .employee-mobile-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-          margin-top: 12px;
-        }
-
-        .employee-info-line {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          background: #f8fafc;
-          border: 1px solid #eef2f7;
-          border-radius: 13px;
-          padding: 9px 10px;
-        }
-
-        .employee-info-line small {
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        .employee-info-line b {
-          color: #0f172a;
-          font-size: 12px;
-          font-weight: 950;
-          text-align: right;
-        }
-
-        .employee-mobile-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          margin-top: 12px;
-        }
-
-        .employee-mobile-actions .btn {
-          width: 100%;
-          padding: 10px 8px;
-          font-size: 12px;
-        }
-
-        .modal-bg {
-          position: fixed;
-          inset: 0;
-          background: rgba(15,23,42,.45);
-          z-index: 50;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 12px;
-          overflow: auto;
-          backdrop-filter: blur(3px);
-        }
-
-        .inputModalBox {
-          width: min(980px, 100%);
-          background: #f8fafc;
-          border: 1px solid #cbd5e1;
-          border-radius: 18px;
-          box-shadow: 0 30px 90px rgba(15,23,42,.28);
-          overflow: hidden;
-        }
-
-        .inputModalTitle {
-          min-height: 58px;
-          background: linear-gradient(135deg,#0f172a,#1e293b);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 13px 18px;
-          font-size: 17px;
-          font-weight: 900;
-          gap: 12px;
-        }
-
-        .modal-title-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: 0;
-        }
-
-        .modal-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 14px;
-          background: rgba(255,255,255,.10);
-          border: 1px solid rgba(255,255,255,.20);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          flex: 0 0 auto;
-        }
-
-        .modal-title-main {
-          font-size: 17px;
-          font-weight: 950;
-        }
-
-        .modal-title-sub {
-          margin-top: 2px;
-          font-size: 11px;
-          color: rgba(255,255,255,.70);
-          font-weight: 700;
-        }
-
-        .closeBtn {
-          border: 1px solid rgba(255,255,255,.25);
-          background: rgba(255,255,255,.08);
-          color: white;
-          min-width: 36px;
-          height: 34px;
-          border-radius: 10px;
-          cursor: pointer;
-          padding: 0 12px;
-          font-weight: 900;
-        }
-
-        .inputModalBody {
-          padding: 14px;
-        }
+        .btn:hover{transform:translateY(-1px)}
+        .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
 
-        .form-section {
-          background: white;
-          border: 1px solid #dbe3ee;
-          border-radius: 18px;
-          overflow: hidden;
+        .btn-language{
+          background:#fff;
+          color:#475569;
+          border-color:#cbd5e1;
         }
 
-        .form-section-head {
-          background: linear-gradient(135deg,#eef2ff,#f8fafc);
-          border-bottom: 1px solid #e2e8f0;
-          padding: 12px 14px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
+        .btn-summary{
+          background:#eef2ff;
+          color:#4338ca;
+          border-color:#c7d2fe;
         }
 
-        .form-section-head-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 12px;
-          background: white;
-          color: #4f46e5;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 8px 18px rgba(15,23,42,.06);
+        .btn-dark{
+          background:#0f172a;
+          color:#fff;
         }
 
-        .form-section-head h3 {
-          margin: 0;
-          font-size: 14px;
-          font-weight: 950;
-          color: #0f172a;
+        .btn-white{
+          background:#fff;
+          color:#475569;
+          border-color:#cbd5e1;
         }
 
-        .form-section-head p {
-          margin: 2px 0 0;
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 700;
+        .btn-primary{
+          background:#4f46e5;
+          color:#fff;
+          box-shadow:0 12px 24px rgba(79,70,229,.25);
         }
 
-        .form-grid {
-          padding: 14px;
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
+        .btn-danger{
+          background:#fee2e2;
+          color:#991b1b;
         }
 
-        .field {
-          min-width: 0;
+        .summary-grid{
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:12px;
+          margin-top:14px;
         }
 
-        .field-full {
-          grid-column: 1 / -1;
+        .summary-card{
+          background:#fff;
+          border:1px solid #dbe3ee;
+          border-radius:16px;
+          padding:15px;
+          box-shadow:0 8px 24px rgba(15,23,42,.05);
         }
 
-        .label {
-          font-size: 11px;
-          color: #334155;
-          margin-bottom: 6px;
-          display: block;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: .35px;
+        .summary-label{
+          color:#64748b;
+          font-size:11px;
+          font-weight:850;
+          text-transform:uppercase;
+          letter-spacing:.4px;
         }
 
-        .input-wrap {
-          position: relative;
+        .summary-value{
+          margin-top:6px;
+          color:#0f172a;
+          font-size:21px;
+          font-weight:950;
         }
 
-        .input-icon {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #94a3b8;
-          font-size: 14px;
+        .search-row{
+          margin:14px 0;
         }
 
-        .input-icon-left {
-          left: 12px;
+        .search-box{
+          position:relative;
+          width:100%;
+          max-width:460px;
         }
 
-        .input-icon-right {
-          right: 12px;
+        .search-icon{
+          position:absolute;
+          top:50%;
+          transform:translateY(-50%);
+          color:#94a3b8;
+          ${isUrdu ? "right:14px" : "left:14px"};
         }
 
-        .input-field {
-          width: 100%;
-          height: 42px;
-          border: 1px solid #cbd5e1;
-          background: white;
-          color: #0f172a;
-          padding: 7px 12px;
-          font-size: 13px;
-          border-radius: 12px;
-          outline: none;
-          font-weight: 750;
+        .search-input{
+          width:100%;
+          height:43px;
+          border:1px solid #cbd5e1;
+          border-radius:12px;
+          background:#fff;
+          color:#334155;
+          font-size:13px;
+          outline:none;
+          ${
+            isUrdu
+              ? "padding:0 42px 0 13px"
+              : "padding:0 13px 0 42px"
+          };
         }
 
-        .input-field-with-left {
-          padding-left: 38px;
+        .search-input:focus,
+        .field-input:focus,
+        .field-select:focus{
+          border-color:#6366f1;
+          box-shadow:0 0 0 3px rgba(99,102,241,.12);
         }
 
-        .input-field-with-right {
-          padding-right: 38px;
+        .table-card{
+          width:100%;
+          background:#fff;
+          border:1px solid #dbe3ee;
+          border-radius:18px;
+          overflow:hidden;
+          box-shadow:0 18px 45px rgba(15,23,42,.07);
         }
 
-        .salary-field-box {
-          background: #ecfdf5;
-          border: 1px solid #bbf7d0;
-          border-radius: 16px;
-          padding: 12px;
-        }
-
-        .modalFooterBasic {
-          padding: 14px;
-          display: flex;
-          justify-content: flex-end;
-          gap: 8px;
-          background: white;
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .toast {
-          position: fixed;
-          right: 18px;
-          bottom: 18px;
-          z-index: 90;
-          color: white;
-          padding: 12px 16px;
-          border-radius: 14px;
-          font-weight: 900;
-          box-shadow: 0 20px 50px rgba(15,23,42,.25);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-        }
+        .employee-table{
+          width:100%;
+          table-layout:fixed;
+          border-collapse:collapse;
+        }
+
+        .employee-table th{
+          padding:14px 13px;
+          background:#0f172a;
+          color:#fff;
+          font-size:10px;
+          font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.45px;
+        }
 
-        @media(max-width: 1100px) {
-          .summary-grid {
-            grid-template-columns: repeat(2, 1fr);
+        .employee-table td{
+          padding:16px 13px;
+          border-bottom:1px solid #e5e7eb;
+          color:#475569;
+          font-size:13px;
+          vertical-align:middle;
+        }
+
+        .employee-table tbody tr:last-child td{
+          border-bottom:0;
+        }
+
+        .employee-table tbody tr:hover td{
+          background:#f8faff;
+        }
+
+        .employee-cell{
+          display:flex;
+          align-items:center;
+          gap:11px;
+          min-width:0;
+        }
+
+        .avatar{
+          width:38px;
+          height:38px;
+          border-radius:13px;
+          flex-shrink:0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#eef2ff;
+          color:#4f46e5;
+          font-weight:950;
+        }
+
+        .employee-copy{
+          min-width:0;
+        }
+
+        .employee-name{
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          color:#0f172a;
+          font-weight:900;
+        }
+
+        .employee-sub{
+          margin-top:3px;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          color:#94a3b8;
+          font-size:10px;
+          font-weight:750;
+        }
+
+        .pill{
+          display:inline-flex;
+          max-width:100%;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          border:1px solid #e2e8f0;
+          border-radius:999px;
+          padding:6px 10px;
+          background:#f1f5f9;
+          color:#334155;
+          font-size:10px;
+          font-weight:900;
+        }
+
+        .department-pill{
+          border-color:#c7d2fe;
+          background:#eef2ff;
+          color:#4338ca;
+        }
+
+        .view-btn{
+          border:1px solid #c7d2fe;
+          border-radius:10px;
+          background:#eef2ff;
+          color:#4338ca;
+          padding:8px 12px;
+          font-size:11px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+        }
+
+        .empty{
+          padding:50px 20px!important;
+          text-align:center!important;
+          color:#94a3b8!important;
+        }
+
+        .toast{
+          position:fixed;
+          bottom:22px;
+          ${isUrdu ? "left:22px" : "right:22px"};
+          z-index:120;
+          max-width:420px;
+          border-radius:14px;
+          padding:12px 15px;
+          color:#fff;
+          font-size:12px;
+          font-weight:850;
+          box-shadow:0 20px 50px rgba(15,23,42,.25);
+        }
+
+        .toast-success{background:#059669}
+        .toast-error{background:#dc2626}
+
+        .modal-backdrop{
+          position:fixed;
+          inset:0;
+          z-index:100;
+          padding:12px;
+          background:rgba(15,23,42,.62);
+          backdrop-filter:blur(3px);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        }
+
+        .modal{
+          width:100%;
+          max-width:850px;
+          max-height:calc(100vh - 24px);
+          background:#fff;
+          border-radius:18px;
+          overflow:hidden;
+          box-shadow:0 30px 90px rgba(15,23,42,.3);
+          display:flex;
+          flex-direction:column;
+        }
+
+        .details-modal{
+          max-width:800px;
+        }
+
+        .modal-header{
+          padding:17px 19px;
+          border-bottom:1px solid #e2e8f0;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:12px;
+        }
+
+        .modal-title{
+          margin:0;
+          font-size:20px;
+          font-weight:950;
+        }
+
+        .modal-subtitle{
+          margin-top:4px;
+          color:#64748b;
+          font-size:11px;
+        }
+
+        .close-btn{
+          width:36px;
+          height:36px;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          background:#fff;
+          color:#475569;
+          cursor:pointer;
+        }
+
+        .modal-body{
+          padding:18px;
+          background:#f8fafc;
+          overflow-y:auto;
+        }
+
+        .form-grid{
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:12px;
+        }
+
+        .field-label{
+          display:block;
+          margin-bottom:6px;
+          color:#475569;
+          font-size:11px;
+          font-weight:850;
+        }
+
+        .field-input,
+        .field-select{
+          width:100%;
+          height:42px;
+          border:1px solid #cbd5e1;
+          border-radius:10px;
+          background:#fff;
+          color:#0f172a;
+          padding:0 11px;
+          font-size:13px;
+          outline:none;
+        }
+
+        .modal-footer{
+          padding:14px 18px;
+          border-top:1px solid #e2e8f0;
+          background:#fff;
+          display:flex;
+          justify-content:flex-end;
+          gap:8px;
+        }
+
+        .details-grid{
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:10px;
+        }
+
+        .detail-card{
+          border:1px solid #dbe3ee;
+          border-radius:12px;
+          padding:12px;
+          background:#fff;
+        }
+
+        .detail-label{
+          color:#94a3b8;
+          font-size:9px;
+          font-weight:850;
+          text-transform:uppercase;
+          letter-spacing:.35px;
+        }
+
+        .detail-value{
+          margin-top:6px;
+          color:#0f172a;
+          font-size:13px;
+          font-weight:900;
+          word-break:break-word;
+        }
+
+        @media(max-width:800px){
+          .summary-grid{
+            grid-template-columns:1fr;
+          }
+
+          .form-grid,
+          .details-grid{
+            grid-template-columns:1fr;
           }
         }
 
-        @media(max-width: 768px) {
-          .employee-page {
-            padding: 12px;
-          }
-
-          .top-card {
-            align-items: stretch;
-          }
-
-          .top-card > div:last-child {
-            width: 100%;
-          }
-
-          .top-card .btn {
-            width: 100%;
-          }
-
-          .toolbar {
-            width: 100%;
-          }
-
-          .search {
-            width: 100%;
-          }
-
-          .summary-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .employees-desktop {
-            display: none;
-          }
-
-          .employees-mobile {
-            display: block;
-          }
-
-          .modal-bg {
-            padding: 0;
-          }
-
-          .inputModalBox {
-            min-height: 100vh;
-            border-radius: 0;
-            width: 100%;
-          }
-
-          .inputModalTitle {
-            min-height: 58px;
-            padding: 12px 14px;
-          }
-
-          .inputModalBody {
-            padding: 10px;
-          }
-
-          .form-grid {
-            grid-template-columns: 1fr;
-            padding: 12px;
-          }
-
-          .field-full {
-            grid-column: auto;
-          }
-
-          .modalFooterBasic {
-            display: grid;
-            grid-template-columns: 1fr;
-          }
-
-          .modalFooterBasic .btn {
-            width: 100%;
-          }
-
-          .title {
-            font-size: 24px;
-          }
+        @media(max-width:640px){
+          .employee-page{padding:10px}
+          .top-card{padding:19px 15px;border-radius:17px}
+          .page-title{font-size:25px}
+          .actions .btn{flex:1}
+          .employee-table th,
+          .employee-table td{padding:12px 7px}
+          .employee-table th{font-size:8px}
+          .employee-sub{display:none}
+          .view-btn span{display:none}
+          .modal-footer{flex-direction:column-reverse}
+          .modal-footer .btn{width:100%}
         }
       `}</style>
 
       {message.text && (
         <div
-          className="toast"
-          style={{
-            background: message.type === "error" ? "#dc2626" : "#16a34a",
-            left: isUrdu ? 18 : "auto",
-            right: isUrdu ? "auto" : 18,
-          }}
+          className={`toast ${
+            message.type === "error"
+              ? "toast-error"
+              : "toast-success"
+          }`}
         >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
           {message.text}
         </div>
       )}
 
       <div className="page-wrap">
-        <div className="top-card">
-          <div>
-            <h1 className="title">{t.title}</h1>
-            <p className="subtitle">{t.subtitle}</p>
-          </div>
+        <section className="top-card">
+          <h1 className="page-title">{t.title}</h1>
+          <p className="page-subtitle">
+            {t.subtitle}
+          </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              flexDirection: isUrdu ? "row-reverse" : "row",
-            }}
-          >
+          <div className="actions">
             <button
-              className="btn btn-soft"
-              onClick={() => setLang(lang === "en" ? "ur" : "en")}
+              type="button"
+              className="btn btn-language"
+              onClick={() =>
+                setLang((previous) =>
+                  previous === "en" ? "ur" : "en"
+                )
+              }
             >
-              <i className="bi bi-translate"></i>
+              <i className="bi bi-translate" />
               {t.toggleLang}
             </button>
 
             <button
-              className={`btn ${
-                showSummary ? "btn-summary-active" : "btn-summary"
-              }`}
-              onClick={() => setShowSummary((value) => !value)}
+              type="button"
+              className="btn btn-summary"
+              onClick={() =>
+                setShowSummary((previous) => !previous)
+              }
             >
-              <i className="bi bi-bar-chart-fill"></i>
-              {showSummary ? t.hideSummary : t.viewSummary}
+              <i className="bi bi-bar-chart-fill" />
+              {showSummary
+                ? t.hideSummary
+                : t.viewSummary}
             </button>
 
             <button
-              className="btn headerPrintBtn"
-              onClick={() => generatePrintDocument(false)}
+              type="button"
+              className="btn btn-dark"
+              disabled={!filteredRecords.length}
+              onClick={() => printDocument(false)}
             >
-              <i className="bi bi-printer"></i>
+              <i className="bi bi-printer" />
               {t.printBtn}
             </button>
 
             <button
-              className="btn btn-soft"
-              onClick={() => generatePrintDocument(true)}
+              type="button"
+              className="btn btn-white"
+              disabled={!filteredRecords.length}
+              onClick={() => printDocument(true)}
             >
-              <i className="bi bi-file-earmark-pdf-fill"></i>
+              <i className="bi bi-file-earmark-pdf" />
               {t.pdfBtn}
             </button>
 
-            <button className="btn btn-soft" onClick={fetchData}>
-              <i className="bi bi-arrow-clockwise"></i>
-              {loading ? t.loading : t.refresh}
+            <button
+              type="button"
+              className="btn btn-white"
+              onClick={fetchData}
+            >
+              <i className="bi bi-arrow-clockwise" />
+              {t.refresh}
             </button>
 
-            <button className="btn btn-primary" onClick={openAdd}>
-              <i className="bi bi-person-plus-fill"></i>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={openAdd}
+            >
+              <i className="bi bi-person-plus-fill" />
               {t.addBtn}
             </button>
           </div>
-        </div>
+        </section>
 
         {showSummary && (
-          <div className="summary-grid">
-            <div className="summary-card">
-              <div className="summary-card-icon">
-                <i className="bi bi-people-fill"></i>
+          <section className="summary-grid">
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.totalEmployees}
               </div>
-              <small>{t.totalEmployees}</small>
-              <b>{summary.totalEmployees}</b>
-            </div>
+              <div className="summary-value">
+                {summary.totalEmployees}
+              </div>
+            </article>
 
-            <div className="summary-card">
-              <div className="summary-card-icon">
-                <i className="bi bi-filter-circle-fill"></i>
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.visibleRecords}
               </div>
-              <small>{t.visibleRecords}</small>
-              <b>{summary.visibleRecords}</b>
-            </div>
+              <div className="summary-value">
+                {summary.visibleRecords}
+              </div>
+            </article>
 
-            <div className="summary-card">
-              <div className="summary-card-icon">
-                <i className="bi bi-cash-stack"></i>
+            <article className="summary-card">
+              <div className="summary-label">
+                {t.totalSalary}
               </div>
-              <small>{t.totalSalary}</small>
-              <b>{fmt(summary.totalSalary)}</b>
-            </div>
-          </div>
+              <div className="summary-value">
+                PKR {money(summary.totalSalary)}
+              </div>
+            </article>
+          </section>
         )}
 
-        <div className="toolbar">
-          <input
-            className="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={t.searchPlaceholder}
-          />
+        <div className="search-row">
+          <div className="search-box">
+            <i className="bi bi-search search-icon" />
+            <input
+              className="search-input"
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder={t.searchPlaceholder}
+            />
+          </div>
         </div>
 
-        <div className="card">
-          <div className="employees-desktop table-wrap">
-            <table className="employees-table">
-              <colgroup>
-                <col style={{ width: 70 }} />
-                <col style={{ width: 260 }} />
-                <col style={{ width: 160 }} />
-                <col style={{ width: 150 }} />
-                <col style={{ width: 170 }} />
-                <col style={{ width: 170 }} />
-                <col style={{ width: 140 }} />
-                <col style={{ width: 150 }} />
-                <col style={{ width: 170 }} />
-              </colgroup>
+        <section className="table-card">
+          <table className="employee-table">
+            <colgroup>
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "40%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "14%" }} />
+            </colgroup>
 
-              <thead>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "center" }}>
+                  #
+                </th>
+                <th
+                  style={{
+                    textAlign: isUrdu
+                      ? "right"
+                      : "left",
+                  }}
+                >
+                  {t.employee}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.designation}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.department}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.viewDetails}
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th style={{ textAlign: "center" }}>#</th>
-
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
-                    {t.fullName}
-                  </th>
-
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
-                    {t.cnic}
-                  </th>
-
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
-                    {t.phone}
-                  </th>
-
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
-                    {t.designation}
-                  </th>
-
-                  <th style={{ textAlign: isUrdu ? "right" : "left" }}>
-                    {t.department}
-                  </th>
-
-                  <th style={{ textAlign: "center" }}>{t.joiningDate}</th>
-
-                  <th style={{ textAlign: isUrdu ? "left" : "right" }}>
-                    {t.basicSalary}
-                  </th>
-
-                  <th>{t.actions}</th>
+                  <td colSpan="5" className="empty">
+                    <i className="bi bi-arrow-repeat" />{" "}
+                    {t.loading}
+                  </td>
                 </tr>
-              </thead>
+              ) : filteredRecords.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="empty">
+                    <i className="bi bi-inbox" />{" "}
+                    {t.noRecords}
+                  </td>
+                </tr>
+              ) : (
+                filteredRecords.map(
+                  (record, index) => {
+                    const employeeName =
+                      record.full_name || "-";
 
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      style={{
-                        textAlign: "center",
-                        padding: 44,
-                        color: "#94a3b8",
-                      }}
-                    >
-                      {t.loading}
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      style={{
-                        textAlign: "center",
-                        padding: 44,
-                        color: "#94a3b8",
-                      }}
-                    >
-                      {t.noRecords}
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((record, index) => (
-                    <tr key={record.id || index}>
-                      <td
-                        style={{
-                          textAlign: "center",
-                          color: "#94a3b8",
-                          fontFamily: "monospace",
-                          fontWeight: 900,
-                        }}
-                      >
-                        {index + 1}
-                      </td>
-
-                      <td>
-                        <div
-                          className="employee-name-cell"
+                    return (
+                      <tr key={getEmployeeId(record)}>
+                        <td
                           style={{
-                            flexDirection: isUrdu ? "row-reverse" : "row",
+                            textAlign: "center",
+                            color: "#94a3b8",
                           }}
                         >
-                          <div className="employee-avatar">
-                            <i className="bi bi-person-badge"></i>
-                          </div>
+                          {index + 1}
+                        </td>
 
-                          <div style={{ minWidth: 0 }}>
-                            <div className="employee-title">
-                              {record.full_name || "-"}
+                        <td>
+                          <div className="employee-cell">
+                            <div className="avatar">
+                              {employeeName
+                                .charAt(0)
+                                .toUpperCase()}
                             </div>
 
-                            <div className="employee-subtitle">
-                              S/O {record.father_name || "-"}
+                            <div className="employee-copy">
+                              <div className="employee-name">
+                                {employeeName}
+                              </div>
+                              <div className="employee-sub">
+                                S/O{" "}
+                                {record.father_name || "-"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td
-                        style={{
-                          fontFamily: "monospace",
-                          fontWeight: 800,
-                          color: "#475569",
-                        }}
-                      >
-                        {record.cnic || "-"}
-                      </td>
+                        <td
+                          style={{ textAlign: "center" }}
+                        >
+                          <span className="pill">
+                            {record.designation || "-"}
+                          </span>
+                        </td>
 
-                      <td
-                        style={{
-                          fontFamily: "monospace",
-                          fontWeight: 800,
-                          color: "#475569",
-                        }}
-                      >
-                        {record.phone || "-"}
-                      </td>
+                        <td
+                          style={{ textAlign: "center" }}
+                        >
+                          <span className="pill department-pill">
+                            {getDepartmentName(record)}
+                          </span>
+                        </td>
 
-                      <td>
-                        <span className="pill">
-                          {record.designation || "-"}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="pill dept-pill">
-                          {getDepartmentName(record)}
-                        </span>
-                      </td>
-
-                      <td
-                        style={{
-                          textAlign: "center",
-                          color: "#475569",
-                          fontWeight: 800,
-                          fontSize: 12,
-                        }}
-                      >
-                        {record.joining_date || "-"}
-                      </td>
-
-                      <td
-                        className="money"
-                        style={{
-                          textAlign: isUrdu ? "left" : "right",
-                        }}
-                      >
-                        {fmt(record.basic_salary)}
-                      </td>
-
-                      <td style={{ textAlign: "center" }}>
-                        <div
-                          className="action-row"
-                          style={{
-                            flexDirection: isUrdu ? "row-reverse" : "row",
-                          }}
+                        <td
+                          style={{ textAlign: "center" }}
                         >
                           <button
-                            className="btn btn-green"
-                            onClick={() => openEdit(record)}
+                            type="button"
+                            className="view-btn"
+                            onClick={() =>
+                              openDetails(record)
+                            }
                           >
-                            <i className="bi bi-pencil-square"></i>
-                            {t.edit}
+                            <i className="bi bi-eye-fill" />
+                            <span>
+                              {t.viewDetails}
+                            </span>
                           </button>
-
-                          <button
-                            className="btn btn-red"
-                            onClick={() => handleDelete(record.id)}
-                          >
-                            <i className="bi bi-trash3-fill"></i>
-                            {t.delete}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="employees-mobile">
-            {loading ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: 36,
-                  color: "#94a3b8",
-                }}
-              >
-                {t.loading}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: 36,
-                  color: "#94a3b8",
-                }}
-              >
-                {t.noRecords}
-              </div>
-            ) : (
-              <div className="employee-mobile-list">
-                {filtered.map((record, index) => (
-                  <div className="employee-mobile-card" key={record.id || index}>
-                    <div
-                      className="employee-mobile-top"
-                      style={{
-                        flexDirection: isUrdu ? "row-reverse" : "row",
-                      }}
-                    >
-                      <div
-                        className="employee-mobile-title"
-                        style={{
-                          flexDirection: isUrdu ? "row-reverse" : "row",
-                        }}
-                      >
-                        <div className="employee-avatar">
-                          <i className="bi bi-person-badge"></i>
-                        </div>
-
-                        <div style={{ minWidth: 0 }}>
-                          <div className="employee-mobile-index">
-                            #{index + 1}
-                          </div>
-
-                          <div className="employee-mobile-name">
-                            {record.full_name || "-"}
-                          </div>
-
-                          <div className="employee-subtitle">
-                            S/O {record.father_name || "-"}
-                          </div>
-                        </div>
-                      </div>
-
-                      <span className="pill dept-pill">
-                        {getDepartmentName(record)}
-                      </span>
-                    </div>
-
-                    <div className="employee-mobile-grid">
-                      <div className="employee-info-line">
-                        <small>{t.designation}</small>
-                        <b>{record.designation || "-"}</b>
-                      </div>
-
-                      <div className="employee-info-line">
-                        <small>{t.cnic}</small>
-                        <b style={{ fontFamily: "monospace" }}>
-                          {record.cnic || "-"}
-                        </b>
-                      </div>
-
-                      <div className="employee-info-line">
-                        <small>{t.phone}</small>
-                        <b style={{ fontFamily: "monospace" }}>
-                          {record.phone || "-"}
-                        </b>
-                      </div>
-
-                      <div className="employee-info-line">
-                        <small>{t.joiningDate}</small>
-                        <b>{record.joining_date || "-"}</b>
-                      </div>
-
-                      <div className="employee-info-line">
-                        <small>{t.basicSalary}</small>
-                        <b
-                          style={{
-                            color: "#059669",
-                            fontFamily: "monospace",
-                          }}
-                        >
-                          {fmt(record.basic_salary)}
-                        </b>
-                      </div>
-                    </div>
-
-                    <div className="employee-mobile-actions">
-                      <button
-                        className="btn btn-green"
-                        onClick={() => openEdit(record)}
-                      >
-                        <i className="bi bi-pencil-square"></i>
-                        {t.edit}
-                      </button>
-
-                      <button
-                        className="btn btn-red"
-                        onClick={() => handleDelete(record.id)}
-                      >
-                        <i className="bi bi-trash3-fill"></i>
-                        {t.delete}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+                )
+              )}
+            </tbody>
+          </table>
+        </section>
       </div>
 
       {showForm && (
-        <div className="modal-bg">
-          <div className="inputModalBox" dir={dir}>
-            <div className="inputModalTitle">
-              <div
-                className="modal-title-left"
-                style={{
-                  flexDirection: isUrdu ? "row-reverse" : "row",
-                  textAlign: isUrdu ? "right" : "left",
-                }}
-              >
-                <div className="modal-icon">
-                  <i className="bi bi-person-badge"></i>
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <div className="modal-title-main">
-                    {editingId ? t.edit : t.addBtn}
-                  </div>
-
-                  <div className="modal-title-sub">{t.formSubtitle}</div>
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              closeForm();
+            }
+          }}
+        >
+          <div className="modal" dir={dir}>
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">
+                  {editingId
+                    ? t.editTitle
+                    : t.addTitle}
+                </h2>
+                <div className="modal-subtitle">
+                  {t.formSubtitle}
                 </div>
               </div>
 
               <button
                 type="button"
-                className="closeBtn"
-                onClick={() => setShowForm(false)}
-                disabled={submitting}
+                className="close-btn"
+                onClick={closeForm}
               >
-                ×
+                <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            <div className="inputModalBody">
-              <div className="form-section">
-                <div
-                  className="form-section-head"
-                  style={{
-                    flexDirection: isUrdu ? "row-reverse" : "row",
-                    textAlign: isUrdu ? "right" : "left",
-                  }}
-                >
-                  <div className="form-section-head-icon">
-                    <i className="bi bi-info-circle-fill"></i>
-                  </div>
-
-                  <div>
-                    <h3>{t.employeeDetails}</h3>
-                    <p>{t.formSubtitle}</p>
-                  </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <label className="field-label">
+                    {t.fullName} *
+                  </label>
+                  <input
+                    className="field-input"
+                    value={form.full_name}
+                    onChange={(event) =>
+                      updateField(
+                        "full_name",
+                        event.target.value
+                      )
+                    }
+                  />
                 </div>
 
-                <div className="form-grid">
-                  <EmployeeInput
-                    label={t.fullName}
-                    required
-                    icon="bi-person-fill"
-                    value={form.full_name}
-                    placeholder="e.g. Ahmed Raza"
-                    isUrdu={isUrdu}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        full_name: value,
-                      }))
-                    }
-                  />
-
-                  <EmployeeInput
-                    label={t.fatherName}
-                    icon="bi-person-heart"
+                <div>
+                  <label className="field-label">
+                    {t.fatherName}
+                  </label>
+                  <input
+                    className="field-input"
                     value={form.father_name}
-                    placeholder="e.g. Ali Raza"
-                    isUrdu={isUrdu}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        father_name: value,
-                      }))
+                    onChange={(event) =>
+                      updateField(
+                        "father_name",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <EmployeeInput
-                    label={t.cnic}
-                    icon="bi-card-heading"
+                <div>
+                  <label className="field-label">
+                    {t.cnic}
+                  </label>
+                  <input
+                    className="field-input"
                     value={form.cnic}
-                    placeholder="XXXXX-XXXXXXX-X"
-                    isUrdu={isUrdu}
-                    mono
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        cnic: value,
-                      }))
+                    onChange={(event) =>
+                      updateField(
+                        "cnic",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <EmployeeInput
-                    label={t.phone}
-                    icon="bi-telephone-fill"
+                <div>
+                  <label className="field-label">
+                    {t.phone}
+                  </label>
+                  <input
+                    className="field-input"
                     value={form.phone}
-                    placeholder="03XX-XXXXXXX"
-                    isUrdu={isUrdu}
-                    mono
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        phone: value,
-                      }))
+                    onChange={(event) =>
+                      updateField(
+                        "phone",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <EmployeeInput
-                    label={t.designation}
-                    required
-                    icon="bi-briefcase-fill"
+                <div>
+                  <label className="field-label">
+                    {t.designation} *
+                  </label>
+                  <input
+                    className="field-input"
                     value={form.designation}
-                    placeholder="e.g. Manager"
-                    isUrdu={isUrdu}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        designation: value,
-                      }))
+                    onChange={(event) =>
+                      updateField(
+                        "designation",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <div className="field">
-                    <label className="label">
-                      {t.department}{" "}
-                      <span style={{ color: "#dc2626" }}>*</span>
-                    </label>
+                <div>
+                  <label className="field-label">
+                    {t.department} *
+                  </label>
+                  <select
+                    className="field-select"
+                    value={form.department_id}
+                    onChange={(event) =>
+                      updateField(
+                        "department_id",
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="">
+                      {t.selectDepartment}
+                    </option>
 
-                    <div className="input-wrap">
-                      <i
-                        className={`bi bi-diagram-3-fill input-icon ${
-                          isUrdu ? "input-icon-right" : "input-icon-left"
-                        }`}
-                      ></i>
+                    {departments.map(
+                      (department) => (
+                        <option
+                          key={getDepartmentId(
+                            department
+                          )}
+                          value={getDepartmentId(
+                            department
+                          )}
+                        >
+                          {getDepartmentLabel(
+                            department
+                          )}
+                        </option>
+                      )
+                    )}
+                  </select>
 
-                      <select
-                        value={form.department_id}
-                        onChange={(event) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            department_id: event.target.value,
-                          }))
-                        }
-                        className={`input-field ${
-                          isUrdu
-                            ? "input-field-with-right"
-                            : "input-field-with-left"
-                        }`}
+                  {!loading &&
+                    departments.length === 0 && (
+                      <div
                         style={{
-                          textAlign: isUrdu ? "right" : "left",
+                          marginTop: 5,
+                          color: "#dc2626",
+                          fontSize: 10,
                         }}
                       >
-                        <option value="">{t.selectDepartment}</option>
+                        {t.noDepartments}
+                      </div>
+                    )}
+                </div>
 
-                        {departments.map((department) => (
-                          <option key={department.id} value={department.id}>
-                            {department.department_name ||
-                              department.name ||
-                              `#${department.id}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <EmployeeInput
-                    label={t.joiningDate}
-                    icon="bi-calendar-event"
+                <div>
+                  <label className="field-label">
+                    {t.joiningDate}
+                  </label>
+                  <input
                     type="date"
+                    className="field-input"
                     value={form.joining_date}
-                    isUrdu={isUrdu}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        joining_date: value,
-                      }))
+                    onChange={(event) =>
+                      updateField(
+                        "joining_date",
+                        event.target.value
+                      )
                     }
                   />
+                </div>
 
-                  <div className="field salary-field-box">
-                    <label className="label" style={{ color: "#047857" }}>
-                      {t.basicSalary}
-                    </label>
-
-                    <div className="input-wrap">
-                      <i
-                        className={`bi bi-cash-stack input-icon ${
-                          isUrdu ? "input-icon-right" : "input-icon-left"
-                        }`}
-                        style={{
-                          color: "#10b981",
-                        }}
-                      ></i>
-
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.basic_salary}
-                        onChange={(event) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            basic_salary: event.target.value,
-                          }))
-                        }
-                        placeholder="0"
-                        className={`input-field ${
-                          isUrdu
-                            ? "input-field-with-right"
-                            : "input-field-with-left"
-                        }`}
-                        style={{
-                          fontFamily: "monospace",
-                          fontWeight: 900,
-                          color: "#059669",
-                          textAlign: isUrdu ? "right" : "left",
-                          borderColor: "#bbf7d0",
-                        }}
-                      />
-                    </div>
-                  </div>
+                <div>
+                  <label className="field-label">
+                    {t.basicSalary}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="field-input"
+                    value={form.basic_salary}
+                    onChange={(event) =>
+                      updateField(
+                        "basic_salary",
+                        event.target.value
+                      )
+                    }
+                  />
                 </div>
               </div>
             </div>
 
-            <div
-              className="modalFooterBasic"
-              style={{
-                flexDirection: isUrdu ? "row-reverse" : "row",
-              }}
-            >
+            <div className="modal-footer">
               <button
-                className="btn btn-soft"
-                onClick={() => setShowForm(false)}
+                type="button"
+                className="btn btn-white"
                 disabled={submitting}
+                onClick={closeForm}
               >
                 {t.cancel}
               </button>
 
               <button
+                type="button"
                 className="btn btn-primary"
-                onClick={handleSave}
                 disabled={submitting}
+                onClick={handleSave}
               >
                 <i
                   className={`bi ${
-                    submitting ? "bi-arrow-repeat" : "bi-save-fill"
+                    submitting
+                      ? "bi-arrow-repeat"
+                      : "bi-check2-circle"
                   }`}
-                ></i>
-                {submitting ? t.saving : t.save}
+                />
+                {submitting
+                  ? t.saving
+                  : editingId
+                  ? t.update
+                  : t.save}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function EmployeeInput({
-  label,
-  icon,
-  value,
-  onChange,
-  placeholder = "",
-  isUrdu = false,
-  required = false,
-  mono = false,
-  type = "text",
-}) {
-  return (
-    <div className="field">
-      <label className="label">
-        {label} {required && <span style={{ color: "#dc2626" }}>*</span>}
-      </label>
-
-      <div className="input-wrap">
-        <i
-          className={`bi ${icon} input-icon ${
-            isUrdu ? "input-icon-right" : "input-icon-left"
-          }`}
-        ></i>
-
-        <input
-          type={type}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className={`input-field ${
-            isUrdu ? "input-field-with-right" : "input-field-with-left"
-          }`}
-          style={{
-            textAlign: isUrdu ? "right" : "left",
-            fontFamily: mono ? "monospace" : undefined,
+      {showDetails && detailRecord && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              setShowDetails(false);
+            }
           }}
-        />
-      </div>
+        >
+          <div
+            className="modal details-modal"
+            dir={dir}
+          >
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">
+                  {t.detailsTitle}
+                </h2>
+                <div className="modal-subtitle">
+                  {detailRecord.full_name || "-"}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() =>
+                  setShowDetails(false)
+                }
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="details-grid">
+                {detailItems.map(([label, value]) => (
+                  <div
+                    className="detail-card"
+                    key={label}
+                  >
+                    <div className="detail-label">
+                      {label}
+                    </div>
+                    <div className="detail-value">
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-white"
+                onClick={() =>
+                  setShowDetails(false)
+                }
+              >
+                {t.close}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-summary"
+                onClick={() =>
+                  openEdit(detailRecord)
+                }
+              >
+                <i className="bi bi-pencil-square" />
+                {t.edit}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() =>
+                  handleDelete(
+                    getEmployeeId(detailRecord)
+                  )
+                }
+              >
+                <i className="bi bi-trash3" />
+                {t.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
