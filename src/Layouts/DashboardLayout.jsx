@@ -223,6 +223,11 @@ const HR_ITEMS = [
     fallback: "Employee",
   },
   {
+    to: "/app/hr/rate",
+    key: "employeeRate",
+    fallback: "Employee Salary",
+  },
+  {
     divider: true,
   },
   {
