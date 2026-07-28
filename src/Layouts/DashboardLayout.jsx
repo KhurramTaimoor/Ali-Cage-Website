@@ -228,6 +228,11 @@ const HR_ITEMS = [
     fallback: "Employee Salary",
   },
   {
+    to: "/app/hr/contractor",
+    key: "contractorManagement",
+    fallback: "Contractor Management",
+  },
+  {
     divider: true,
   },
   {
