@@ -27,6 +27,7 @@ const TEXT = {
     active: "Active",
     inactive: "Inactive",
     contracts: "Contracts",
+    contractRateColumn: "Contract Rate",
     total: "Total Value",
     details: "View Details",
     name: "Contractor Name",
@@ -52,8 +53,8 @@ const TEXT = {
     perHour: "Per Hour",
     monthly: "Monthly",
     fixed: "Fixed Contract",
-    rate: "Rate Amount",
-    fixedAmount: "Complete Contract Amount",
+    contractRate: "Contract Rate",
+    fixedAmount: "Contract Rate",
     duration: "Duration / Quantity",
     durationUnit: "Duration Unit",
     days: "Days",
@@ -66,7 +67,7 @@ const TEXT = {
     completed: "Completed",
     cancelled: "Cancelled",
     notes: "Notes",
-    calculatedTotal: "Calculated Total",
+    calculatedTotal: "Total Value",
     noContracts: "No contracts added for this contractor.",
     noRecords: "No contractors found.",
     loading: "Loading contractor data...",
@@ -114,7 +115,8 @@ const TEXT = {
     active: "فعال",
     inactive: "غیر فعال",
     contracts: "معاہدے",
-    total: "کل رقم",
+    contractRateColumn: "کنٹریکٹ ریٹ",
+    total: "کل ویلیو",
     details: "تفصیل دیکھیں",
     name: "کنٹریکٹر کا نام",
     phone: "فون نمبر",
@@ -139,8 +141,8 @@ const TEXT = {
     perHour: "فی گھنٹہ",
     monthly: "ماہانہ",
     fixed: "مکمل معاہدہ",
-    rate: "ریٹ",
-    fixedAmount: "مکمل معاہدے کی رقم",
+    contractRate: "کنٹریکٹ ریٹ",
+    fixedAmount: "کنٹریکٹ ریٹ",
     duration: "مدت / تعداد",
     durationUnit: "مدت کی اکائی",
     days: "دن",
@@ -153,7 +155,7 @@ const TEXT = {
     completed: "مکمل",
     cancelled: "منسوخ",
     notes: "نوٹس",
-    calculatedTotal: "کل حساب شدہ رقم",
+    calculatedTotal: "کل ویلیو",
     noContracts: "اس کنٹریکٹر کا کوئی معاہدہ موجود نہیں۔",
     noRecords: "کوئی کنٹریکٹر نہیں ملا۔",
     loading: "کنٹریکٹر کا ڈیٹا لوڈ ہو رہا ہے...",
@@ -197,7 +199,7 @@ const emptyContract = (contractorId = "") => ({
   work_title: "",
   work_description: "",
   payment_basis: "",
-  rate_amount: "",
+  contract_rate: "",
   duration_value: "",
   duration_unit: "Days",
   start_date: "",
@@ -322,7 +324,7 @@ export default function ContractorPage() {
       completed: contracts.filter((item) => item.status === "Completed").length,
       value: contracts
         .filter((item) => item.status !== "Cancelled")
-        .reduce((sum, item) => sum + toNumber(item.total_amount), 0),
+        .reduce((sum, item) => sum + toNumber(item.total_value), 0),
     }),
     [contractors, contracts]
   );
@@ -458,7 +460,7 @@ export default function ContractorPage() {
       work_title: contract.work_title || "",
       work_description: contract.work_description || "",
       payment_basis: contract.payment_basis || "",
-      rate_amount: String(contract.rate_amount ?? ""),
+      contract_rate: String(contract.contract_rate ?? ""),
       duration_value: String(contract.duration_value ?? ""),
       duration_unit:
         contract.duration_unit || durationUnitFor(contract.payment_basis),
@@ -474,18 +476,18 @@ export default function ContractorPage() {
     () =>
       totalFor(
         contractForm.payment_basis,
-        contractForm.rate_amount,
+        contractForm.contract_rate,
         contractForm.duration_value
       ),
     [
       contractForm.payment_basis,
-      contractForm.rate_amount,
+      contractForm.contract_rate,
       contractForm.duration_value,
     ]
   );
 
   const saveContract = async () => {
-    const rate = toNumber(contractForm.rate_amount);
+    const rate = toNumber(contractForm.contract_rate);
     const duration = toNumber(contractForm.duration_value);
 
     if (
@@ -511,7 +513,7 @@ export default function ContractorPage() {
         work_title: contractForm.work_title.trim(),
         work_description: contractForm.work_description.trim() || null,
         payment_basis: contractForm.payment_basis,
-        rate_amount: rate,
+        contract_rate: rate,
         duration_value: duration,
         duration_unit: contractForm.duration_unit,
         start_date: contractForm.start_date || null,
@@ -676,12 +678,13 @@ export default function ContractorPage() {
         <section className="table-card">
           <table>
             <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "30%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "25%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
               <col style={{ width: "14%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "15%" }} />
             </colgroup>
             <thead>
               <tr>
@@ -689,15 +692,16 @@ export default function ContractorPage() {
                 <th>{t.contractor}</th>
                 <th>{t.status}</th>
                 <th>{t.contracts}</th>
+                <th>{t.contractRateColumn}</th>
                 <th>{t.total}</th>
                 <th>{t.details}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" className="empty">{t.loading}</td></tr>
+                <tr><td colSpan="7" className="empty">{t.loading}</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan="6" className="empty">{t.noRecords}</td></tr>
+                <tr><td colSpan="7" className="empty">{t.noRecords}</td></tr>
               ) : (
                 filtered.map((contractor, index) => (
                   <tr key={contractor.id}>
@@ -722,7 +726,10 @@ export default function ContractorPage() {
                       {contractor.contracts_count || 0}
                     </td>
                     <td style={{ textAlign: "center", fontWeight: 900 }}>
-                      {money(contractor.total_contract_value)}
+                      {money(contractor.latest_contract_rate)}
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: 900 }}>
+                      {money(contractor.total_value)}
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <button className="btn btn-soft" onClick={() => openDetails(contractor)}>
@@ -828,10 +835,14 @@ export default function ContractorPage() {
                   [t.status, selectedContractor.status],
                   [t.contracts, selectedContracts.length],
                   [
+                    t.contractRateColumn,
+                    money(selectedContractor.latest_contract_rate),
+                  ],
+                  [
                     t.total,
                     money(
                       selectedContracts.reduce(
-                        (sum, contract) => sum + toNumber(contract.total_amount),
+                        (sum, contract) => sum + toNumber(contract.total_value),
                         0
                       )
                     ),
@@ -871,14 +882,21 @@ export default function ContractorPage() {
                         {[
                           [t.paymentBasis, contract.payment_basis],
                           [
-                            contract.payment_basis === "Fixed Contract"
-                              ? t.fixedAmount
-                              : t.rate,
-                            money(contract.rate_amount),
+                            t.contractRate,
+                            money(contract.contract_rate),
                           ],
-                          [t.duration, `${contract.duration_value} ${contract.duration_unit}`],
-                          [t.calculatedTotal, money(contract.total_amount)],
-                          [t.startDate, dateOnly(contract.start_date) || "-"],
+                          [
+                            t.calculatedTotal,
+                            money(contract.total_value),
+                          ],
+                          [
+                            t.duration,
+                            `${contract.duration_value} ${contract.duration_unit}`,
+                          ],
+                          [
+                            t.startDate,
+                            dateOnly(contract.start_date) || "-",
+                          ],
                         ].map(([label, value]) => (
                           <div className="contract-stat" key={label}>
                             <div className="label">{label}</div>
@@ -981,20 +999,14 @@ export default function ContractorPage() {
                   </select>
                 </Field>
 
-                <Field
-                  label={`${
-                    contractForm.payment_basis === "Fixed Contract"
-                      ? t.fixedAmount
-                      : t.rate
-                  } *`}
-                >
+                <Field label={`${t.contractRate} *`}>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     className="input"
-                    value={contractForm.rate_amount}
-                    onChange={(event) => updateContract("rate_amount", event.target.value)}
+                    value={contractForm.contract_rate}
+                    onChange={(event) => updateContract("contract_rate", event.target.value)}
                   />
                 </Field>
 
