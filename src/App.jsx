@@ -58,6 +58,7 @@ import EmployeePage from "./pages/EmployeePage";
 import EmployeeRatePage from "./pages/EmployeeRatePage";
 import HRReportPage from "./pages/HRReportPage";
 import EmployeeLedgerPage from "./pages/EmployeeLedgerPage";
+import ContractorPage from "./pages/ContractorPage";
 
 import BOMPage from "./pages/BOMPage";
 import AssemblyPage from "./pages/AssemblyPage";
@@ -72,73 +73,305 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<AuthPage initialTab="login" />} />
-        <Route path="/register" element={<AuthPage initialTab="signup" />} />
-        <Route path="/sys-admin/secure-gateway" element={<AdminLogin />} />
 
-        <Route element={<ProtectedRoute allowedRoles={["admin", "employee"]} />}>
-          <Route path="/app" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
+        <Route
+          path="/login"
+          element={<AuthPage initialTab="login" />}
+        />
 
-            <Route path="dashboard" element={<DashboardHome />} />
+        <Route
+          path="/register"
+          element={<AuthPage initialTab="signup" />}
+        />
 
-            <Route path="sales/customer" element={<CustomerPage />} />
-            <Route path="sales/customer-ledger" element={<CustomerSalesLedgerPage />} />
-            <Route path="sales/salesman" element={<SalesmanPage />} />
-            <Route path="sales/retailer" element={<RetailerPage />} />
-            <Route path="sales/area" element={<AreaPage />} />
-            <Route path="sales/rate-list" element={<RateListPage />} />
-            <Route path="sales/sale-order" element={<SaleOrderPage />} />
-            <Route path="sales/invoice" element={<SalesInvoicePage />} />
-            <Route path="sales/return" element={<SalesReturnPage />} />
-            <Route path="sales/reports" element={<SalesReportPage />} />
+        <Route
+          path="/sys-admin/secure-gateway"
+          element={<AdminLogin />}
+        />
 
-            <Route path="purchase/supplier" element={<SupplierPage />} />
-            <Route path="purchase/rate" element={<PurchaseRatePage />} />
-            <Route path="purchase/invoice" element={<PurchaseInvoicePage />} />
-            <Route path="purchase/return" element={<PurchaseReturnPage />} />
-            <Route path="purchase/supplier-ledger" element={<SupplierLedgerPage />} />
-            <Route path="purchase/reports" element={<PurchaseReportPage />} />
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={["admin", "employee"]}
+            />
+          }
+        >
+          <Route
+            path="/app"
+            element={<DashboardLayout />}
+          >
+            <Route
+              index
+              element={
+                <Navigate
+                  to="dashboard"
+                  replace
+                />
+              }
+            />
 
-            <Route path="inventory/product-type" element={<ProductTypePage />} />
-            <Route path="inventory/category" element={<CategoryPage />} />
-            <Route path="inventory/product" element={<ProductPage />} />
-            <Route path="inventory/unit" element={<UnitPage />} />
-            <Route path="inventory/opening" element={<OpeningStockPage />} />
-            <Route path="inventory/receive" element={<StockReceivePage />} />
-            <Route path="inventory/issue" element={<StockIssuePage />} />
-            <Route path="inventory/stock-demand" element={<StockDemandPage />} />
-            <Route path="inventory/reports" element={<InventoryReportPage />} />
-            <Route path="inventory/product-ledger" element={<ProductLedgerPage />} />
+            <Route
+              path="dashboard"
+              element={<DashboardHome />}
+            />
 
-            <Route path="accounts/groups" element={<AccountGroupsPage />} />
-            <Route path="accounts/chart" element={<ChartOfAccountsPage />} />
-            <Route path="accounts/opening" element={<OpeningBalancePage />} />
-            <Route path="accounts/journal" element={<JournalVoucherPage />} />
-            <Route path="accounts/cashbook" element={<CashBookPage />} />
-            <Route path="accounts/ledger-summary" element={<AllLedgerSummaryPage />} />
-            <Route path="accounts/gl-report" element={<GeneralLedgerPage />} />
-            <Route path="accounts/cash-report" element={<CashBookReportPage />} />
+            {/* Sales */}
+            <Route
+              path="sales/customer"
+              element={<CustomerPage />}
+            />
 
-            <Route path="reports/product-profit-loss" element={<ProductProfitLossReportPage />} />
+            <Route
+              path="sales/customer-ledger"
+              element={<CustomerSalesLedgerPage />}
+            />
 
-            <Route path="hr/departments" element={<DepartmentPage />} />
-            <Route path="hr/employee" element={<EmployeePage />} />
-            <Route path="hr/rate" element={<EmployeeRatePage />} />
-            <Route path="hr/reports" element={<HRReportPage />} />
-            <Route path="hr/ledger" element={<EmployeeLedgerPage />} />
+            <Route
+              path="sales/salesman"
+              element={<SalesmanPage />}
+            />
 
-            <Route path="production/bom" element={<BOMPage />} />
-            <Route path="production/assembly" element={<AssemblyPage />} />
-            <Route path="production/invoice" element={<ProductionInvoicePage />} />
-            <Route path="production/return-invoice" element={<ProductionReturnInvoicePage />} />
-            <Route path="production/reports" element={<ProductionReportsPage />} />
+            <Route
+              path="sales/retailer"
+              element={<RetailerPage />}
+            />
 
-            <Route path="permissions" element={<PermissionsPage />} />
+            <Route
+              path="sales/area"
+              element={<AreaPage />}
+            />
+
+            <Route
+              path="sales/rate-list"
+              element={<RateListPage />}
+            />
+
+            <Route
+              path="sales/sale-order"
+              element={<SaleOrderPage />}
+            />
+
+            <Route
+              path="sales/invoice"
+              element={<SalesInvoicePage />}
+            />
+
+            <Route
+              path="sales/return"
+              element={<SalesReturnPage />}
+            />
+
+            <Route
+              path="sales/reports"
+              element={<SalesReportPage />}
+            />
+
+            {/* Purchase */}
+            <Route
+              path="purchase/supplier"
+              element={<SupplierPage />}
+            />
+
+            <Route
+              path="purchase/rate"
+              element={<PurchaseRatePage />}
+            />
+
+            <Route
+              path="purchase/invoice"
+              element={<PurchaseInvoicePage />}
+            />
+
+            <Route
+              path="purchase/return"
+              element={<PurchaseReturnPage />}
+            />
+
+            <Route
+              path="purchase/supplier-ledger"
+              element={<SupplierLedgerPage />}
+            />
+
+            <Route
+              path="purchase/reports"
+              element={<PurchaseReportPage />}
+            />
+
+            {/* Inventory */}
+            <Route
+              path="inventory/product-type"
+              element={<ProductTypePage />}
+            />
+
+            <Route
+              path="inventory/category"
+              element={<CategoryPage />}
+            />
+
+            <Route
+              path="inventory/product"
+              element={<ProductPage />}
+            />
+
+            <Route
+              path="inventory/unit"
+              element={<UnitPage />}
+            />
+
+            <Route
+              path="inventory/opening"
+              element={<OpeningStockPage />}
+            />
+
+            <Route
+              path="inventory/receive"
+              element={<StockReceivePage />}
+            />
+
+            <Route
+              path="inventory/issue"
+              element={<StockIssuePage />}
+            />
+
+            <Route
+              path="inventory/stock-demand"
+              element={<StockDemandPage />}
+            />
+
+            <Route
+              path="inventory/reports"
+              element={<InventoryReportPage />}
+            />
+
+            <Route
+              path="inventory/product-ledger"
+              element={<ProductLedgerPage />}
+            />
+
+            {/* Accounts */}
+            <Route
+              path="accounts/groups"
+              element={<AccountGroupsPage />}
+            />
+
+            <Route
+              path="accounts/chart"
+              element={<ChartOfAccountsPage />}
+            />
+
+            <Route
+              path="accounts/opening"
+              element={<OpeningBalancePage />}
+            />
+
+            <Route
+              path="accounts/journal"
+              element={<JournalVoucherPage />}
+            />
+
+            <Route
+              path="accounts/cashbook"
+              element={<CashBookPage />}
+            />
+
+            <Route
+              path="accounts/ledger-summary"
+              element={<AllLedgerSummaryPage />}
+            />
+
+            <Route
+              path="accounts/gl-report"
+              element={<GeneralLedgerPage />}
+            />
+
+            <Route
+              path="accounts/cash-report"
+              element={<CashBookReportPage />}
+            />
+
+            {/* Reports */}
+            <Route
+              path="reports/product-profit-loss"
+              element={
+                <ProductProfitLossReportPage />
+              }
+            />
+
+            {/* HR */}
+            <Route
+              path="hr/departments"
+              element={<DepartmentPage />}
+            />
+
+            <Route
+              path="hr/employee"
+              element={<EmployeePage />}
+            />
+
+            <Route
+              path="hr/rate"
+              element={<EmployeeRatePage />}
+            />
+
+            <Route
+              path="hr/contractor"
+              element={<ContractorPage />}
+            />
+
+            <Route
+              path="hr/reports"
+              element={<HRReportPage />}
+            />
+
+            <Route
+              path="hr/ledger"
+              element={<EmployeeLedgerPage />}
+            />
+
+            {/* Production */}
+            <Route
+              path="production/bom"
+              element={<BOMPage />}
+            />
+
+            <Route
+              path="production/assembly"
+              element={<AssemblyPage />}
+            />
+
+            <Route
+              path="production/invoice"
+              element={<ProductionInvoicePage />}
+            />
+
+            <Route
+              path="production/return-invoice"
+              element={
+                <ProductionReturnInvoicePage />
+              }
+            />
+
+            <Route
+              path="production/reports"
+              element={<ProductionReportsPage />}
+            />
+
+            <Route
+              path="permissions"
+              element={<PermissionsPage />}
+            />
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
       </Routes>
     </Router>
   );
