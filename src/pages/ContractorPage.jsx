@@ -27,6 +27,7 @@ const TEXT = {
     active: "Active",
     inactive: "Inactive",
     contracts: "Contracts",
+    contractRateColumn: "Contract Rate",
     total: "Total Value",
     details: "View Details",
     name: "Contractor Name",
@@ -38,6 +39,8 @@ const TEXT = {
     saveContractor: "Save Contractor",
     updateContractor: "Update Contractor",
     contractorDetails: "Contractor Details",
+    initialContract: "Initial Contract Details",
+    saveContractorWithContract: "Save Contractor & Contract",
     addContract: "Add Contract",
     editContract: "Edit Contract",
     department: "Department / Work Area",
@@ -52,8 +55,8 @@ const TEXT = {
     perHour: "Per Hour",
     monthly: "Monthly",
     fixed: "Fixed Contract",
-    rate: "Rate Amount",
-    fixedAmount: "Complete Contract Amount",
+    contractRate: "Contract Rate",
+    fixedAmount: "Contract Rate",
     duration: "Duration / Quantity",
     durationUnit: "Duration Unit",
     days: "Days",
@@ -66,7 +69,7 @@ const TEXT = {
     completed: "Completed",
     cancelled: "Cancelled",
     notes: "Notes",
-    calculatedTotal: "Calculated Total",
+    calculatedTotal: "Total Value",
     noContracts: "No contracts added for this contractor.",
     noRecords: "No contractors found.",
     loading: "Loading contractor data...",
@@ -114,7 +117,8 @@ const TEXT = {
     active: "فعال",
     inactive: "غیر فعال",
     contracts: "معاہدے",
-    total: "کل رقم",
+    contractRateColumn: "کنٹریکٹ ریٹ",
+    total: "کل ویلیو",
     details: "تفصیل دیکھیں",
     name: "کنٹریکٹر کا نام",
     phone: "فون نمبر",
@@ -125,6 +129,8 @@ const TEXT = {
     saveContractor: "کنٹریکٹر محفوظ کریں",
     updateContractor: "کنٹریکٹر اپڈیٹ کریں",
     contractorDetails: "کنٹریکٹر کی تفصیل",
+    initialContract: "ابتدائی معاہدے کی تفصیل",
+    saveContractorWithContract: "کنٹریکٹر اور معاہدہ محفوظ کریں",
     addContract: "معاہدہ شامل کریں",
     editContract: "معاہدہ اپڈیٹ کریں",
     department: "شعبہ / کام کی قسم",
@@ -139,8 +145,8 @@ const TEXT = {
     perHour: "فی گھنٹہ",
     monthly: "ماہانہ",
     fixed: "مکمل معاہدہ",
-    rate: "ریٹ",
-    fixedAmount: "مکمل معاہدے کی رقم",
+    contractRate: "کنٹریکٹ ریٹ",
+    fixedAmount: "کنٹریکٹ ریٹ",
     duration: "مدت / تعداد",
     durationUnit: "مدت کی اکائی",
     days: "دن",
@@ -153,7 +159,7 @@ const TEXT = {
     completed: "مکمل",
     cancelled: "منسوخ",
     notes: "نوٹس",
-    calculatedTotal: "کل حساب شدہ رقم",
+    calculatedTotal: "کل ویلیو",
     noContracts: "اس کنٹریکٹر کا کوئی معاہدہ موجود نہیں۔",
     noRecords: "کوئی کنٹریکٹر نہیں ملا۔",
     loading: "کنٹریکٹر کا ڈیٹا لوڈ ہو رہا ہے...",
@@ -197,7 +203,7 @@ const emptyContract = (contractorId = "") => ({
   work_title: "",
   work_description: "",
   payment_basis: "",
-  rate_amount: "",
+  contract_rate: "",
   duration_value: "",
   duration_unit: "Days",
   start_date: "",
@@ -256,6 +262,15 @@ export default function ContractorPage() {
   const [showSummary, setShowSummary] = useState(false);
 
   const [contractorForm, setContractorForm] = useState(emptyContractor());
+
+  /*
+    A new contractor is saved together with the first contract.
+    Existing contractors can still receive multiple additional contracts
+    through the View Details modal.
+  */
+  const [initialContractForm, setInitialContractForm] =
+    useState(emptyContract());
+
   const [editingContractorId, setEditingContractorId] = useState(null);
   const [showContractorModal, setShowContractorModal] = useState(false);
 
@@ -269,6 +284,7 @@ export default function ContractorPage() {
   const [departmentForm, setDepartmentForm] = useState({
     open: false,
     name: "",
+    target: "contract",
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -322,7 +338,7 @@ export default function ContractorPage() {
       completed: contracts.filter((item) => item.status === "Completed").length,
       value: contracts
         .filter((item) => item.status !== "Cancelled")
-        .reduce((sum, item) => sum + toNumber(item.total_amount), 0),
+        .reduce((sum, item) => sum + toNumber(item.total_value), 0),
     }),
     [contractors, contracts]
   );
@@ -353,7 +369,19 @@ export default function ContractorPage() {
   }, [contractors, search, contractsFor]);
 
   const updateContractor = (field, value) =>
-    setContractorForm((previous) => ({ ...previous, [field]: value }));
+    setContractorForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+
+  const updateInitialContract = (field, value) =>
+    setInitialContractForm((previous) => ({
+      ...previous,
+      [field]: value,
+      ...(field === "payment_basis"
+        ? { duration_unit: durationUnitFor(value) }
+        : {}),
+    }));
 
   const updateContract = (field, value) =>
     setContractForm((previous) => ({
@@ -367,6 +395,7 @@ export default function ContractorPage() {
   const openNewContractor = () => {
     setEditingContractorId(null);
     setContractorForm(emptyContractor());
+    setInitialContractForm(emptyContract());
     setShowContractorModal(true);
   };
 
@@ -383,26 +412,106 @@ export default function ContractorPage() {
     setShowContractorModal(true);
   };
 
+  const initialCalculatedTotal = useMemo(
+    () =>
+      totalFor(
+        initialContractForm.payment_basis,
+        initialContractForm.contract_rate,
+        initialContractForm.duration_value
+      ),
+    [
+      initialContractForm.payment_basis,
+      initialContractForm.contract_rate,
+      initialContractForm.duration_value,
+    ]
+  );
+
   const saveContractor = async () => {
-    if (!contractorForm.contractor_name.trim() || !contractorForm.phone.trim()) {
+    if (
+      !contractorForm.contractor_name.trim() ||
+      !contractorForm.phone.trim()
+    ) {
       notify("error", t.requiredContractor);
       return;
     }
 
+    /*
+      While editing an existing contractor, only basic profile fields
+      are updated. Its multiple contracts remain managed separately.
+    */
+    if (!editingContractorId) {
+      const initialRate = toNumber(
+        initialContractForm.contract_rate
+      );
+
+      const initialDuration = toNumber(
+        initialContractForm.duration_value
+      );
+
+      if (
+        !initialContractForm.department_id ||
+        !initialContractForm.work_title.trim() ||
+        !initialContractForm.payment_basis
+      ) {
+        notify("error", t.requiredContract);
+        return;
+      }
+
+      if (initialRate <= 0 || initialDuration <= 0) {
+        notify("error", t.invalidAmount);
+        return;
+      }
+    }
+
     setSubmitting(true);
+
     try {
       const payload = {
-        contractor_name: contractorForm.contractor_name.trim(),
+        contractor_name:
+          contractorForm.contractor_name.trim(),
         cnic: contractorForm.cnic.trim() || null,
         phone: contractorForm.phone.trim(),
-        address: contractorForm.address.trim() || null,
+        address:
+          contractorForm.address.trim() || null,
         status: contractorForm.status,
       };
 
       if (editingContractorId) {
-        await axios.put(`${CONTRACTOR_API}/${editingContractorId}`, payload);
+        await axios.put(
+          `${CONTRACTOR_API}/${editingContractorId}`,
+          payload
+        );
+
         notify("success", t.contractorUpdated);
       } else {
+        payload.initial_contract = {
+          department_id: Number(
+            initialContractForm.department_id
+          ),
+          work_title:
+            initialContractForm.work_title.trim(),
+          work_description:
+            initialContractForm.work_description.trim() ||
+            null,
+          payment_basis:
+            initialContractForm.payment_basis,
+          contract_rate: toNumber(
+            initialContractForm.contract_rate
+          ),
+          duration_value: toNumber(
+            initialContractForm.duration_value
+          ),
+          duration_unit:
+            initialContractForm.duration_unit,
+          start_date:
+            initialContractForm.start_date || null,
+          end_date:
+            initialContractForm.end_date || null,
+          status: initialContractForm.status,
+          notes:
+            initialContractForm.notes.trim() || null,
+        };
+
         await axios.post(CONTRACTOR_API, payload);
         notify("success", t.contractorSaved);
       }
@@ -410,6 +519,8 @@ export default function ContractorPage() {
       setShowContractorModal(false);
       setEditingContractorId(null);
       setContractorForm(emptyContractor());
+      setInitialContractForm(emptyContract());
+
       await fetchData();
     } catch (error) {
       notify(
@@ -458,7 +569,7 @@ export default function ContractorPage() {
       work_title: contract.work_title || "",
       work_description: contract.work_description || "",
       payment_basis: contract.payment_basis || "",
-      rate_amount: String(contract.rate_amount ?? ""),
+      contract_rate: String(contract.contract_rate ?? ""),
       duration_value: String(contract.duration_value ?? ""),
       duration_unit:
         contract.duration_unit || durationUnitFor(contract.payment_basis),
@@ -474,18 +585,18 @@ export default function ContractorPage() {
     () =>
       totalFor(
         contractForm.payment_basis,
-        contractForm.rate_amount,
+        contractForm.contract_rate,
         contractForm.duration_value
       ),
     [
       contractForm.payment_basis,
-      contractForm.rate_amount,
+      contractForm.contract_rate,
       contractForm.duration_value,
     ]
   );
 
   const saveContract = async () => {
-    const rate = toNumber(contractForm.rate_amount);
+    const rate = toNumber(contractForm.contract_rate);
     const duration = toNumber(contractForm.duration_value);
 
     if (
@@ -511,7 +622,7 @@ export default function ContractorPage() {
         work_title: contractForm.work_title.trim(),
         work_description: contractForm.work_description.trim() || null,
         payment_basis: contractForm.payment_basis,
-        rate_amount: rate,
+        contract_rate: rate,
         duration_value: duration,
         duration_unit: contractForm.duration_unit,
         start_date: contractForm.start_date || null,
@@ -570,9 +681,27 @@ export default function ContractorPage() {
 
       const createdId = response?.data?.id;
       await fetchData();
-      if (createdId) updateContract("department_id", String(createdId));
 
-      setDepartmentForm({ open: false, name: "" });
+      if (createdId) {
+        if (departmentForm.target === "initial") {
+          updateInitialContract(
+            "department_id",
+            String(createdId)
+          );
+        } else {
+          updateContract(
+            "department_id",
+            String(createdId)
+          );
+        }
+      }
+
+      setDepartmentForm({
+        open: false,
+        name: "",
+        target: "contract",
+      });
+
       notify("success", t.departmentSaved);
     } catch (error) {
       notify(
@@ -610,7 +739,7 @@ export default function ContractorPage() {
         .search{width:100%;max-width:540px;height:43px;margin:14px 0;border:1px solid #cbd5e1;border-radius:12px;padding:0 14px;font-size:13px;outline:none}.search:focus,.input:focus,.select:focus,.textarea:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
         .table-card{border-radius:18px;overflow:hidden}table{width:100%;table-layout:fixed;border-collapse:collapse}th{background:#0f172a;color:#fff;padding:14px 8px;font-size:9px;text-transform:uppercase}td{padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#475569}tbody tr:hover td{background:#f8faff}.person{display:flex;align-items:center;gap:10px;min-width:0}.avatar{width:38px;height:38px;border-radius:12px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-weight:950;flex-shrink:0}.name{font-weight:900;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.phone{font-size:10px;color:#94a3b8;margin-top:3px}.pill{display:inline-flex;border:1px solid #dbe3ee;border-radius:999px;padding:6px 9px;font-size:9px;font-weight:900}.green{background:#ecfdf5;border-color:#bbf7d0;color:#047857}.red{background:#fef2f2;border-color:#fecaca;color:#b91c1c}.blue{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}.empty{text-align:center!important;padding:45px!important;color:#94a3b8!important}
         .backdrop{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.64);backdrop-filter:blur(3px);padding:12px;display:flex;align-items:center;justify-content:center}.modal{width:100%;max-width:900px;max-height:calc(100vh - 24px);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}.modal.large{max-width:1050px}.modal.small{max-width:460px}.modal-head,.modal-foot{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}.modal-head{border-bottom:1px solid #e2e8f0}.modal-foot{border-top:1px solid #e2e8f0;justify-content:flex-end}.modal-body{padding:18px;overflow-y:auto;background:#f8fafc}.modal-title{margin:0;font-size:20px;font-weight:950}.close{width:36px;height:36px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;cursor:pointer}
-        .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.full{grid-column:1/-1}.field-label{display:block;margin-bottom:6px;font-size:11px;font-weight:850;color:#475569}.input,.select,.textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font-size:13px;outline:none}.input,.select{height:42px;padding:0 11px}.textarea{min-height:82px;padding:10px 11px;resize:vertical}.select-row{display:flex;gap:7px}.select-row .select{flex:1}.calc{grid-column:1/-1;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:14px;padding:14px}.calc .value{font-size:25px;color:#065f46}
+        .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.full{grid-column:1/-1}.section-divider{margin-top:4px;padding-top:16px;border-top:1px solid #dbe3ee}.section-caption{font-size:15px;font-weight:950;color:#0f172a}.field-label{display:block;margin-bottom:6px;font-size:11px;font-weight:850;color:#475569}.input,.select,.textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font-size:13px;outline:none}.input,.select{height:42px;padding:0 11px}.textarea{min-height:82px;padding:10px 11px;resize:vertical}.select-row{display:flex;gap:7px}.select-row .select{flex:1}.calc{grid-column:1/-1;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:14px;padding:14px}.calc .value{font-size:25px;color:#065f46}
         .info-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.info{background:#fff;border:1px solid #dbe3ee;border-radius:12px;padding:12px}.info-value{margin-top:5px;font-size:12px;font-weight:900;word-break:break-word}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 10px}.section-head h3{margin:0;font-size:17px}.contract-list{display:grid;gap:10px}.contract-card{background:#fff;border:1px solid #dbe3ee;border-radius:14px;padding:14px}.contract-top{display:flex;justify-content:space-between;gap:10px}.contract-title{font-size:14px;font-weight:950}.department{margin-top:4px;color:#4f46e5;font-size:10px;font-weight:850}.contract-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}.contract-stat{background:#f8fafc;border-radius:10px;padding:9px}.contract-actions{display:flex;gap:7px;margin-top:12px}
         .toast{position:fixed;z-index:170;bottom:22px;${
           isUrdu ? "left:22px" : "right:22px"
@@ -676,12 +805,13 @@ export default function ContractorPage() {
         <section className="table-card">
           <table>
             <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "30%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "25%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
               <col style={{ width: "14%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "15%" }} />
             </colgroup>
             <thead>
               <tr>
@@ -689,15 +819,16 @@ export default function ContractorPage() {
                 <th>{t.contractor}</th>
                 <th>{t.status}</th>
                 <th>{t.contracts}</th>
+                <th>{t.contractRateColumn}</th>
                 <th>{t.total}</th>
                 <th>{t.details}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" className="empty">{t.loading}</td></tr>
+                <tr><td colSpan="7" className="empty">{t.loading}</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan="6" className="empty">{t.noRecords}</td></tr>
+                <tr><td colSpan="7" className="empty">{t.noRecords}</td></tr>
               ) : (
                 filtered.map((contractor, index) => (
                   <tr key={contractor.id}>
@@ -722,7 +853,10 @@ export default function ContractorPage() {
                       {contractor.contracts_count || 0}
                     </td>
                     <td style={{ textAlign: "center", fontWeight: 900 }}>
-                      {money(contractor.total_contract_value)}
+                      {money(contractor.latest_contract_rate)}
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: 900 }}>
+                      {money(contractor.total_value)}
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <button className="btn btn-soft" onClick={() => openDetails(contractor)}>
@@ -739,7 +873,12 @@ export default function ContractorPage() {
 
       {showContractorModal && (
         <div className="backdrop">
-          <div className="modal" dir={dir}>
+          <div
+            className={`modal ${
+              editingContractorId ? "" : "large"
+            }`}
+            dir={dir}
+          >
             <div className="modal-head">
               <h2 className="modal-title">
                 {editingContractorId ? t.editContractor : t.addContractor}
@@ -785,9 +924,291 @@ export default function ContractorPage() {
                   <textarea
                     className="textarea"
                     value={contractorForm.address}
-                    onChange={(event) => updateContractor("address", event.target.value)}
+                    onChange={(event) =>
+                      updateContractor(
+                        "address",
+                        event.target.value
+                      )
+                    }
                   />
                 </Field>
+
+                {!editingContractorId && (
+                  <>
+                    <div className="full section-divider">
+                      <div className="section-caption">
+                        {t.initialContract}
+                      </div>
+                    </div>
+
+                    <Field label={`${t.department} *`}>
+                      <div className="select-row">
+                        <select
+                          className="select"
+                          value={
+                            initialContractForm.department_id
+                          }
+                          onChange={(event) =>
+                            updateInitialContract(
+                              "department_id",
+                              event.target.value
+                            )
+                          }
+                        >
+                          <option value="">
+                            {t.selectDepartment}
+                          </option>
+
+                          {departments.map(
+                            (department) => (
+                              <option
+                                key={department.id}
+                                value={department.id}
+                              >
+                                {
+                                  department.department_name
+                                }
+                              </option>
+                            )
+                          )}
+                        </select>
+
+                        <button
+                          type="button"
+                          className="btn btn-add"
+                          title={t.addDepartment}
+                          onClick={() =>
+                            setDepartmentForm({
+                              open: true,
+                              name: "",
+                              target: "initial",
+                            })
+                          }
+                        >
+                          <i className="bi bi-plus-lg" />
+                        </button>
+                      </div>
+                    </Field>
+
+                    <Field label={`${t.workTitle} *`}>
+                      <input
+                        className="input"
+                        value={
+                          initialContractForm.work_title
+                        }
+                        placeholder="Packing, Assembly, Painting..."
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "work_title",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field label={`${t.paymentBasis} *`}>
+                      <select
+                        className="select"
+                        value={
+                          initialContractForm.payment_basis
+                        }
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "payment_basis",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          {t.selectBasis}
+                        </option>
+                        <option value="Per Day">
+                          {t.perDay}
+                        </option>
+                        <option value="Per Hour">
+                          {t.perHour}
+                        </option>
+                        <option value="Monthly">
+                          {t.monthly}
+                        </option>
+                        <option value="Fixed Contract">
+                          {t.fixed}
+                        </option>
+                      </select>
+                    </Field>
+
+                    <Field label={`${t.contractRate} *`}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input"
+                        value={
+                          initialContractForm.contract_rate
+                        }
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "contract_rate",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field label={`${t.duration} *`}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input"
+                        value={
+                          initialContractForm.duration_value
+                        }
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "duration_value",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field label={t.durationUnit}>
+                      {initialContractForm.payment_basis ===
+                      "Fixed Contract" ? (
+                        <select
+                          className="select"
+                          value={
+                            initialContractForm.duration_unit
+                          }
+                          onChange={(event) =>
+                            updateInitialContract(
+                              "duration_unit",
+                              event.target.value
+                            )
+                          }
+                        >
+                          <option value="Days">
+                            {t.days}
+                          </option>
+                          <option value="Hours">
+                            {t.hours}
+                          </option>
+                          <option value="Months">
+                            {t.months}
+                          </option>
+                        </select>
+                      ) : (
+                        <input
+                          className="input"
+                          value={
+                            initialContractForm.duration_unit
+                          }
+                          readOnly
+                        />
+                      )}
+                    </Field>
+
+                    <div className="calc">
+                      <div className="label">
+                        {t.calculatedTotal}
+                      </div>
+                      <div className="value">
+                        {money(initialCalculatedTotal)}
+                      </div>
+                    </div>
+
+                    <Field label={t.startDate}>
+                      <input
+                        type="date"
+                        className="input"
+                        value={
+                          initialContractForm.start_date
+                        }
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "start_date",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field label={t.endDate}>
+                      <input
+                        type="date"
+                        className="input"
+                        value={initialContractForm.end_date}
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "end_date",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field label={t.contractStatus}>
+                      <select
+                        className="select"
+                        value={initialContractForm.status}
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "status",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="Planned">
+                          {t.planned}
+                        </option>
+                        <option value="Active">
+                          {t.active}
+                        </option>
+                        <option value="Completed">
+                          {t.completed}
+                        </option>
+                        <option value="Cancelled">
+                          {t.cancelled}
+                        </option>
+                      </select>
+                    </Field>
+
+                    <Field
+                      label={t.workDescription}
+                      className="full"
+                    >
+                      <textarea
+                        className="textarea"
+                        value={
+                          initialContractForm.work_description
+                        }
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "work_description",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+
+                    <Field
+                      label={t.notes}
+                      className="full"
+                    >
+                      <textarea
+                        className="textarea"
+                        value={initialContractForm.notes}
+                        onChange={(event) =>
+                          updateInitialContract(
+                            "notes",
+                            event.target.value
+                          )
+                        }
+                      />
+                    </Field>
+                  </>
+                )}
               </div>
             </div>
             <div className="modal-foot">
@@ -799,7 +1220,7 @@ export default function ContractorPage() {
                   ? t.saving
                   : editingContractorId
                   ? t.updateContractor
-                  : t.saveContractor}
+                  : t.saveContractorWithContract}
               </button>
             </div>
           </div>
@@ -828,10 +1249,14 @@ export default function ContractorPage() {
                   [t.status, selectedContractor.status],
                   [t.contracts, selectedContracts.length],
                   [
+                    t.contractRateColumn,
+                    money(selectedContractor.latest_contract_rate),
+                  ],
+                  [
                     t.total,
                     money(
                       selectedContracts.reduce(
-                        (sum, contract) => sum + toNumber(contract.total_amount),
+                        (sum, contract) => sum + toNumber(contract.total_value),
                         0
                       )
                     ),
@@ -871,14 +1296,21 @@ export default function ContractorPage() {
                         {[
                           [t.paymentBasis, contract.payment_basis],
                           [
-                            contract.payment_basis === "Fixed Contract"
-                              ? t.fixedAmount
-                              : t.rate,
-                            money(contract.rate_amount),
+                            t.contractRate,
+                            money(contract.contract_rate),
                           ],
-                          [t.duration, `${contract.duration_value} ${contract.duration_unit}`],
-                          [t.calculatedTotal, money(contract.total_amount)],
-                          [t.startDate, dateOnly(contract.start_date) || "-"],
+                          [
+                            t.calculatedTotal,
+                            money(contract.total_value),
+                          ],
+                          [
+                            t.duration,
+                            `${contract.duration_value} ${contract.duration_unit}`,
+                          ],
+                          [
+                            t.startDate,
+                            dateOnly(contract.start_date) || "-",
+                          ],
                         ].map(([label, value]) => (
                           <div className="contract-stat" key={label}>
                             <div className="label">{label}</div>
@@ -951,7 +1383,13 @@ export default function ContractorPage() {
                     <button
                       className="btn btn-add"
                       title={t.addDepartment}
-                      onClick={() => setDepartmentForm({ open: true, name: "" })}
+                      onClick={() =>
+                        setDepartmentForm({
+                          open: true,
+                          name: "",
+                          target: "contract",
+                        })
+                      }
                     >
                       <i className="bi bi-plus-lg" />
                     </button>
@@ -981,20 +1419,14 @@ export default function ContractorPage() {
                   </select>
                 </Field>
 
-                <Field
-                  label={`${
-                    contractForm.payment_basis === "Fixed Contract"
-                      ? t.fixedAmount
-                      : t.rate
-                  } *`}
-                >
+                <Field label={`${t.contractRate} *`}>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     className="input"
-                    value={contractForm.rate_amount}
-                    onChange={(event) => updateContract("rate_amount", event.target.value)}
+                    value={contractForm.contract_rate}
+                    onChange={(event) => updateContract("contract_rate", event.target.value)}
                   />
                 </Field>
 
@@ -1101,7 +1533,11 @@ export default function ContractorPage() {
               <h2 className="modal-title">{t.addDepartment}</h2>
               <button
                 className="close"
-                onClick={() => setDepartmentForm({ open: false, name: "" })}
+                onClick={() => setDepartmentForm({
+                    open: false,
+                    name: "",
+                    target: "contract",
+                  })}
               >
                 <i className="bi bi-x-lg" />
               </button>
@@ -1127,7 +1563,11 @@ export default function ContractorPage() {
             <div className="modal-foot">
               <button
                 className="btn btn-white"
-                onClick={() => setDepartmentForm({ open: false, name: "" })}
+                onClick={() => setDepartmentForm({
+                    open: false,
+                    name: "",
+                    target: "contract",
+                  })}
               >
                 {t.cancel}
               </button>
