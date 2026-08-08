@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
@@ -53,6 +52,10 @@ const LANG = {
     status: "Status",
     action: "Action",
     viewDetails: "View Details",
+    detailsTitle: "Ledger Details",
+    code: "Code",
+    meta: "Details",
+    close: "Close",
 
     loading: "Loading ledger summary...",
     noRecords: "No ledger records found.",
@@ -99,6 +102,10 @@ const LANG = {
     status: "حالت",
     action: "ایکشن",
     viewDetails: "تفصیل دیکھیں",
+    detailsTitle: "لیجر کی تفصیل",
+    code: "کوڈ",
+    meta: "تفصیل",
+    close: "بند کریں",
 
     loading: "لیجر سمری لوڈ ہو رہی ہے...",
     noRecords: "کوئی لیجر ریکارڈ نہیں ملا۔",
@@ -397,6 +404,9 @@ const AllLedgerSummaryPage = () => {
       to: "",
     });
 
+  const [selectedLedger, setSelectedLedger] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
   const loadSummary = useCallback(
     async (dates = { from: "", to: "" }) => {
       try {
@@ -517,10 +527,20 @@ const AllLedgerSummaryPage = () => {
     loadSummary();
   };
 
+  const openDetails = (row) => {
+    setSelectedLedger(row);
+    setShowDetails(true);
+  };
+
+  const closeDetails = () => {
+    setShowDetails(false);
+    setSelectedLedger(null);
+  };
+
   return (
     <div
       dir={isUrdu ? "rtl" : "ltr"}
-      className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50 p-3 pb-20 sm:p-4 lg:p-6"
+      className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50 p-2.5 pb-14 sm:p-3 lg:p-4"
       style={{
         fontFamily: isUrdu
           ? "'Noto Nastaliq Urdu', serif"
@@ -550,6 +570,28 @@ const AllLedgerSummaryPage = () => {
 
         .ledger-money {
           font-variant-numeric: tabular-nums;
+        }
+
+        .ledger-details-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 12px;
+          background: rgba(15, 23, 42, .55);
+          backdrop-filter: blur(3px);
+        }
+
+        .ledger-details-modal {
+          width: min(720px, 100%);
+          max-height: calc(100vh - 24px);
+          overflow: auto;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+          background: #fff;
+          box-shadow: 0 30px 90px rgba(15, 23, 42, .28);
         }
 
         @media print {
@@ -586,22 +628,22 @@ const AllLedgerSummaryPage = () => {
 
         {/* HEADER */}
 
-        <section className="ledger-print-card mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:mb-5">
+        <section className="ledger-print-card mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4 lg:mb-4">
           <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-3">
 
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm sm:h-12 sm:w-12">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm sm:h-10 sm:w-10">
                   <i className="bi bi-journals text-lg sm:text-xl" />
                 </div>
 
                 <div className="min-w-0">
-                  <h1 className="break-words text-xl font-black text-slate-950 sm:text-2xl lg:text-3xl">
+                  <h1 className="break-words text-lg font-black text-slate-950 sm:text-xl lg:text-2xl">
                     {t.title}
                   </h1>
 
-                  <p className="mt-1 max-w-3xl break-words text-xs leading-5 text-slate-500 sm:text-sm">
+                  <p className="mt-0.5 max-w-3xl break-words text-[11px] leading-4 text-slate-500 sm:text-xs">
                     {t.subtitle}
                   </p>
                 </div>
@@ -616,7 +658,7 @@ const AllLedgerSummaryPage = () => {
                 onClick={() =>
                   setLang(isUrdu ? "en" : "ur")
                 }
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-800"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white transition hover:bg-indigo-700"
               >
                 <i className="bi bi-translate" />
                 {t.toggleLang}
@@ -628,7 +670,7 @@ const AllLedgerSummaryPage = () => {
                   loadSummary(appliedDates)
                 }
                 disabled={loading}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-indigo-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <i
                   className={`bi bi-arrow-clockwise ${
@@ -642,7 +684,7 @@ const AllLedgerSummaryPage = () => {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-bold text-white transition hover:bg-indigo-700"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white transition hover:bg-indigo-700"
               >
                 <i className="bi bi-printer" />
                 {t.print}
@@ -654,8 +696,8 @@ const AllLedgerSummaryPage = () => {
 
         {/* FILTERS */}
 
-        <section className="ledger-no-print mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:mb-5 lg:p-5">
-          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-12">
+        <section className="ledger-no-print mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm lg:mb-4 lg:p-4">
+          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-12">
 
             <div className="min-w-0 sm:col-span-2 xl:col-span-4">
               <label className="mb-1.5 block text-xs font-extrabold text-slate-600">
@@ -676,7 +718,7 @@ const AllLedgerSummaryPage = () => {
                     setSearch(event.target.value)
                   }
                   placeholder={t.searchPlaceholder}
-                  className={`h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 ${
+                  className={`h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${
                     isUrdu
                       ? "pl-3 pr-10 text-right"
                       : "pl-10 pr-3"
@@ -695,7 +737,7 @@ const AllLedgerSummaryPage = () => {
                 onChange={(event) =>
                   setLedgerType(event.target.value)
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
                 {TYPE_OPTIONS.map((option) => (
                   <option
@@ -721,7 +763,7 @@ const AllLedgerSummaryPage = () => {
                 onChange={(event) =>
                   setFromDate(event.target.value)
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
@@ -736,7 +778,7 @@ const AllLedgerSummaryPage = () => {
                 onChange={(event) =>
                   setToDate(event.target.value)
                 }
-                className="h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
@@ -746,7 +788,7 @@ const AllLedgerSummaryPage = () => {
                 type="button"
                 onClick={applyFilters}
                 disabled={loading}
-                className="h-11 min-w-0 rounded-lg bg-indigo-600 px-3 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+                className="h-9 min-w-0 rounded-lg bg-indigo-600 px-2.5 text-[11px] font-extrabold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
               >
                 {t.applyFilters}
               </button>
@@ -755,7 +797,7 @@ const AllLedgerSummaryPage = () => {
                 type="button"
                 onClick={resetFilters}
                 disabled={loading}
-                className="h-11 min-w-0 rounded-lg bg-slate-100 px-3 text-xs font-extrabold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+                className="h-9 min-w-0 rounded-lg bg-indigo-50 px-2.5 text-[11px] font-extrabold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
               >
                 {t.reset}
               </button>
@@ -788,7 +830,7 @@ const AllLedgerSummaryPage = () => {
 
         {/* ONLY THREE SUMMARY CARDS */}
 
-        <section className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:mb-5">
+        <section className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3 lg:mb-4">
 
           <SummaryCard
             label={t.totalLedgers}
@@ -825,7 +867,7 @@ const AllLedgerSummaryPage = () => {
 
         <section className="ledger-print-card min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-          <div className="flex min-w-0 flex-col gap-2 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex min-w-0 flex-col gap-1.5 border-b border-slate-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
 
             <div className="min-w-0">
               <h2 className="break-words text-base font-black text-slate-900 sm:text-lg">
@@ -863,17 +905,17 @@ const AllLedgerSummaryPage = () => {
 
           <div className="ledger-desktop-table hidden min-w-0 xl:block">
 
-            <table className="w-full table-fixed text-xs 2xl:text-sm">
+            <table className="w-full table-fixed text-[11px] 2xl:text-xs">
 
               <colgroup>
                 <col style={{ width: "4%" }} />
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "14%" }} />
+                <col style={{ width: "24%" }} />
+                <col style={{ width: "13%" }} />
                 <col style={{ width: "13%" }} />
                 <col style={{ width: "11%" }} />
                 <col style={{ width: "11%" }} />
                 <col style={{ width: "13%" }} />
-                <col style={{ width: "9%" }} />
+                <col style={{ width: "11%" }} />
               </colgroup>
 
               <thead className="bg-slate-50 text-slate-600">
@@ -1068,19 +1110,16 @@ const AllLedgerSummaryPage = () => {
                             align="center"
                             className="ledger-no-print"
                           >
-                            <Link
-                              to={
-                                row.detail_path ||
-                                "/app/dashboard"
-                              }
-                              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-2 py-2 text-[11px] font-extrabold text-white transition hover:bg-indigo-700"
+                            <button
+                              type="button"
+                              onClick={() => openDetails(row)}
+                              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-2 py-1.5 text-[10px] font-extrabold text-white transition hover:bg-indigo-700"
                             >
                               <i className="bi bi-eye" />
-
                               <span className="break-words">
                                 {t.viewDetails}
                               </span>
-                            </Link>
+                            </button>
                           </TableCell>
 
                         </tr>
@@ -1095,7 +1134,7 @@ const AllLedgerSummaryPage = () => {
 
           {/* MOBILE AND TABLET CARDS */}
 
-          <div className="ledger-mobile-list grid min-w-0 grid-cols-1 gap-3 p-3 sm:p-4 md:grid-cols-2 xl:hidden">
+          <div className="ledger-mobile-list grid min-w-0 grid-cols-1 gap-2 p-2.5 sm:p-3 md:grid-cols-2 xl:hidden">
 
             {loading ? (
               <div className="col-span-full py-12 text-center">
@@ -1116,6 +1155,7 @@ const AllLedgerSummaryPage = () => {
                   index={index}
                   t={t}
                   isUrdu={isUrdu}
+                  onViewDetails={openDetails}
                 />
               ))
             )}
@@ -1124,6 +1164,128 @@ const AllLedgerSummaryPage = () => {
         </section>
 
       </div>
+
+      {showDetails && selectedLedger && (
+        <div
+          className="ledger-details-backdrop ledger-no-print"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeDetails();
+            }
+          }}
+        >
+          <div
+            className="ledger-details-modal"
+            dir={isUrdu ? "rtl" : "ltr"}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-lg font-black text-slate-950">
+                  {t.detailsTitle}
+                </h3>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {selectedLedger.name || "-"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white transition hover:bg-indigo-700"
+                title={t.close}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+              <DetailItem
+                label={t.ledgerName}
+                value={selectedLedger.name || "-"}
+              />
+
+              <DetailItem
+                label={t.type}
+                value={getTypeLabel(selectedLedger.type, isUrdu)}
+              />
+
+              <DetailItem
+                label={t.code}
+                value={selectedLedger.code || "-"}
+              />
+
+              <DetailItem
+                label={t.meta}
+                value={selectedLedger.meta || "-"}
+              />
+
+              <DetailItem
+                label={t.opening}
+                value={formatBalance(
+                  selectedLedger,
+                  selectedLedger.opening_balance
+                )}
+              />
+
+              <DetailItem
+                label={t.debit}
+                value={formatValue(
+                  selectedLedger,
+                  selectedLedger.total_debit
+                )}
+                valueClass="text-emerald-700"
+              />
+
+              <DetailItem
+                label={t.credit}
+                value={formatValue(
+                  selectedLedger,
+                  selectedLedger.total_credit
+                )}
+                valueClass="text-rose-700"
+              />
+
+              <DetailItem
+                label={t.closing}
+                value={formatBalance(
+                  selectedLedger,
+                  selectedLedger.closing_balance
+                )}
+                valueClass={
+                  toNumber(selectedLedger.closing_balance) < 0
+                    ? "text-rose-700"
+                    : "text-slate-950"
+                }
+              />
+
+              <DetailItem
+                label={t.transactions}
+                value={toNumber(
+                  selectedLedger.transaction_count
+                ).toLocaleString("en-PK")}
+              />
+
+              <DetailItem
+                label={t.status}
+                value={getStatus(
+                  selectedLedger,
+                  isUrdu
+                ).label}
+              />
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-4 py-3">
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-indigo-600 px-4 text-xs font-extrabold text-white transition hover:bg-indigo-700"
+              >
+                {t.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1136,7 +1298,7 @@ function SummaryCard({
   valueClass = "text-slate-950",
 }) {
   return (
-    <div className="ledger-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div className="ledger-print-card min-w-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
 
       <div className="flex min-w-0 items-center justify-between gap-3">
 
@@ -1146,14 +1308,14 @@ function SummaryCard({
           </p>
 
           <p
-            className={`ledger-money mt-2 break-words text-xl font-black sm:text-2xl ${valueClass}`}
+            className={`ledger-money mt-1 break-words text-lg font-black sm:text-xl ${valueClass}`}
           >
             {value}
           </p>
         </div>
 
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconClass}`}
         >
           <i className={`bi ${icon} text-lg`} />
         </div>
@@ -1168,11 +1330,12 @@ function LedgerMobileCard({
   index,
   t,
   isUrdu,
+  onViewDetails,
 }) {
   const status = getStatus(row, isUrdu);
 
   return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
 
       <div className="flex min-w-0 items-start justify-between gap-3">
 
@@ -1221,7 +1384,7 @@ function LedgerMobileCard({
 
       </div>
 
-      <div className="mt-4 grid min-w-0 grid-cols-2 gap-2">
+      <div className="mt-3 grid min-w-0 grid-cols-2 gap-1.5">
 
         <InfoCard
           label={t.opening}
@@ -1264,7 +1427,7 @@ function LedgerMobileCard({
 
       </div>
 
-      <div className="mt-3 flex min-w-0 items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+      <div className="mt-2.5 flex min-w-0 items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
 
         <div className="min-w-0">
           <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
@@ -1278,16 +1441,14 @@ function LedgerMobileCard({
           </p>
         </div>
 
-        <Link
-          to={
-            row.detail_path ||
-            "/app/dashboard"
-          }
-          className="ledger-no-print inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-extrabold text-white transition hover:bg-indigo-700"
+        <button
+          type="button"
+          onClick={() => onViewDetails(row)}
+          className="ledger-no-print inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-[11px] font-extrabold text-white transition hover:bg-indigo-700"
         >
           <i className="bi bi-eye" />
           {t.viewDetails}
-        </Link>
+        </button>
 
       </div>
     </article>
@@ -1300,7 +1461,7 @@ function InfoCard({
   valueClass = "text-slate-950",
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50 p-3">
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 p-2.5">
 
       <p className="break-words text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
         {label}
@@ -1323,7 +1484,7 @@ function TableHead({
 }) {
   return (
     <th
-      className={`break-words px-3 py-3 text-[10px] font-black uppercase tracking-wide 2xl:text-xs ${className}`}
+      className={`break-words px-2 py-2.5 text-[9px] font-black uppercase tracking-wide 2xl:text-[10px] ${className}`}
       style={{
         textAlign: align,
       }}
@@ -1340,13 +1501,33 @@ function TableCell({
 }) {
   return (
     <td
-      className={`min-w-0 px-3 py-3 align-middle ${className}`}
+      className={`min-w-0 px-2 py-2.5 align-middle ${className}`}
       style={{
         textAlign: align,
       }}
     >
       {children}
     </td>
+  );
+}
+
+function DetailItem({
+  label,
+  value,
+  valueClass = "text-slate-950",
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+
+      <p
+        className={`ledger-money mt-1 break-words text-sm font-black ${valueClass}`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
 
