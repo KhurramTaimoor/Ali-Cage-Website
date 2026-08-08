@@ -1,2144 +1,4936 @@
-import React, { useEffect, useMemo, useState } from "react";
+# ================================================================
+# V13 PATCH TESTING
+# + MOVING / FIXED / WARPED LABEL ORIENTATION VERIFICATION
+# ================================================================
+#
+# INPUTS:
+#   /content/voxelmorph_numpy_dataset.zip
+#   /content/voxelmorph_best_model (3).zip
+#
+# MODEL INFERENCE:
+#   PATCH = 48 x 160 x 160
+#   STRIDE = 48 x 80 x 80
+#   NO FULL IMAGE MODEL INPUT
+#
+# OUTPUT:
+#   /content/v13_fixed_warped_orientation_verification.zip
+#
+# FIGURES:
+#   01_original_registration
+#       Moving + moving label
+#       Fixed + fixed label
+#       Warped + warped label
+#       Fixed + fixed solid + warped dashed
+#
+#   02_fixed_label_candidates
+#       8 orientations of FIXED label over FIXED CBCT
+#
+#   03_warped_label_candidates
+#       8 orientations of WARPED label over FIXED CBCT
+#
+#   04_fixed_vs_warped_candidates
+#       FIXED remains original
+#       only WARPED label orientation changes
+#
+# IMPORTANT:
+#   Orientation candidates are ONLY for diagnosis.
+#   Original .npy labels are never overwritten.
+# ================================================================
 
-const API_ROOT = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-).replace(/\/$/, "");
-const API_BASE = `${API_ROOT}/api`;
 
-const TEXT = {
-  en: {
-    title: "Customer Detail Ledger",
-    subtitle:
-      "Complete customer statement with invoice products, sales returns, shipping details and running balance.",
-    language: "اردو",
-    customerSearch: "Search customer by name, phone or city...",
-    selectCustomer: "Select Customer",
-    chooseCustomer: "-- Choose Customer --",
-    fromDate: "From Date",
-    toDate: "To Date",
-    apply: "Apply Filters",
-    reset: "Reset",
-    refresh: "Refresh",
-    print: "Print Ledger",
-    all: "All Transactions",
-    invoices: "Invoices",
-    returns: "Returns",
-    manual: "Payments / Adjustments",
-    loadingCustomers: "Loading customers...",
-    loadingLedger: "Loading detailed customer ledger...",
-    selectMessage: "Select a customer to view the complete ledger.",
-    noTransactions: "No transactions were found for the selected filters.",
-    customer: "Customer",
-    phone: "Phone",
-    city: "City",
-    openingBalance: "Opening Balance",
-    totalInvoices: "Total Invoices",
-    totalReturns: "Total Returns",
-    closingBalance: "Closing Balance",
-    soldQty: "Products Sold",
-    returnedQty: "Products Returned",
-    transactionCount: "Transactions",
-    date: "Date",
-    type: "Type",
-    reference: "Reference",
-    description: "Description",
-    quantity: "Qty",
-    debit: "Debit",
-    credit: "Credit",
-    balance: "Balance",
-    action: "Action",
-    details: "View Details",
-    opening: "Opening Balance",
-    invoice: "Sales Invoice",
-    return: "Sales Return",
-    ledgerEntry: "Payment / Adjustment",
-    transactionDetails: "Transaction Details",
-    close: "Close",
-    invoiceInformation: "Invoice Information",
-    returnInformation: "Return Information",
-    shippingInformation: "Shipping Information",
-    shipTo: "Ship To",
-    address: "Address",
-    status: "Status",
-    linkedInvoice: "Linked Invoice",
-    returnMode: "Return Mode",
-    reason: "Reason",
-    previousBalance: "Previous Balance",
-    invoiceTotal: "Invoice Total",
-    deliveryCharges: "Delivery Charges",
-    discount: "Discount",
-    grandTotal: "Grand Total",
-    productDetails: "Product Details",
-    sr: "#",
-    product: "Product",
-    category: "Category",
-    unit: "Unit",
-    saleType: "Sale Type",
-    cartons: "Cartons",
-    pieces: "Pieces",
-    rate: "Rate",
-    amount: "Amount",
-    sold: "Sold Qty",
-    alreadyReturned: "Already Returned",
-    returned: "Return Qty",
-    empty: "-",
-    errorTitle: "Unable to load ledger",
-    filtered: "Filtered",
-  },
-  ur: {
-    title: "کسٹمر تفصیلی لیجر",
-    subtitle:
-      "انوائس پروڈکٹس، سیلز ریٹرن، شپنگ تفصیل اور رننگ بیلنس کے ساتھ مکمل کسٹمر اسٹیٹمنٹ۔",
-    language: "English",
-    customerSearch: "نام، فون یا شہر سے کسٹمر تلاش کریں...",
-    selectCustomer: "کسٹمر منتخب کریں",
-    chooseCustomer: "-- کسٹمر منتخب کریں --",
-    fromDate: "شروع تاریخ",
-    toDate: "آخری تاریخ",
-    apply: "فلٹر لگائیں",
-    reset: "ری سیٹ",
-    refresh: "ری فریش",
-    print: "لیجر پرنٹ کریں",
-    all: "تمام ٹرانزیکشنز",
-    invoices: "انوائسز",
-    returns: "ریٹرنز",
-    manual: "ادائیگی / ایڈجسٹمنٹ",
-    loadingCustomers: "کسٹمر لوڈ ہو رہے ہیں...",
-    loadingLedger: "تفصیلی کسٹمر لیجر لوڈ ہو رہا ہے...",
-    selectMessage: "مکمل لیجر دیکھنے کے لیے کسٹمر منتخب کریں۔",
-    noTransactions: "منتخب فلٹرز میں کوئی ٹرانزیکشن نہیں ملی۔",
-    customer: "کسٹمر",
-    phone: "فون",
-    city: "شہر",
-    openingBalance: "اوپننگ بیلنس",
-    totalInvoices: "کل انوائسز",
-    totalReturns: "کل ریٹرنز",
-    closingBalance: "کلوزنگ بیلنس",
-    soldQty: "فروخت شدہ پروڈکٹس",
-    returnedQty: "واپس شدہ پروڈکٹس",
-    transactionCount: "ٹرانزیکشنز",
-    date: "تاریخ",
-    type: "قسم",
-    reference: "ریفرنس",
-    description: "تفصیل",
-    quantity: "مقدار",
-    debit: "ڈیبٹ",
-    credit: "کریڈٹ",
-    balance: "بیلنس",
-    action: "ایکشن",
-    details: "تفصیل دیکھیں",
-    opening: "اوپننگ بیلنس",
-    invoice: "سیلز انوائس",
-    return: "سیلز ریٹرن",
-    ledgerEntry: "ادائیگی / ایڈجسٹمنٹ",
-    transactionDetails: "ٹرانزیکشن کی تفصیل",
-    close: "بند کریں",
-    invoiceInformation: "انوائس کی معلومات",
-    returnInformation: "ریٹرن کی معلومات",
-    shippingInformation: "شپنگ کی معلومات",
-    shipTo: "شپ کس کو کیا",
-    address: "پتہ",
-    status: "اسٹیٹس",
-    linkedInvoice: "متعلقہ انوائس",
-    returnMode: "ریٹرن موڈ",
-    reason: "وجہ",
-    previousBalance: "پچھلا بیلنس",
-    invoiceTotal: "انوائس ٹوٹل",
-    deliveryCharges: "ڈیلیوری چارجز",
-    discount: "ڈسکاؤنٹ",
-    grandTotal: "گرینڈ ٹوٹل",
-    productDetails: "پروڈکٹس کی تفصیل",
-    sr: "#",
-    product: "پروڈکٹ",
-    category: "کیٹیگری",
-    unit: "یونٹ",
-    saleType: "سیل ٹائپ",
-    cartons: "کارٹن",
-    pieces: "پیسز",
-    rate: "ریٹ",
-    amount: "رقم",
-    sold: "فروخت مقدار",
-    alreadyReturned: "پہلے واپس",
-    returned: "واپس مقدار",
-    empty: "-",
-    errorTitle: "لیجر لوڈ نہیں ہو سکا",
-    filtered: "فلٹر شدہ",
-  },
-};
+# ================================================================
+# 1. INSTALL
+# ================================================================
 
-function toNumber(value, fallback = 0) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
+import os
+import sys
+import subprocess
+
+
+def run(cmd, cwd=None):
+    print("$", " ".join(map(str, cmd)))
+    subprocess.check_call(
+        list(map(str, cmd)),
+        cwd=cwd
+    )
+
+
+run([
+    sys.executable,
+    "-m",
+    "pip",
+    "install",
+    "-q",
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-image",
+    "matplotlib",
+    "tqdm",
+    "nibabel",
+    "neurite",
+    "pystrum"
+])
+
+
+# ================================================================
+# 2. IMPORTS
+# ================================================================
+
+import re
+import json
+import math
+import shutil
+import zipfile
+
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+import matplotlib.pyplot as plt
+
+from skimage.measure import find_contours
+
+from tqdm.auto import tqdm
+
+from IPython.display import (
+    display,
+    Image as IPImage
+)
+
+import torch
+
+
+# ================================================================
+# 3. CONFIG
+# ================================================================
+
+DATASET_ZIP = Path(
+    "/content/voxelmorph_numpy_dataset.zip"
+)
+
+MODEL_ZIP = Path(
+    "/content/voxelmorph_best_model (3).zip"
+)
+
+DATASET_ROOT = Path(
+    "/content/voxelmorph_numpy_dataset"
+)
+
+MODEL_ROOT = Path(
+    "/content/v13_model_extract"
+)
+
+TEMP_ROOT = Path(
+    "/content/_v13_dataset_extract"
+)
+
+RESULTS_ROOT = Path(
+    "/content/v13_fixed_warped_orientation_verification"
+)
+
+RESULTS_ZIP = Path(
+    "/content/v13_fixed_warped_orientation_verification.zip"
+)
+
+
+# Official VoxelMorph repo
+
+VXM_REPO = Path(
+    "/content/voxelmorph"
+)
+
+VXM_COMMIT = (
+    "9bde7a270edfc19ad1c61115cb5ebd82124ee3af"
+)
+
+
+# ORIGINAL V13 patch
+
+PATCH_SHAPE = (
+    48,
+    160,
+    160
+)
+
+STRIDE = (
+    48,
+    80,
+    80
+)
+
+
+# Validation + testing
+
+EVAL_SPLITS = [
+    "validation",
+    "test"
+]
+
+
+# Useful previously inspected slices
+
+EXTRA_Z = [
+    24,
+    25,
+    26,
+    27,
+    28,
+    32,
+    40,
+    44,
+    45,
+    47
+]
+
+
+EXPECTED_BEST_EPOCH = 34
+
+
+# ================================================================
+# 4. CHECK INPUT
+# ================================================================
+
+if not DATASET_ZIP.exists():
+
+    raise FileNotFoundError(
+        f"Dataset missing:\n{DATASET_ZIP}"
+    )
+
+
+if not MODEL_ZIP.exists():
+
+    raise FileNotFoundError(
+        f"Model missing:\n{MODEL_ZIP}"
+    )
+
+
+print(
+    "\n"
+    +
+    "=" * 90
+)
+
+print(
+    "V13 PATCH + FIXED/WARPED LABEL ORIENTATION TEST"
+)
+
+print(
+    "=" * 90
+)
+
+print(
+    "Dataset:",
+    DATASET_ZIP
+)
+
+print(
+    "Model:",
+    MODEL_ZIP
+)
+
+print(
+    "Patch:",
+    PATCH_SHAPE
+)
+
+print(
+    "Stride:",
+    STRIDE
+)
+
+print(
+    "\nNO TRAINING"
+)
+
+print(
+    "NO FULL-IMAGE MODEL INPUT"
+)
+
+print(
+    "NO PERMANENT LABEL FLIP/ROTATION"
+)
+
+print(
+    "=" * 90
+)
+
+
+# ================================================================
+# 5. CLEAN OLD OUTPUT
+# ================================================================
+
+for p in [
+
+    DATASET_ROOT,
+    MODEL_ROOT,
+    TEMP_ROOT,
+    RESULTS_ROOT
+
+]:
+
+    shutil.rmtree(
+        p,
+        ignore_errors=True
+    )
+
+
+DATASET_ROOT.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+MODEL_ROOT.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+TEMP_ROOT.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+RESULTS_ROOT.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+
+# ================================================================
+# 6. EXTRACT DATASET
+# ================================================================
+
+print(
+    "\n[1] Extracting prepared dataset..."
+)
+
+
+with zipfile.ZipFile(
+    DATASET_ZIP,
+    "r"
+) as zf:
+
+    zf.extractall(
+        TEMP_ROOT
+    )
+
+
+manifest_candidates = list(
+    TEMP_ROOT.rglob(
+        "manifest.csv"
+    )
+)
+
+
+if not manifest_candidates:
+
+    raise FileNotFoundError(
+        "manifest.csv not found."
+    )
+
+
+source_root = (
+    manifest_candidates[
+        0
+    ].parent
+)
+
+
+shutil.copytree(
+
+    source_root,
+
+    DATASET_ROOT,
+
+    dirs_exist_ok=True
+)
+
+
+shutil.rmtree(
+    TEMP_ROOT,
+    ignore_errors=True
+)
+
+
+MANIFEST_PATH = (
+    DATASET_ROOT
+    /
+    "manifest.csv"
+)
+
+
+manifest = pd.read_csv(
+    MANIFEST_PATH
+)
+
+
+print(
+    "Manifest:",
+    MANIFEST_PATH
+)
+
+
+print(
+    "Columns:"
+)
+
+print(
+    list(
+        manifest.columns
+    )
+)
+
+
+# ================================================================
+# 7. REPAIR MANIFEST PATHS
+# ================================================================
+
+def repair_path(
+    raw_path,
+    pair_id,
+    patient_id,
+    split
+):
+
+    path = Path(
+        str(
+            raw_path
+        )
+    )
+
+
+    if path.exists():
+
+        return str(
+            path
+        )
+
+
+    matches = list(
+        DATASET_ROOT.rglob(
+            path.name
+        )
+    )
+
+
+    if not matches:
+
+        raise FileNotFoundError(
+            f"Missing prepared file: {path.name}"
+        )
+
+
+    temp = [
+
+        p
+        for p in matches
+        if pair_id in str(p)
+
+    ]
+
+
+    if temp:
+
+        matches = temp
+
+
+    temp = [
+
+        p
+        for p in matches
+        if patient_id in str(p)
+
+    ]
+
+
+    if temp:
+
+        matches = temp
+
+
+    temp = [
+
+        p
+        for p in matches
+        if split in p.parts
+
+    ]
+
+
+    if temp:
+
+        matches = temp
+
+
+    return str(
+        matches[
+            0
+        ]
+    )
+
+
+path_columns = [
+
+    c
+    for c in manifest.columns
+    if c.endswith(
+        "_path"
+    )
+
+]
+
+
+for index, row in manifest.iterrows():
+
+    pair_id = str(
+        row[
+            "pair_id"
+        ]
+    )
+
+    patient_id = str(
+        row[
+            "patient_id"
+        ]
+    )
+
+    split = str(
+        row[
+            "split"
+        ]
+    )
+
+
+    for col in path_columns:
+
+        if pd.isna(
+            row[
+                col
+            ]
+        ):
+
+            continue
+
+
+        manifest.at[
+            index,
+            col
+        ] = repair_path(
+
+            row[
+                col
+            ],
+
+            pair_id,
+
+            patient_id,
+
+            split
+        )
+
+
+evaluation = manifest[
+
+    manifest[
+        "split"
+    ].astype(
+        str
+    ).isin(
+        EVAL_SPLITS
+    )
+
+].copy()
+
+
+print(
+    "\nEvaluation cases:"
+)
+
+
+print(
+
+    evaluation[
+        [
+            "split",
+            "patient_id",
+            "pair_id"
+        ]
+    ].to_string(
+        index=False
+    )
+
+)
+
+
+# ================================================================
+# 8. EXTRACT MODEL ZIP
+# ================================================================
+
+print(
+    "\n[2] Extracting model..."
+)
+
+
+with zipfile.ZipFile(
+    MODEL_ZIP,
+    "r"
+) as zf:
+
+    zf.extractall(
+        MODEL_ROOT
+    )
+
+
+checkpoint_candidates = []
+
+
+for pattern in [
+
+    "*.pt",
+    "*.pth",
+    "*.ckpt"
+
+]:
+
+    checkpoint_candidates.extend(
+
+        MODEL_ROOT.rglob(
+            pattern
+        )
+
+    )
+
+
+if not checkpoint_candidates:
+
+    raise FileNotFoundError(
+        "No checkpoint found inside model ZIP."
+    )
+
+
+def checkpoint_score(
+    path
+):
+
+    name = path.name.lower()
+
+    score = 0
+
+
+    if "best_checkpoint" in name:
+
+        score += 100
+
+
+    if "best_model" in name:
+
+        score += 90
+
+
+    if "best" in name:
+
+        score += 70
+
+
+    if "checkpoint" in name:
+
+        score += 20
+
+
+    return -score
+
+
+checkpoint_candidates = sorted(
+
+    checkpoint_candidates,
+
+    key=checkpoint_score
+
+)
+
+
+print(
+    "\nCheckpoint candidates:"
+)
+
+
+for p in checkpoint_candidates:
+
+    print(
+        " -",
+        p
+    )
+
+
+CHECKPOINT_PATH = checkpoint_candidates[
+    0
+]
+
+
+print(
+    "\nSELECTED CHECKPOINT:"
+)
+
+print(
+    CHECKPOINT_PATH
+)
+
+
+# ================================================================
+# 9. OFFICIAL VOXELMORPH
+# ================================================================
+
+print(
+    "\n[3] Preparing VoxelMorph..."
+)
+
+
+if not VXM_REPO.exists():
+
+    run([
+        "git",
+        "clone",
+        "-q",
+        "https://github.com/voxelmorph/voxelmorph.git",
+        str(
+            VXM_REPO
+        )
+    ])
+
+
+try:
+
+    run(
+        [
+            "git",
+            "fetch",
+            "-q",
+            "--all"
+        ],
+        cwd=VXM_REPO
+    )
+
+except Exception:
+
+    pass
+
+
+run(
+    [
+        "git",
+        "checkout",
+        "-q",
+        VXM_COMMIT
+    ],
+    cwd=VXM_REPO
+)
+
+
+os.environ[
+    "VXM_BACKEND"
+] = "pytorch"
+
+
+if str(
+    VXM_REPO
+) not in sys.path:
+
+    sys.path.insert(
+        0,
+        str(
+            VXM_REPO
+        )
+    )
+
+
+import voxelmorph as vxm
+
+
+print(
+    "VoxelMorph commit:",
+    VXM_COMMIT
+)
+
+
+# ================================================================
+# 10. DEVICE
+# ================================================================
+
+DEVICE = torch.device(
+
+    "cuda"
+
+    if torch.cuda.is_available()
+
+    else "cpu"
+)
+
+
+print(
+    "\nDevice:",
+    DEVICE
+)
+
+
+if DEVICE.type == "cuda":
+
+    print(
+        "GPU:",
+        torch.cuda.get_device_name(
+            0
+        )
+    )
+
+
+# ================================================================
+# 11. LOAD MODEL
+# ================================================================
+
+print(
+    "\n[4] Loading V13 checkpoint..."
+)
+
+
+try:
+
+    checkpoint = torch.load(
+
+        CHECKPOINT_PATH,
+
+        map_location="cpu",
+
+        weights_only=False
+    )
+
+except TypeError:
+
+    checkpoint = torch.load(
+
+        CHECKPOINT_PATH,
+
+        map_location="cpu"
+    )
+
+
+def get_epoch(
+    ckpt
+):
+
+    if not isinstance(
+        ckpt,
+        dict
+    ):
+
+        return None
+
+
+    for key in [
+
+        "epoch",
+        "best_epoch",
+        "checkpoint_epoch",
+        "best_model_epoch"
+
+    ]:
+
+        if key in ckpt:
+
+            try:
+
+                return int(
+                    ckpt[
+                        key
+                    ]
+                )
+
+            except Exception:
+
+                pass
+
+
+    return None
+
+
+CHECKPOINT_EPOCH = get_epoch(
+    checkpoint
+)
+
+
+print(
+    "Checkpoint epoch:",
+    CHECKPOINT_EPOCH
+)
+
+
+if (
+    CHECKPOINT_EPOCH is not None
+
+    and
+
+    CHECKPOINT_EPOCH
+    !=
+    EXPECTED_BEST_EPOCH
+):
+
+    print(
+        "\nWARNING:"
+    )
+
+    print(
+        f"Checkpoint says epoch={CHECKPOINT_EPOCH}."
+    )
+
+    print(
+        f"Original V13 best run expected epoch≈{EXPECTED_BEST_EPOCH}."
+    )
+
+    print(
+        "Testing continues, but verify model ZIP afterwards."
+    )
+
+
+# ================================================================
+# 12. EXTRACT STATE DICT
+# ================================================================
+
+def is_tensor_dict(
+    obj
+):
+
+    return (
+
+        isinstance(
+            obj,
+            dict
+        )
+
+        and
+
+        len(
+            obj
+        ) > 0
+
+        and
+
+        all(
+
+            torch.is_tensor(
+                value
+            )
+
+            for value in obj.values()
+
+        )
+    )
+
+
+def get_state_dict(
+    ckpt
+):
+
+    if is_tensor_dict(
+        ckpt
+    ):
+
+        return ckpt
+
+
+    if isinstance(
+        ckpt,
+        dict
+    ):
+
+        for key in [
+
+            "model_state",
+            "model_state_dict",
+            "state_dict",
+            "network_state_dict",
+            "weights"
+
+        ]:
+
+            if (
+                key in ckpt
+
+                and
+
+                is_tensor_dict(
+                    ckpt[
+                        key
+                    ]
+                )
+            ):
+
+                return ckpt[
+                    key
+                ]
+
+
+        if (
+            "model" in ckpt
+
+            and
+
+            is_tensor_dict(
+                ckpt[
+                    "model"
+                ]
+            )
+        ):
+
+            return ckpt[
+                "model"
+            ]
+
+
+    return None
+
+
+def remove_prefix(
+    state_dict
+):
+
+    state_dict = dict(
+        state_dict
+    )
+
+
+    for prefix in [
+
+        "module.",
+        "model.",
+        "network."
+
+    ]:
+
+        keys = list(
+            state_dict.keys()
+        )
+
+
+        if (
+            keys
+
+            and
+
+            all(
+
+                key.startswith(
+                    prefix
+                )
+
+                for key in keys
+
+            )
+        ):
+
+            state_dict = {
+
+                key[
+                    len(
+                        prefix
+                    ):
+                ]:
+                value
+
+                for key, value
+                in state_dict.items()
+
+            }
+
+
+    return state_dict
+
+
+# ================================================================
+# 13. BUILD MODEL
+# ================================================================
+
+def build_model():
+
+    # ------------------------------------------------------------
+    # Serialized model
+    # ------------------------------------------------------------
+
+    if isinstance(
+        checkpoint,
+        torch.nn.Module
+    ):
+
+        print(
+            "Serialized nn.Module found."
+        )
+
+        return checkpoint
+
+
+    if (
+
+        isinstance(
+            checkpoint,
+            dict
+        )
+
+        and
+
+        isinstance(
+            checkpoint.get(
+                "model"
+            ),
+            torch.nn.Module
+        )
+
+    ):
+
+        return checkpoint[
+            "model"
+        ]
+
+
+    # ------------------------------------------------------------
+    # Try official VoxelMorph loader
+    # ------------------------------------------------------------
+
+    try:
+
+        loaded = (
+            vxm.networks.VxmDense.load(
+
+                str(
+                    CHECKPOINT_PATH
+                ),
+
+                DEVICE
+            )
+        )
+
+
+        print(
+            "Loaded using VxmDense.load()."
+        )
+
+        return loaded
+
+
+    except Exception as error:
+
+        print(
+            "Official .load() not applicable:"
+        )
+
+        print(
+            str(
+                error
+            )[
+                :300
+            ]
+        )
+
+
+    # ------------------------------------------------------------
+    # State dict
+    # ------------------------------------------------------------
+
+    state_dict = get_state_dict(
+        checkpoint
+    )
+
+
+    if state_dict is None:
+
+        raise RuntimeError(
+            "Could not find model state_dict."
+        )
+
+
+    state_dict = remove_prefix(
+        state_dict
+    )
+
+
+    configs = []
+
+
+    # Saved config
+
+    if isinstance(
+        checkpoint,
+        dict
+    ):
+
+        for key in [
+
+            "config",
+            "model_config",
+            "network_config"
+
+        ]:
+
+            if isinstance(
+                checkpoint.get(
+                    key
+                ),
+                dict
+            ):
+
+                configs.append(
+                    (
+                        key,
+                        dict(
+                            checkpoint[
+                                key
+                            ]
+                        )
+                    )
+                )
+
+
+    # Classic official VoxelMorph architecture
+
+    configs.append(
+        (
+            "V13_CLASSIC",
+            {
+
+                "inshape":
+                    PATCH_SHAPE,
+
+                "nb_unet_features":
+                    [
+                        [
+                            16,
+                            32,
+                            32,
+                            32
+                        ],
+
+                        [
+                            32,
+                            32,
+                            32,
+                            32,
+                            32,
+                            16,
+                            16
+                        ]
+                    ],
+
+                "int_steps":
+                    7,
+
+                "int_downsize":
+                    2,
+
+                "bidir":
+                    False,
+
+                "use_probs":
+                    False
+            }
+        )
+    )
+
+
+    configs.append(
+        (
+            "OFFICIAL_DEFAULT",
+            {
+
+                "inshape":
+                    PATCH_SHAPE,
+
+                "nb_unet_features":
+                    None,
+
+                "int_steps":
+                    7,
+
+                "int_downsize":
+                    2,
+
+                "bidir":
+                    False,
+
+                "use_probs":
+                    False
+            }
+        )
+    )
+
+
+    errors = []
+
+
+    allowed = {
+
+        "inshape",
+        "nb_unet_features",
+        "nb_unet_levels",
+        "unet_feat_mult",
+        "nb_unet_conv_per_level",
+        "int_steps",
+        "int_downsize",
+        "bidir",
+        "use_probs",
+        "src_feats",
+        "trg_feats"
+
+    }
+
+
+    for name, config in configs:
+
+        # If saved config lacks inshape
+
+        config.setdefault(
+            "inshape",
+            PATCH_SHAPE
+        )
+
+
+        variants = [
+
+            config,
+
+            {
+                k: v
+                for k, v
+                in config.items()
+                if k in allowed
+            }
+
+        ]
+
+
+        for cfg in variants:
+
+            try:
+
+                test_model = (
+                    vxm.networks.VxmDense(
+                        **cfg
+                    )
+                )
+
+
+                test_model.load_state_dict(
+
+                    state_dict,
+
+                    strict=True
+                )
+
+
+                print(
+                    "\nModel loaded using:",
+                    name
+                )
+
+                print(
+                    "Config:",
+                    cfg
+                )
+
+
+                return test_model
+
+
+            except Exception as error:
+
+                errors.append(
+
+                    (
+                        name,
+                        str(
+                            error
+                        )[
+                            :400
+                        ]
+                    )
+
+                )
+
+
+    print(
+        "\nModel loading errors:"
+    )
+
+
+    for name, error in errors:
+
+        print(
+            "\n",
+            name,
+            ":",
+            error
+        )
+
+
+    print(
+        "\nFirst checkpoint state keys:"
+    )
+
+
+    for key in list(
+        state_dict.keys()
+    )[
+        :30
+    ]:
+
+        print(
+            key,
+            tuple(
+                state_dict[
+                    key
+                ].shape
+            )
+        )
+
+
+    raise RuntimeError(
+        "Could not reconstruct model architecture."
+    )
+
+
+model = build_model()
+
+
+model = model.to(
+    DEVICE
+)
+
+
+model.eval()
+
+
+print(
+    "\nMODEL LOADED SUCCESSFULLY"
+)
+
+
+# ================================================================
+# 14. PREPARE MODEL INPUT
+# ================================================================
+
+def numeric_column(
+    row,
+    names
+):
+
+    for name in names:
+
+        if (
+            name in row.index
+
+            and
+
+            pd.notna(
+                row[
+                    name
+                ]
+            )
+        ):
+
+            try:
+
+                return (
+                    float(
+                        row[
+                            name
+                        ]
+                    ),
+                    name
+                )
+
+            except Exception:
+
+                pass
+
+
+    return (
+        None,
+        None
+    )
+
+
+def prepare_model_volume(
+    row,
+    volume,
+    role
+):
+
+    volume = volume.astype(
+        np.float32
+    )
+
+
+    current_mean = float(
+        volume.mean()
+    )
+
+    current_std = float(
+        volume.std()
+    )
+
+
+    print(
+        f"{role}: stored mean={current_mean:.4f}, "
+        f"std={current_std:.4f}, "
+        f"min={volume.min():.4f}, "
+        f"max={volume.max():.4f}"
+    )
+
+
+    # If already approximately normalized,
+    # do NOT normalize again.
+
+    if (
+        abs(
+            current_mean
+        )
+        <
+        20
+
+        and
+
+        current_std
+        <
+        20
+    ):
+
+        print(
+            f"{role}: using stored array directly."
+        )
+
+        return volume
+
+
+    mean, mean_name = numeric_column(
+
+        row,
+
+        [
+            f"{role}_mean",
+            f"{role}_intensity_mean",
+            f"{role}_norm_mean"
+        ]
+    )
+
+
+    std, std_name = numeric_column(
+
+        row,
+
+        [
+            f"{role}_std",
+            f"{role}_intensity_std",
+            f"{role}_norm_std"
+        ]
+    )
+
+
+    if (
+        mean is not None
+
+        and
+
+        std is not None
+
+        and
+
+        std > 1e-8
+    ):
+
+        print(
+            f"{role}: normalize using "
+            f"{mean_name}/{std_name}"
+        )
+
+        return (
+
+            volume
+            -
+            mean
+
+        ) / std
+
+
+    print(
+        f"WARNING: {role} appears unnormalized "
+        "but no mean/std metadata found."
+    )
+
+
+    return volume
+
+
+# ================================================================
+# 15. PATCH STARTS
+# ================================================================
+
+def patch_starts(
+    size,
+    patch,
+    stride
+):
+
+    if patch > size:
+
+        raise ValueError(
+            f"Patch {patch} > volume dimension {size}"
+        )
+
+
+    if patch == size:
+
+        return [
+            0
+        ]
+
+
+    starts = list(
+
+        range(
+            0,
+            size - patch + 1,
+            stride
+        )
+
+    )
+
+
+    final_start = (
+        size - patch
+    )
+
+
+    if starts[
+        -1
+    ] != final_start:
+
+        starts.append(
+            final_start
+        )
+
+
+    return starts
+
+
+# ================================================================
+# 16. BLEND WINDOW
+# ================================================================
+
+def blend_window():
+
+    D, H, W = PATCH_SHAPE
+
+
+    wz = np.ones(
+        D,
+        dtype=np.float32
+    )
+
+
+    wy = np.hanning(
+        H
+    ).astype(
+        np.float32
+    )
+
+
+    wx = np.hanning(
+        W
+    ).astype(
+        np.float32
+    )
+
+
+    # Avoid zero weights at global borders
+
+    wy = np.maximum(
+        wy,
+        0.05
+    )
+
+    wx = np.maximum(
+        wx,
+        0.05
+    )
+
+
+    window = (
+
+        wz[
+            :,
+            None,
+            None
+        ]
+
+        *
+
+        wy[
+            None,
+            :,
+            None
+        ]
+
+        *
+
+        wx[
+            None,
+            None,
+            :
+        ]
+
+    )
+
+
+    return window.astype(
+        np.float32
+    )
+
+
+# ================================================================
+# 17. ONE PATCH FLOW
+# ================================================================
+
+@torch.no_grad()
+def get_patch_flow(
+    moving_patch,
+    fixed_patch
+):
+
+    moving_tensor = torch.from_numpy(
+
+        moving_patch[
+            None,
+            None
+        ]
+
+    ).float().to(
+        DEVICE
+    )
+
+
+    fixed_tensor = torch.from_numpy(
+
+        fixed_patch[
+            None,
+            None
+        ]
+
+    ).float().to(
+        DEVICE
+    )
+
+
+    try:
+
+        output = model(
+
+            moving_tensor,
+
+            fixed_tensor,
+
+            registration=True
+        )
+
+
+    except TypeError:
+
+        output = model(
+
+            moving_tensor,
+
+            fixed_tensor
+        )
+
+
+    if not isinstance(
+        output,
+        (
+            tuple,
+            list
+        )
+    ):
+
+        raise RuntimeError(
+            "Expected model output tuple/list."
+        )
+
+
+    flow = None
+
+
+    # Find 3-channel displacement field
+
+    for item in reversed(
+        output
+    ):
+
+        if (
+
+            torch.is_tensor(
+                item
+            )
+
+            and
+
+            item.ndim == 5
+
+            and
+
+            item.shape[
+                1
+            ] == 3
+
+        ):
+
+            flow = item
+
+            break
+
+
+    if flow is None:
+
+        print(
+            "Output shapes:"
+        )
+
+        for item in output:
+
+            if torch.is_tensor(
+                item
+            ):
+
+                print(
+                    tuple(
+                        item.shape
+                    )
+                )
+
+
+        raise RuntimeError(
+            "3-channel flow not found."
+        )
+
+
+    flow = (
+
+        flow[
+            0
+        ]
+
+        .detach()
+
+        .float()
+
+        .cpu()
+
+        .numpy()
+
+    )
+
+
+    if tuple(
+        flow.shape[
+            1:
+        ]
+    ) != PATCH_SHAPE:
+
+        raise RuntimeError(
+
+            f"Flow shape={flow.shape}; "
+            f"expected (3,{PATCH_SHAPE})"
+
+        )
+
+
+    return flow
+
+
+# ================================================================
+# 18. PATCHWISE FULL FLOW
+# ================================================================
+
+@torch.no_grad()
+def patch_inference(
+    moving,
+    fixed
+):
+
+    D, H, W = moving.shape
+
+
+    pD, pH, pW = PATCH_SHAPE
+
+
+    sD, sH, sW = STRIDE
+
+
+    z_starts = patch_starts(
+        D,
+        pD,
+        sD
+    )
+
+
+    y_starts = patch_starts(
+        H,
+        pH,
+        sH
+    )
+
+
+    x_starts = patch_starts(
+        W,
+        pW,
+        sW
+    )
+
+
+    print(
+        "Z starts:",
+        z_starts
+    )
+
+    print(
+        "Y starts:",
+        y_starts
+    )
+
+    print(
+        "X starts:",
+        x_starts
+    )
+
+
+    total = (
+
+        len(
+            z_starts
+        )
+
+        *
+
+        len(
+            y_starts
+        )
+
+        *
+
+        len(
+            x_starts
+        )
+
+    )
+
+
+    print(
+        "TOTAL PATCHES:",
+        total
+    )
+
+
+    weights = blend_window()
+
+
+    flow_sum = np.zeros(
+
+        (
+            3,
+            D,
+            H,
+            W
+        ),
+
+        dtype=np.float32
+    )
+
+
+    weight_sum = np.zeros(
+
+        (
+            D,
+            H,
+            W
+        ),
+
+        dtype=np.float32
+    )
+
+
+    progress = tqdm(
+
+        total=total,
+
+        desc="V13 patches"
+    )
+
+
+    for z in z_starts:
+
+        for y in y_starts:
+
+            for x in x_starts:
+
+
+                moving_patch = moving[
+
+                    z:
+                    z + pD,
+
+                    y:
+                    y + pH,
+
+                    x:
+                    x + pW
+
+                ]
+
+
+                fixed_patch = fixed[
+
+                    z:
+                    z + pD,
+
+                    y:
+                    y + pH,
+
+                    x:
+                    x + pW
+
+                ]
+
+
+                flow = get_patch_flow(
+
+                    moving_patch,
+
+                    fixed_patch
+                )
+
+
+                flow_sum[
+
+                    :,
+
+                    z:
+                    z + pD,
+
+                    y:
+                    y + pH,
+
+                    x:
+                    x + pW
+
+                ] += (
+
+                    flow
+
+                    *
+
+                    weights[
+                        None
+                    ]
+
+                )
+
+
+                weight_sum[
+
+                    z:
+                    z + pD,
+
+                    y:
+                    y + pH,
+
+                    x:
+                    x + pW
+
+                ] += weights
+
+
+                progress.update(
+                    1
+                )
+
+
+    progress.close()
+
+
+    if np.any(
+        weight_sum <= 0
+    ):
+
+        raise RuntimeError(
+            "Zero blend weights found."
+        )
+
+
+    full_flow = (
+
+        flow_sum
+
+        /
+
+        weight_sum[
+            None
+        ]
+
+    )
+
+
+    return full_flow.astype(
+        np.float32
+    )
+
+
+# ================================================================
+# 19. FULL WARP AFTER PATCH FLOW BLENDING
+# ================================================================
+
+@torch.no_grad()
+def warp_full(
+    moving_image,
+    moving_label,
+    flow
+):
+
+    shape = tuple(
+        moving_image.shape
+    )
+
+
+    image_transformer = (
+
+        vxm.layers.SpatialTransformer(
+
+            shape,
+
+            mode="bilinear"
+        )
+
+        .to(
+            DEVICE
+        )
+
+    )
+
+
+    label_transformer = (
+
+        vxm.layers.SpatialTransformer(
+
+            shape,
+
+            mode="nearest"
+        )
+
+        .to(
+            DEVICE
+        )
+
+    )
+
+
+    image_tensor = torch.from_numpy(
+
+        moving_image[
+            None,
+            None
+        ].astype(
+            np.float32
+        )
+
+    ).to(
+        DEVICE
+    )
+
+
+    label_tensor = torch.from_numpy(
+
+        moving_label[
+            None,
+            None
+        ].astype(
+            np.float32
+        )
+
+    ).to(
+        DEVICE
+    )
+
+
+    flow_tensor = torch.from_numpy(
+
+        flow[
+            None
+        ].astype(
+            np.float32
+        )
+
+    ).to(
+        DEVICE
+    )
+
+
+    warped_image = image_transformer(
+
+        image_tensor,
+
+        flow_tensor
+
+    )[
+        0,
+        0
+    ].cpu().numpy()
+
+
+    warped_label = label_transformer(
+
+        label_tensor,
+
+        flow_tensor
+
+    )[
+        0,
+        0
+    ].cpu().numpy()
+
+
+    warped_label = np.rint(
+
+        warped_label
+
+    ).astype(
+        np.uint8
+    )
+
+
+    return (
+
+        warped_image,
+
+        warped_label
+    )
+
+
+# ================================================================
+# 20. DICE
+# ================================================================
+
+def dice(
+    a,
+    b
+):
+
+    a = np.asarray(
+        a
+    ).astype(
+        bool
+    )
+
+
+    b = np.asarray(
+        b
+    ).astype(
+        bool
+    )
+
+
+    denominator = (
+
+        a.sum()
+
+        +
+
+        b.sum()
+
+    )
+
+
+    if denominator == 0:
+
+        return 1.0
+
+
+    return float(
+
+        2
+
+        *
+
+        np.logical_and(
+            a,
+            b
+        ).sum()
+
+        /
+
+        denominator
+
+    )
+
+
+def lung_dice(
+    fixed_label,
+    warped_label,
+    class_id
+):
+
+    return dice(
+
+        fixed_label
+        ==
+        class_id,
+
+        warped_label
+        ==
+        class_id
+
+    )
+
+
+# ================================================================
+# 21. ORIENTATION CANDIDATES
+# ================================================================
+
+def original(
+    x
+):
+
+    return x.copy()
+
+
+def flip_tb(
+    x
+):
+
+    return np.flip(
+
+        x,
+
+        axis=-2
+
+    ).copy()
+
+
+def flip_lr(
+    x
+):
+
+    return np.flip(
+
+        x,
+
+        axis=-1
+
+    ).copy()
+
+
+def rotate_90(
+    x
+):
+
+    return np.rot90(
+
+        x,
+
+        1,
+
+        axes=(
+            -2,
+            -1
+        )
+
+    ).copy()
+
+
+def rotate_180(
+    x
+):
+
+    return np.rot90(
+
+        x,
+
+        2,
+
+        axes=(
+            -2,
+            -1
+        )
+
+    ).copy()
+
+
+def rotate_270(
+    x
+):
+
+    return np.rot90(
+
+        x,
+
+        3,
+
+        axes=(
+            -2,
+            -1
+        )
+
+    ).copy()
+
+
+def transpose_xy(
+    x
+):
+
+    return np.swapaxes(
+
+        x,
+
+        -2,
+
+        -1
+
+    ).copy()
+
+
+def anti_transpose(
+    x
+):
+
+    x = np.swapaxes(
+
+        x,
+
+        -2,
+
+        -1
+
+    )
+
+
+    x = np.flip(
+
+        x,
+
+        axis=-2
+
+    )
+
+
+    x = np.flip(
+
+        x,
+
+        axis=-1
+
+    )
+
+
+    return x.copy()
+
+
+TRANSFORMS = {
+
+    "ORIGINAL":
+        original,
+
+    "FLIP_TOP_BOTTOM":
+        flip_tb,
+
+    "FLIP_LEFT_RIGHT":
+        flip_lr,
+
+    "ROTATE_90":
+        rotate_90,
+
+    "ROTATE_180":
+        rotate_180,
+
+    "ROTATE_270":
+        rotate_270,
+
+    "TRANSPOSE":
+        transpose_xy,
+
+    "ANTI_TRANSPOSE":
+        anti_transpose
+
 }
 
-function formatMoney(value) {
-  return `Rs ${toNumber(value).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
-function formatNumber(value) {
-  return toNumber(value).toLocaleString("en-PK", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
+# ================================================================
+# 22. DISPLAY NORMALIZATION
+# ================================================================
 
-function formatBalance(value) {
-  const amount = toNumber(value);
-  if (amount > 0) return `${formatMoney(amount)} Dr`;
-  if (amount < 0) return `${formatMoney(Math.abs(amount))} Cr`;
-  return "Rs 0";
-}
+def display_normalize(
+    image
+):
 
-function formatDate(value) {
-  if (!value) return "-";
-  const raw = String(value).slice(0, 10);
-  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
-  return raw;
-}
+    image = image.astype(
+        np.float32
+    )
 
-function normalizeList(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.customers)) return payload.customers;
-  if (Array.isArray(payload?.records)) return payload.records;
-  return [];
-}
 
-async function apiFetch(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+    valid = image[
+        np.isfinite(
+            image
+        )
+    ]
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload.message || payload.error || "Request failed.");
-  }
-  return payload;
-}
 
-function normalizeCustomer(customer) {
-  return {
-    ...customer,
-    id: String(customer.id || customer.customer_id || ""),
-    customer_name: String(
-      customer.customer_name_en || customer.customer_name || customer.name || "-"
+    if valid.size == 0:
+
+        return np.zeros_like(
+            image
+        )
+
+
+    low, high = np.percentile(
+
+        valid,
+
+        [
+            1,
+            99
+        ]
+
+    )
+
+
+    if high <= low:
+
+        high = low + 1
+
+
+    return np.clip(
+
+        (
+            image
+            -
+            low
+        )
+
+        /
+
+        (
+            high
+            -
+            low
+        ),
+
+        0,
+        1
+    )
+
+
+# ================================================================
+# 23. DRAW FIXED CONTOUR
+# ================================================================
+
+def draw_fixed(
+    ax,
+    label,
+    linestyle="-",
+    linewidth=2
+):
+
+    left = (
+        label == 1
+    )
+
+
+    right = (
+        label == 2
+    )
+
+
+    if np.any(
+        left
+    ):
+
+        for contour in find_contours(
+
+            left.astype(
+                np.float32
+            ),
+
+            0.5
+
+        ):
+
+            ax.plot(
+
+                contour[
+                    :,
+                    1
+                ],
+
+                contour[
+                    :,
+                    0
+                ],
+
+                color="magenta",
+
+                linestyle=linestyle,
+
+                linewidth=linewidth
+            )
+
+
+    if np.any(
+        right
+    ):
+
+        for contour in find_contours(
+
+            right.astype(
+                np.float32
+            ),
+
+            0.5
+
+        ):
+
+            ax.plot(
+
+                contour[
+                    :,
+                    1
+                ],
+
+                contour[
+                    :,
+                    0
+                ],
+
+                color="cyan",
+
+                linestyle=linestyle,
+
+                linewidth=linewidth
+            )
+
+
+# ================================================================
+# 24. DRAW WARPED CONTOUR
+# ================================================================
+
+def draw_warped(
+    ax,
+    label,
+    linestyle="--",
+    linewidth=2
+):
+
+    left = (
+        label == 1
+    )
+
+
+    right = (
+        label == 2
+    )
+
+
+    if np.any(
+        left
+    ):
+
+        for contour in find_contours(
+
+            left.astype(
+                np.float32
+            ),
+
+            0.5
+
+        ):
+
+            ax.plot(
+
+                contour[
+                    :,
+                    1
+                ],
+
+                contour[
+                    :,
+                    0
+                ],
+
+                color="yellow",
+
+                linestyle=linestyle,
+
+                linewidth=linewidth
+            )
+
+
+    if np.any(
+        right
+    ):
+
+        for contour in find_contours(
+
+            right.astype(
+                np.float32
+            ),
+
+            0.5
+
+        ):
+
+            ax.plot(
+
+                contour[
+                    :,
+                    1
+                ],
+
+                contour[
+                    :,
+                    0
+                ],
+
+                color="lime",
+
+                linestyle=linestyle,
+
+                linewidth=linewidth
+            )
+
+
+# ================================================================
+# 25. SELECT IMPORTANT SLICES
+# ================================================================
+
+def select_slices(
+    fixed_label,
+    warped_label
+):
+
+    mask = np.logical_or(
+
+        fixed_label > 0,
+
+        warped_label > 0
+
+    )
+
+
+    area = mask.sum(
+        axis=(
+            1,
+            2
+        )
+    )
+
+
+    present = np.where(
+        area > 0
+    )[
+        0
+    ]
+
+
+    if len(
+        present
+    ) == 0:
+
+        return [
+            fixed_label.shape[
+                0
+            ] // 2
+        ]
+
+
+    selected = set()
+
+
+    selected.add(
+        int(
+            present[
+                0
+            ]
+        )
+    )
+
+
+    selected.add(
+        int(
+            present[
+                -1
+            ]
+        )
+    )
+
+
+    selected.add(
+        int(
+            np.argmax(
+                area
+            )
+        )
+    )
+
+
+    for fraction in [
+
+        0.25,
+        0.5,
+        0.75
+
+    ]:
+
+        index = int(
+
+            round(
+
+                (
+                    len(
+                        present
+                    )
+                    -
+                    1
+                )
+
+                *
+
+                fraction
+
+            )
+
+        )
+
+
+        selected.add(
+
+            int(
+                present[
+                    index
+                ]
+            )
+
+        )
+
+
+    for z in EXTRA_Z:
+
+        if (
+
+            0
+            <=
+            z
+            <
+            fixed_label.shape[
+                0
+            ]
+
+        ):
+
+            if (
+
+                np.any(
+                    fixed_label[
+                        z
+                    ]
+                    >
+                    0
+                )
+
+                or
+
+                np.any(
+                    warped_label[
+                        z
+                    ]
+                    >
+                    0
+                )
+
+            ):
+
+                selected.add(
+                    z
+                )
+
+
+    return sorted(
+        selected
+    )
+
+
+# ================================================================
+# 26. ORIGINAL 4-PANEL FIGURE
+# ================================================================
+
+def save_original_figure(
+
+    moving_image,
+    moving_label,
+
+    fixed_image,
+    fixed_label,
+
+    warped_image,
+    warped_label,
+
+    z,
+    title,
+    output_path
+
+):
+
+    fig, axes = plt.subplots(
+
+        2,
+        2,
+
+        figsize=(
+            14,
+            13
+        )
+    )
+
+
+    # MOVING
+
+    axes[
+        0,
+        0
+    ].imshow(
+
+        display_normalize(
+            moving_image[
+                z
+            ]
+        ),
+
+        cmap="gray",
+
+        origin="upper"
+    )
+
+
+    draw_fixed(
+
+        axes[
+            0,
+            0
+        ],
+
+        moving_label[
+            z
+        ]
+    )
+
+
+    axes[
+        0,
+        0
+    ].set_title(
+
+        "MOVING CT + MOVING LABEL\n"
+        "magenta=left | cyan=right"
+
+    )
+
+
+    # FIXED
+
+    axes[
+        0,
+        1
+    ].imshow(
+
+        display_normalize(
+            fixed_image[
+                z
+            ]
+        ),
+
+        cmap="gray",
+
+        origin="upper"
+    )
+
+
+    draw_fixed(
+
+        axes[
+            0,
+            1
+        ],
+
+        fixed_label[
+            z
+        ]
+    )
+
+
+    axes[
+        0,
+        1
+    ].set_title(
+
+        "FIXED CBCT + FIXED LABEL\n"
+        "magenta=left | cyan=right"
+
+    )
+
+
+    # WARPED
+
+    axes[
+        1,
+        0
+    ].imshow(
+
+        display_normalize(
+            warped_image[
+                z
+            ]
+        ),
+
+        cmap="gray",
+
+        origin="upper"
+    )
+
+
+    draw_warped(
+
+        axes[
+            1,
+            0
+        ],
+
+        warped_label[
+            z
+        ],
+
+        linestyle="-"
+    )
+
+
+    axes[
+        1,
+        0
+    ].set_title(
+
+        "WARPED CT + WARPED MOVING LABEL\n"
+        "yellow=left | lime=right"
+
+    )
+
+
+    # FIXED + WARPED
+
+    axes[
+        1,
+        1
+    ].imshow(
+
+        display_normalize(
+            fixed_image[
+                z
+            ]
+        ),
+
+        cmap="gray",
+
+        origin="upper"
+    )
+
+
+    draw_fixed(
+
+        axes[
+            1,
+            1
+        ],
+
+        fixed_label[
+            z
+        ],
+
+        linestyle="-",
+
+        linewidth=2.2
+    )
+
+
+    draw_warped(
+
+        axes[
+            1,
+            1
+        ],
+
+        warped_label[
+            z
+        ],
+
+        linestyle="--",
+
+        linewidth=2
+    )
+
+
+    axes[
+        1,
+        1
+    ].set_title(
+
+        "FIXED CBCT + BOTH LABELS\n"
+        "fixed=solid magenta/cyan\n"
+        "warped=dashed yellow/lime"
+
+    )
+
+
+    for ax in axes.flat:
+
+        ax.axis(
+            "off"
+        )
+
+
+    fig.suptitle(
+
+        f"{title} | z={z}\n"
+        "ORIGINAL — NO FLIP / ROTATION",
+
+        fontsize=14
+    )
+
+
+    fig.tight_layout()
+
+
+    fig.savefig(
+
+        output_path,
+
+        dpi=160,
+
+        bbox_inches="tight"
+    )
+
+
+    plt.close(
+        fig
+    )
+
+
+# ================================================================
+# 27. FIXED LABEL CANDIDATES
+# ================================================================
+
+def save_fixed_candidates(
+
+    fixed_image,
+    fixed_label,
+
+    z,
+    title,
+    output_path
+
+):
+
+    fig, axes = plt.subplots(
+
+        2,
+        4,
+
+        figsize=(
+            20,
+            10
+        )
+    )
+
+
+    axes = axes.flatten()
+
+
+    for ax, (
+        name,
+        transform
+    ) in zip(
+
+        axes,
+
+        TRANSFORMS.items()
+
+    ):
+
+        candidate = transform(
+
+            fixed_label[
+                z
+            ]
+
+        )
+
+
+        ax.imshow(
+
+            display_normalize(
+                fixed_image[
+                    z
+                ]
+            ),
+
+            cmap="gray",
+
+            origin="upper"
+        )
+
+
+        draw_fixed(
+
+            ax,
+
+            candidate
+        )
+
+
+        ax.set_title(
+            name
+        )
+
+
+        ax.axis(
+            "off"
+        )
+
+
+    fig.suptitle(
+
+        f"{title} | z={z}\n"
+        "FIXED LABEL ORIENTATION CANDIDATES",
+
+        fontsize=14
+    )
+
+
+    fig.tight_layout()
+
+
+    fig.savefig(
+
+        output_path,
+
+        dpi=150,
+
+        bbox_inches="tight"
+    )
+
+
+    plt.close(
+        fig
+    )
+
+
+# ================================================================
+# 28. WARPED LABEL CANDIDATES
+# ================================================================
+
+def save_warped_candidates(
+
+    fixed_image,
+    warped_label,
+
+    z,
+    title,
+    output_path
+
+):
+
+    fig, axes = plt.subplots(
+
+        2,
+        4,
+
+        figsize=(
+            20,
+            10
+        )
+    )
+
+
+    axes = axes.flatten()
+
+
+    for ax, (
+        name,
+        transform
+    ) in zip(
+
+        axes,
+
+        TRANSFORMS.items()
+
+    ):
+
+        candidate = transform(
+
+            warped_label[
+                z
+            ]
+
+        )
+
+
+        ax.imshow(
+
+            display_normalize(
+                fixed_image[
+                    z
+                ]
+            ),
+
+            cmap="gray",
+
+            origin="upper"
+        )
+
+
+        draw_warped(
+
+            ax,
+
+            candidate,
+
+            linestyle="-"
+        )
+
+
+        ax.set_title(
+            name
+        )
+
+
+        ax.axis(
+            "off"
+        )
+
+
+    fig.suptitle(
+
+        f"{title} | z={z}\n"
+        "WARPED MOVING LABEL ORIENTATION CANDIDATES "
+        "OVER FIXED CBCT",
+
+        fontsize=14
+    )
+
+
+    fig.tight_layout()
+
+
+    fig.savefig(
+
+        output_path,
+
+        dpi=150,
+
+        bbox_inches="tight"
+    )
+
+
+    plt.close(
+        fig
+    )
+
+
+# ================================================================
+# 29. FIXED ORIGINAL + WARPED CANDIDATES
+# ================================================================
+
+def save_fixed_vs_warped_candidates(
+
+    fixed_image,
+    fixed_label,
+    warped_label,
+
+    z,
+    title,
+    output_path
+
+):
+
+    fig, axes = plt.subplots(
+
+        2,
+        4,
+
+        figsize=(
+            20,
+            10
+        )
+    )
+
+
+    axes = axes.flatten()
+
+
+    for ax, (
+        name,
+        transform
+    ) in zip(
+
+        axes,
+
+        TRANSFORMS.items()
+
+    ):
+
+        warped_candidate = transform(
+
+            warped_label[
+                z
+            ]
+
+        )
+
+
+        ax.imshow(
+
+            display_normalize(
+                fixed_image[
+                    z
+                ]
+            ),
+
+            cmap="gray",
+
+            origin="upper"
+        )
+
+
+        # FIXED stays ORIGINAL
+
+        draw_fixed(
+
+            ax,
+
+            fixed_label[
+                z
+            ],
+
+            linestyle="-",
+
+            linewidth=2.2
+        )
+
+
+        # Only WARPED changes
+
+        draw_warped(
+
+            ax,
+
+            warped_candidate,
+
+            linestyle="--",
+
+            linewidth=2
+        )
+
+
+        ax.set_title(
+            name
+        )
+
+
+        ax.axis(
+            "off"
+        )
+
+
+    fig.suptitle(
+
+        f"{title} | z={z}\n"
+        "FIXED ORIGINAL = solid magenta/cyan | "
+        "WARPED candidate = dashed yellow/lime",
+
+        fontsize=14
+    )
+
+
+    fig.tight_layout()
+
+
+    fig.savefig(
+
+        output_path,
+
+        dpi=150,
+
+        bbox_inches="tight"
+    )
+
+
+    plt.close(
+        fig
+    )
+
+
+# ================================================================
+# 30. ORIENTATION DICE TEST
+# ================================================================
+
+def orientation_dice_table(
+
+    fixed_label,
+    warped_label,
+
+    split,
+    patient_id,
+    pair_id
+
+):
+
+    rows = []
+
+
+    for name, transform in TRANSFORMS.items():
+
+        warped_candidate = transform(
+            warped_label
+        )
+
+
+        left = lung_dice(
+
+            fixed_label,
+
+            warped_candidate,
+
+            1
+        )
+
+
+        right = lung_dice(
+
+            fixed_label,
+
+            warped_candidate,
+
+            2
+        )
+
+
+        rows.append(
+            {
+
+                "split":
+                    split,
+
+                "patient_id":
+                    patient_id,
+
+                "pair_id":
+                    pair_id,
+
+                "transform":
+                    name,
+
+                "left_dice":
+                    left,
+
+                "right_dice":
+                    right,
+
+                "mean_dice":
+                    (
+                        left
+                        +
+                        right
+                    )
+                    /
+                    2
+            }
+        )
+
+
+    return pd.DataFrame(
+        rows
+    )
+
+
+# ================================================================
+# 31. MAIN TESTING LOOP
+# ================================================================
+
+all_metrics = []
+
+all_orientation_results = []
+
+all_original_images = []
+
+all_compare_images = []
+
+
+print(
+    "\n[5] Starting validation/test..."
+)
+
+
+for _, row in evaluation.iterrows():
+
+
+    split = str(
+        row[
+            "split"
+        ]
+    )
+
+
+    patient_id = str(
+        row[
+            "patient_id"
+        ]
+    )
+
+
+    pair_id = str(
+        row[
+            "pair_id"
+        ]
+    )
+
+
+    print(
+        "\n"
+        +
+        "=" * 90
+    )
+
+    print(
+        split.upper(),
+        "|",
+        pair_id
+    )
+
+    print(
+        "=" * 90
+    )
+
+
+    moving_image = np.load(
+
+        row[
+            "moving_path"
+        ]
+
+    ).astype(
+        np.float32
+    )
+
+
+    fixed_image = np.load(
+
+        row[
+            "fixed_path"
+        ]
+
+    ).astype(
+        np.float32
+    )
+
+
+    moving_label = np.load(
+
+        row[
+            "moving_label_path"
+        ]
+
+    ).astype(
+        np.uint8
+    )
+
+
+    fixed_label = np.load(
+
+        row[
+            "fixed_label_path"
+        ]
+
+    ).astype(
+        np.uint8
+    )
+
+
+    print(
+        "Moving shape:",
+        moving_image.shape
+    )
+
+
+    print(
+        "Fixed shape:",
+        fixed_image.shape
+    )
+
+
+    print(
+        "Moving label:",
+        np.unique(
+            moving_label
+        )
+    )
+
+
+    print(
+        "Fixed label:",
+        np.unique(
+            fixed_label
+        )
+    )
+
+
+    # ------------------------------------------------------------
+    # MODEL INPUT
+    # ------------------------------------------------------------
+
+    moving_model = prepare_model_volume(
+
+        row,
+
+        moving_image,
+
+        "moving"
+    )
+
+
+    fixed_model = prepare_model_volume(
+
+        row,
+
+        fixed_image,
+
+        "fixed"
+    )
+
+
+    # ------------------------------------------------------------
+    # PATCH INFERENCE
+    # ------------------------------------------------------------
+
+    full_flow = patch_inference(
+
+        moving_model,
+
+        fixed_model
+    )
+
+
+    print(
+        "Full flow shape:",
+        full_flow.shape
+    )
+
+
+    # ------------------------------------------------------------
+    # WARP MOVING IMAGE + MOVING LABEL
+    # ------------------------------------------------------------
+
+    warped_image, warped_label = warp_full(
+
+        moving_image,
+
+        moving_label,
+
+        full_flow
+    )
+
+
+    print(
+        "Warped label unique:",
+        np.unique(
+            warped_label
+        )
+    )
+
+
+    # ------------------------------------------------------------
+    # ORIGINAL DICE
+    # ------------------------------------------------------------
+
+    left_dice = lung_dice(
+
+        fixed_label,
+
+        warped_label,
+
+        1
+    )
+
+
+    right_dice = lung_dice(
+
+        fixed_label,
+
+        warped_label,
+
+        2
+    )
+
+
+    mean_dice = (
+
+        left_dice
+
+        +
+
+        right_dice
+
+    ) / 2
+
+
+    print(
+        "\nORIGINAL — NO TRANSFORM"
+    )
+
+
+    print(
+        f"Left Dice : {left_dice:.6f}"
+    )
+
+
+    print(
+        f"Right Dice: {right_dice:.6f}"
+    )
+
+
+    print(
+        f"Mean Dice : {mean_dice:.6f}"
+    )
+
+
+    all_metrics.append(
+        {
+
+            "split":
+                split,
+
+            "patient_id":
+                patient_id,
+
+            "pair_id":
+                pair_id,
+
+            "checkpoint_epoch":
+                CHECKPOINT_EPOCH,
+
+            "left_dice_original":
+                left_dice,
+
+            "right_dice_original":
+                right_dice,
+
+            "mean_dice_original":
+                mean_dice,
+
+            "flow_mean_abs_voxel":
+                float(
+                    np.mean(
+                        np.abs(
+                            full_flow
+                        )
+                    )
+                ),
+
+            "flow_max_abs_voxel":
+                float(
+                    np.max(
+                        np.abs(
+                            full_flow
+                        )
+                    )
+                )
+        }
+    )
+
+
+    # ------------------------------------------------------------
+    # CASE DIRECTORY
+    # ------------------------------------------------------------
+
+    case_dir = (
+
+        RESULTS_ROOT
+
+        /
+
+        split
+
+        /
+
+        pair_id
+
+    )
+
+
+    original_dir = (
+
+        case_dir
+
+        /
+
+        "01_original_registration"
+
+    )
+
+
+    fixed_candidate_dir = (
+
+        case_dir
+
+        /
+
+        "02_fixed_label_candidates"
+
+    )
+
+
+    warped_candidate_dir = (
+
+        case_dir
+
+        /
+
+        "03_warped_label_candidates"
+
+    )
+
+
+    compare_dir = (
+
+        case_dir
+
+        /
+
+        "04_fixed_vs_warped_candidates"
+
+    )
+
+
+    for directory in [
+
+        original_dir,
+        fixed_candidate_dir,
+        warped_candidate_dir,
+        compare_dir
+
+    ]:
+
+        directory.mkdir(
+
+            parents=True,
+
+            exist_ok=True
+        )
+
+
+    # Save ORIGINAL warped label
+
+    np.save(
+
+        case_dir
+        /
+        "warped_moving_label_original.npy",
+
+        warped_label
+    )
+
+
+    # ------------------------------------------------------------
+    # ORIENTATION DICE TABLE
+    # ------------------------------------------------------------
+
+    orientation_df = orientation_dice_table(
+
+        fixed_label,
+
+        warped_label,
+
+        split,
+
+        patient_id,
+
+        pair_id
+    )
+
+
+    orientation_df.to_csv(
+
+        case_dir
+        /
+        "orientation_dice_candidates.csv",
+
+        index=False
+    )
+
+
+    all_orientation_results.append(
+        orientation_df
+    )
+
+
+    print(
+        "\nWARPED ORIENTATION CANDIDATE DICE:"
+    )
+
+
+    print(
+
+        orientation_df.sort_values(
+
+            "mean_dice",
+
+            ascending=False
+
+        ).to_string(
+            index=False
+        )
+
+    )
+
+
+    # ------------------------------------------------------------
+    # SELECT SLICES
+    # ------------------------------------------------------------
+
+    slices = select_slices(
+
+        fixed_label,
+
+        warped_label
+    )
+
+
+    print(
+        "\nDiagnostic Z slices:",
+        slices
+    )
+
+
+    title = (
+
+        f"{split.upper()} | {pair_id}"
+
+    )
+
+
+    # ------------------------------------------------------------
+    # CREATE FIGURES
+    # ------------------------------------------------------------
+
+    for z in slices:
+
+
+        # ORIGINAL
+
+        original_path = (
+
+            original_dir
+
+            /
+
+            f"z_{z:03d}_original.png"
+
+        )
+
+
+        save_original_figure(
+
+            moving_image,
+            moving_label,
+
+            fixed_image,
+            fixed_label,
+
+            warped_image,
+            warped_label,
+
+            z,
+
+            title,
+
+            original_path
+        )
+
+
+        all_original_images.append(
+            original_path
+        )
+
+
+        # FIXED candidates
+
+        fixed_path = (
+
+            fixed_candidate_dir
+
+            /
+
+            f"z_{z:03d}_fixed_candidates.png"
+
+        )
+
+
+        save_fixed_candidates(
+
+            fixed_image,
+
+            fixed_label,
+
+            z,
+
+            title,
+
+            fixed_path
+        )
+
+
+        # WARPED candidates
+
+        warped_path = (
+
+            warped_candidate_dir
+
+            /
+
+            f"z_{z:03d}_warped_candidates.png"
+
+        )
+
+
+        save_warped_candidates(
+
+            fixed_image,
+
+            warped_label,
+
+            z,
+
+            title,
+
+            warped_path
+        )
+
+
+        # FIXED ORIGINAL + WARPED candidates
+
+        comparison_path = (
+
+            compare_dir
+
+            /
+
+            f"z_{z:03d}_fixed_vs_warped.png"
+
+        )
+
+
+        save_fixed_vs_warped_candidates(
+
+            fixed_image,
+
+            fixed_label,
+
+            warped_label,
+
+            z,
+
+            title,
+
+            comparison_path
+        )
+
+
+        all_compare_images.append(
+            comparison_path
+        )
+
+
+    # ------------------------------------------------------------
+    # MEMORY
+    # ------------------------------------------------------------
+
+    del full_flow
+
+    del warped_image
+
+
+    if DEVICE.type == "cuda":
+
+        torch.cuda.empty_cache()
+
+
+# ================================================================
+# 32. SAVE ORIGINAL METRICS
+# ================================================================
+
+metrics_df = pd.DataFrame(
+    all_metrics
+)
+
+
+METRICS_CSV = (
+
+    RESULTS_ROOT
+
+    /
+
+    "original_patch_registration_metrics.csv"
+
+)
+
+
+metrics_df.to_csv(
+
+    METRICS_CSV,
+
+    index=False
+)
+
+
+print(
+    "\n"
+    +
+    "=" * 90
+)
+
+print(
+    "ORIGINAL PATCH REGISTRATION METRICS"
+)
+
+print(
+    "=" * 90
+)
+
+
+display(
+    metrics_df
+)
+
+
+# ================================================================
+# 33. SAVE ALL ORIENTATION RESULTS
+# ================================================================
+
+orientation_all_df = pd.concat(
+
+    all_orientation_results,
+
+    ignore_index=True
+)
+
+
+ORIENTATION_CSV = (
+
+    RESULTS_ROOT
+
+    /
+
+    "all_orientation_dice_candidates.csv"
+
+)
+
+
+orientation_all_df.to_csv(
+
+    ORIENTATION_CSV,
+
+    index=False
+)
+
+
+# ================================================================
+# 34. BEST TRANSFORM PER CASE
+# ================================================================
+
+best_rows = []
+
+
+for (
+
+    split,
+    patient_id,
+    pair_id
+
+), group in orientation_all_df.groupby(
+
+    [
+        "split",
+        "patient_id",
+        "pair_id"
+    ]
+
+):
+
+
+    ranked = group.sort_values(
+
+        "mean_dice",
+
+        ascending=False
+    )
+
+
+    best = ranked.iloc[
+        0
+    ]
+
+
+    original_row = group[
+
+        group[
+            "transform"
+        ]
+        ==
+        "ORIGINAL"
+
+    ].iloc[
+        0
+    ]
+
+
+    best_rows.append(
+        {
+
+            "split":
+                split,
+
+            "patient_id":
+                patient_id,
+
+            "pair_id":
+                pair_id,
+
+            "best_candidate":
+                best[
+                    "transform"
+                ],
+
+            "best_left_dice":
+                best[
+                    "left_dice"
+                ],
+
+            "best_right_dice":
+                best[
+                    "right_dice"
+                ],
+
+            "best_mean_dice":
+                best[
+                    "mean_dice"
+                ],
+
+            "original_mean_dice":
+                original_row[
+                    "mean_dice"
+                ],
+
+            "difference":
+                (
+                    best[
+                        "mean_dice"
+                    ]
+
+                    -
+
+                    original_row[
+                        "mean_dice"
+                    ]
+                )
+        }
+    )
+
+
+best_df = pd.DataFrame(
+    best_rows
+)
+
+
+BEST_CSV = (
+
+    RESULTS_ROOT
+
+    /
+
+    "best_orientation_candidate_per_case.csv"
+
+)
+
+
+best_df.to_csv(
+
+    BEST_CSV,
+
+    index=False
+)
+
+
+print(
+    "\n"
+    +
+    "=" * 90
+)
+
+print(
+    "BEST WARPED-LABEL ORIENTATION CANDIDATE"
+)
+
+print(
+    "=" * 90
+)
+
+
+display(
+    best_df
+)
+
+
+# ================================================================
+# 35. CREATE QUICK MONTAGE
+# ================================================================
+
+MONTAGE_PATH = (
+
+    RESULTS_ROOT
+
+    /
+
+    "FIXED_WARPED_ORIGINAL_QC_MONTAGE.png"
+
+)
+
+
+montage_paths = all_original_images[
+    :16
+]
+
+
+if montage_paths:
+
+
+    loaded = [
+
+        plt.imread(
+            path
+        )
+
+        for path in montage_paths
+
+    ]
+
+
+    fig, axes = plt.subplots(
+
+        len(
+            loaded
+        ),
+
+        1,
+
+        figsize=(
+
+            16,
+
+            len(
+                loaded
+            )
+            *
+            12
+
+        )
+    )
+
+
+    if len(
+        loaded
+    ) == 1:
+
+        axes = [
+            axes
+        ]
+
+
+    for ax, image, path in zip(
+
+        axes,
+
+        loaded,
+
+        montage_paths
+
+    ):
+
+        ax.imshow(
+            image
+        )
+
+
+        ax.set_title(
+
+            f"{path.parent.parent.name} | "
+            f"{path.stem}"
+
+        )
+
+
+        ax.axis(
+            "off"
+        )
+
+
+    fig.tight_layout()
+
+
+    fig.savefig(
+
+        MONTAGE_PATH,
+
+        dpi=90,
+
+        bbox_inches="tight"
+    )
+
+
+    plt.close(
+        fig
+    )
+
+
+# ================================================================
+# 36. REPORT
+# ================================================================
+
+REPORT_PATH = (
+
+    RESULTS_ROOT
+
+    /
+
+    "ORIENTATION_VERIFICATION_REPORT.txt"
+
+)
+
+
+report = []
+
+
+report.append(
+
+    "V13 PATCH + FIXED/WARPED LABEL ORIENTATION VERIFICATION"
+
+)
+
+
+report.append(
+
+    "=" * 90
+
+)
+
+
+report.append(
+    ""
+)
+
+
+report.append(
+
+    f"Dataset: {DATASET_ZIP}"
+
+)
+
+
+report.append(
+
+    f"Model: {MODEL_ZIP}"
+
+)
+
+
+report.append(
+
+    f"Checkpoint: {CHECKPOINT_PATH}"
+
+)
+
+
+report.append(
+
+    f"Checkpoint epoch: {CHECKPOINT_EPOCH}"
+
+)
+
+
+report.append(
+
+    f"Patch: {PATCH_SHAPE}"
+
+)
+
+
+report.append(
+
+    f"Stride: {STRIDE}"
+
+)
+
+
+report.append(
+    ""
+)
+
+
+report.append(
+
+    "NO TRAINING."
+
+)
+
+
+report.append(
+
+    "NO FULL-IMAGE MODEL INPUT."
+
+)
+
+
+report.append(
+
+    "Patch flows were blended to a full deformation field."
+
+)
+
+
+report.append(
+
+    "Moving labels were warped using nearest-neighbour interpolation."
+
+)
+
+
+report.append(
+    ""
+)
+
+
+report.append(
+
+    "FIXED contour:"
+)
+
+
+report.append(
+
+    "  Left = magenta solid"
+
+)
+
+
+report.append(
+
+    "  Right = cyan solid"
+
+)
+
+
+report.append(
+
+    "WARPED contour:"
+)
+
+
+report.append(
+
+    "  Left = yellow dashed"
+
+)
+
+
+report.append(
+
+    "  Right = lime dashed"
+
+)
+
+
+report.append(
+    ""
+)
+
+
+report.append(
+
+    "IMPORTANT:"
+)
+
+
+report.append(
+
+    "Orientation candidates are diagnostic only."
+
+)
+
+
+report.append(
+
+    "No label is permanently flipped or rotated."
+
+)
+
+
+report.append(
+    ""
+)
+
+
+report.append(
+
+    "ORIGINAL METRICS:"
+
+)
+
+
+report.append(
+
+    metrics_df.to_string(
+        index=False
+    )
+
+)
+
+
+report.append(
+    ""
+)
+
+
+report.append(
+
+    "BEST ORIENTATION CANDIDATES:"
+
+)
+
+
+report.append(
+
+    best_df.to_string(
+        index=False
+    )
+
+)
+
+
+REPORT_PATH.write_text(
+
+    "\n".join(
+        report
     ),
-    phone: String(customer.phone || customer.mobile || ""),
-    city: String(customer.city_en || customer.city || ""),
-    opening_balance: toNumber(customer.opening_balance),
-  };
-}
-
-function transactionTypeLabel(type, t) {
-  if (type === "invoice") return t.invoice;
-  if (type === "return") return t.return;
-  if (type === "manual") return t.ledgerEntry;
-  return t.opening;
-}
-
-function transactionTypeClass(type) {
-  if (type === "invoice") return "ledger-type ledger-type-invoice";
-  if (type === "return") return "ledger-type ledger-type-return";
-  if (type === "manual") return "ledger-type ledger-type-manual";
-  return "ledger-type ledger-type-opening";
-}
-
-function hasValue(value) {
-  return value !== undefined && value !== null && String(value).trim() !== "";
-}
-
-export default function CustomerSalesLedgerPage() {
-  const [language, setLanguage] = useState("en");
-  const t = TEXT[language];
-  const isUrdu = language === "ur";
-
-  const [customers, setCustomers] = useState([]);
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [selectedCustomerId, setSelectedCustomerId] = useState("");
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
-
-  const [ledgerData, setLedgerData] = useState(null);
-  const [loadingLedger, setLoadingLedger] = useState(false);
-  const [error, setError] = useState("");
-
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
-
-  const filteredCustomers = useMemo(() => {
-    const query = customerSearch.trim().toLowerCase();
-    if (!query) return customers;
-    return customers.filter((customer) =>
-      [customer.customer_name, customer.phone, customer.city]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [customers, customerSearch]);
-
-  const selectedCustomer = useMemo(
-    () =>
-      customers.find(
-        (customer) => String(customer.id) === String(selectedCustomerId)
-      ) || null,
-    [customers, selectedCustomerId]
-  );
-
-  const transactions = useMemo(
-    () => (Array.isArray(ledgerData?.transactions) ? ledgerData.transactions : []),
-    [ledgerData]
-  );
-
-  const visibleTransactions = useMemo(() => {
-    if (typeFilter === "all") return transactions;
-    return transactions.filter((transaction) => transaction.type === typeFilter);
-  }, [transactions, typeFilter]);
-
-  const summary = ledgerData?.summary || {};
-  const customer = ledgerData?.customer || selectedCustomer;
-
-  async function loadCustomers() {
-    try {
-      setLoadingCustomers(true);
-      const response = await apiFetch("/customers");
-      const list = normalizeList(response).map(normalizeCustomer);
-      list.sort((a, b) => a.customer_name.localeCompare(b.customer_name));
-      setCustomers(list);
-    } catch (loadError) {
-      console.error("Load customers failed:", loadError);
-      setError(loadError.message || "Customers could not be loaded.");
-      setCustomers([]);
-    } finally {
-      setLoadingCustomers(false);
-    }
-  }
-
-  async function loadLedger(
-    customerId = selectedCustomerId,
-    dateFilters = { from: fromDate, to: toDate }
-  ) {
-    if (!customerId) {
-      setLedgerData(null);
-      return;
-    }
-
-    try {
-      setLoadingLedger(true);
-      setError("");
-      setSelectedTransaction(null);
-
-      const params = new URLSearchParams();
-      if (dateFilters.from) params.set("from_date", dateFilters.from);
-      if (dateFilters.to) params.set("to_date", dateFilters.to);
-
-      const response = await apiFetch(
-        `/ledger/customer/${customerId}/details${
-          params.toString() ? `?${params.toString()}` : ""
-        }`
-      );
-      setLedgerData(response.data || null);
-    } catch (loadError) {
-      console.error("Load detailed customer ledger failed:", loadError);
-      setError(loadError.message || "Detailed customer ledger could not be loaded.");
-      setLedgerData(null);
-    } finally {
-      setLoadingLedger(false);
-    }
-  }
-
-  useEffect(() => {
-    loadCustomers();
-  }, []);
-
-  function handleCustomerChange(event) {
-    const customerId = event.target.value;
-    setSelectedCustomerId(customerId);
-    setTypeFilter("all");
-    setLedgerData(null);
-    setError("");
-    if (customerId) loadLedger(customerId);
-  }
-
-  function resetFilters() {
-    setFromDate("");
-    setToDate("");
-    setTypeFilter("all");
-    if (selectedCustomerId) {
-      loadLedger(selectedCustomerId, { from: "", to: "" });
-    }
-  }
-
-  function printLedger() {
-    window.print();
-  }
-
-  return (
-    <div
-      className={`customer-detail-ledger ${isUrdu ? "ledger-rtl" : ""}`}
-      dir={isUrdu ? "rtl" : "ltr"}
-    >
-      <style>{ledgerStyles}</style>
-
-      <section className="ledger-page-header">
-        <div>
-          <div className="ledger-eyebrow">ALI CAGE ERP</div>
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
-        </div>
-        <div className="ledger-header-actions no-print">
-          <button
-            type="button"
-            className="ledger-button ledger-button-light"
-            onClick={() => setLanguage(isUrdu ? "en" : "ur")}
-          >
-            {t.language}
-          </button>
-          <button
-            type="button"
-            className="ledger-button ledger-button-light"
-            onClick={() => loadLedger()}
-            disabled={!selectedCustomerId || loadingLedger}
-          >
-            {t.refresh}
-          </button>
-          <button
-            type="button"
-            className="ledger-button ledger-button-primary"
-            onClick={printLedger}
-            disabled={!ledgerData}
-          >
-            {t.print}
-          </button>
-        </div>
-      </section>
-
-      <section className="ledger-filter-panel no-print">
-        <div className="ledger-field ledger-customer-search">
-          <label>{t.customerSearch}</label>
-          <input
-            type="search"
-            value={customerSearch}
-            onChange={(event) => setCustomerSearch(event.target.value)}
-            placeholder={t.customerSearch}
-          />
-        </div>
-
-        <div className="ledger-field ledger-customer-select">
-          <label>{t.selectCustomer}</label>
-          <select
-            value={selectedCustomerId}
-            onChange={handleCustomerChange}
-            disabled={loadingCustomers}
-          >
-            <option value="">
-              {loadingCustomers ? t.loadingCustomers : t.chooseCustomer}
-            </option>
-            {filteredCustomers.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.customer_name}
-                {item.phone ? ` — ${item.phone}` : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="ledger-field">
-          <label>{t.fromDate}</label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(event) => setFromDate(event.target.value)}
-          />
-        </div>
-
-        <div className="ledger-field">
-          <label>{t.toDate}</label>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(event) => setToDate(event.target.value)}
-          />
-        </div>
-
-        <div className="ledger-filter-buttons">
-          <button
-            type="button"
-            className="ledger-button ledger-button-primary"
-            onClick={() => loadLedger()}
-            disabled={!selectedCustomerId || loadingLedger}
-          >
-            {t.apply}
-          </button>
-          <button
-            type="button"
-            className="ledger-button ledger-button-light"
-            onClick={resetFilters}
-            disabled={!selectedCustomerId || loadingLedger}
-          >
-            {t.reset}
-          </button>
-        </div>
-      </section>
-
-      {error && (
-        <section className="ledger-error-box">
-          <strong>{t.errorTitle}</strong>
-          <span>{error}</span>
-        </section>
-      )}
-
-      {!selectedCustomerId && !loadingCustomers ? (
-        <section className="ledger-empty-state">
-          <div className="ledger-empty-icon">≡</div>
-          <h2>{t.title}</h2>
-          <p>{t.selectMessage}</p>
-        </section>
-      ) : loadingLedger ? (
-        <section className="ledger-loading-state">
-          <div className="ledger-spinner" />
-          <p>{t.loadingLedger}</p>
-        </section>
-      ) : ledgerData ? (
-        <>
-          <section className="ledger-customer-card">
-            <div className="ledger-customer-avatar">
-              {String(customer?.customer_name || "C").charAt(0).toUpperCase()}
-            </div>
-            <div className="ledger-customer-main">
-              <span className="ledger-muted-label">{t.customer}</span>
-              <h2>{customer?.customer_name || "-"}</h2>
-            </div>
-            <InfoItem label={t.phone} value={customer?.phone || "-"} />
-            <InfoItem label={t.city} value={customer?.city || "-"} />
-            <InfoItem
-              label={t.transactionCount}
-              value={formatNumber(summary.transaction_count)}
-            />
-          </section>
-
-          <section className="ledger-summary-grid">
-            <SummaryCard
-              label={t.openingBalance}
-              value={formatBalance(summary.opening_balance)}
-              tone="neutral"
-            />
-            <SummaryCard
-              label={t.totalInvoices}
-              value={formatMoney(summary.total_invoice)}
-              tone="debit"
-              meta={`${formatNumber(summary.invoice_count)} ${t.invoices}`}
-            />
-            <SummaryCard
-              label={t.totalReturns}
-              value={formatMoney(summary.total_return)}
-              tone="credit"
-              meta={`${formatNumber(summary.return_count)} ${t.returns}`}
-            />
-            <SummaryCard
-              label={t.closingBalance}
-              value={formatBalance(summary.closing_balance)}
-              tone={toNumber(summary.closing_balance) < 0 ? "credit" : "strong"}
-            />
-            <SummaryCard
-              label={t.soldQty}
-              value={formatNumber(summary.products_sold_qty)}
-              tone="neutral"
-            />
-            <SummaryCard
-              label={t.returnedQty}
-              value={formatNumber(summary.products_returned_qty)}
-              tone="neutral"
-            />
-          </section>
-
-          <section className="ledger-type-filters no-print">
-            <FilterButton
-              active={typeFilter === "all"}
-              onClick={() => setTypeFilter("all")}
-              label={t.all}
-              count={transactions.length}
-            />
-            <FilterButton
-              active={typeFilter === "invoice"}
-              onClick={() => setTypeFilter("invoice")}
-              label={t.invoices}
-              count={summary.invoice_count}
-            />
-            <FilterButton
-              active={typeFilter === "return"}
-              onClick={() => setTypeFilter("return")}
-              label={t.returns}
-              count={summary.return_count}
-            />
-            <FilterButton
-              active={typeFilter === "manual"}
-              onClick={() => setTypeFilter("manual")}
-              label={t.manual}
-              count={transactions.filter((item) => item.type === "manual").length}
-            />
-          </section>
-
-          <section className="ledger-table-card">
-            <div className="ledger-table-heading">
-              <div>
-                <h3>{t.all}</h3>
-                <p>
-                  {t.filtered}: {visibleTransactions.length}
-                </p>
-              </div>
-              {(fromDate || toDate) && (
-                <div className="ledger-date-chip">
-                  {formatDate(fromDate) || "-"} — {formatDate(toDate) || "-"}
-                </div>
-              )}
-            </div>
-
-            {visibleTransactions.length === 0 ? (
-              <div className="ledger-no-records">{t.noTransactions}</div>
-            ) : (
-              <>
-                <div className="ledger-desktop-table">
-                  <table>
-                    <colgroup>
-                      <col style={{ width: "3%" }} />
-                      <col style={{ width: "8%" }} />
-                      <col style={{ width: "10%" }} />
-                      <col style={{ width: "10%" }} />
-                      <col style={{ width: "21%" }} />
-                      <col style={{ width: "7%" }} />
-                      <col style={{ width: "10%" }} />
-                      <col style={{ width: "10%" }} />
-                      <col style={{ width: "12%" }} />
-                      <col className="no-print" style={{ width: "9%" }} />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>{t.date}</th>
-                        <th>{t.type}</th>
-                        <th>{t.reference}</th>
-                        <th>{t.description}</th>
-                        <th className="ledger-number-cell">{t.quantity}</th>
-                        <th className="ledger-number-cell">{t.debit}</th>
-                        <th className="ledger-number-cell">{t.credit}</th>
-                        <th className="ledger-number-cell">{t.balance}</th>
-                        <th className="no-print">{t.action}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleTransactions.map((transaction, index) => (
-                        <tr key={transaction.id}>
-                          <td>{index + 1}</td>
-                          <td>{formatDate(transaction.date)}</td>
-                          <td>
-                            <span className={transactionTypeClass(transaction.type)}>
-                              {transactionTypeLabel(transaction.type, t)}
-                            </span>
-                          </td>
-                          <td>
-                            <strong>{transaction.reference_no || "-"}</strong>
-                            {transaction.linked_invoice_no &&
-                              transaction.type === "return" && (
-                                <small className="ledger-linked-ref">
-                                  {t.linkedInvoice}: {transaction.linked_invoice_no}
-                                </small>
-                              )}
-                          </td>
-                          <td className="ledger-description-cell">
-                            {transaction.description || "-"}
-                            {transaction.type === "invoice" && transaction.shipment_to && (
-                              <small>
-                                {t.shipTo}: {transaction.shipment_to}
-                              </small>
-                            )}
-                            {transaction.type === "return" && transaction.reason && (
-                              <small>
-                                {t.reason}: {transaction.reason}
-                              </small>
-                            )}
-                          </td>
-                          <td className="ledger-number-cell">
-                            {transaction.quantity
-                              ? formatNumber(transaction.quantity)
-                              : "-"}
-                          </td>
-                          <td className="ledger-number-cell ledger-debit-text">
-                            {toNumber(transaction.debit) > 0
-                              ? formatMoney(transaction.debit)
-                              : "-"}
-                          </td>
-                          <td className="ledger-number-cell ledger-credit-text">
-                            {toNumber(transaction.credit) > 0
-                              ? formatMoney(transaction.credit)
-                              : "-"}
-                          </td>
-                          <td
-                            className={`ledger-number-cell ledger-balance-text ${
-                              toNumber(transaction.balance) < 0
-                                ? "ledger-negative-balance"
-                                : ""
-                            }`}
-                          >
-                            {formatBalance(transaction.balance)}
-                          </td>
-                          <td className="no-print" style={{ textAlign: "center" }}>
-                            {transaction.type === "opening" ? (
-                              "-"
-                            ) : (
-                              <button
-                                type="button"
-                                className="ledger-detail-button"
-                                onClick={() => setSelectedTransaction(transaction)}
-                              >
-                                {t.details}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="ledger-mobile-list">
-                  {visibleTransactions.map((transaction, index) => (
-                    <article className="ledger-mobile-transaction" key={transaction.id}>
-                      <div className="ledger-mobile-topline">
-                        <div>
-                          <span className={transactionTypeClass(transaction.type)}>
-                            {transactionTypeLabel(transaction.type, t)}
-                          </span>
-                          <strong>{transaction.reference_no || "-"}</strong>
-                        </div>
-                        <span>{formatDate(transaction.date)}</span>
-                      </div>
-                      <p>{transaction.description || "-"}</p>
-                      <div className="ledger-mobile-values">
-                        <MobileValue
-                          label={t.debit}
-                          value={
-                            toNumber(transaction.debit) > 0
-                              ? formatMoney(transaction.debit)
-                              : "-"
-                          }
-                        />
-                        <MobileValue
-                          label={t.credit}
-                          value={
-                            toNumber(transaction.credit) > 0
-                              ? formatMoney(transaction.credit)
-                              : "-"
-                          }
-                        />
-                        <MobileValue
-                          label={t.balance}
-                          value={formatBalance(transaction.balance)}
-                        />
-                      </div>
-                      {transaction.type !== "opening" && (
-                        <button
-                          type="button"
-                          className="ledger-detail-button ledger-mobile-detail-button no-print"
-                          onClick={() => setSelectedTransaction(transaction)}
-                        >
-                          {t.details}
-                        </button>
-                      )}
-                      <span className="ledger-mobile-index">#{index + 1}</span>
-                    </article>
-                  ))}
-                </div>
-              </>
-            )}
-          </section>
-        </>
-      ) : null}
-
-      {selectedTransaction && (
-        <TransactionModal
-          transaction={selectedTransaction}
-          customer={customer}
-          t={t}
-          onClose={() => setSelectedTransaction(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-function InfoItem({ label, value }) {
-  return (
-    <div className="ledger-info-item">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, meta, tone = "neutral" }) {
-  return (
-    <article className={`ledger-summary-card ledger-summary-${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {meta && <small>{meta}</small>}
-    </article>
-  );
-}
-
-function FilterButton({ active, onClick, label, count }) {
-  return (
-    <button
-      type="button"
-      className={`ledger-filter-pill ${active ? "active" : ""}`}
-      onClick={onClick}
-    >
-      <span>{label}</span>
-      <b>{toNumber(count)}</b>
-    </button>
-  );
-}
-
-function MobileValue({ label, value }) {
-  return (
-    <div>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function TransactionModal({ transaction, customer, t, onClose }) {
-  const isInvoice = transaction.type === "invoice";
-  const isReturn = transaction.type === "return";
-  const items = Array.isArray(transaction.items) ? transaction.items : [];
-
-  useEffect(() => {
-    function handleKeyDown(event) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  return (
-    <div className="ledger-modal-backdrop no-print" onMouseDown={onClose}>
-      <section
-        className="ledger-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t.transactionDetails}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="ledger-modal-header">
-          <div>
-            <span className={transactionTypeClass(transaction.type)}>
-              {transactionTypeLabel(transaction.type, t)}
-            </span>
-            <h2>{transaction.reference_no || t.transactionDetails}</h2>
-            <p>
-              {formatDate(transaction.date)} · {customer?.customer_name || "-"}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="ledger-modal-close"
-            onClick={onClose}
-            aria-label={t.close}
-          >
-            ×
-          </button>
-        </header>
-
-        <div className="ledger-modal-body">
-          <section className="ledger-modal-section">
-            <h3>{isInvoice ? t.invoiceInformation : isReturn ? t.returnInformation : t.transactionDetails}</h3>
-            <div className="ledger-detail-grid">
-              <DetailItem label={t.customer} value={customer?.customer_name || "-"} />
-              <DetailItem label={t.date} value={formatDate(transaction.date)} />
-              <DetailItem label={t.reference} value={transaction.reference_no || "-"} />
-              {isReturn && (
-                <DetailItem
-                  label={t.linkedInvoice}
-                  value={transaction.linked_invoice_no || "-"}
-                />
-              )}
-              {hasValue(transaction.status) && (
-                <DetailItem label={t.status} value={transaction.status} />
-              )}
-              {isReturn && hasValue(transaction.return_mode) && (
-                <DetailItem label={t.returnMode} value={transaction.return_mode} />
-              )}
-              {isReturn && hasValue(transaction.reason) && (
-                <DetailItem label={t.reason} value={transaction.reason} wide />
-              )}
-              {!isInvoice && !isReturn && (
-                <DetailItem
-                  label={t.description}
-                  value={transaction.description || "-"}
-                  wide
-                />
-              )}
-            </div>
-          </section>
-
-          {(hasValue(transaction.shipment_to) || hasValue(transaction.address)) && (
-            <section className="ledger-modal-section">
-              <h3>{t.shippingInformation}</h3>
-              <div className="ledger-detail-grid">
-                <DetailItem
-                  label={t.shipTo}
-                  value={transaction.shipment_to || "-"}
-                />
-                <DetailItem
-                  label={t.address}
-                  value={transaction.address || "-"}
-                  wide
-                />
-              </div>
-            </section>
-          )}
-
-          {items.length > 0 && (
-            <section className="ledger-modal-section">
-              <h3>
-                {t.productDetails} <span>({items.length})</span>
-              </h3>
-              <div className="ledger-product-table-wrap">
-                <table className="ledger-product-table">
-                  <thead>
-                    <tr>
-                      <th>{t.sr}</th>
-                      <th>{t.product}</th>
-                      <th>{t.category}</th>
-                      <th>{t.unit}</th>
-                      {isInvoice ? (
-                        <>
-                          <th>{t.saleType}</th>
-                          <th className="ledger-number-cell">{t.cartons}</th>
-                          <th className="ledger-number-cell">{t.pieces}</th>
-                          <th className="ledger-number-cell">{t.quantity}</th>
-                        </>
-                      ) : (
-                        <>
-                          <th className="ledger-number-cell">{t.sold}</th>
-                          <th className="ledger-number-cell">{t.alreadyReturned}</th>
-                          <th className="ledger-number-cell">{t.returned}</th>
-                        </>
-                      )}
-                      <th className="ledger-number-cell">{t.rate}</th>
-                      <th className="ledger-number-cell">{t.amount}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, index) => (
-                      <tr key={item.id || `${transaction.id}-${index}`}>
-                        <td>{item.sr || index + 1}</td>
-                        <td>
-                          <strong>{item.product_name || "Product"}</strong>
-                          {item.description && <small>{item.description}</small>}
-                        </td>
-                        <td>{item.category_name || "-"}</td>
-                        <td>{item.unit_name || "-"}</td>
-                        {isInvoice ? (
-                          <>
-                            <td>{item.sale_type || "-"}</td>
-                            <td className="ledger-number-cell">
-                              {formatNumber(item.carton_qty)}
-                            </td>
-                            <td className="ledger-number-cell">
-                              {formatNumber(item.pieces_qty)}
-                            </td>
-                            <td className="ledger-number-cell">
-                              {formatNumber(item.qty ?? item.quantity)}
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="ledger-number-cell">
-                              {formatNumber(item.sold_qty)}
-                            </td>
-                            <td className="ledger-number-cell">
-                              {formatNumber(item.already_returned_qty)}
-                            </td>
-                            <td className="ledger-number-cell">
-                              {formatNumber(item.return_qty)}
-                            </td>
-                          </>
-                        )}
-                        <td className="ledger-number-cell">{formatMoney(item.rate)}</td>
-                        <td className="ledger-number-cell">
-                          <strong>{formatMoney(item.amount)}</strong>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          <section className="ledger-modal-section ledger-amount-section">
-            <div className="ledger-amount-summary">
-              {isInvoice && (
-                <>
-                  <AmountRow
-                    label={t.previousBalance}
-                    value={formatMoney(transaction.previous_balance)}
-                  />
-                  <AmountRow
-                    label={t.invoiceTotal}
-                    value={formatMoney(transaction.invoice_total)}
-                  />
-                  <AmountRow
-                    label={t.deliveryCharges}
-                    value={formatMoney(transaction.delivery_charges)}
-                  />
-                  <AmountRow
-                    label={t.discount}
-                    value={`- ${formatMoney(transaction.discount)}`}
-                  />
-                  <AmountRow
-                    label={t.grandTotal}
-                    value={formatMoney(transaction.grand_total)}
-                    strong
-                  />
-                </>
-              )}
-              <AmountRow
-                label={t.debit}
-                value={formatMoney(transaction.debit)}
-                tone="debit"
-              />
-              <AmountRow
-                label={t.credit}
-                value={formatMoney(transaction.credit)}
-                tone="credit"
-              />
-              <AmountRow
-                label={t.balance}
-                value={formatBalance(transaction.balance)}
-                strong
-              />
-            </div>
-          </section>
-        </div>
-
-        <footer className="ledger-modal-footer">
-          <button
-            type="button"
-            className="ledger-button ledger-button-primary"
-            onClick={onClose}
-          >
-            {t.close}
-          </button>
-        </footer>
-      </section>
-    </div>
-  );
-}
-
-function DetailItem({ label, value, wide = false }) {
-  return (
-    <div className={`ledger-detail-item ${wide ? "ledger-detail-wide" : ""}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function AmountRow({ label, value, strong = false, tone = "" }) {
-  return (
-    <div
-      className={`ledger-amount-row ${strong ? "ledger-amount-strong" : ""} ${
-        tone ? `ledger-amount-${tone}` : ""
-      }`}
-    >
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-const ledgerStyles = `
-  .customer-detail-ledger {
-    --ledger-ink: #111827;
-    --ledger-muted: #64748b;
-    --ledger-border: #e2e8f0;
-    --ledger-surface: #ffffff;
-    --ledger-soft: #f8fafc;
-    --ledger-primary: #4f46e5;
-    --ledger-primary-hover: #4338ca;
-    --ledger-debit: #be123c;
-    --ledger-credit: #047857;
-    min-height: 100vh;
-    padding: 12px;
-    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
-    color: var(--ledger-ink);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  .customer-detail-ledger * {
-    box-sizing: border-box;
-  }
-
-  .ledger-page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    margin: 0 auto 12px;
-    max-width: 1360px;
-    padding: 16px 18px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
-  }
-
-  .ledger-eyebrow {
-    margin-bottom: 3px;
-    color: #4f46e5;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.13em;
-  }
-
-  .ledger-page-header h1 {
-    margin: 0;
-    font-size: clamp(21px, 2.3vw, 28px);
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-    color: #0f172a;
-  }
-
-  .ledger-page-header p {
-    max-width: 760px;
-    margin: 4px 0 0;
-    color: var(--ledger-muted);
-    font-size: 9px;
-    line-height: 1.45;
-  }
-
-  .ledger-header-actions,
-  .ledger-filter-buttons {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .ledger-button {
-    min-height: 34px;
-    padding: 7px 11px;
-    border: 1px solid transparent;
-    border-radius: 9px;
-    font: inherit;
-    font-size: 11px;
-    font-weight: 850;
-    cursor: pointer;
-    transition: 0.16s ease;
-  }
-
-  .ledger-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  .ledger-button-primary {
-    background: var(--ledger-primary);
-    color: #fff;
-  }
-
-  .ledger-button-primary:hover:not(:disabled) {
-    background: var(--ledger-primary-hover);
-    transform: translateY(-1px);
-  }
-
-  .ledger-button-light {
-    border-color: #c7d2fe;
-    background: #eef2ff;
-    color: #4338ca;
-  }
-
-  .ledger-button-light:hover:not(:disabled) {
-    border-color: #a5b4fc;
-    background: #e0e7ff;
-  }
-
-  .ledger-filter-panel {
-    display: grid;
-    grid-template-columns: minmax(180px, 1.05fr) minmax(220px, 1.2fr) 135px 135px auto;
-    gap: 8px;
-    align-items: end;
-    max-width: 1360px;
-    margin: 0 auto;
-    padding: 12px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 15px;
-    background: rgba(255,255,255,.96);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-  }
-
-  .ledger-field {
-    min-width: 0;
-  }
-
-  .ledger-field label {
-    display: block;
-    margin-bottom: 4px;
-    color: #475569;
-    font-size: 8px;
-    font-weight: 900;
-  }
-
-  .ledger-field input,
-  .ledger-field select {
-    width: 100%;
-    height: 36px;
-    padding: 0 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 9px;
-    outline: none;
-    background: #f8fafc;
-    color: var(--ledger-ink);
-    font: inherit;
-    font-size: 11px;
-  }
-
-  .ledger-field input:focus,
-  .ledger-field select:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
-  }
-
-  .ledger-error-box {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 10px auto 0;
-    max-width: 1360px;
-    padding: 10px 12px;
-    border: 1px solid #fecaca;
-    border-radius: 12px;
-    background: #fef2f2;
-    color: #991b1b;
-    font-size: 13px;
-  }
-
-  .ledger-error-box strong {
-    white-space: nowrap;
-  }
-
-  .ledger-empty-state,
-  .ledger-loading-state {
-    display: grid;
-    place-items: center;
-    min-height: 240px;
-    margin: 12px auto 0;
-    max-width: 1360px;
-    padding: 28px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.72);
-    text-align: center;
-  }
-
-  .ledger-empty-state h2 {
-    margin: 12px 0 5px;
-  }
-
-  .ledger-empty-state p,
-  .ledger-loading-state p {
-    margin: 0;
-    color: var(--ledger-muted);
-  }
-
-  .ledger-empty-icon {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 18px;
-    background: #e2e8f0;
-    color: #334155;
-    font-size: 22px;
-    font-weight: 900;
-  }
-
-  .ledger-spinner {
-    width: 30px;
-    height: 30px;
-    margin-bottom: 10px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #4f46e5;
-    border-radius: 50%;
-    animation: ledger-spin 0.8s linear infinite;
-  }
-
-  @keyframes ledger-spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .ledger-customer-card {
-    display: grid;
-    grid-template-columns: auto minmax(180px, 1.25fr) repeat(3, minmax(115px, 0.7fr));
-    gap: 12px;
-    align-items: center;
-    max-width: 1360px;
-    margin: 12px auto 0;
-    padding: 12px 14px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 15px;
-    background: #fff;
-    box-shadow: 0 8px 24px rgba(15,23,42,.04);
-  }
-
-  .ledger-customer-avatar {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: #4f46e5;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 850;
-  }
-
-  .ledger-customer-main h2 {
-    margin: 3px 0 0;
-    font-size: 16px;
-  }
-
-  .ledger-muted-label,
-  .ledger-info-item span {
-    color: var(--ledger-muted);
-    font-size: 11px;
-    font-weight: 750;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .ledger-info-item {
-    min-width: 0;
-    padding-left: 12px;
-    border-left: 1px solid var(--ledger-border);
-  }
-
-  .ledger-rtl .ledger-info-item {
-    padding-right: 12px;
-    padding-left: 0;
-    border-right: 1px solid var(--ledger-border);
-    border-left: 0;
-  }
-
-  .ledger-info-item strong {
-    display: block;
-    overflow: hidden;
-    margin-top: 3px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 12px;
-  }
-
-  .ledger-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(130px, 1fr));
-    gap: 8px;
-    max-width: 1360px;
-    margin: 8px auto 0;
-  }
-
-  .ledger-summary-card {
-    min-height: 88px;
-    padding: 8px 6px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 13px;
-    background: #fff;
-    box-shadow: 0 6px 18px rgba(15,23,42,.035);
-  }
-
-  .ledger-summary-card span {
-    display: block;
-    color: var(--ledger-muted);
-    font-size: 10px;
-    font-weight: 800;
-  }
-
-  .ledger-summary-card strong {
-    display: block;
-    margin-top: 7px;
-    font-size: 15px;
-    line-height: 1.25;
-  }
-
-  .ledger-summary-card small {
-    display: block;
-    margin-top: 4px;
-    color: #64748b;
-    font-size: 9px;
-  }
-
-  .ledger-summary-debit {
-    border-top: 2px solid #c7d2fe;
-  }
-
-  .ledger-summary-debit strong,
-  .ledger-debit-text {
-    color: var(--ledger-debit);
-  }
-
-  .ledger-summary-credit {
-    border-top: 2px solid #c7d2fe;
-  }
-
-  .ledger-summary-credit strong,
-  .ledger-credit-text {
-    color: var(--ledger-credit);
-  }
-
-  .ledger-summary-strong {
-    border-top: 2px solid #4f46e5;
-    background: #eef2ff;
-  }
-
-  .ledger-type-filters {
-    display: flex;
-    gap: 6px;
-    max-width: 1360px;
-    margin: 10px auto 0;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .ledger-filter-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 32px;
-    padding: 5px 8px 5px 10px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 999px;
-    background: #fff;
-    color: #475569;
-    font: inherit;
-    font-size: 10px;
-    font-weight: 800;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .ledger-filter-pill b {
-    display: grid;
-    place-items: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background: #e2e8f0;
-    color: #334155;
-    font-size: 11px;
-  }
-
-  .ledger-filter-pill.active {
-    border-color: #4f46e5;
-    background: #4f46e5;
-    color: #fff;
-  }
-
-  .ledger-filter-pill.active b {
-    background: rgba(255, 255, 255, 0.16);
-    color: #fff;
-  }
-
-  .ledger-table-card {
-    max-width: 1360px;
-    margin: 8px auto 0;
-    overflow: hidden;
-    border: 1px solid var(--ledger-border);
-    border-radius: 15px;
-    background: #fff;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
-  }
-
-  .ledger-table-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 11px 12px;
-    border-bottom: 1px solid var(--ledger-border);
-  }
-
-  .ledger-table-heading h3 {
-    margin: 0;
-    font-size: 16px;
-  }
-
-  .ledger-table-heading p {
-    margin: 2px 0 0;
-    color: var(--ledger-muted);
-    font-size: 10px;
-  }
-
-  .ledger-date-chip {
-    padding: 5px 8px;
-    border-radius: 8px;
-    background: #f1f5f9;
-    color: #475569;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .ledger-desktop-table {
-    width: 100%;
-    overflow-x: hidden;
-  }
-
-  .ledger-desktop-table table,
-  .ledger-product-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .ledger-desktop-table table {
-    table-layout: fixed;
-    min-width: 0;
-  }
-
-  .ledger-desktop-table th,
-  .ledger-desktop-table td {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .ledger-desktop-table th,
-  .ledger-product-table th {
-    padding: 11px 12px;
-    border-bottom: 1px solid var(--ledger-border);
-    background: #f8fafc;
-    color: #475569;
-    font-size: 10px;
-    font-weight: 850;
-    text-align: left;
-    text-transform: uppercase;
-    letter-spacing: 0.055em;
-    white-space: nowrap;
-  }
-
-  .ledger-rtl .ledger-desktop-table th,
-  .ledger-rtl .ledger-product-table th {
-    text-align: right;
-  }
-
-  .ledger-desktop-table td,
-  .ledger-product-table td {
-    padding: 8px 6px;
-    border-bottom: 1px solid #edf2f7;
-    color: #334155;
-    font-size: 10px;
-    vertical-align: middle;
-  }
-
-  .ledger-desktop-table tbody tr:hover {
-    background: #fbfdff;
-  }
-
-  .ledger-desktop-table tbody tr:last-child td,
-  .ledger-product-table tbody tr:last-child td {
-    border-bottom: 0;
-  }
-
-  .ledger-description-cell {
-    min-width: 0;
-    max-width: none;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .ledger-description-cell small,
-  .ledger-linked-ref,
-  .ledger-product-table td small {
-    display: block;
-    margin-top: 4px;
-    color: var(--ledger-muted);
-    font-size: 10px;
-    line-height: 1.45;
-  }
-
-  .ledger-number-cell {
-    text-align: right !important;
-    white-space: nowrap;
-  }
-
-  .ledger-balance-text {
-    color: #0f172a;
-    font-weight: 800;
-  }
-
-  .ledger-negative-balance {
-    color: var(--ledger-credit);
-  }
-
-  .ledger-type {
-    display: inline-flex;
-    align-items: center;
-    min-height: 23px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .ledger-type-invoice {
-    background: #eef2ff;
-    color: #4338ca;
-  }
-
-  .ledger-type-return {
-    background: #eef2ff;
-    color: #4338ca;
-  }
-
-  .ledger-type-manual {
-    background: #e0e7ff;
-    color: #3730a3;
-  }
-
-  .ledger-type-opening {
-    background: #e2e8f0;
-    color: #334155;
-  }
-
-  .ledger-detail-button {
-    min-height: 28px;
-    padding: 5px 8px;
-    border: 1px solid #4f46e5;
-    border-radius: 8px;
-    background: #4f46e5;
-    color: #fff;
-    font: inherit;
-    font-size: 9px;
-    font-weight: 850;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: .15s ease;
-  }
-
-  .ledger-detail-button:hover {
-    border-color: #4338ca;
-    background: #4338ca;
-    color: #fff;
-  }
-
-  .ledger-no-records {
-    padding: 50px 20px;
-    color: var(--ledger-muted);
-    text-align: center;
-    font-size: 13px;
-  }
-
-  .ledger-mobile-list {
-    display: none;
-  }
-
-  .ledger-modal-backdrop {
-    position: fixed;
-    z-index: 9999;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 12px;
-    background: rgba(15, 23, 42, 0.58);
-    backdrop-filter: blur(5px);
-  }
-
-  .ledger-modal {
-    display: flex;
-    flex-direction: column;
-    width: min(1050px, 96vw);
-    max-height: 94vh;
-    overflow: hidden;
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 30px 80px rgba(2, 6, 23, 0.35);
-  }
-
-  .ledger-modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 13px 15px;
-    border-bottom: 1px solid var(--ledger-border);
-  }
-
-  .ledger-modal-header h2 {
-    margin: 5px 0 2px;
-    font-size: 18px;
-  }
-
-  .ledger-modal-header p {
-    margin: 0;
-    color: var(--ledger-muted);
-    font-size: 12px;
-  }
-
-  .ledger-modal-close {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    border: 1px solid #4f46e5;
-    border-radius: 9px;
-    background: #4f46e5;
-    color: #fff;
-    font-size: 19px;
-    cursor: pointer;
-  }
-
-  .ledger-modal-body {
-    overflow: auto;
-    padding: 13px 15px;
-    background: #f8fafc;
-  }
-
-  .ledger-modal-section {
-    margin-bottom: 10px;
-    padding: 12px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 12px;
-    background: #fff;
-  }
-
-  .ledger-modal-section:last-child {
-    margin-bottom: 0;
-  }
-
-  .ledger-modal-section h3 {
-    margin: 0 0 9px;
-    color: #334155;
-    font-size: 13px;
-  }
-
-  .ledger-modal-section h3 span {
-    color: var(--ledger-muted);
-    font-weight: 600;
-  }
-
-  .ledger-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .ledger-detail-item {
-    min-height: 58px;
-    padding: 9px;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    background: #fafafa;
-  }
-
-  .ledger-detail-wide {
-    grid-column: span 2;
-  }
-
-  .ledger-detail-item span {
-    display: block;
-    color: var(--ledger-muted);
-    font-size: 10px;
-    font-weight: 750;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .ledger-detail-item strong {
-    display: block;
-    margin-top: 4px;
-    color: #1e293b;
-    font-size: 11px;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-  }
-
-  .ledger-product-table-wrap {
-    overflow-x: auto;
-    border: 1px solid var(--ledger-border);
-    border-radius: 11px;
-  }
-
-  .ledger-product-table {
-    min-width: 820px;
-  }
-
-  .ledger-product-table td strong {
-    color: #1e293b;
-  }
-
-  .ledger-amount-section {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .ledger-amount-summary {
-    width: min(420px, 100%);
-  }
-
-  .ledger-amount-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 9px 0;
-    border-bottom: 1px solid #e5e7eb;
-    color: #475569;
-    font-size: 12px;
-  }
-
-  .ledger-amount-row:last-child {
-    border-bottom: 0;
-  }
-
-  .ledger-amount-row strong {
-    color: #0f172a;
-    white-space: nowrap;
-  }
-
-  .ledger-amount-strong {
-    margin-top: 4px;
-    padding-top: 13px;
-    font-size: 14px;
-  }
-
-  .ledger-amount-debit strong {
-    color: var(--ledger-debit);
-  }
-
-  .ledger-amount-credit strong {
-    color: var(--ledger-credit);
-  }
-
-  .ledger-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px 15px;
-    border-top: 1px solid var(--ledger-border);
-    background: #fff;
-  }
-
-  @media (max-width: 1280px) {
-    .ledger-filter-panel {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .ledger-customer-search,
-    .ledger-customer-select {
-      grid-column: span 2;
-    }
-
-    .ledger-filter-buttons {
-      grid-column: span 2;
-    }
-
-    .ledger-summary-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 900px) {
-    .customer-detail-ledger {
-      padding: 8px;
-    }
-
-    .ledger-page-header {
-      flex-direction: column;
-    }
-
-    .ledger-header-actions {
-      width: 100%;
-    }
-
-    .ledger-filter-panel {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .ledger-customer-search,
-    .ledger-customer-select,
-    .ledger-filter-buttons {
-      grid-column: span 2;
-    }
-
-    .ledger-customer-card {
-      grid-template-columns: auto 1fr;
-    }
-
-    .ledger-info-item {
-      padding: 12px 0 0;
-      border-top: 1px solid var(--ledger-border);
-      border-left: 0;
-    }
-
-    .ledger-rtl .ledger-info-item {
-      padding: 12px 0 0;
-      border-top: 1px solid var(--ledger-border);
-      border-right: 0;
-    }
-
-    .ledger-summary-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .ledger-desktop-table {
-      display: none;
-    }
-
-    .ledger-mobile-list {
-      display: grid;
-      gap: 8px;
-      padding: 9px;
-    }
-
-    .ledger-mobile-transaction {
-      position: relative;
-      padding: 11px;
-      border: 1px solid var(--ledger-border);
-      border-radius: 13px;
-      background: #fff;
-    }
-
-    .ledger-mobile-topline {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-      color: var(--ledger-muted);
-      font-size: 11px;
-    }
-
-    .ledger-mobile-topline > div {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .ledger-mobile-topline strong {
-      color: #1e293b;
-    }
-
-    .ledger-mobile-transaction > p {
-      margin: 8px 0;
-      color: #475569;
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    .ledger-mobile-values {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 6px;
-    }
-
-    .ledger-mobile-values > div {
-      padding: 7px;
-      border-radius: 9px;
-      background: #f8fafc;
-    }
-
-    .ledger-mobile-values span {
-      display: block;
-      color: var(--ledger-muted);
-      font-size: 9px;
-      font-weight: 750;
-      text-transform: uppercase;
-    }
-
-    .ledger-mobile-values strong {
-      display: block;
-      margin-top: 4px;
-      color: #1e293b;
-      font-size: 10px;
-      overflow-wrap: anywhere;
-    }
-
-    .ledger-mobile-detail-button {
-      width: 100%;
-      margin-top: 7px;
-    }
-
-    .ledger-mobile-index {
-      position: absolute;
-      right: 12px;
-      bottom: 12px;
-      color: #cbd5e1;
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .ledger-rtl .ledger-mobile-index {
-      right: auto;
-      left: 12px;
-    }
-
-    .ledger-detail-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 600px) {
-    .customer-detail-ledger {
-      padding: 12px;
-    }
-
-    .ledger-page-header h1 {
-      font-size: 21px;
-    }
-
-    .ledger-header-actions .ledger-button {
-      flex: 1 1 auto;
-    }
-
-    .ledger-filter-panel {
-      grid-template-columns: 1fr;
-    }
-
-    .ledger-customer-search,
-    .ledger-customer-select,
-    .ledger-filter-buttons {
-      grid-column: auto;
-    }
-
-    .ledger-filter-buttons .ledger-button {
-      flex: 1 1 0;
-    }
-
-    .ledger-customer-card {
-      gap: 10px;
-      padding: 11px;
-    }
-
-    .ledger-customer-main h2 {
-      font-size: 15px;
-    }
-
-    .ledger-info-item {
-      grid-column: span 2;
-    }
-
-    .ledger-summary-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .ledger-summary-card {
-      min-height: 78px;
-    }
-
-    .ledger-table-heading {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .ledger-mobile-values {
-      grid-template-columns: 1fr;
-    }
-
-    .ledger-modal-backdrop {
-      align-items: end;
-      padding: 0;
-    }
-
-    .ledger-modal {
-      width: 100%;
-      max-height: 94vh;
-      border-radius: 18px 18px 0 0;
-    }
-
-    .ledger-modal-header,
-    .ledger-modal-body,
-    .ledger-modal-footer {
-      padding-right: 15px;
-      padding-left: 15px;
-    }
-
-    .ledger-detail-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .ledger-detail-wide {
-      grid-column: auto;
-    }
-  }
-
-  @media print {
-    body {
-      background: #fff !important;
-    }
-
-    .customer-detail-ledger {
-      padding: 0;
-      background: #fff;
-      color: #000;
-    }
-
-    .no-print,
-    .ledger-mobile-list,
-    .ledger-error-box,
-    .ledger-empty-state,
-    .ledger-loading-state {
-      display: none !important;
-    }
-
-    .ledger-page-header {
-      margin-bottom: 12px;
-    }
-
-    .ledger-page-header p {
-      color: #444;
-    }
-
-    .ledger-customer-card,
-    .ledger-summary-card,
-    .ledger-table-card {
-      box-shadow: none;
-      break-inside: avoid;
-    }
-
-    .ledger-summary-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .ledger-desktop-table {
-      display: block !important;
-      overflow: visible;
-    }
-
-    .ledger-desktop-table table {
-      font-size: 9px;
-    }
-
-    .ledger-desktop-table th,
-    .ledger-desktop-table td {
-      padding: 6px;
-    }
-
-    .ledger-table-card {
-      overflow: visible;
-    }
-  }
-`;
+
+    encoding="utf-8"
+)
+
+
+# ================================================================
+# 37. ZIP OUTPUT
+# ================================================================
+
+if RESULTS_ZIP.exists():
+
+    RESULTS_ZIP.unlink()
+
+
+with zipfile.ZipFile(
+
+    RESULTS_ZIP,
+
+    "w",
+
+    compression=zipfile.ZIP_DEFLATED
+
+) as zf:
+
+
+    for file in RESULTS_ROOT.rglob(
+        "*"
+    ):
+
+        if file.is_file():
+
+            zf.write(
+
+                file,
+
+                file.relative_to(
+                    RESULTS_ROOT
+                )
+            )
+
+
+# ================================================================
+# 38. SHOW IMPORTANT IMAGES
+# ================================================================
+
+print(
+    "\n"
+    +
+    "=" * 90
+)
+
+print(
+    "TEST COMPLETE"
+)
+
+print(
+    "=" * 90
+)
+
+
+print(
+    "\nMetrics:"
+)
+
+print(
+    METRICS_CSV
+)
+
+
+print(
+    "\nOrientation table:"
+)
+
+print(
+    ORIENTATION_CSV
+)
+
+
+print(
+    "\nBest candidate table:"
+)
+
+print(
+    BEST_CSV
+)
+
+
+print(
+    "\nRESULT ZIP:"
+)
+
+print(
+    RESULTS_ZIP
+)
+
+
+# Original comparison
+
+print(
+    "\nFIRST ORIGINAL MOVING/FIXED/WARPED FIGURES:"
+)
+
+
+for image_path in all_original_images[
+    :6
+]:
+
+    print(
+        image_path
+    )
+
+
+    display(
+
+        IPImage(
+            filename=str(
+                image_path
+            )
+        )
+
+    )
+
+
+# Most important orientation figures
+
+print(
+    "\nFIRST FIXED-vs-WARPED ORIENTATION FIGURES:"
+)
+
+
+for image_path in all_compare_images[
+    :6
+]:
+
+    print(
+        image_path
+    )
+
+
+    display(
+
+        IPImage(
+            filename=str(
+                image_path
+            )
+        )
+
+    )
+
+
+# ================================================================
+# 39. AUTO DOWNLOAD
+# ================================================================
+
+try:
+
+    from google.colab import files
+
+
+    files.download(
+
+        str(
+            RESULTS_ZIP
+        )
+
+    )
+
+
+except Exception as error:
+
+    print(
+        "Auto download failed:",
+        error
+    )
+
+
+    print(
+        "Manual download path:"
+    )
+
+
+    print(
+        RESULTS_ZIP
+    )
+
+
+print(
+    "\nDONE."
+)
