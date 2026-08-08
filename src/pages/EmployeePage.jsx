@@ -50,6 +50,9 @@ const LANG = {
     designation: "Designation",
     joiningDate: "Joining Date",
     viewDetails: "View Details",
+    ledger: "Ledger",
+    call: "Call",
+    noPhone: "Phone number not available.",
 
     selectType: "-- Select Type --",
     selectDepartment: "-- Select Department --",
@@ -134,6 +137,9 @@ const LANG = {
     designation: "عہدہ",
     joiningDate: "تاریخ شمولیت",
     viewDetails: "تفصیل دیکھیں",
+    ledger: "لیجر",
+    call: "کال",
+    noPhone: "فون نمبر موجود نہیں ہے۔",
 
     selectType: "-- قسم منتخب کریں --",
     selectDepartment: "-- محکمہ منتخب کریں --",
@@ -497,6 +503,26 @@ export default function EmployeePage() {
     setShowDetails(true);
   };
 
+  const handleCall = (record) => {
+    const phone = String(record?.phone || "").trim();
+
+    if (!phone) {
+      showToast("error", t.noPhone);
+      return;
+    }
+
+    const dialNumber = phone.replace(/(?!^\+)\D/g, "");
+    window.location.href = `tel:${dialNumber}`;
+  };
+
+  const openLedger = (record) => {
+    const employeeId = getEmployeeId(record);
+
+    // Frontend route for employee ledger.
+    // Change this path here if your app uses a different employee-ledger page.
+    window.location.href = `/employees/${employeeId}/ledger`;
+  };
+
   const openMasterModal = (type) => {
     setMasterModal({
       open: true,
@@ -789,7 +815,7 @@ export default function EmployeePage() {
 
         .employee-page{
           min-height:100vh;
-          padding:18px;
+          padding:12px;
           color:#0f172a;
           background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);
           font-family:${
@@ -801,12 +827,12 @@ export default function EmployeePage() {
 
         .page-wrap{
           width:100%;
-          max-width:1220px;
+          max-width:1360px;
           margin:0 auto;
         }
 
         .top-card{
-          padding:25px 22px 20px;
+          padding:18px 18px 15px;
           background:rgba(255,255,255,.95);
           border:1px solid #dbe3ee;
           border-radius:22px;
@@ -815,7 +841,7 @@ export default function EmployeePage() {
 
         .page-title{
           margin:0;
-          font-size:30px;
+          font-size:26px;
           font-weight:950;
           letter-spacing:-.8px;
         }
@@ -829,15 +855,15 @@ export default function EmployeePage() {
         .actions{
           display:flex;
           flex-wrap:wrap;
-          gap:8px;
-          margin-top:16px;
+          gap:6px;
+          margin-top:12px;
         }
 
         .btn{
           border:1px solid transparent;
-          border-radius:12px;
-          padding:10px 14px;
-          font-size:13px;
+          border-radius:10px;
+          padding:8px 11px;
+          font-size:11px;
           font-weight:900;
           cursor:pointer;
           display:inline-flex;
@@ -964,6 +990,7 @@ export default function EmployeePage() {
 
         .table-card{
           overflow:hidden;
+          width:100%;
           background:#fff;
           border:1px solid #dbe3ee;
           border-radius:18px;
@@ -972,25 +999,26 @@ export default function EmployeePage() {
 
         .employee-table{
           width:100%;
+          min-width:0;
           table-layout:fixed;
           border-collapse:collapse;
         }
 
         .employee-table th{
-          padding:14px 9px;
+          padding:10px 5px;
           background:#0f172a;
           color:#fff;
-          font-size:9px;
+          font-size:8px;
           font-weight:900;
           text-transform:uppercase;
           letter-spacing:.4px;
         }
 
         .employee-table td{
-          padding:15px 9px;
+          padding:9px 5px;
           border-bottom:1px solid #e5e7eb;
           color:#475569;
-          font-size:12px;
+          font-size:11px;
           vertical-align:middle;
         }
 
@@ -1005,14 +1033,14 @@ export default function EmployeePage() {
         .employee-cell{
           display:flex;
           align-items:center;
-          gap:10px;
+          gap:7px;
           min-width:0;
         }
 
         .avatar{
-          width:37px;
-          height:37px;
-          border-radius:12px;
+          width:32px;
+          height:32px;
+          border-radius:10px;
           flex-shrink:0;
           display:flex;
           align-items:center;
@@ -1049,10 +1077,10 @@ export default function EmployeePage() {
           white-space:nowrap;
           border:1px solid #e2e8f0;
           border-radius:999px;
-          padding:6px 9px;
+          padding:4px 7px;
           background:#f1f5f9;
           color:#334155;
-          font-size:9px;
+          font-size:8px;
           font-weight:900;
         }
 
@@ -1076,16 +1104,70 @@ export default function EmployeePage() {
 
         .view-btn{
           border:1px solid #c7d2fe;
-          border-radius:10px;
+          border-radius:9px;
           background:#eef2ff;
           color:#4338ca;
-          padding:8px 10px;
-          font-size:10px;
+          padding:6px 8px;
+          font-size:9px;
           font-weight:900;
           cursor:pointer;
           display:inline-flex;
           align-items:center;
           gap:5px;
+        }
+
+        .ledger-btn{
+          border:0;
+          border-radius:9px;
+          background:#4f46e5;
+          color:#fff;
+          min-width:76px;
+          padding:6px 8px;
+          font-size:9px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:4px;
+          white-space:nowrap;
+        }
+
+        .ledger-btn:hover{background:#4338ca}
+
+        .call-btn{
+          border:0;
+          border-radius:9px;
+          background:#16a34a;
+          color:#fff;
+          min-width:66px;
+          padding:6px 8px;
+          font-size:9px;
+          font-weight:900;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:4px;
+          white-space:nowrap;
+        }
+
+        .call-btn:hover{background:#15803d}
+
+        .call-btn:disabled{
+          background:#e2e8f0;
+          color:#94a3b8;
+          cursor:not-allowed;
+        }
+
+        .employee-table th,
+        .employee-table td{
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+
+        .employee-table td:last-child{
+          overflow:visible;
         }
 
         .empty{
@@ -1268,9 +1350,19 @@ export default function EmployeePage() {
             padding:12px 4px;
           }
 
-          .employee-table th{font-size:7px}
+          .employee-table th{font-size:6px}
           .employee-phone{display:none}
-          .view-btn span{display:none}
+          .view-btn span,
+          .ledger-btn span,
+          .call-btn span{display:none}
+          .ledger-btn,
+          .call-btn,
+          .view-btn{
+            min-width:30px;
+            width:30px;
+            height:30px;
+            padding:0;
+          }
 
           .modal-footer{
             flex-direction:column-reverse;
@@ -1415,12 +1507,14 @@ export default function EmployeePage() {
         <section className="table-card">
           <table className="employee-table">
             <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "30%" }} />
+              <col style={{ width: "4%" }} />
+              <col style={{ width: "23%" }} />
+              <col style={{ width: "10%" }} />
               <col style={{ width: "14%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "18%" }} />
               <col style={{ width: "14%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "13%" }} />
             </colgroup>
 
             <thead>
@@ -1447,6 +1541,12 @@ export default function EmployeePage() {
                   {t.designation}
                 </th>
                 <th style={{ textAlign: "center" }}>
+                  {t.ledger}
+                </th>
+                <th style={{ textAlign: "center" }}>
+                  {t.call}
+                </th>
+                <th style={{ textAlign: "center" }}>
                   {t.viewDetails}
                 </th>
               </tr>
@@ -1455,14 +1555,14 @@ export default function EmployeePage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="empty">
+                  <td colSpan="8" className="empty">
                     <i className="bi bi-arrow-repeat" />{" "}
                     {t.loading}
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="empty">
+                  <td colSpan="8" className="empty">
                     <i className="bi bi-inbox" />{" "}
                     {t.noRecords}
                   </td>
@@ -1533,6 +1633,31 @@ export default function EmployeePage() {
                         <span className="pill">
                           {employeeDesignation(record)}
                         </span>
+                      </td>
+
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          type="button"
+                          className="ledger-btn"
+                          onClick={() => openLedger(record)}
+                          title={t.ledger}
+                        >
+                          <i className="bi bi-journal-text" />
+                          <span>{t.ledger}</span>
+                        </button>
+                      </td>
+
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          type="button"
+                          className="call-btn"
+                          onClick={() => handleCall(record)}
+                          disabled={!record?.phone}
+                          title={record?.phone ? t.call : t.noPhone}
+                        >
+                          <i className="bi bi-telephone-fill" />
+                          <span>{t.call}</span>
+                        </button>
                       </td>
 
                       <td
