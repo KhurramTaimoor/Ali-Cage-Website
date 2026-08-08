@@ -39,6 +39,26 @@ const deleteSupplier = (id) =>
     method: "DELETE",
   });
 
+const fetchSupplierLedger = (id) =>
+  apiFetch(`/api/suppliers/${id}/ledger`);
+
+const createSupplierLedgerEntry = (supplierId, data) =>
+  apiFetch(`/api/suppliers/${supplierId}/ledger`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+const updateSupplierLedgerEntry = (supplierId, entryId, data) =>
+  apiFetch(`/api/suppliers/${supplierId}/ledger/${entryId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+const deleteSupplierLedgerEntry = (supplierId, entryId) =>
+  apiFetch(`/api/suppliers/${supplierId}/ledger/${entryId}`, {
+    method: "DELETE",
+  });
+
 async function translateText(text) {
   if (!text || !String(text).trim()) return text;
 
@@ -110,6 +130,31 @@ const LANG = {
     formTitleEdit: "Edit Supplier",
     formSubtitle: "Supplier name, phone and opening balance information",
     details: "Details",
+    ledger: "Ledger",
+    ledgerTitle: "Supplier Ledger",
+    ledgerLoading: "Loading ledger...",
+    ledgerEmpty: "No ledger entries found.",
+    addLedgerEntry: "Add Ledger Entry",
+    editLedgerEntry: "Edit Ledger Entry",
+    entryDate: "Entry Date",
+    description: "Description",
+    descriptionPlaceholder: "e.g. Purchase invoice or payment",
+    debit: "Debit",
+    credit: "Credit",
+    balance: "Balance",
+    source: "Source",
+    manual: "Manual",
+    saveEntry: "Save Entry",
+    entrySaved: "Ledger entry saved successfully!",
+    entryDeleted: "Ledger entry deleted successfully!",
+    entrySaveError: "Failed to save ledger entry.",
+    entryDeleteError: "Failed to delete ledger entry.",
+    ledgerError: "Failed to load supplier ledger.",
+    entryDeleteConfirm: "Are you sure you want to delete this ledger entry?",
+    invalidLedgerEntry: "Enter description and at least one debit or credit amount.",
+    call: "Call",
+    noPhone: "Phone number not available.",
+    close: "Close",
   },
 
   ur: {
@@ -155,6 +200,31 @@ const LANG = {
     formTitleEdit: "سپلائر ترمیم",
     formSubtitle: "سپلائر نام، فون اور اوپننگ بیلنس معلومات",
     details: "تفصیل",
+    ledger: "لیجر",
+    ledgerTitle: "سپلائر لیجر",
+    ledgerLoading: "لیجر لوڈ ہو رہا ہے...",
+    ledgerEmpty: "کوئی لیجر انٹری نہیں ملی۔",
+    addLedgerEntry: "لیجر انٹری شامل کریں",
+    editLedgerEntry: "لیجر انٹری میں ترمیم",
+    entryDate: "اندراج کی تاریخ",
+    description: "تفصیل",
+    descriptionPlaceholder: "مثلاً خریداری انوائس یا ادائیگی",
+    debit: "ڈیبٹ",
+    credit: "کریڈٹ",
+    balance: "بیلنس",
+    source: "سورس",
+    manual: "مینول",
+    saveEntry: "انٹری محفوظ کریں",
+    entrySaved: "لیجر انٹری محفوظ ہو گئی!",
+    entryDeleted: "لیجر انٹری حذف ہو گئی!",
+    entrySaveError: "لیجر انٹری محفوظ نہیں ہو سکی۔",
+    entryDeleteError: "لیجر انٹری حذف نہیں ہو سکی۔",
+    ledgerError: "سپلائر لیجر لوڈ نہیں ہو سکا۔",
+    entryDeleteConfirm: "کیا آپ واقعی یہ لیجر انٹری حذف کرنا چاہتے ہیں؟",
+    invalidLedgerEntry: "تفصیل اور ڈیبٹ یا کریڈٹ میں سے کم از کم ایک رقم درج کریں۔",
+    call: "کال",
+    noPhone: "فون نمبر موجود نہیں ہے۔",
+    close: "بند کریں",
   },
 };
 
@@ -163,6 +233,34 @@ const defaultForm = {
   phone: "",
   opening_balance: "",
 };
+
+function todayInputValue() {
+  const now = new Date();
+  const tzOffset = now.getTimezoneOffset() * 60000;
+  return new Date(now - tzOffset).toISOString().slice(0, 10);
+}
+
+const defaultLedgerForm = {
+  entry_date: todayInputValue(),
+  description: "",
+  debit: "",
+  credit: "",
+};
+
+function formatBalanceWithSide(value) {
+  const amount = Number(value || 0);
+  if (amount > 0) return `${formatMoney(amount)} Dr`;
+  if (amount < 0) return `${formatMoney(Math.abs(amount))} Cr`;
+  return "0";
+}
+
+function calculateSupplierClosingBalance(openingBalance, entries) {
+  let balance = Number(openingBalance || 0);
+  for (const entry of entries) {
+    balance += Number(entry.debit || 0) - Number(entry.credit || 0);
+  }
+  return balance;
+}
 
 const getSupplierName = (supplier, isUrdu, cache) =>
   isUrdu
@@ -352,6 +450,15 @@ const SupplierPage = () => {
 
   const [form, setForm] = useState(defaultForm);
 
+  const [showLedger, setShowLedger] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [ledgerEntries, setLedgerEntries] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [showLedgerForm, setShowLedgerForm] = useState(false);
+  const [ledgerEditingId, setLedgerEditingId] = useState(null);
+  const [ledgerSubmitting, setLedgerSubmitting] = useState(false);
+  const [ledgerForm, setLedgerForm] = useState(defaultLedgerForm);
+
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
 
@@ -504,6 +611,158 @@ const SupplierPage = () => {
     }
   };
 
+  const handleCall = (supplier) => {
+    const phone = String(supplier?.phone || "").trim();
+
+    if (!phone) {
+      showToast("error", t.noPhone);
+      return;
+    }
+
+    const dialNumber = phone.replace(/(?!^\+)\D/g, "");
+    window.location.href = `tel:${dialNumber}`;
+  };
+
+  const syncSupplierLedger = (supplier, data) => {
+    const raw = Array.isArray(data) ? data : data?.data || [];
+
+    const entries = raw.map((entry) => ({
+      ...entry,
+      debit: Number(entry.debit || 0),
+      credit: Number(entry.credit || 0),
+      source: entry.source || "ledger",
+      can_edit: entry.can_edit !== undefined ? entry.can_edit : true,
+      can_delete: entry.can_delete !== undefined ? entry.can_delete : true,
+    }));
+
+    setLedgerEntries(entries);
+    return entries;
+  };
+
+  const openLedger = async (supplier) => {
+    setSelectedSupplier(supplier);
+    setShowLedger(true);
+    setLedgerLoading(true);
+    setLedgerEntries([]);
+    setShowLedgerForm(false);
+    setLedgerEditingId(null);
+    setLedgerForm(defaultLedgerForm);
+
+    try {
+      const data = await fetchSupplierLedger(supplier.id);
+      syncSupplierLedger(supplier, data);
+    } catch (err) {
+      showToast("error", err.message || t.ledgerError);
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  const closeLedger = () => {
+    setShowLedger(false);
+    setSelectedSupplier(null);
+    setLedgerEntries([]);
+    setShowLedgerForm(false);
+    setLedgerEditingId(null);
+    setLedgerForm(defaultLedgerForm);
+  };
+
+  const openAddLedgerForm = () => {
+    setLedgerEditingId(null);
+    setLedgerForm({
+      ...defaultLedgerForm,
+      entry_date: todayInputValue(),
+    });
+    setShowLedgerForm(true);
+  };
+
+  const openEditLedgerForm = (entry) => {
+    if (!entry?.can_edit) return;
+
+    setLedgerEditingId(entry.id);
+    setLedgerForm({
+      entry_date: entry.entry_date || entry.date || todayInputValue(),
+      description: entry.description || entry.description_en || "",
+      debit: entry.debit ? String(entry.debit) : "",
+      credit: entry.credit ? String(entry.credit) : "",
+    });
+    setShowLedgerForm(true);
+  };
+
+  const handleLedgerSave = async () => {
+    if (!selectedSupplier) return;
+
+    const description = ledgerForm.description.trim();
+    const debit = ledgerForm.debit !== "" ? Number(ledgerForm.debit) : 0;
+    const credit = ledgerForm.credit !== "" ? Number(ledgerForm.credit) : 0;
+
+    if (!description || (!debit && !credit)) {
+      showToast("error", t.invalidLedgerEntry);
+      return;
+    }
+
+    const payload = {
+      entry_date: ledgerForm.entry_date || todayInputValue(),
+      description,
+      description_en: description,
+      debit,
+      credit,
+    };
+
+    try {
+      setLedgerSubmitting(true);
+
+      if (ledgerEditingId) {
+        await updateSupplierLedgerEntry(
+          selectedSupplier.id,
+          ledgerEditingId,
+          payload
+        );
+      } else {
+        await createSupplierLedgerEntry(selectedSupplier.id, payload);
+      }
+
+      const refreshed = await fetchSupplierLedger(selectedSupplier.id);
+      syncSupplierLedger(selectedSupplier, refreshed);
+
+      showToast("success", t.entrySaved);
+      setShowLedgerForm(false);
+      setLedgerEditingId(null);
+      setLedgerForm(defaultLedgerForm);
+    } catch (err) {
+      showToast("error", err.message || t.entrySaveError);
+    } finally {
+      setLedgerSubmitting(false);
+    }
+  };
+
+  const handleLedgerDelete = async (entry) => {
+    if (!selectedSupplier || !entry?.can_delete) return;
+    if (!window.confirm(t.entryDeleteConfirm)) return;
+
+    try {
+      await deleteSupplierLedgerEntry(selectedSupplier.id, entry.id);
+
+      const refreshed = await fetchSupplierLedger(selectedSupplier.id);
+      syncSupplierLedger(selectedSupplier, refreshed);
+
+      showToast("success", t.entryDeleted);
+    } catch (err) {
+      showToast("error", err.message || t.entryDeleteError);
+    }
+  };
+
+  const ledgerRows = useMemo(() => {
+    if (!selectedSupplier) return [];
+
+    let balance = Number(selectedSupplier.opening_balance || 0);
+
+    return ledgerEntries.map((entry) => {
+      balance += Number(entry.debit || 0) - Number(entry.credit || 0);
+      return { ...entry, balance };
+    });
+  }, [ledgerEntries, selectedSupplier]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
 
@@ -650,6 +909,90 @@ const SupplierPage = () => {
         .btn-red {
           background: #fee2e2;
           color: #991b1b;
+        }
+
+        .btn-call {
+          background: #16a34a;
+          color: white;
+        }
+
+        .btn-call:disabled {
+          background: #e2e8f0;
+          color: #94a3b8;
+        }
+
+        .btn-ledger {
+          background: #4f46e5;
+          color: white;
+          min-width: 104px;
+        }
+
+        .ledger-modal-box {
+          width: min(1100px, 100%);
+          max-height: 92vh;
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 30px 90px rgba(15,23,42,.28);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ledger-modal-head {
+          padding: 16px 18px;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .ledger-modal-body {
+          padding: 14px;
+          overflow: auto;
+        }
+
+        .ledger-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+
+        .ledger-form-box {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 14px;
+          margin-bottom: 12px;
+        }
+
+        .ledger-form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+
+        .ledger-table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 760px;
+        }
+
+        .ledger-table th {
+          background: #0f172a;
+          color: white;
+          padding: 11px 10px;
+          font-size: 11px;
+          text-align: left;
+        }
+
+        .ledger-table td {
+          padding: 11px 10px;
+          border-bottom: 1px solid #eef2f7;
+          font-size: 12px;
         }
 
         .headerPrintBtn {
@@ -902,7 +1245,7 @@ const SupplierPage = () => {
 
         .supplier-mobile-actions {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(3, 1fr);
           gap: 8px;
           margin-top: 12px;
         }
@@ -1226,6 +1569,17 @@ const SupplierPage = () => {
           .title {
             font-size: 24px;
           }
+
+          .ledger-modal-box {
+            min-height: 100vh;
+            max-height: 100vh;
+            border-radius: 0;
+          }
+
+          .ledger-summary-grid,
+          .ledger-form-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
 
@@ -1360,10 +1714,11 @@ const SupplierPage = () => {
             <table className="suppliers-table">
               <colgroup>
                 <col style={{ width: 70 }} />
-                <col style={{ width: 330 }} />
-                <col style={{ width: 220 }} />
-                <col style={{ width: 210 }} />
+                <col style={{ width: 300 }} />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 200 }} />
                 <col style={{ width: 190 }} />
+                <col style={{ width: 260 }} />
               </colgroup>
 
               <thead>
@@ -1372,6 +1727,10 @@ const SupplierPage = () => {
 
                   <th style={{ textAlign: isUrdu ? "right" : "left" }}>
                     {t.supplierName}
+                  </th>
+
+                  <th style={{ textAlign: "center" }}>
+                    {t.ledger}
                   </th>
 
                   <th style={{ textAlign: isUrdu ? "right" : "left" }}>
@@ -1390,7 +1749,7 @@ const SupplierPage = () => {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       style={{
                         textAlign: "center",
                         padding: 44,
@@ -1403,7 +1762,7 @@ const SupplierPage = () => {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       style={{
                         textAlign: "center",
                         padding: 44,
@@ -1449,6 +1808,16 @@ const SupplierPage = () => {
                         </div>
                       </td>
 
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          className="btn btn-ledger"
+                          onClick={() => openLedger(supplier)}
+                        >
+                          <i className="bi bi-journal-text"></i>
+                          {t.ledger}
+                        </button>
+                      </td>
+
                       <td
                         style={{
                           fontFamily: "monospace",
@@ -1489,6 +1858,16 @@ const SupplierPage = () => {
                           >
                             <i className="bi bi-trash3-fill"></i>
                             {t.delete}
+                          </button>
+
+                          <button
+                            className="btn btn-call"
+                            onClick={() => handleCall(supplier)}
+                            disabled={!supplier.phone}
+                            title={supplier.phone ? t.call : t.noPhone}
+                          >
+                            <i className="bi bi-telephone-fill"></i>
+                            {t.call}
                           </button>
                         </div>
                       </td>
@@ -1554,21 +1933,14 @@ const SupplierPage = () => {
                         </div>
                       </div>
 
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                          background: "#eef2ff",
-                          color: "#3730a3",
-                          border: "1px solid #c7d2fe",
-                          fontSize: 11,
-                          fontWeight: 900,
-                          whiteSpace: "nowrap",
-                        }}
+                      <button
+                        className="btn btn-ledger"
+                        onClick={() => openLedger(supplier)}
+                        style={{ minWidth: 94, padding: "8px 10px" }}
                       >
-                        SUP
-                      </span>
+                        <i className="bi bi-journal-text"></i>
+                        {t.ledger}
+                      </button>
                     </div>
 
                     <div className="supplier-mobile-grid">
@@ -1608,6 +1980,16 @@ const SupplierPage = () => {
                         <i className="bi bi-trash3-fill"></i>
                         {t.delete}
                       </button>
+
+                      <button
+                        className="btn btn-call"
+                        onClick={() => handleCall(supplier)}
+                        disabled={!supplier.phone}
+                        title={supplier.phone ? t.call : t.noPhone}
+                      >
+                        <i className="bi bi-telephone-fill"></i>
+                        {t.call}
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1616,6 +1998,248 @@ const SupplierPage = () => {
           </div>
         </div>
       </div>
+
+      {showLedger && selectedSupplier && (
+        <div className="modal-bg">
+          <div className="ledger-modal-box" dir={dir}>
+            <div className="ledger-modal-head">
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 950 }}>
+                  {t.ledgerTitle}
+                </div>
+                <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+                  {getSupplierName(selectedSupplier, isUrdu, urduCache)}
+                  {selectedSupplier.phone ? ` • ${selectedSupplier.phone}` : ""}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn btn-primary" onClick={openAddLedgerForm}>
+                  <i className="bi bi-plus-circle-fill"></i>
+                  {t.addLedgerEntry}
+                </button>
+
+                <button className="btn btn-soft" onClick={closeLedger}>
+                  {t.close}
+                </button>
+              </div>
+            </div>
+
+            <div className="ledger-modal-body">
+              <div className="ledger-summary-grid">
+                <div className="summary-card">
+                  <small>{t.supplierName}</small>
+                  <b style={{ fontFamily: "inherit", fontSize: 16 }}>
+                    {getSupplierName(selectedSupplier, isUrdu, urduCache)}
+                  </b>
+                </div>
+
+                <div className="summary-card">
+                  <small>{t.openingBalance}</small>
+                  <b>{formatBalanceWithSide(selectedSupplier.opening_balance)}</b>
+                </div>
+
+                <div className="summary-card">
+                  <small>{t.balance}</small>
+                  <b>
+                    {formatBalanceWithSide(
+                      ledgerRows.length
+                        ? ledgerRows[ledgerRows.length - 1].balance
+                        : selectedSupplier.opening_balance
+                    )}
+                  </b>
+                </div>
+              </div>
+
+              {showLedgerForm && (
+                <div className="ledger-form-box">
+                  <div style={{ fontWeight: 950, marginBottom: 10 }}>
+                    {ledgerEditingId ? t.editLedgerEntry : t.addLedgerEntry}
+                  </div>
+
+                  <div className="ledger-form-grid">
+                    <div className="field">
+                      <label className="label">{t.entryDate}</label>
+                      <input
+                        type="date"
+                        className="input-field"
+                        value={ledgerForm.entry_date}
+                        onChange={(e) =>
+                          setLedgerForm((prev) => ({
+                            ...prev,
+                            entry_date: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label className="label">{t.description}</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder={t.descriptionPlaceholder}
+                        value={ledgerForm.description}
+                        onChange={(e) =>
+                          setLedgerForm((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label className="label">{t.debit}</label>
+                      <input
+                        type="number"
+                        className="input-field"
+                        value={ledgerForm.debit}
+                        onChange={(e) =>
+                          setLedgerForm((prev) => ({
+                            ...prev,
+                            debit: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label className="label">{t.credit}</label>
+                      <input
+                        type="number"
+                        className="input-field"
+                        value={ledgerForm.credit}
+                        onChange={(e) =>
+                          setLedgerForm((prev) => ({
+                            ...prev,
+                            credit: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      justifyContent: "flex-end",
+                      marginTop: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      className="btn btn-soft"
+                      onClick={() => {
+                        setShowLedgerForm(false);
+                        setLedgerEditingId(null);
+                        setLedgerForm(defaultLedgerForm);
+                      }}
+                      disabled={ledgerSubmitting}
+                    >
+                      {t.cancel}
+                    </button>
+
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleLedgerSave}
+                      disabled={ledgerSubmitting}
+                    >
+                      <i
+                        className={`bi ${
+                          ledgerSubmitting
+                            ? "bi-arrow-repeat"
+                            : "bi-save"
+                        }`}
+                      ></i>
+                      {ledgerSubmitting ? t.saving : t.saveEntry}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="table-wrap" style={{ border: "1px solid #e2e8f0", borderRadius: 14 }}>
+                <table className="ledger-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>{t.entryDate}</th>
+                      <th>{t.source}</th>
+                      <th>{t.description}</th>
+                      <th style={{ textAlign: "right" }}>{t.debit}</th>
+                      <th style={{ textAlign: "right" }}>{t.credit}</th>
+                      <th style={{ textAlign: "right" }}>{t.balance}</th>
+                      <th style={{ textAlign: "center" }}>{t.actions}</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {ledgerLoading ? (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: "center", padding: 30 }}>
+                          {t.ledgerLoading}
+                        </td>
+                      </tr>
+                    ) : ledgerRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: "center", padding: 30, color: "#94a3b8" }}>
+                          {t.ledgerEmpty}
+                        </td>
+                      </tr>
+                    ) : (
+                      ledgerRows.map((entry, index) => (
+                        <tr key={`${entry.id || index}-${index}`}>
+                          <td>{index + 1}</td>
+                          <td style={{ fontFamily: "monospace" }}>
+                            {entry.entry_date || entry.date || "—"}
+                          </td>
+                          <td>{entry.source || t.manual}</td>
+                          <td>{entry.description || entry.description_en || "—"}</td>
+                          <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>
+                            {Number(entry.debit || 0) > 0
+                              ? formatMoney(entry.debit)
+                              : "—"}
+                          </td>
+                          <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#be123c" }}>
+                            {Number(entry.credit || 0) > 0
+                              ? formatMoney(entry.credit)
+                              : "—"}
+                          </td>
+                          <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900 }}>
+                            {formatBalanceWithSide(entry.balance)}
+                          </td>
+                          <td>
+                            <div className="action-row">
+                              <button
+                                className="btn btn-green"
+                                onClick={() => openEditLedgerForm(entry)}
+                                disabled={!entry.can_edit}
+                              >
+                                <i className="bi bi-pencil-square"></i>
+                                {t.edit}
+                              </button>
+
+                              <button
+                                className="btn btn-red"
+                                onClick={() => handleLedgerDelete(entry)}
+                                disabled={!entry.can_delete}
+                              >
+                                <i className="bi bi-trash3-fill"></i>
+                                {t.delete}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="modal-bg">
