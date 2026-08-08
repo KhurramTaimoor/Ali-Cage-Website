@@ -1130,6 +1130,9 @@ const CustomerPage = () => {
                   <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.name}
                   </th>
+                  <th className="px-4 py-3 text-center w-[120px]">
+                    {t.ledger}
+                  </th>
                   <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>
                     {t.phone}
                   </th>
@@ -1146,14 +1149,14 @@ const CustomerPage = () => {
               <tbody className="divide-y divide-sky-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2">{t.loading}</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
                       {t.noRecords}
                     </td>
                   </tr>
@@ -1684,25 +1687,21 @@ const CustomerDesktopRow = ({
             <i className="bi bi-person-fill"></i>
           </div>
 
-          <div
-            className={`flex items-center gap-2 flex-wrap ${
-              isUrdu ? "flex-row-reverse" : ""
-            }`}
-          >
-            <span className={translating ? "opacity-40" : ""}>
-              {getName(customer)}
-            </span>
-
-            <button
-              onClick={() => openLedger(customer)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-700 transition"
-              title={t.ledger}
-            >
-              <i className="bi bi-journal-text"></i>
-              {t.ledger}
-            </button>
-          </div>
+          <span className={translating ? "opacity-40" : ""}>
+            {getName(customer)}
+          </span>
         </div>
+      </td>
+
+      <td className="px-4 py-3 text-center w-[120px]">
+        <button
+          onClick={() => openLedger(customer)}
+          className="inline-flex items-center justify-center gap-1.5 min-w-[105px] px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition"
+          title={t.ledger}
+        >
+          <i className="bi bi-journal-text"></i>
+          {t.ledger}
+        </button>
       </td>
 
       <td className="px-4 py-3 text-slate-950 font-mono text-xs font-semibold">
