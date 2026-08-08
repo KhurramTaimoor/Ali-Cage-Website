@@ -608,6 +608,18 @@ export default function CustomerSalesLedgerPage() {
               <>
                 <div className="ledger-desktop-table">
                   <table>
+                    <colgroup>
+                      <col style={{ width: "3%" }} />
+                      <col style={{ width: "8%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "21%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col className="no-print" style={{ width: "9%" }} />
+                    </colgroup>
                     <thead>
                       <tr>
                         <th>#</th>
@@ -678,7 +690,7 @@ export default function CustomerSalesLedgerPage() {
                           >
                             {formatBalance(transaction.balance)}
                           </td>
-                          <td className="no-print">
+                          <td className="no-print" style={{ textAlign: "center" }}>
                             {transaction.type === "opening" ? (
                               "-"
                             ) : (
@@ -1067,13 +1079,13 @@ const ledgerStyles = `
     --ledger-border: #e2e8f0;
     --ledger-surface: #ffffff;
     --ledger-soft: #f8fafc;
-    --ledger-primary: #0f172a;
-    --ledger-primary-hover: #1e293b;
-    --ledger-debit: #b91c1c;
+    --ledger-primary: #4f46e5;
+    --ledger-primary-hover: #4338ca;
+    --ledger-debit: #be123c;
     --ledger-credit: #047857;
-    min-height: 100%;
-    padding: 24px;
-    background: #f4f6f8;
+    min-height: 100vh;
+    padding: 12px;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
     color: var(--ledger-ink);
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
@@ -1084,53 +1096,60 @@ const ledgerStyles = `
 
   .ledger-page-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 20px;
+    gap: 14px;
+    margin: 0 auto 12px;
+    max-width: 1360px;
+    padding: 16px 18px;
+    border: 1px solid var(--ledger-border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
   }
 
   .ledger-eyebrow {
-    margin-bottom: 6px;
-    color: #475569;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
+    margin-bottom: 3px;
+    color: #4f46e5;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.13em;
   }
 
   .ledger-page-header h1 {
     margin: 0;
-    font-size: clamp(26px, 3vw, 38px);
+    font-size: clamp(21px, 2.3vw, 28px);
     line-height: 1.15;
     letter-spacing: -0.03em;
+    color: #0f172a;
   }
 
   .ledger-page-header p {
     max-width: 760px;
-    margin: 9px 0 0;
+    margin: 4px 0 0;
     color: var(--ledger-muted);
-    font-size: 14px;
-    line-height: 1.65;
+    font-size: 9px;
+    line-height: 1.45;
   }
 
   .ledger-header-actions,
   .ledger-filter-buttons {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 6px;
     flex-wrap: wrap;
   }
 
   .ledger-button {
-    min-height: 40px;
-    padding: 9px 15px;
+    min-height: 34px;
+    padding: 7px 11px;
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: 9px;
     font: inherit;
-    font-size: 13px;
-    font-weight: 750;
+    font-size: 11px;
+    font-weight: 850;
     cursor: pointer;
-    transition: 0.18s ease;
+    transition: 0.16s ease;
   }
 
   .ledger-button:disabled {
@@ -1149,26 +1168,28 @@ const ledgerStyles = `
   }
 
   .ledger-button-light {
-    border-color: var(--ledger-border);
-    background: #fff;
-    color: #334155;
+    border-color: #c7d2fe;
+    background: #eef2ff;
+    color: #4338ca;
   }
 
   .ledger-button-light:hover:not(:disabled) {
-    border-color: #cbd5e1;
-    background: #f8fafc;
+    border-color: #a5b4fc;
+    background: #e0e7ff;
   }
 
   .ledger-filter-panel {
     display: grid;
-    grid-template-columns: minmax(210px, 1.1fr) minmax(260px, 1.3fr) 155px 155px auto;
-    gap: 12px;
+    grid-template-columns: minmax(180px, 1.05fr) minmax(220px, 1.2fr) 135px 135px auto;
+    gap: 8px;
     align-items: end;
-    padding: 16px;
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 12px;
     border: 1px solid var(--ledger-border);
-    border-radius: 16px;
-    background: var(--ledger-surface);
-    box-shadow: 0 8px 25px rgba(15, 23, 42, 0.04);
+    border-radius: 15px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
   }
 
   .ledger-field {
@@ -1177,38 +1198,39 @@ const ledgerStyles = `
 
   .ledger-field label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     color: #475569;
-    font-size: 12px;
-    font-weight: 750;
+    font-size: 8px;
+    font-weight: 900;
   }
 
   .ledger-field input,
   .ledger-field select {
     width: 100%;
-    height: 42px;
-    padding: 0 12px;
+    height: 36px;
+    padding: 0 10px;
     border: 1px solid #cbd5e1;
-    border-radius: 10px;
+    border-radius: 9px;
     outline: none;
-    background: #fff;
+    background: #f8fafc;
     color: var(--ledger-ink);
     font: inherit;
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .ledger-field input:focus,
   .ledger-field select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
   }
 
   .ledger-error-box {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 16px;
-    padding: 13px 15px;
+    margin: 10px auto 0;
+    max-width: 1360px;
+    padding: 10px 12px;
     border: 1px solid #fecaca;
     border-radius: 12px;
     background: #fef2f2;
@@ -1224,9 +1246,10 @@ const ledgerStyles = `
   .ledger-loading-state {
     display: grid;
     place-items: center;
-    min-height: 350px;
-    margin-top: 18px;
-    padding: 40px;
+    min-height: 240px;
+    margin: 12px auto 0;
+    max-width: 1360px;
+    padding: 28px;
     border: 1px dashed #cbd5e1;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.72);
@@ -1246,21 +1269,21 @@ const ledgerStyles = `
   .ledger-empty-icon {
     display: grid;
     place-items: center;
-    width: 62px;
-    height: 62px;
+    width: 48px;
+    height: 48px;
     border-radius: 18px;
     background: #e2e8f0;
     color: #334155;
-    font-size: 30px;
+    font-size: 22px;
     font-weight: 900;
   }
 
   .ledger-spinner {
-    width: 36px;
-    height: 36px;
-    margin-bottom: 14px;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 10px;
     border: 3px solid #e2e8f0;
-    border-top-color: #0f172a;
+    border-top-color: #4f46e5;
     border-radius: 50%;
     animation: ledger-spin 0.8s linear infinite;
   }
@@ -1271,31 +1294,33 @@ const ledgerStyles = `
 
   .ledger-customer-card {
     display: grid;
-    grid-template-columns: auto minmax(200px, 1.3fr) repeat(3, minmax(130px, 0.7fr));
-    gap: 18px;
+    grid-template-columns: auto minmax(180px, 1.25fr) repeat(3, minmax(115px, 0.7fr));
+    gap: 12px;
     align-items: center;
-    margin-top: 18px;
-    padding: 18px;
+    max-width: 1360px;
+    margin: 12px auto 0;
+    padding: 12px 14px;
     border: 1px solid var(--ledger-border);
-    border-radius: 16px;
+    border-radius: 15px;
     background: #fff;
+    box-shadow: 0 8px 24px rgba(15,23,42,.04);
   }
 
   .ledger-customer-avatar {
     display: grid;
     place-items: center;
-    width: 50px;
-    height: 50px;
-    border-radius: 14px;
-    background: #0f172a;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #4f46e5;
     color: #fff;
-    font-size: 20px;
+    font-size: 13px;
     font-weight: 850;
   }
 
   .ledger-customer-main h2 {
     margin: 3px 0 0;
-    font-size: 20px;
+    font-size: 16px;
   }
 
   .ledger-muted-label,
@@ -1309,12 +1334,12 @@ const ledgerStyles = `
 
   .ledger-info-item {
     min-width: 0;
-    padding-left: 18px;
+    padding-left: 12px;
     border-left: 1px solid var(--ledger-border);
   }
 
   .ledger-rtl .ledger-info-item {
-    padding-right: 18px;
+    padding-right: 12px;
     padding-left: 0;
     border-right: 1px solid var(--ledger-border);
     border-left: 0;
@@ -1323,50 +1348,52 @@ const ledgerStyles = `
   .ledger-info-item strong {
     display: block;
     overflow: hidden;
-    margin-top: 5px;
+    margin-top: 3px;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .ledger-summary-grid {
     display: grid;
-    grid-template-columns: repeat(6, minmax(150px, 1fr));
-    gap: 12px;
-    margin-top: 12px;
+    grid-template-columns: repeat(6, minmax(130px, 1fr));
+    gap: 8px;
+    max-width: 1360px;
+    margin: 8px auto 0;
   }
 
   .ledger-summary-card {
-    min-height: 118px;
-    padding: 16px;
+    min-height: 88px;
+    padding: 8px 6px;
     border: 1px solid var(--ledger-border);
-    border-radius: 15px;
+    border-radius: 13px;
     background: #fff;
+    box-shadow: 0 6px 18px rgba(15,23,42,.035);
   }
 
   .ledger-summary-card span {
     display: block;
     color: var(--ledger-muted);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 800;
   }
 
   .ledger-summary-card strong {
     display: block;
-    margin-top: 13px;
-    font-size: 19px;
+    margin-top: 7px;
+    font-size: 15px;
     line-height: 1.25;
   }
 
   .ledger-summary-card small {
     display: block;
-    margin-top: 7px;
+    margin-top: 4px;
     color: #64748b;
-    font-size: 11px;
+    font-size: 9px;
   }
 
   .ledger-summary-debit {
-    border-top: 3px solid #dc2626;
+    border-top: 2px solid #c7d2fe;
   }
 
   .ledger-summary-debit strong,
@@ -1375,7 +1402,7 @@ const ledgerStyles = `
   }
 
   .ledger-summary-credit {
-    border-top: 3px solid #059669;
+    border-top: 2px solid #c7d2fe;
   }
 
   .ledger-summary-credit strong,
@@ -1384,31 +1411,32 @@ const ledgerStyles = `
   }
 
   .ledger-summary-strong {
-    border-top: 3px solid #0f172a;
-    background: #f8fafc;
+    border-top: 2px solid #4f46e5;
+    background: #eef2ff;
   }
 
   .ledger-type-filters {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    max-width: 1360px;
+    margin: 10px auto 0;
     overflow-x: auto;
-    margin-top: 18px;
     padding-bottom: 2px;
   }
 
   .ledger-filter-pill {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    min-height: 38px;
-    padding: 7px 11px 7px 14px;
+    gap: 6px;
+    min-height: 32px;
+    padding: 5px 8px 5px 10px;
     border: 1px solid var(--ledger-border);
     border-radius: 999px;
     background: #fff;
     color: #475569;
     font: inherit;
-    font-size: 12px;
-    font-weight: 750;
+    font-size: 10px;
+    font-weight: 800;
     white-space: nowrap;
     cursor: pointer;
   }
@@ -1416,8 +1444,8 @@ const ledgerStyles = `
   .ledger-filter-pill b {
     display: grid;
     place-items: center;
-    min-width: 23px;
-    height: 23px;
+    min-width: 20px;
+    height: 20px;
     padding: 0 6px;
     border-radius: 999px;
     background: #e2e8f0;
@@ -1426,8 +1454,8 @@ const ledgerStyles = `
   }
 
   .ledger-filter-pill.active {
-    border-color: #0f172a;
-    background: #0f172a;
+    border-color: #4f46e5;
+    background: #4f46e5;
     color: #fff;
   }
 
@@ -1437,12 +1465,13 @@ const ledgerStyles = `
   }
 
   .ledger-table-card {
-    margin-top: 12px;
+    max-width: 1360px;
+    margin: 8px auto 0;
     overflow: hidden;
     border: 1px solid var(--ledger-border);
-    border-radius: 16px;
+    border-radius: 15px;
     background: #fff;
-    box-shadow: 0 8px 25px rgba(15, 23, 42, 0.035);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
   }
 
   .ledger-table-heading {
@@ -1450,7 +1479,7 @@ const ledgerStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    padding: 17px 18px;
+    padding: 11px 12px;
     border-bottom: 1px solid var(--ledger-border);
   }
 
@@ -1460,14 +1489,14 @@ const ledgerStyles = `
   }
 
   .ledger-table-heading p {
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     color: var(--ledger-muted);
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .ledger-date-chip {
-    padding: 7px 10px;
-    border-radius: 9px;
+    padding: 5px 8px;
+    border-radius: 8px;
     background: #f1f5f9;
     color: #475569;
     font-size: 12px;
@@ -1475,13 +1504,25 @@ const ledgerStyles = `
   }
 
   .ledger-desktop-table {
-    overflow-x: auto;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .ledger-desktop-table table,
   .ledger-product-table {
     width: 100%;
     border-collapse: collapse;
+  }
+
+  .ledger-desktop-table table {
+    table-layout: fixed;
+    min-width: 0;
+  }
+
+  .ledger-desktop-table th,
+  .ledger-desktop-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ledger-desktop-table th,
@@ -1505,11 +1546,11 @@ const ledgerStyles = `
 
   .ledger-desktop-table td,
   .ledger-product-table td {
-    padding: 12px;
+    padding: 8px 6px;
     border-bottom: 1px solid #edf2f7;
     color: #334155;
-    font-size: 12px;
-    vertical-align: top;
+    font-size: 10px;
+    vertical-align: middle;
   }
 
   .ledger-desktop-table tbody tr:hover {
@@ -1522,8 +1563,10 @@ const ledgerStyles = `
   }
 
   .ledger-description-cell {
-    min-width: 210px;
-    max-width: 340px;
+    min-width: 0;
+    max-width: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ledger-description-cell small,
@@ -1562,13 +1605,13 @@ const ledgerStyles = `
   }
 
   .ledger-type-invoice {
-    background: #fee2e2;
-    color: #991b1b;
+    background: #eef2ff;
+    color: #4338ca;
   }
 
   .ledger-type-return {
-    background: #d1fae5;
-    color: #065f46;
+    background: #eef2ff;
+    color: #4338ca;
   }
 
   .ledger-type-manual {
@@ -1582,22 +1625,24 @@ const ledgerStyles = `
   }
 
   .ledger-detail-button {
-    min-height: 30px;
-    padding: 6px 10px;
-    border: 1px solid #cbd5e1;
+    min-height: 28px;
+    padding: 5px 8px;
+    border: 1px solid #4f46e5;
     border-radius: 8px;
-    background: #fff;
-    color: #334155;
+    background: #4f46e5;
+    color: #fff;
     font: inherit;
-    font-size: 11px;
-    font-weight: 800;
+    font-size: 9px;
+    font-weight: 850;
     white-space: nowrap;
     cursor: pointer;
+    transition: .15s ease;
   }
 
   .ledger-detail-button:hover {
-    border-color: #0f172a;
-    color: #0f172a;
+    border-color: #4338ca;
+    background: #4338ca;
+    color: #fff;
   }
 
   .ledger-no-records {
@@ -1617,16 +1662,16 @@ const ledgerStyles = `
     inset: 0;
     display: grid;
     place-items: center;
-    padding: 20px;
-    background: rgba(15, 23, 42, 0.66);
+    padding: 12px;
+    background: rgba(15, 23, 42, 0.58);
     backdrop-filter: blur(5px);
   }
 
   .ledger-modal {
     display: flex;
     flex-direction: column;
-    width: min(1180px, 96vw);
-    max-height: 92vh;
+    width: min(1050px, 96vw);
+    max-height: 94vh;
     overflow: hidden;
     border-radius: 18px;
     background: #fff;
@@ -1637,14 +1682,14 @@ const ledgerStyles = `
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 20px;
-    padding: 20px 22px;
+    gap: 12px;
+    padding: 13px 15px;
     border-bottom: 1px solid var(--ledger-border);
   }
 
   .ledger-modal-header h2 {
-    margin: 8px 0 3px;
-    font-size: 23px;
+    margin: 5px 0 2px;
+    font-size: 18px;
   }
 
   .ledger-modal-header p {
@@ -1657,27 +1702,27 @@ const ledgerStyles = `
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    border: 1px solid var(--ledger-border);
-    border-radius: 10px;
-    background: #fff;
-    color: #475569;
-    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #4f46e5;
+    border-radius: 9px;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 19px;
     cursor: pointer;
   }
 
   .ledger-modal-body {
     overflow: auto;
-    padding: 20px 22px;
+    padding: 13px 15px;
     background: #f8fafc;
   }
 
   .ledger-modal-section {
-    margin-bottom: 14px;
-    padding: 17px;
+    margin-bottom: 10px;
+    padding: 12px;
     border: 1px solid var(--ledger-border);
-    border-radius: 14px;
+    border-radius: 12px;
     background: #fff;
   }
 
@@ -1686,7 +1731,7 @@ const ledgerStyles = `
   }
 
   .ledger-modal-section h3 {
-    margin: 0 0 13px;
+    margin: 0 0 9px;
     color: #334155;
     font-size: 13px;
   }
@@ -1699,12 +1744,12 @@ const ledgerStyles = `
   .ledger-detail-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .ledger-detail-item {
-    min-height: 70px;
-    padding: 12px;
+    min-height: 58px;
+    padding: 9px;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     background: #fafafa;
@@ -1725,9 +1770,9 @@ const ledgerStyles = `
 
   .ledger-detail-item strong {
     display: block;
-    margin-top: 6px;
+    margin-top: 4px;
     color: #1e293b;
-    font-size: 13px;
+    font-size: 11px;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -1739,7 +1784,7 @@ const ledgerStyles = `
   }
 
   .ledger-product-table {
-    min-width: 920px;
+    min-width: 820px;
   }
 
   .ledger-product-table td strong {
@@ -1792,7 +1837,7 @@ const ledgerStyles = `
   .ledger-modal-footer {
     display: flex;
     justify-content: flex-end;
-    padding: 14px 22px;
+    padding: 10px 15px;
     border-top: 1px solid var(--ledger-border);
     background: #fff;
   }
@@ -1818,7 +1863,7 @@ const ledgerStyles = `
 
   @media (max-width: 900px) {
     .customer-detail-ledger {
-      padding: 16px;
+      padding: 8px;
     }
 
     .ledger-page-header {
@@ -1865,13 +1910,13 @@ const ledgerStyles = `
 
     .ledger-mobile-list {
       display: grid;
-      gap: 10px;
-      padding: 12px;
+      gap: 8px;
+      padding: 9px;
     }
 
     .ledger-mobile-transaction {
       position: relative;
-      padding: 14px;
+      padding: 11px;
       border: 1px solid var(--ledger-border);
       border-radius: 13px;
       background: #fff;
@@ -1898,7 +1943,7 @@ const ledgerStyles = `
     }
 
     .ledger-mobile-transaction > p {
-      margin: 12px 0;
+      margin: 8px 0;
       color: #475569;
       font-size: 12px;
       line-height: 1.55;
@@ -1907,11 +1952,11 @@ const ledgerStyles = `
     .ledger-mobile-values {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+      gap: 6px;
     }
 
     .ledger-mobile-values > div {
-      padding: 9px;
+      padding: 7px;
       border-radius: 9px;
       background: #f8fafc;
     }
@@ -1934,7 +1979,7 @@ const ledgerStyles = `
 
     .ledger-mobile-detail-button {
       width: 100%;
-      margin-top: 10px;
+      margin-top: 7px;
     }
 
     .ledger-mobile-index {
@@ -1962,7 +2007,7 @@ const ledgerStyles = `
     }
 
     .ledger-page-header h1 {
-      font-size: 25px;
+      font-size: 21px;
     }
 
     .ledger-header-actions .ledger-button {
@@ -1984,12 +2029,12 @@ const ledgerStyles = `
     }
 
     .ledger-customer-card {
-      gap: 13px;
-      padding: 14px;
+      gap: 10px;
+      padding: 11px;
     }
 
     .ledger-customer-main h2 {
-      font-size: 17px;
+      font-size: 15px;
     }
 
     .ledger-info-item {
@@ -2001,7 +2046,7 @@ const ledgerStyles = `
     }
 
     .ledger-summary-card {
-      min-height: 96px;
+      min-height: 78px;
     }
 
     .ledger-table-heading {
