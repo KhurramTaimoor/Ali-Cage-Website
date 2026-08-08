@@ -143,6 +143,8 @@ const LANG = {
     side: "Side",
 
     ledger: "Ledger",
+    call: "Call",
+    noPhone: "Phone number not available.",
     ledgerTitle: "Customer Ledger",
     ledgerLoading: "Loading ledger...",
     ledgerEmpty: "No ledger entries found.",
@@ -232,6 +234,8 @@ const LANG = {
     side: "سائیڈ",
 
     ledger: "لیجر",
+    call: "کال",
+    noPhone: "فون نمبر موجود نہیں ہے۔",
     ledgerTitle: "گاہک کا لیجر",
     ledgerLoading: "لیجر لوڈ ہو رہا ہے...",
     ledgerEmpty: "کوئی لیجر انٹری نہیں ملی۔",
@@ -758,6 +762,20 @@ const CustomerPage = () => {
     [patchCustomerBalance]
   );
 
+  const handleCall = (customer) => {
+    const phone = String(customer?.phone || "").trim();
+
+    if (!phone) {
+      showToast("error", t.noPhone);
+      return;
+    }
+
+    // Keep only digits and an optional leading + so tel: works reliably.
+    const dialNumber = phone.replace(/(?!^\+)\D/g, "");
+
+    window.location.href = `tel:${dialNumber}`;
+  };
+
   const openLedger = async (customer) => {
     setSelectedCustomer(customer);
     setShowLedger(true);
@@ -1153,6 +1171,7 @@ const CustomerPage = () => {
                       openEdit={openEdit}
                       handleDelete={handleDelete}
                       openLedger={openLedger}
+                      handleCall={handleCall}
                     />
                   ))
                 )}
@@ -1185,6 +1204,7 @@ const CustomerPage = () => {
                     openEdit={openEdit}
                     handleDelete={handleDelete}
                     openLedger={openLedger}
+                    handleCall={handleCall}
                   />
                 ))}
               </div>
@@ -1642,6 +1662,7 @@ const CustomerDesktopRow = ({
   openEdit,
   handleDelete,
   openLedger,
+  handleCall,
 }) => {
   return (
     <tr className="hover:bg-slate-50/70 transition">
@@ -1663,9 +1684,24 @@ const CustomerDesktopRow = ({
             <i className="bi bi-person-fill"></i>
           </div>
 
-          <span className={translating ? "opacity-40" : ""}>
-            {getName(customer)}
-          </span>
+          <div
+            className={`flex items-center gap-2 flex-wrap ${
+              isUrdu ? "flex-row-reverse" : ""
+            }`}
+          >
+            <span className={translating ? "opacity-40" : ""}>
+              {getName(customer)}
+            </span>
+
+            <button
+              onClick={() => openLedger(customer)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-700 transition"
+              title={t.ledger}
+            >
+              <i className="bi bi-journal-text"></i>
+              {t.ledger}
+            </button>
+          </div>
         </div>
       </td>
 
@@ -1712,11 +1748,17 @@ const CustomerDesktopRow = ({
           </button>
 
           <button
-            onClick={() => openLedger(customer)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition"
+            onClick={() => handleCall(customer)}
+            disabled={!customer.phone}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition ${
+              customer.phone
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "bg-slate-100 text-slate-300 cursor-not-allowed"
+            }`}
+            title={customer.phone ? t.call : t.noPhone}
           >
-            <i className="bi bi-journal-text"></i>
-            {t.ledger}
+            <i className="bi bi-telephone-fill"></i>
+            {t.call}
           </button>
         </div>
       </td>
@@ -1767,6 +1809,7 @@ const CustomerMobileCard = ({
   openEdit,
   handleDelete,
   openLedger,
+  handleCall,
 }) => {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
@@ -1789,13 +1832,28 @@ const CustomerMobileCard = ({
               #{index + 1}
             </p>
 
-            <h3
-              className={`font-extrabold text-slate-950 text-sm truncate ${
-                translating ? "opacity-40" : ""
+            <div
+              className={`flex items-center gap-2 flex-wrap ${
+                isUrdu ? "flex-row-reverse" : ""
               }`}
             >
-              {getName(customer)}
-            </h3>
+              <h3
+                className={`font-extrabold text-slate-950 text-sm truncate ${
+                  translating ? "opacity-40" : ""
+                }`}
+              >
+                {getName(customer)}
+              </h3>
+
+              <button
+                onClick={() => openLedger(customer)}
+                className="h-7 px-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center justify-center gap-1 text-[10px] font-bold flex-shrink-0"
+                title={t.ledger}
+              >
+                <i className="bi bi-journal-text"></i>
+                {t.ledger}
+              </button>
+            </div>
 
             <p
               className={`text-xs text-slate-500 mt-0.5 truncate ${
@@ -1862,11 +1920,17 @@ const CustomerMobileCard = ({
         </button>
 
         <button
-          onClick={() => openLedger(customer)}
-          className="h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center justify-center gap-1 text-xs font-bold"
+          onClick={() => handleCall(customer)}
+          disabled={!customer.phone}
+          className={`h-10 rounded-xl transition flex items-center justify-center gap-1 text-xs font-bold ${
+            customer.phone
+              ? "bg-emerald-600 text-white hover:bg-emerald-700"
+              : "bg-slate-100 text-slate-300 cursor-not-allowed"
+          }`}
+          title={customer.phone ? t.call : t.noPhone}
         >
-          <i className="bi bi-journal-text"></i>
-          {t.ledger}
+          <i className="bi bi-telephone-fill"></i>
+          {t.call}
         </button>
       </div>
     </div>
