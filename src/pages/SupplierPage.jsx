@@ -924,7 +924,9 @@ const SupplierPage = () => {
         .btn-ledger {
           background: #4f46e5;
           color: white;
-          min-width: 104px;
+          min-width: 88px;
+          padding: 7px 9px;
+          font-size: 11px;
         }
 
         .ledger-modal-box {
@@ -1082,7 +1084,8 @@ const SupplierPage = () => {
         }
 
         .table-wrap {
-          overflow-x: auto;
+          overflow-x: hidden;
+          width: 100%;
         }
 
         .suppliers-desktop {
@@ -1095,7 +1098,7 @@ const SupplierPage = () => {
 
         table.suppliers-table {
           width: 100%;
-          min-width: 860px;
+          min-width: 0;
           border-collapse: collapse;
           table-layout: fixed;
         }
@@ -1106,12 +1109,12 @@ const SupplierPage = () => {
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: .5px;
-          padding: 15px 14px;
+          padding: 12px 9px;
           white-space: nowrap;
         }
 
         table.suppliers-table td {
-          padding: 13px 14px;
+          padding: 10px 9px;
           border-bottom: 1px solid #eef2f7;
           font-size: 13px;
           vertical-align: middle;
@@ -1124,13 +1127,13 @@ const SupplierPage = () => {
         .supplier-name-cell {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           min-width: 0;
         }
 
         .supplier-avatar {
-          width: 38px;
-          height: 38px;
+          width: 34px;
+          height: 34px;
           border-radius: 13px;
           background: #eef2ff;
           color: #4f46e5;
@@ -1154,6 +1157,21 @@ const SupplierPage = () => {
           color: #1d4ed8;
         }
 
+        .suppliers-table th,
+        .suppliers-table td {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .suppliers-table td:nth-child(4) {
+          white-space: nowrap;
+          font-size: 12px;
+        }
+
+        .suppliers-table td:last-child {
+          overflow: visible;
+        }
+
         .action-row {
           display: flex;
           align-items: center;
@@ -1163,8 +1181,8 @@ const SupplierPage = () => {
         }
 
         .action-row .btn {
-          padding: 7px 10px;
-          font-size: 12px;
+          padding: 6px 8px;
+          font-size: 11px;
         }
 
         .supplier-mobile-list {
@@ -1713,12 +1731,12 @@ const SupplierPage = () => {
           <div className="suppliers-desktop table-wrap">
             <table className="suppliers-table">
               <colgroup>
-                <col style={{ width: 70 }} />
-                <col style={{ width: 300 }} />
-                <col style={{ width: 130 }} />
-                <col style={{ width: 200 }} />
-                <col style={{ width: 190 }} />
-                <col style={{ width: 260 }} />
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "27%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "17%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "24%" }} />
               </colgroup>
 
               <thead>
@@ -1737,7 +1755,7 @@ const SupplierPage = () => {
                     {t.phone}
                   </th>
 
-                  <th style={{ textAlign: isUrdu ? "left" : "right" }}>
+                  <th style={{ textAlign: "left", paddingLeft: 8 }}>
                     {t.openingBalance}
                   </th>
 
@@ -1831,7 +1849,8 @@ const SupplierPage = () => {
                       <td
                         className="money"
                         style={{
-                          textAlign: isUrdu ? "left" : "right",
+                          textAlign: "left",
+                          paddingLeft: 8,
                         }}
                       >
                         {formatMoney(supplier.opening_balance)}
