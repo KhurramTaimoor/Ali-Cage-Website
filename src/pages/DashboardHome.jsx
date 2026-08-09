@@ -61,6 +61,7 @@ const LANG = {
     customers: "Customers",
     suppliers: "Suppliers",
     employees: "Employees",
+    generalAccounts: "General Accounts",
     ledgerSummary: "Ledger Summary",
     open: "Open",
 
@@ -110,6 +111,7 @@ const LANG = {
     customers: "گاہک",
     suppliers: "سپلائرز",
     employees: "ملازمین",
+    generalAccounts: "جنرل اکاؤنٹس",
     ledgerSummary: "تمام لیجرز",
     open: "کھولیں",
 
@@ -595,7 +597,7 @@ const DashboardHome = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-5">
           <ShortcutCard
             title={t.customers}
             to="/app/sales/customer"
@@ -614,6 +616,13 @@ const DashboardHome = () => {
             title={t.employees}
             to="/app/hr/employee"
             icon="bi-person-badge-fill"
+            openText={t.open}
+          />
+
+          <ShortcutCard
+            title={t.generalAccounts}
+            to="/app/accounts/chart"
+            icon="bi-diagram-3-fill"
             openText={t.open}
           />
 
