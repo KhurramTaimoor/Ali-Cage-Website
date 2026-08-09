@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-// ─────────────────────────────────────────────────────────────────
-// LANGUAGE STRINGS (Strictly English & Proper Urdu)
-// ─────────────────────────────────────────────────────────────────
+const API_ROOT = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/$/, "");
+
+const API_BASE = `${API_ROOT}/api`;
+
 const LANG = {
   en: {
-    title: "Chart of Accounts",
-    subtitle: "Manage your financial accounts and their groupings",
+    title: "General Accounts",
+    subtitle: "Manage chart of accounts, opening balances and account transactions",
     addBtn: "New Account",
-    searchPlaceholder: "Search by code, title or group...",
+    searchPlaceholder: "Search by code, account title or group...",
     accountCode: "Account Code",
     accountTitle: "Account Title",
     group: "Group",
     selectGroup: "-- Select Group --",
-    openingBalance: "Opening Balance (PKR)",
+    openingBalance: "Opening Balance",
+    currentBalance: "Current Balance",
     save: "Save",
+    saving: "Saving...",
     cancel: "Cancel",
     edit: "Edit",
     delete: "Delete",
@@ -24,24 +29,49 @@ const LANG = {
     toggleLang: "اردو",
     printBtn: "Print List",
     pdfBtn: "Download PDF",
-    reportHeader: "Chart of Accounts List",
+    reportHeader: "General Accounts List",
     printedOn: "Printed On",
     successSave: "Account saved successfully!",
     successUpdate: "Account updated successfully!",
+    successDelete: "Account deleted successfully!",
     errorMsg: "Please fill all required fields (Code, Title, Group).",
     deleteConfirm: "Are you sure you want to delete this account?",
+    loadError: "Unable to load account data.",
+    transactionLoadError: "Unable to load ledger transactions.",
+    transactions: "Transactions",
+    transactionDetails: "Account Transactions",
+    transactionId: "Transaction ID",
+    date: "Date",
+    dueDate: "Due Date",
+    reference: "Reference",
+    description: "Description",
+    debit: "Debit",
+    credit: "Credit",
+    amount: "Amount",
+    balance: "Balance",
+    status: "Status",
+    noTransactions: "No transactions found for this account.",
+    totalTransactions: "Total Transactions",
+    totalDebit: "Total Debit",
+    totalCredit: "Total Credit",
+    close: "Close",
+    refresh: "Refresh",
+    loading: "Loading...",
   },
+
   ur: {
-    title: "چارٹ آف اکاؤنٹس",
-    subtitle: "اپنے مالیاتی اکاؤنٹس اور ان کے گروپس کا انتظام کریں",
+    title: "جنرل اکاؤنٹس",
+    subtitle: "چارٹ آف اکاؤنٹس، ابتدائی بیلنس اور اکاؤنٹ ٹرانزیکشنز کا انتظام کریں",
     addBtn: "نیا اکاؤنٹ",
-    searchPlaceholder: "کوڈ، ٹائٹل یا گروپ سے تلاش کریں...",
+    searchPlaceholder: "کوڈ، اکاؤنٹ ٹائٹل یا گروپ سے تلاش کریں...",
     accountCode: "اکاؤنٹ کوڈ",
     accountTitle: "اکاؤنٹ ٹائٹل",
     group: "گروپ",
     selectGroup: "-- گروپ منتخب کریں --",
-    openingBalance: "ابتدائی بیلنس (روپے)",
+    openingBalance: "ابتدائی بیلنس",
+    currentBalance: "موجودہ بیلنس",
     save: "محفوظ کریں",
+    saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
     edit: "ترمیم",
     delete: "حذف",
@@ -50,380 +80,1563 @@ const LANG = {
     toggleLang: "English",
     printBtn: "فہرست پرنٹ کریں",
     pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
-    reportHeader: "چارٹ آف اکاؤنٹس کی فہرست",
+    reportHeader: "جنرل اکاؤنٹس کی فہرست",
     printedOn: "پرنٹ کی تاریخ",
     successSave: "اکاؤنٹ کامیابی سے محفوظ ہو گیا!",
     successUpdate: "اکاؤنٹ کامیابی سے اپڈیٹ ہو گیا!",
+    successDelete: "اکاؤنٹ کامیابی سے حذف ہو گیا!",
     errorMsg: "براہ کرم تمام لازمی خانے پُر کریں (کوڈ، ٹائٹل، گروپ)۔",
     deleteConfirm: "کیا آپ واقعی یہ اکاؤنٹ حذف کرنا چاہتے ہیں؟",
+    loadError: "اکاؤنٹس کا ڈیٹا لوڈ نہیں ہو سکا۔",
+    transactionLoadError: "لیجر ٹرانزیکشنز لوڈ نہیں ہو سکیں۔",
+    transactions: "ٹرانزیکشنز",
+    transactionDetails: "اکاؤنٹ ٹرانزیکشنز",
+    transactionId: "ٹرانزیکشن آئی ڈی",
+    date: "تاریخ",
+    dueDate: "آخری تاریخ",
+    reference: "ریفرنس",
+    description: "تفصیل",
+    debit: "ڈیبٹ",
+    credit: "کریڈٹ",
+    amount: "رقم",
+    balance: "بیلنس",
+    status: "حالت",
+    noTransactions: "اس اکاؤنٹ کی کوئی ٹرانزیکشن نہیں ملی۔",
+    totalTransactions: "کل ٹرانزیکشنز",
+    totalDebit: "کل ڈیبٹ",
+    totalCredit: "کل کریڈٹ",
+    close: "بند کریں",
+    refresh: "ریفریش",
+    loading: "لوڈ ہو رہا ہے...",
   },
 };
 
-const API_BASE = "http://localhost:5000/api";
+const emptyForm = {
+  account_code: "",
+  account_title: "",
+  group_id: "",
+  opening_balance: "",
+};
+
+function normalizeArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  if (Array.isArray(payload?.records)) return payload.records;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+}
+
+function numberValue(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatMoney(value) {
+  return `₨ ${numberValue(value).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatBalance(value) {
+  const amount = numberValue(value);
+  if (amount > 0) return `${formatMoney(amount)} Dr`;
+  if (amount < 0) return `${formatMoney(Math.abs(amount))} Cr`;
+  return "₨ 0";
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+
+  const raw = String(value).slice(0, 10);
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString("en-GB");
+}
+
+function normalizeTransaction(row, index) {
+  const debit = numberValue(row?.debit);
+  const credit = numberValue(row?.credit);
+
+  return {
+    ...row,
+    transaction_id:
+      row?.transaction_id ??
+      row?.voucher_id ??
+      row?.id ??
+      row?.entry_id ??
+      row?.journal_id ??
+      row?.ref ??
+      row?.reference_no ??
+      index + 1,
+
+    date:
+      row?.transaction_date ??
+      row?.date ??
+      row?.voucher_date ??
+      row?.invoice_date ??
+      row?.return_date ??
+      row?.created_at ??
+      "",
+
+    due_date:
+      row?.due_date ??
+      row?.payment_due_date ??
+      row?.invoice_due_date ??
+      row?.expiry_date ??
+      "",
+
+    reference:
+      row?.reference ??
+      row?.reference_no ??
+      row?.ref ??
+      row?.voucher_no ??
+      row?.invoice_no ??
+      row?.return_no ??
+      "-",
+
+    description:
+      row?.description ??
+      row?.desc ??
+      row?.narration ??
+      row?.remarks ??
+      row?.memo ??
+      "-",
+
+    debit,
+    credit,
+
+    amount:
+      row?.amount !== undefined
+        ? numberValue(row.amount)
+        : row?.total_amount !== undefined
+        ? numberValue(row.total_amount)
+        : debit > 0
+        ? debit
+        : credit,
+
+    balance:
+      row?.balance ??
+      row?.running_balance ??
+      row?.closing_balance ??
+      null,
+
+    status:
+      row?.status ??
+      row?.payment_status ??
+      row?.transaction_status ??
+      "-",
+
+    account_id:
+      row?.account_id ??
+      row?.chart_account_id ??
+      row?.chart_of_account_id ??
+      row?.coa_id ??
+      "",
+
+    account_code:
+      row?.account_code ??
+      row?.code ??
+      "",
+
+    account_title:
+      row?.account_title ??
+      row?.account_name ??
+      row?.ledger_name ??
+      "",
+  };
+}
+
+function transactionBelongsToAccount(transaction, account) {
+  const accountId = String(account?.id ?? "");
+  const accountCode = String(account?.account_code ?? "").trim().toLowerCase();
+  const accountTitle = String(account?.account_title ?? "").trim().toLowerCase();
+
+  const txAccountId = String(transaction?.account_id ?? "");
+  const txAccountCode = String(transaction?.account_code ?? "").trim().toLowerCase();
+  const txAccountTitle = String(transaction?.account_title ?? "").trim().toLowerCase();
+
+  if (accountId && txAccountId && accountId === txAccountId) return true;
+  if (accountCode && txAccountCode && accountCode === txAccountCode) return true;
+  if (accountTitle && txAccountTitle && accountTitle === txAccountTitle) return true;
+
+  return false;
+}
 
 export default function ChartOfAccountsPage() {
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
-  const fmt = (n) => parseFloat(n || 0).toLocaleString("en-PK", { minimumFractionDigits: 2 });
 
   const [records, setRecords] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [ledgerRows, setLedgerRows] = useState([]);
+
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState({
-    account_code: "", account_title: "", group_id: "", opening_balance: ""
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [showTransactions, setShowTransactions] = useState(false);
+  const [transactionLoading, setTransactionLoading] = useState(false);
+
+  const [message, setMessage] = useState({
+    type: "",
+    text: "",
   });
 
-  // ── Fetch Data ──
-  useEffect(() => {
-    fetchData();
+  const [form, setForm] = useState(emptyForm);
+
+  const showToast = useCallback((type, text) => {
+    setMessage({ type, text });
+
+    window.setTimeout(() => {
+      setMessage({ type: "", text: "" });
+    }, 3200);
   }, []);
 
-  const fetchData = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
-      const [resAcc, resGrp] = await Promise.all([
-        axios.get(`${API_BASE}/chart-of-accounts`),
-        axios.get(`${API_BASE}/account-groups`)
-      ]);
-      setRecords(resAcc.data);
-      setGroups(resGrp.data);
-    } catch (err) {
-      // Mock data if API is down
-      setGroups([
-        { id: 1, group_name: "Current Assets" },
-        { id: 2, group_name: "Current Liabilities" },
-        { id: 3, group_name: "Direct Expenses" },
-      ]);
-      setRecords([
-        { id: 1, account_code: "1001", account_title: "Cash in Hand", group_id: 1, group_name: "Current Assets", opening_balance: 500000 },
-        { id: 2, account_code: "2001", account_title: "Accounts Payable", group_id: 2, group_name: "Current Liabilities", opening_balance: -150000 },
-        { id: 3, account_code: "5001", account_title: "Raw Material Purchases", group_id: 3, group_name: "Direct Expenses", opening_balance: 0 },
-      ]);
+      setLoading(true);
+
+      const [accountResponse, groupResponse] =
+        await Promise.all([
+          axios.get(`${API_BASE}/chart-of-accounts`),
+          axios.get(`${API_BASE}/account-groups`),
+        ]);
+
+      setRecords(normalizeArray(accountResponse.data));
+      setGroups(normalizeArray(groupResponse.data));
+    } catch (error) {
+      console.error("General accounts load error:", error);
+      setRecords([]);
+      setGroups([]);
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.loadError
+      );
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [showToast, t.loadError]);
 
-  const showToast = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
-  };
+  const loadLedgerRows = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/ledger`);
+      const rows = normalizeArray(response.data).map(normalizeTransaction);
+      setLedgerRows(rows);
+      return rows;
+    } catch (error) {
+      console.error("General account ledger load error:", error);
+      setLedgerRows([]);
+      return [];
+    }
+  }, []);
 
-  // ── Form Handlers ──
+  useEffect(() => {
+    loadAccounts();
+    loadLedgerRows();
+  }, [loadAccounts, loadLedgerRows]);
+
   const openAdd = () => {
-    setForm({ account_code: "", account_title: "", group_id: "", opening_balance: "" });
     setEditingId(null);
+    setForm(emptyForm);
     setShowForm(true);
   };
 
-  const openEdit = (r) => {
+  const openEdit = (record) => {
+    setEditingId(record.id);
+
     setForm({
-      account_code: r.account_code, account_title: r.account_title,
-      group_id: r.group_id, opening_balance: r.opening_balance
+      account_code: record.account_code || "",
+      account_title: record.account_title || "",
+      group_id: String(record.group_id || ""),
+      opening_balance:
+        record.opening_balance !== undefined &&
+        record.opening_balance !== null
+          ? String(record.opening_balance)
+          : "",
     });
-    setEditingId(r.id);
+
     setShowForm(true);
+  };
+
+  const closeForm = () => {
+    if (submitting) return;
+
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
   };
 
   const handleSave = async () => {
-    if (!form.account_code || !form.account_title || !form.group_id) {
+    if (
+      !form.account_code.trim() ||
+      !form.account_title.trim() ||
+      !form.group_id
+    ) {
       showToast("error", t.errorMsg);
       return;
     }
-    
+
+    const payload = {
+      account_code: form.account_code.trim(),
+      account_title: form.account_title.trim(),
+      group_id: Number(form.group_id),
+      opening_balance: numberValue(form.opening_balance),
+    };
+
     try {
+      setSubmitting(true);
+
       if (editingId) {
-        await axios.put(`${API_BASE}/chart-of-accounts/${editingId}`, form);
+        await axios.put(
+          `${API_BASE}/chart-of-accounts/${editingId}`,
+          payload
+        );
         showToast("success", t.successUpdate);
       } else {
-        await axios.post(`${API_BASE}/chart-of-accounts`, form);
+        await axios.post(
+          `${API_BASE}/chart-of-accounts`,
+          payload
+        );
         showToast("success", t.successSave);
       }
-      fetchData();
-      setShowForm(false);
-    } catch (err) {
-      // Optimistic UI update for mock testing
-      const grp = groups.find(g => String(g.id) === String(form.group_id));
-      const newRec = { 
-        ...form, 
-        id: editingId || Date.now(),
-        group_name: grp?.group_name || "-"
-      };
-      
-      if (editingId) setRecords(prev => prev.map(r => r.id === editingId ? newRec : r));
-      else setRecords(prev => [...prev, newRec]);
-      
-      showToast("success", editingId ? t.successUpdate : t.successSave);
-      setShowForm(false);
+
+      closeForm();
+      await loadAccounts();
+      await loadLedgerRows();
+    } catch (error) {
+      console.error("Account save error:", error);
+
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          t.errorMsg
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm(t.deleteConfirm)) return;
+
     try {
       await axios.delete(`${API_BASE}/chart-of-accounts/${id}`);
-      fetchData();
-    } catch (err) {
-      setRecords(prev => prev.filter(r => r.id !== id));
+      await loadAccounts();
+      await loadLedgerRows();
+      showToast("success", t.successDelete);
+    } catch (error) {
+      console.error("Account delete error:", error);
+
+      showToast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Delete failed."
+      );
     }
   };
 
-  // ── Search & Print ──
-  const filtered = records.filter(r =>
-    [r.account_code, r.account_title, r.group_name].some(v => (v || "").toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return records;
+
+    return records.filter((record) =>
+      [
+        record.account_code,
+        record.account_title,
+        record.group_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [records, search]);
+
+  const accountTransactionMap = useMemo(() => {
+    const map = new Map();
+
+    records.forEach((account) => {
+      const rows = ledgerRows.filter((transaction) =>
+        transactionBelongsToAccount(transaction, account)
+      );
+
+      map.set(String(account.id), rows);
+    });
+
+    return map;
+  }, [records, ledgerRows]);
+
+  const getAccountTransactions = (account) =>
+    accountTransactionMap.get(String(account.id)) || [];
+
+  const getCurrentBalance = (account) => {
+    const rows = getAccountTransactions(account);
+
+    if (!rows.length) {
+      return numberValue(account.opening_balance);
+    }
+
+    const latestWithBalance = [...rows]
+      .reverse()
+      .find(
+        (row) =>
+          row.balance !== undefined &&
+          row.balance !== null &&
+          row.balance !== ""
+      );
+
+    if (latestWithBalance) {
+      return numberValue(latestWithBalance.balance);
+    }
+
+    return rows.reduce(
+      (balance, row) =>
+        balance +
+        numberValue(row.debit) -
+        numberValue(row.credit),
+      numberValue(account.opening_balance)
+    );
+  };
+
+  const openTransactions = async (account) => {
+    setSelectedAccount(account);
+    setShowTransactions(true);
+
+    if (ledgerRows.length === 0) {
+      try {
+        setTransactionLoading(true);
+        await loadLedgerRows();
+      } finally {
+        setTransactionLoading(false);
+      }
+    }
+  };
+
+  const closeTransactions = () => {
+    setShowTransactions(false);
+    setSelectedAccount(null);
+  };
+
+  const selectedTransactions = useMemo(() => {
+    if (!selectedAccount) return [];
+
+    return ledgerRows.filter((transaction) =>
+      transactionBelongsToAccount(
+        transaction,
+        selectedAccount
+      )
+    );
+  }, [ledgerRows, selectedAccount]);
+
+  const transactionSummary = useMemo(() => {
+    return {
+      count: selectedTransactions.length,
+
+      debit: selectedTransactions.reduce(
+        (sum, row) => sum + numberValue(row.debit),
+        0
+      ),
+
+      credit: selectedTransactions.reduce(
+        (sum, row) => sum + numberValue(row.credit),
+        0
+      ),
+    };
+  }, [selectedTransactions]);
 
   const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
-    const rowsHtml = filtered.map((r, i) => `
-      <tr>
-        <td style="text-align: center;">${i + 1}</td>
-        <td style="font-family: monospace; font-weight: bold; color: #0f766e;">${r.account_code}</td>
-        <td><strong>${r.account_title}</strong></td>
-        <td>${r.group_name || "-"}</td>
-        <td style="text-align:${isUrdu ? 'left' : 'right'}; font-weight: bold;">₨ ${fmt(r.opening_balance)}</td>
-      </tr>
-    `).join("");
+    const rowsHtml = filtered
+      .map(
+        (record, index) => `
+          <tr>
+            <td style="text-align:center">${index + 1}</td>
+            <td><strong>${record.account_code || "-"}</strong></td>
+            <td>${record.account_title || "-"}</td>
+            <td>${record.group_name || "-"}</td>
+            <td style="text-align:right">${formatBalance(
+              record.opening_balance
+            )}</td>
+            <td style="text-align:right">${formatBalance(
+              getCurrentBalance(record)
+            )}</td>
+            <td style="text-align:center">${
+              getAccountTransactions(record).length
+            }</td>
+          </tr>
+        `
+      )
+      .join("");
 
-    const html = `
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=1200,height=850"
+    );
+
+    if (!printWindow) return;
+
+    printWindow.document.open();
+    printWindow.document.write(`
       <!DOCTYPE html>
-      <html dir="${dir}" lang="${lang}">
+      <html lang="${lang}" dir="${dir}">
       <head>
-        <meta charset="UTF-8"/>
-        <title>${t.title}</title>
-        ${isUrdu ? `<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">` : ""}
+        <meta charset="UTF-8" />
+        <title>${t.reportHeader}</title>
         <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: ${font}; background: #fff; color: #0f172a; padding: 40px; }
-          .report-container { max-width: 900px; margin: 0 auto; }
-          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0f766e; padding-bottom: 20px; margin-bottom: 30px; }
-          .brand { font-size: 28px; font-weight: bold; color: #0f766e; text-transform: uppercase; letter-spacing: 1px; }
-          .report-title { font-size: 18px; color: #64748b; margin-top: 5px; }
-          .meta { text-align: ${isUrdu ? "left" : "right"}; font-size: 12px; color: #64748b; }
-          table { width: 100%; border-collapse: collapse; font-size: 13px; }
-          th { background: #0f766e; color: #fff; text-align: ${isUrdu ? "right" : "left"}; padding: 12px; font-weight: normal; }
-          td { border-bottom: 1px solid #e2e8f0; padding: 10px; color: #334155; }
-          tr:nth-child(even) td { background: #f0fdfa; }
-          .print-instruct { background: #ccfbf1; color: #0f766e; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #99f6e4; }
-          @media print { body { padding: 0; } .print-instruct { display: none; } }
+          *{box-sizing:border-box}
+          body{font-family:Arial,sans-serif;color:#0f172a;padding:20px}
+          .sheet{max-width:1100px;margin:auto;border:1px solid #dbe3ee}
+          .header{background:#0f172a;color:#fff;padding:18px;display:flex;justify-content:space-between}
+          h1{margin:0;font-size:22px}
+          .sub{margin-top:4px;color:#cbd5e1;font-size:11px}
+          .hint{padding:10px;background:#eef2ff;color:#3730a3;text-align:center}
+          table{width:100%;border-collapse:collapse;font-size:11px}
+          th{background:#0f172a;color:#fff;padding:9px 7px;border:1px solid #334155}
+          td{padding:8px 7px;border:1px solid #e2e8f0}
+          tbody tr:nth-child(even){background:#f8fafc}
+          @media print{
+            @page{size:A4 landscape;margin:8mm}
+            body{padding:0}
+            .hint{display:none}
+          }
         </style>
       </head>
       <body>
-        <div class="report-container">
-          ${isPdf ? `<div class="print-instruct">Please select <strong>"Save as PDF"</strong> in the destination dropdown to download this report.</div>` : ""}
+        ${
+          isPdf
+            ? `<div class="hint">Select <strong>Save as PDF</strong> in the print destination.</div>`
+            : ""
+        }
+
+        <div class="sheet">
           <div class="header">
             <div>
-              <div class="brand">Unique Wear</div>
-              <div class="report-title">${t.reportHeader}</div>
+              <h1>Ali Cage</h1>
+              <div class="sub">${t.reportHeader}</div>
             </div>
-            <div class="meta">
-              <div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
-            </div>
+            <div>${t.printedOn}: ${new Date().toLocaleString(
+      isUrdu ? "ur-PK" : "en-PK"
+    )}</div>
           </div>
+
           <table>
             <thead>
               <tr>
-                <th style="width: 40px; text-align: center;">#</th>
+                <th>#</th>
                 <th>${t.accountCode}</th>
                 <th>${t.accountTitle}</th>
                 <th>${t.group}</th>
-                <th style="text-align:${isUrdu ? 'left' : 'right'};">${t.openingBalance}</th>
+                <th>${t.openingBalance}</th>
+                <th>${t.currentBalance}</th>
+                <th>${t.transactions}</th>
               </tr>
             </thead>
             <tbody>
-              ${filtered.length > 0 ? rowsHtml : `<tr><td colspan="5" style="text-align:center;">${t.noRecords}</td></tr>`}
+              ${
+                rowsHtml ||
+                `<tr><td colspan="7" style="text-align:center">${t.noRecords}</td></tr>`
+              }
             </tbody>
           </table>
         </div>
+
         <script>
-          window.onload = () => { setTimeout(() => { window.print(); ${!isPdf ? "window.onafterprint = () => window.close();" : ""} }, 300); }
+          window.onload = function () {
+            setTimeout(function () {
+              window.print();
+            }, 250);
+          };
         </script>
       </body>
       </html>
-    `;
-    const w = window.open("", "_blank");
-    w.document.write(html);
-    w.document.close();
+    `);
+
+    printWindow.document.close();
   };
 
   return (
-    <div dir={dir} style={{ fontFamily: isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif" }} className="min-h-screen bg-slate-50 p-6 pb-20">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
-      {isUrdu && <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet" />}
+    <div
+      dir={dir}
+      className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-100 p-3 pb-16 sm:p-4"
+      style={{
+        fontFamily: isUrdu
+          ? "'Noto Nastaliq Urdu', serif"
+          : "Inter, Helvetica, Arial, sans-serif",
+      }}
+    >
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+      />
 
-      {/* Floating Toast Message */}
+      {isUrdu && (
+        <link
+          href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      )}
+
       {message.text && (
-        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 transition-all ${message.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
-          <i className={`bi ${message.type === 'error' ? 'bi-exclamation-triangle' : 'bi-check-circle'}`}></i>
+        <div
+          className={`fixed bottom-5 z-[120] max-w-sm rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-2xl ${
+            isUrdu ? "left-5" : "right-5"
+          } ${
+            message.type === "error"
+              ? "bg-rose-600"
+              : "bg-emerald-600"
+          }`}
+        >
           {message.text}
         </div>
       )}
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3 max-w-6xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">{t.title}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t.subtitle}</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setLang(lang === "en" ? "ur" : "en")} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition">
-            <i className="bi bi-translate"></i>{t.toggleLang}
-          </button>
-          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-700 text-white text-sm font-semibold hover:bg-teal-800 transition shadow">
-            <i className="bi bi-plus-lg"></i>{t.addBtn}
-          </button>
-        </div>
-      </div>
+      <div className="mx-auto w-full max-w-[1220px]">
+        {/* HEADER */}
+        <section className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl font-black text-slate-950 sm:text-2xl">
+                {t.title}
+              </h1>
 
-      <div className="max-w-6xl mx-auto">
-        
-        {/* ── Search & Actions ── */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="relative w-full max-w-sm">
-            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder}
-              className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-          </div>
-          
-          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button onClick={() => generatePrintDocument(false)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm">
-              <i className="bi bi-printer text-teal-600"></i> {t.printBtn}
-            </button>
-            <button onClick={() => generatePrintDocument(true)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm">
-              <i className="bi bi-file-earmark-pdf text-red-600"></i> {t.pdfBtn}
-            </button>
-          </div>
-        </div>
+              <p className="mt-0.5 text-[11px] text-slate-500 sm:text-xs">
+                {t.subtitle}
+              </p>
+            </div>
 
-        {/* ── Table ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setLang((previous) =>
+                    previous === "en" ? "ur" : "en"
+                  )
+                }
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100"
+              >
+                <i className="bi bi-translate" />
+                {t.toggleLang}
+              </button>
+
+              <button
+                type="button"
+                onClick={loadAccounts}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100"
+              >
+                <i className="bi bi-arrow-clockwise" />
+                {t.refresh}
+              </button>
+
+              <button
+                type="button"
+                onClick={openAdd}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-extrabold text-white transition hover:bg-indigo-700"
+              >
+                <i className="bi bi-plus-lg" />
+                {t.addBtn}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* SEARCH + PRINT */}
+        <section className="mb-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full max-w-md">
+              <i
+                className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
+                  isUrdu ? "right-3" : "left-3"
+                }`}
+              />
+
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                placeholder={t.searchPlaceholder}
+                className={`h-9 w-full rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${
+                  isUrdu
+                    ? "pl-3 pr-9 text-right"
+                    : "pl-9 pr-3"
+                }`}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  generatePrintDocument(false)
+                }
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100"
+              >
+                <i className="bi bi-printer" />
+                {t.printBtn}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  generatePrintDocument(true)
+                }
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-100"
+              >
+                <i className="bi bi-file-earmark-pdf" />
+                {t.pdfBtn}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* DESKTOP TABLE */}
+        <section className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:block">
+          <table className="w-full table-fixed text-xs">
+            <colgroup>
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "22%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "10%" }} />
+            </colgroup>
+
+            <thead className="bg-slate-900 text-white">
+              <tr>
+                <th className="px-2 py-2.5 text-center text-[9px] font-black uppercase">
+                  #
+                </th>
+
+                <th className="px-2 py-2.5 text-left text-[9px] font-black uppercase">
+                  {t.accountCode}
+                </th>
+
+                <th className="px-2 py-2.5 text-left text-[9px] font-black uppercase">
+                  {t.accountTitle}
+                </th>
+
+                <th className="px-2 py-2.5 text-left text-[9px] font-black uppercase">
+                  {t.group}
+                </th>
+
+                <th className="px-2 py-2.5 text-right text-[9px] font-black uppercase">
+                  {t.openingBalance}
+                </th>
+
+                <th className="px-2 py-2.5 text-right text-[9px] font-black uppercase">
+                  {t.currentBalance}
+                </th>
+
+                <th className="px-2 py-2.5 text-center text-[9px] font-black uppercase">
+                  {t.transactions}
+                </th>
+
+                <th className="px-2 py-2.5 text-center text-[9px] font-black uppercase">
+                  {t.actions}
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
                 <tr>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.accountCode}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.accountTitle}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.group}</th>
-                  <th className="px-4 py-3 text-right">{t.openingBalance}</th>
-                  <th className="px-4 py-3 text-center">{t.actions}</th>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-slate-400"
+                  >
+                    <i className="bi bi-arrow-repeat animate-spin" />{" "}
+                    {t.loading}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">{t.noRecords}</td></tr>
-                ) : (
-                  filtered.map((r, i) => (
-                    <tr key={r.id} className="hover:bg-teal-50 transition">
-                      <td className="px-4 py-3.5 text-slate-400 font-mono text-xs text-center">{i + 1}</td>
-                      <td className="px-4 py-3.5">
-                        <span className="bg-slate-100 text-teal-700 px-2 py-1 rounded text-xs font-mono font-bold border border-slate-200">{r.account_code}</span>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-slate-400"
+                  >
+                    {t.noRecords}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((record, index) => {
+                  const transactionCount =
+                    getAccountTransactions(record).length;
+
+                  return (
+                    <tr
+                      key={record.id}
+                      className="transition hover:bg-indigo-50/40"
+                    >
+                      <td className="px-2 py-2.5 text-center font-bold text-slate-400">
+                        {index + 1}
                       </td>
-                      <td className="px-4 py-3.5 font-bold text-slate-800">
-                        <div className={`flex items-center gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-                          <i className="bi bi-wallet2 text-teal-500 opacity-70"></i>
-                          {r.account_title}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className="bg-slate-100 px-2.5 py-1 rounded-full text-xs font-medium text-slate-600">
-                          <i className="bi bi-diagram-3 mr-1 opacity-50"></i>{r.group_name || "-"}
+
+                      <td className="px-2 py-2.5">
+                        <span className="inline-flex rounded-md border border-indigo-100 bg-indigo-50 px-2 py-1 font-mono text-[10px] font-black text-indigo-700">
+                          {record.account_code || "-"}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-700">
-                        ₨ {fmt(r.opening_balance)}
+
+                      <td className="px-2 py-2.5">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                            <i className="bi bi-wallet2" />
+                          </div>
+
+                          <div className="truncate font-black text-slate-950">
+                            {record.account_title || "-"}
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-4 py-3.5">
-                        <div className={`flex items-center justify-center gap-1.5 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                          <button onClick={() => openEdit(r)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-50 text-teal-600 text-xs font-semibold hover:bg-teal-100 transition"><i className="bi bi-pencil-square"></i></button>
-                          <button onClick={() => handleDelete(r.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 transition"><i className="bi bi-trash3"></i></button>
+
+                      <td className="px-2 py-2.5">
+                        <span className="inline-flex max-w-full truncate rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold text-slate-600">
+                          {record.group_name || "-"}
+                        </span>
+                      </td>
+
+                      <td className="px-2 py-2.5 text-right font-mono text-[10px] font-black text-slate-700">
+                        {formatBalance(
+                          record.opening_balance
+                        )}
+                      </td>
+
+                      <td className="px-2 py-2.5 text-right font-mono text-[10px] font-black text-indigo-700">
+                        {formatBalance(
+                          getCurrentBalance(record)
+                        )}
+                      </td>
+
+                      <td className="px-2 py-2.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openTransactions(record)
+                          }
+                          className="inline-flex min-w-[78px] items-center justify-center gap-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-[9px] font-extrabold text-white transition hover:bg-indigo-700"
+                        >
+                          <i className="bi bi-receipt" />
+                          {transactionCount}
+                        </button>
+                      </td>
+
+                      <td className="px-2 py-2.5">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(record)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
+                            title={t.edit}
+                          >
+                            <i className="bi bi-pencil-square" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDelete(record.id)
+                            }
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600 transition hover:bg-rose-100"
+                            title={t.delete}
+                          >
+                            <i className="bi bi-trash3" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </section>
 
-        {/* ── Modal Form ── */}
-        {showForm && (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" dir={dir}>
-              
-              <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
-                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-                  <i className="bi bi-journal-richtext text-teal-700 text-lg"></i>
+        {/* MOBILE / TABLET */}
+        <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:hidden">
+          {loading ? (
+            <div className="col-span-full rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+              {t.loading}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="col-span-full rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+              {t.noRecords}
+            </div>
+          ) : (
+            filtered.map((record, index) => {
+              const transactionCount =
+                getAccountTransactions(record).length;
+
+              return (
+                <article
+                  key={record.id}
+                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="rounded-md bg-slate-100 px-1.5 py-1 text-[9px] font-black text-slate-500">
+                          #{index + 1}
+                        </span>
+
+                        <span className="rounded-md bg-indigo-50 px-1.5 py-1 font-mono text-[9px] font-black text-indigo-700">
+                          {record.account_code || "-"}
+                        </span>
+                      </div>
+
+                      <h3 className="truncate text-sm font-black text-slate-950">
+                        {record.account_title || "-"}
+                      </h3>
+
+                      <p className="mt-0.5 truncate text-[10px] text-slate-500">
+                        {record.group_name || "-"}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openTransactions(record)
+                      }
+                      className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-indigo-600 px-2.5 text-[9px] font-extrabold text-white"
+                    >
+                      <i className="bi bi-receipt" />
+                      {transactionCount}
+                    </button>
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    <BalanceCard
+                      label={t.openingBalance}
+                      value={formatBalance(
+                        record.opening_balance
+                      )}
+                    />
+
+                    <BalanceCard
+                      label={t.currentBalance}
+                      value={formatBalance(
+                        getCurrentBalance(record)
+                      )}
+                    />
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(record)}
+                      className="h-8 rounded-lg bg-emerald-50 text-[10px] font-extrabold text-emerald-700"
+                    >
+                      {t.edit}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDelete(record.id)
+                      }
+                      className="h-8 rounded-lg bg-rose-50 text-[10px] font-extrabold text-rose-600"
+                    >
+                      {t.delete}
+                    </button>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </section>
+      </div>
+
+      {/* ACCOUNT FORM */}
+      {showForm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeForm();
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            dir={dir}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                  <i className="bi bi-journal-richtext" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-800">{editingId ? t.edit : t.addBtn}</h2>
-              </div>
-              
-              <div className="p-6 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  
-                  {/* Account Code */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.accountCode} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-hash absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <input type="text" value={form.account_code} onChange={e => setForm({ ...form, account_code: e.target.value })} placeholder="1001"
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-teal-500 font-mono ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
 
-                  {/* Account Title */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.accountTitle} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-textarea-t absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <input type="text" value={form.account_title} onChange={e => setForm({ ...form, account_title: e.target.value })} placeholder="e.g. Cash in Hand"
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-teal-500 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
-
-                  {/* Group Dropdown */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.group} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-diagram-3 absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-teal-500 appearance-none ${isUrdu ? "pr-9 pl-8 text-right" : "pl-9 pr-8"}`}>
-                        <option value="">{t.selectGroup}</option>
-                        {groups.map(g => <option key={g.id} value={g.id}>{g.group_name}</option>)}
-                      </select>
-                      <i className={`bi bi-chevron-down absolute top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none ${isUrdu ? "left-3" : "right-3"}`}></i>
-                    </div>
-                  </div>
-
-                  {/* Opening Balance */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.openingBalance}</label>
-                    <div className="relative">
-                      <i className={`bi bi-currency-rupee absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <input type="number" value={form.opening_balance} onChange={e => setForm({ ...form, opening_balance: e.target.value })} placeholder="0.00"
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-teal-500 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-              
-              {/* Footer */}
-              <div className={`px-6 py-4 border-t border-slate-100 bg-slate-50 flex gap-3 flex-shrink-0 rounded-b-2xl ${isUrdu ? "flex-row-reverse justify-start" : "justify-end"}`}>
-                <button onClick={() => setShowForm(false)} className="border border-slate-300 text-slate-600 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-100 transition bg-white">{t.cancel}</button>
-                <button onClick={handleSave} className="bg-teal-700 text-white px-8 py-2.5 rounded-lg font-semibold text-sm hover:bg-teal-800 transition shadow-lg shadow-teal-700/20 flex items-center gap-2">
-                  <i className="bi bi-save"></i> {t.save}
-                </button>
+                <h2 className="text-base font-black text-slate-950">
+                  {editingId ? t.edit : t.addBtn}
+                </h2>
               </div>
 
+              <button
+                type="button"
+                onClick={closeForm}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+              <FormField
+                label={`${t.accountCode} *`}
+              >
+                <input
+                  value={form.account_code}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      account_code: event.target.value,
+                    }))
+                  }
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </FormField>
+
+              <FormField
+                label={`${t.accountTitle} *`}
+              >
+                <input
+                  value={form.account_title}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      account_title: event.target.value,
+                    }))
+                  }
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </FormField>
+
+              <FormField label={`${t.group} *`}>
+                <select
+                  value={form.group_id}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      group_id: event.target.value,
+                    }))
+                  }
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">
+                    {t.selectGroup}
+                  </option>
+
+                  {groups.map((group) => (
+                    <option
+                      key={group.id}
+                      value={group.id}
+                    >
+                      {group.group_name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField label={t.openingBalance}>
+                <input
+                  type="number"
+                  value={form.opening_balance}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      opening_balance:
+                        event.target.value,
+                    }))
+                  }
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </FormField>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
+              <button
+                type="button"
+                onClick={closeForm}
+                disabled={submitting}
+                className="h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-4 text-xs font-extrabold text-indigo-700"
+              >
+                {t.cancel}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={submitting}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+              >
+                <i
+                  className={`bi ${
+                    submitting
+                      ? "bi-arrow-repeat animate-spin"
+                      : "bi-save"
+                  }`}
+                />
+                {submitting ? t.saving : t.save}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* TRANSACTIONS MODAL */}
+      {showTransactions && selectedAccount && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeTransactions();
+            }
+          }}
+        >
+          <div
+            className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            dir={dir}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-black text-slate-950">
+                  {t.transactionDetails}
+                </h2>
+
+                <p className="mt-0.5 truncate text-[10px] text-slate-500">
+                  {selectedAccount.account_code} ·{" "}
+                  {selectedAccount.account_title}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setTransactionLoading(true);
+
+                    try {
+                      await loadLedgerRows();
+                    } catch {
+                      showToast(
+                        "error",
+                        t.transactionLoadError
+                      );
+                    } finally {
+                      setTransactionLoading(false);
+                    }
+                  }}
+                  disabled={transactionLoading}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-[10px] font-extrabold text-indigo-700"
+                >
+                  <i
+                    className={`bi bi-arrow-clockwise ${
+                      transactionLoading
+                        ? "animate-spin"
+                        : ""
+                    }`}
+                  />
+                  {t.refresh}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeTransactions}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white"
+                  title={t.close}
+                >
+                  <i className="bi bi-x-lg" />
+                </button>
+              </div>
+            </div>
+
+            {/* transaction summary */}
+            <div className="grid grid-cols-2 gap-2 border-b border-slate-200 p-3 sm:grid-cols-4">
+              <TransactionSummary
+                label={t.totalTransactions}
+                value={transactionSummary.count}
+              />
+
+              <TransactionSummary
+                label={t.totalDebit}
+                value={formatMoney(
+                  transactionSummary.debit
+                )}
+                valueClass="text-emerald-700"
+              />
+
+              <TransactionSummary
+                label={t.totalCredit}
+                value={formatMoney(
+                  transactionSummary.credit
+                )}
+                valueClass="text-rose-700"
+              />
+
+              <TransactionSummary
+                label={t.currentBalance}
+                value={formatBalance(
+                  getCurrentBalance(selectedAccount)
+                )}
+                valueClass="text-indigo-700"
+              />
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto">
+              {transactionLoading ? (
+                <div className="p-10 text-center text-sm font-bold text-slate-400">
+                  {t.loading}
+                </div>
+              ) : selectedTransactions.length === 0 ? (
+                <div className="p-10 text-center">
+                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <i className="bi bi-receipt" />
+                  </div>
+
+                  <p className="text-xs font-bold text-slate-500">
+                    {t.noTransactions}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="hidden lg:block">
+                    <table className="w-full table-fixed text-[10px]">
+                      <colgroup>
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "10%" }} />
+                        <col style={{ width: "18%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "9%" }} />
+                      </colgroup>
+
+                      <thead className="sticky top-0 bg-slate-900 text-white">
+                        <tr>
+                          <TransactionHead>
+                            {t.transactionId}
+                          </TransactionHead>
+
+                          <TransactionHead>
+                            {t.date}
+                          </TransactionHead>
+
+                          <TransactionHead>
+                            {t.dueDate}
+                          </TransactionHead>
+
+                          <TransactionHead>
+                            {t.reference}
+                          </TransactionHead>
+
+                          <TransactionHead>
+                            {t.description}
+                          </TransactionHead>
+
+                          <TransactionHead align="right">
+                            {t.debit}
+                          </TransactionHead>
+
+                          <TransactionHead align="right">
+                            {t.credit}
+                          </TransactionHead>
+
+                          <TransactionHead align="right">
+                            {t.amount}
+                          </TransactionHead>
+
+                          <TransactionHead align="right">
+                            {t.balance}
+                          </TransactionHead>
+
+                          <TransactionHead align="center">
+                            {t.status}
+                          </TransactionHead>
+                        </tr>
+                      </thead>
+
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedTransactions.map(
+                          (transaction, index) => (
+                            <tr
+                              key={`${transaction.transaction_id}-${index}`}
+                              className="hover:bg-indigo-50/40"
+                            >
+                              <TransactionCell>
+                                <span className="font-mono font-black text-indigo-700">
+                                  {transaction.transaction_id}
+                                </span>
+                              </TransactionCell>
+
+                              <TransactionCell>
+                                {formatDate(
+                                  transaction.date
+                                )}
+                              </TransactionCell>
+
+                              <TransactionCell>
+                                {formatDate(
+                                  transaction.due_date
+                                )}
+                              </TransactionCell>
+
+                              <TransactionCell>
+                                {transaction.reference}
+                              </TransactionCell>
+
+                              <TransactionCell>
+                                <div className="truncate">
+                                  {transaction.description}
+                                </div>
+                              </TransactionCell>
+
+                              <TransactionCell align="right">
+                                <span className="font-mono font-black text-emerald-700">
+                                  {transaction.debit > 0
+                                    ? formatMoney(
+                                        transaction.debit
+                                      )
+                                    : "-"}
+                                </span>
+                              </TransactionCell>
+
+                              <TransactionCell align="right">
+                                <span className="font-mono font-black text-rose-700">
+                                  {transaction.credit > 0
+                                    ? formatMoney(
+                                        transaction.credit
+                                      )
+                                    : "-"}
+                                </span>
+                              </TransactionCell>
+
+                              <TransactionCell align="right">
+                                <span className="font-mono font-black text-slate-800">
+                                  {formatMoney(
+                                    transaction.amount
+                                  )}
+                                </span>
+                              </TransactionCell>
+
+                              <TransactionCell align="right">
+                                <span className="font-mono font-black text-indigo-700">
+                                  {transaction.balance !==
+                                    null
+                                    ? formatBalance(
+                                        transaction.balance
+                                      )
+                                    : "-"}
+                                </span>
+                              </TransactionCell>
+
+                              <TransactionCell align="center">
+                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[8px] font-extrabold text-slate-600">
+                                  {transaction.status || "-"}
+                                </span>
+                              </TransactionCell>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:hidden">
+                    {selectedTransactions.map(
+                      (transaction, index) => (
+                        <article
+                          key={`${transaction.transaction_id}-${index}`}
+                          className="rounded-xl border border-slate-200 bg-white p-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-mono text-[10px] font-black text-indigo-700">
+                                #
+                                {
+                                  transaction.transaction_id
+                                }
+                              </p>
+
+                              <p className="mt-1 text-xs font-black text-slate-950">
+                                {transaction.reference}
+                              </p>
+                            </div>
+
+                            <span className="rounded-full bg-slate-100 px-2 py-1 text-[8px] font-bold text-slate-600">
+                              {transaction.status}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-[10px] text-slate-500">
+                            {transaction.description}
+                          </p>
+
+                          <div className="mt-2 grid grid-cols-2 gap-1.5">
+                            <SmallInfo
+                              label={t.date}
+                              value={formatDate(
+                                transaction.date
+                              )}
+                            />
+
+                            <SmallInfo
+                              label={t.dueDate}
+                              value={formatDate(
+                                transaction.due_date
+                              )}
+                            />
+
+                            <SmallInfo
+                              label={t.amount}
+                              value={formatMoney(
+                                transaction.amount
+                              )}
+                            />
+
+                            <SmallInfo
+                              label={t.balance}
+                              value={
+                                transaction.balance !==
+                                null
+                                  ? formatBalance(
+                                      transaction.balance
+                                    )
+                                  : "-"
+                              }
+                            />
+                          </div>
+                        </article>
+                      )
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-4 py-3">
+              <button
+                type="button"
+                onClick={closeTransactions}
+                className="h-8 rounded-lg bg-indigo-600 px-4 text-[10px] font-extrabold text-white"
+              >
+                {t.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BalanceCard({ label, value }) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-2">
+      <p className="text-[8px] font-extrabold uppercase text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 font-mono text-[10px] font-black text-slate-900">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function FormField({ label, children }) {
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] font-extrabold text-slate-500">
+        {label}
+      </label>
+
+      {children}
+    </div>
+  );
+}
+
+function TransactionSummary({
+  label,
+  value,
+  valueClass = "text-slate-950",
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+      <p className="text-[8px] font-extrabold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+
+      <p
+        className={`mt-1 font-mono text-xs font-black ${valueClass}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function TransactionHead({
+  children,
+  align = "left",
+}) {
+  return (
+    <th
+      className="px-2 py-2.5 text-[8px] font-black uppercase tracking-wide"
+      style={{ textAlign: align }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function TransactionCell({
+  children,
+  align = "left",
+}) {
+  return (
+    <td
+      className="overflow-hidden px-2 py-2.5 align-middle text-slate-600"
+      style={{ textAlign: align }}
+    >
+      {children}
+    </td>
+  );
+}
+
+function SmallInfo({ label, value }) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-2">
+      <p className="text-[8px] font-extrabold uppercase text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words font-mono text-[9px] font-black text-slate-900">
+        {value}
+      </p>
     </div>
   );
 }
