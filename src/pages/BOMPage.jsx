@@ -13,7 +13,7 @@ const LANG = {
     code: "BOM Code", head: "Product Head", headCategory: "Head Category", outputQty: "Assembly Qty", outputUnit: "Output Unit",
     materials: "Materials Used", matCategory: "Material Category", material: "Material Product", unit: "Unit",
     qty: "Required Qty", wastage: "Wastage %", effective: "Effective Qty", rate: "Rate", cost: "Material Cost",
-    addMaterial: "Add Material", labor: "Labor Cost", notes: "Notes", totalMaterials: "Materials", materialTotal: "Material Total",
+    addMaterial: "Add Material", addRow: "Add Row", newMaterial: "New Material", materialName: "Material Name", selectUnit: "-- Select Unit --", saveMaterial: "Save Material", materialSaved: "Material saved and selected.", materialRequiredFields: "Material name, category and unit are required.", labor: "Labor Cost", notes: "Notes", totalMaterials: "Materials", materialTotal: "Material Total",
     totalCost: "Total BOM Cost", unitCost: "Cost / Output Unit", save: "Save BOM", saving: "Saving...", cancel: "Cancel",
     edit: "Edit", delete: "Delete", details: "Details", actions: "Actions", noRecords: "No BOM records found.",
     loading: "Loading...", selectHead: "-- Select Product Head --", selectCategory: "-- Select Category --",
@@ -31,7 +31,7 @@ const LANG = {
     code: "BOM کوڈ", head: "پروڈکٹ ہیڈ", headCategory: "ہیڈ کیٹیگری", outputQty: "اسمبلی مقدار", outputUnit: "آؤٹ پٹ یونٹ",
     materials: "استعمال ہونے والا میٹریل", matCategory: "میٹریل کیٹیگری", material: "میٹریل پروڈکٹ", unit: "یونٹ",
     qty: "مطلوبہ مقدار", wastage: "ویسٹج %", effective: "مؤثر مقدار", rate: "ریٹ", cost: "میٹریل لاگت",
-    addMaterial: "میٹریل شامل کریں", labor: "لیبر لاگت", notes: "نوٹس", totalMaterials: "میٹریلز", materialTotal: "میٹریل ٹوٹل",
+    addMaterial: "میٹریل شامل کریں", addRow: "نئی رو", newMaterial: "نیا میٹریل", materialName: "میٹریل نام", selectUnit: "-- یونٹ منتخب کریں --", saveMaterial: "میٹریل محفوظ کریں", materialSaved: "میٹریل محفوظ ہو گیا اور منتخب ہو گیا۔", materialRequiredFields: "میٹریل نام، کیٹیگری اور یونٹ ضروری ہیں۔", labor: "لیبر لاگت", notes: "نوٹس", totalMaterials: "میٹریلز", materialTotal: "میٹریل ٹوٹل",
     totalCost: "کل BOM لاگت", unitCost: "فی یونٹ لاگت", save: "BOM محفوظ کریں", saving: "محفوظ ہو رہا ہے...", cancel: "منسوخ",
     edit: "ترمیم", delete: "حذف", details: "تفصیل", actions: "عمل", noRecords: "کوئی BOM ریکارڈ نہیں ملا۔",
     loading: "لوڈ ہو رہا ہے...", selectHead: "-- پروڈکٹ ہیڈ منتخب کریں --", selectCategory: "-- کیٹیگری منتخب کریں --",
@@ -93,6 +93,15 @@ export default function BOMPage() {
   const [form, setForm] = useState(blankForm());
   const [selected, setSelected] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [materialTargetKey, setMaterialTargetKey] = useState(null);
+  const [materialSaving, setMaterialSaving] = useState(false);
+  const [materialForm, setMaterialForm] = useState({
+    product_name: "",
+    category_id: "",
+    unit_id: "",
+  });
 
   const toast = useCallback((type, text) => {
     setMessage({ type, text });
@@ -160,6 +169,144 @@ export default function BOMPage() {
   const addRow = () => setForm(f => ({ ...f, items: [...f.items, newRow()] }));
   const removeRow = (key) => setForm(f => f.items.length === 1 ? f : ({ ...f, items: f.items.filter(x => x.key !== key) }));
   const optionsFor = (row) => !row.category_id ? [] : usableProducts.filter(p => String(productCategoryId(p)) === String(row.category_id) && String(p.id) !== String(form.product_id));
+
+  const openNewMaterial = (row) => {
+    setMaterialTargetKey(row.key);
+    setMaterialForm({
+      product_name: "",
+      category_id: row.category_id ? String(row.category_id) : "",
+      unit_id: "",
+    });
+    setShowMaterialForm(true);
+  };
+
+  const closeNewMaterial = () => {
+    if (materialSaving) return;
+    setShowMaterialForm(false);
+    setMaterialTargetKey(null);
+    setMaterialForm({
+      product_name: "",
+      category_id: "",
+      unit_id: "",
+    });
+  };
+
+  const saveNewMaterial = async () => {
+    const name = materialForm.product_name.trim();
+
+    if (!name || !materialForm.category_id || !materialForm.unit_id) {
+      toast("error", t.materialRequiredFields);
+      return;
+    }
+
+    const categoryLabel =
+      categoryMap.get(String(materialForm.category_id)) || "";
+    const unitLabel =
+      unitMap.get(String(materialForm.unit_id)) || "";
+
+    const productPayload = {
+      product_name: name,
+      description: [
+        name,
+        categoryLabel ? `Category: ${categoryLabel}` : "",
+        unitLabel ? `Unit: ${unitLabel}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      product_type_id: null,
+      category_id: Number(materialForm.category_id),
+      unit_id: Number(materialForm.unit_id),
+      master_packing_unit_id: null,
+      master_packing_pieces: 0,
+      is_active: 1,
+      sale_unit: "single",
+      pieces_per_carton: 0,
+      piece_rate: 0,
+    };
+
+    try {
+      setMaterialSaving(true);
+
+      const createdResponse = await axios.post(
+        `${API_BASE}/products`,
+        productPayload
+      );
+
+      // Reload Product Master so this material remains available
+      // in future BOM dropdowns as well.
+      const freshResponse = await axios.get(`${API_BASE}/products`);
+      const freshProducts = list(freshResponse.data);
+      setProducts(freshProducts);
+
+      const responseProduct =
+        createdResponse?.data?.data ||
+        createdResponse?.data?.product ||
+        createdResponse?.data ||
+        {};
+
+      const responseId = responseProduct?.id;
+
+      let createdProduct = responseId
+        ? freshProducts.find(
+            (p) => String(p.id) === String(responseId)
+          )
+        : null;
+
+      if (!createdProduct) {
+        const matches = freshProducts.filter(
+          (p) =>
+            productName(p).trim().toLowerCase() ===
+              name.toLowerCase() &&
+            String(productCategoryId(p)) ===
+              String(materialForm.category_id)
+        );
+
+        createdProduct =
+          matches.length > 0
+            ? matches[matches.length - 1]
+            : null;
+      }
+
+      if (!createdProduct) {
+        throw new Error(
+          "Material was saved but could not be found after refresh."
+        );
+      }
+
+      // Automatically select the newly created material in the row
+      // from which the + button was opened.
+      setForm((previous) => ({
+        ...previous,
+        items: previous.items.map((item) =>
+          item.key !== materialTargetKey
+            ? item
+            : {
+                ...item,
+                category_id: String(materialForm.category_id),
+                product_id: String(createdProduct.id),
+              }
+        ),
+      }));
+
+      toast("success", t.materialSaved);
+      closeNewMaterial();
+    } catch (error) {
+      console.error(
+        "NEW MATERIAL SAVE ERROR:",
+        error?.response?.data || error
+      );
+
+      toast(
+        "error",
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          t.saveError
+      );
+    } finally {
+      setMaterialSaving(false);
+    }
+  };
 
   const validate = () => {
     if (!form.product_id) return toast("error", t.needHead), false;
@@ -375,7 +522,7 @@ export default function BOMPage() {
                   onClick={addRow}
                 >
                   <i className="bi bi-plus-lg" />
-                  {t.addMaterial}
+                  {t.addRow}
                 </button>
               </div>
 
@@ -383,16 +530,16 @@ export default function BOMPage() {
                 <div className="overflow-x-auto">
                   <table className="bom-basicProductTable">
                     <colgroup>
-                      <col style={{ width: 38 }} />
-                      <col style={{ width: 170 }} />
-                      <col style={{ width: 230 }} />
-                      <col style={{ width: 110 }} />
-                      <col style={{ width: 105 }} />
-                      <col style={{ width: 95 }} />
-                      <col style={{ width: 110 }} />
-                      <col style={{ width: 115 }} />
-                      <col style={{ width: 125 }} />
-                      <col style={{ width: 42 }} />
+                      <col style={{ width: "3%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "24%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "9%" }} />
+                      <col style={{ width: "7%" }} />
+                      <col style={{ width: "9%" }} />
+                      <col style={{ width: "8%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "5%" }} />
                     </colgroup>
 
                     <thead>
@@ -440,26 +587,37 @@ export default function BOMPage() {
                           </td>
 
                           <td>
-                            <select
-                              className="bom-productInput"
-                              disabled={!x.category_id}
-                              value={x.product_id}
-                              onChange={(e) =>
-                                changeRow(
-                                  x.key,
-                                  "product_id",
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">{t.selectMaterial}</option>
+                            <div className="bom-materialSelectWrap">
+                              <select
+                                className="bom-productInput"
+                                disabled={!x.category_id}
+                                value={x.product_id}
+                                onChange={(e) =>
+                                  changeRow(
+                                    x.key,
+                                    "product_id",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <option value="">{t.selectMaterial}</option>
 
-                              {optionsFor(x).map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {productName(p)}
-                                </option>
-                              ))}
-                            </select>
+                                {optionsFor(x).map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {productName(p)}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <button
+                                type="button"
+                                className="bom-newMaterialBtn"
+                                onClick={() => openNewMaterial(x)}
+                                title={t.newMaterial}
+                              >
+                                <i className="bi bi-plus-lg" />
+                              </button>
+                            </div>
                           </td>
 
                           <td>
@@ -634,6 +792,133 @@ export default function BOMPage() {
 
       {selected && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-3" onMouseDown={e => e.target===e.currentTarget && setSelected(null)}><div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex justify-between border-b border-slate-200 bg-slate-50 px-4 py-3"><div><h2 className="font-black text-slate-950">{t.details}</h2><p className="text-[10px] text-slate-500">{selected.bom_code} · {selected.product_name}</p></div><button onClick={() => setSelected(null)} className="h-8 w-8 rounded-lg bg-indigo-600 text-white"><i className="bi bi-x-lg"/></button></div><div className="max-h-[75vh] overflow-auto p-3"><div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Info label={t.head} value={selected.product_name}/><Info label={t.headCategory} value={selected.category_name || "-"}/><Info label={t.outputQty} value={selected.output_qty || 1}/><Info accent label={t.totalMaterials} value={selected.items?.length || 0}/></div><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[760px] text-[10px]"><thead className="bg-slate-900 text-white"><tr><Th c>#</Th><Th>{t.matCategory}</Th><Th>{t.material}</Th><Th>{t.unit}</Th><Th r>{t.qty}</Th><Th r>{t.wastage}</Th><Th r>{t.rate}</Th><Th r>{t.cost}</Th></tr></thead><tbody>{(selected.items||[]).map((x,i) => <tr key={x.id||x.key||i} className="border-b border-slate-100"><Td c>{i+1}</Td><Td>{x.category_name || categoryMap.get(String(x.category_id)) || "-"}</Td><Td><b>{x.product_name || x.raw_material || "-"}</b></Td><Td>{x.unit_name || "-"}</Td><Td r>{x.qty || x.required_qty || 0}</Td><Td r>{x.wastage_percent || 0}%</Td><Td r>{money(x.rate)}</Td><Td r>{money(x.material_cost ?? x.total ?? n(x.qty)*n(x.rate))}</Td></tr>)}</tbody></table></div></div></div></div>}
 
+      {showMaterialForm && (
+        <div
+          className="bom-miniModalBack"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              closeNewMaterial();
+            }
+          }}
+        >
+          <div className="bom-miniModal" dir={rtl ? "rtl" : "ltr"}>
+            <div className="bom-miniModalTitle">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+                  <i className="bi bi-box-seam-fill" />
+                </span>
+                <span>{t.newMaterial}</span>
+              </div>
+
+              <button
+                type="button"
+                className="bom-miniCloseBtn"
+                onClick={closeNewMaterial}
+                disabled={materialSaving}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div className="bom-miniModalBody">
+              <div className="bom-miniGrid">
+                <Field label={t.materialName}>
+                  <input
+                    autoFocus
+                    className="bom-basicInput"
+                    value={materialForm.product_name}
+                    onChange={(e) =>
+                      setMaterialForm((f) => ({
+                        ...f,
+                        product_name: e.target.value,
+                      }))
+                    }
+                    placeholder={t.materialName}
+                  />
+                </Field>
+
+                <Field label={t.matCategory}>
+                  <select
+                    className="bom-basicSelect"
+                    value={materialForm.category_id}
+                    onChange={(e) =>
+                      setMaterialForm((f) => ({
+                        ...f,
+                        category_id: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">{t.selectCategory}</option>
+
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {categoryName(c)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label={t.unit}>
+                  <select
+                    className="bom-basicSelect"
+                    value={materialForm.unit_id}
+                    onChange={(e) =>
+                      setMaterialForm((f) => ({
+                        ...f,
+                        unit_id: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">{t.selectUnit}</option>
+
+                    {units.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {unitName(u)}
+                        {u.symbol ? ` (${u.symbol})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+
+              <div className="bom-miniHint">
+                <i className="bi bi-info-circle" />
+                <span>
+                  {t.categoryHelp}
+                </span>
+              </div>
+            </div>
+
+            <div className="bom-miniFooter">
+              <button
+                type="button"
+                className="bom-basicBtn"
+                onClick={closeNewMaterial}
+                disabled={materialSaving}
+              >
+                {t.cancel}
+              </button>
+
+              <button
+                type="button"
+                className="bom-saveBtn"
+                onClick={saveNewMaterial}
+                disabled={materialSaving}
+              >
+                <i
+                  className={`bi ${
+                    materialSaving
+                      ? "bi-arrow-repeat bom-spin"
+                      : "bi-plus-circle"
+                  }`}
+                />
+                {materialSaving ? t.saving : t.saveMaterial}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         * { box-sizing: border-box; }
 
@@ -660,8 +945,8 @@ export default function BOMPage() {
         .bom-fullPageInputBox {
           width: 100% !important;
           max-width: 100% !important;
-          min-height: calc(100vh - 32px);
-          box-shadow: 0 18px 48px rgba(15,23,42,.08) !important;
+          min-height: calc(100vh - 24px);
+          box-shadow: 0 14px 38px rgba(15,23,42,.07) !important;
         }
 
         .bom-inputModalBox {
@@ -672,21 +957,21 @@ export default function BOMPage() {
         }
 
         .bom-inputModalTitle {
-          min-height: 54px;
+          min-height: 46px;
           background: linear-gradient(135deg,#0f172a,#1e293b);
           color: white;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          padding: 10px 18px;
-          font-size: 17px;
+          gap: 10px;
+          padding: 7px 14px;
+          font-size: 15px;
           font-weight: 900;
         }
 
         .bom-closeBtn {
-          min-width: 88px;
-          height: 32px;
+          min-width: 80px;
+          height: 29px;
           padding: 0 12px;
           border: 1px solid rgba(255,255,255,.25);
           background: rgba(255,255,255,.08);
@@ -703,7 +988,7 @@ export default function BOMPage() {
         }
 
         .bom-inputModalBody {
-          padding: 14px;
+          padding: 9px;
           background: #f3f6fb;
         }
 
@@ -717,17 +1002,17 @@ export default function BOMPage() {
         .bom-formTopLine {
           display: grid;
           grid-template-columns:
-            140px minmax(240px,1.5fr) 160px 130px 130px 145px;
-          gap: 10px;
+            125px minmax(220px,1.5fr) 145px 105px 105px 125px;
+          gap: 6px;
           align-items: end;
-          margin-bottom: 10px;
+          margin-bottom: 6px;
         }
 
         .basicLabel {
           display: block;
-          margin-bottom: 5px;
+          margin-bottom: 3px;
           color: #334155;
-          font-size: 10px;
+          font-size: 8.5px;
           font-weight: 900;
           text-transform: uppercase;
           letter-spacing: .35px;
@@ -750,16 +1035,16 @@ export default function BOMPage() {
         .bom-basicInput,
         .bom-basicSelect,
         .bom-productInput {
-          height: 34px;
-          padding: 5px 9px;
-          font-size: 11px;
+          height: 30px;
+          padding: 3px 7px;
+          font-size: 9.5px;
         }
 
         .bom-basicTextarea {
-          min-height: 72px;
-          padding: 8px 10px;
+          min-height: 50px;
+          padding: 6px 8px;
           resize: vertical;
-          font-size: 11px;
+          font-size: 9.5px;
         }
 
         .bom-basicInput[readonly],
@@ -784,7 +1069,7 @@ export default function BOMPage() {
         }
 
         .bom-sectionHead {
-          min-height: 38px;
+          min-height: 32px;
           background: linear-gradient(135deg,#eef2ff,#f8fafc);
           border: 1px solid #cbd5e1;
           border-radius: 14px 14px 0 0;
@@ -792,9 +1077,9 @@ export default function BOMPage() {
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          padding: 7px 12px;
-          margin-top: 12px;
-          font-size: 11px;
+          padding: 4px 9px;
+          margin-top: 7px;
+          font-size: 10px;
           font-weight: 950;
           color: #0f172a;
           box-shadow: 0 10px 24px rgba(15,23,42,.045);
@@ -803,7 +1088,7 @@ export default function BOMPage() {
         .bom-paymentPanel {
           border: 1px solid #cbd5e1;
           border-top: none;
-          padding: 8px;
+          padding: 5px;
           background: white;
           border-radius: 0 0 14px 14px;
           overflow: auto;
@@ -811,12 +1096,12 @@ export default function BOMPage() {
         }
 
         .bom-basicBtn {
-          min-height: 32px;
+          min-height: 28px;
           border: 1px solid #cbd5e1;
           background: white;
           color: #0f172a;
-          padding: 5px 12px;
-          font-size: 10px;
+          padding: 4px 9px;
+          font-size: 9px;
           cursor: pointer;
           border-radius: 10px;
           font-weight: 850;
@@ -831,12 +1116,12 @@ export default function BOMPage() {
         }
 
         .bom-saveBtn {
-          min-height: 32px;
+          min-height: 29px;
           border: 1px solid #4f46e5;
           background: #4f46e5;
           color: white;
-          padding: 5px 14px;
-          font-size: 10px;
+          padding: 4px 11px;
+          font-size: 9px;
           cursor: pointer;
           border-radius: 10px;
           font-weight: 900;
@@ -860,7 +1145,7 @@ export default function BOMPage() {
 
         .bom-basicProductTable {
           width: 100%;
-          min-width: 1080px;
+          min-width: 0;
           border-collapse: collapse;
           background: white;
           table-layout: fixed;
@@ -869,23 +1154,24 @@ export default function BOMPage() {
         .bom-basicProductTable th,
         .bom-basicProductTable td {
           border: 1px solid #dbe3ee;
-          padding: 5px;
-          font-size: 10px;
+          padding: 3px;
+          font-size: 9px;
           vertical-align: middle;
+          overflow: hidden;
         }
 
         .bom-basicProductTable th {
           background: #e2e8f0;
           text-align: center;
           color: #334155;
-          font-size: 9px;
+          font-size: 8px;
           font-weight: 900;
           text-transform: uppercase;
         }
 
         .bom-rowDeleteBtn {
-          width: 30px;
-          height: 30px;
+          width: 26px;
+          height: 26px;
           border: 1px solid #fecdd3;
           background: #fff1f2;
           color: #e11d48;
@@ -899,25 +1185,25 @@ export default function BOMPage() {
         }
 
         .bom-finalTotalBar {
-          margin-top: 12px;
+          margin-top: 7px;
           display: grid;
           grid-template-columns: repeat(6,1fr);
-          gap: 10px;
+          gap: 6px;
         }
 
         .bom-totalBox {
           border: 1px solid #dbe3ee;
           background: #f8fafc;
-          border-radius: 14px;
-          padding: 10px 12px;
+          border-radius: 10px;
+          padding: 7px 8px;
           min-width: 0;
         }
 
         .bom-totalBox label {
           display: block;
           color: #64748b;
-          font-size: 9px;
-          margin-bottom: 5px;
+          font-size: 8px;
+          margin-bottom: 3px;
           font-weight: 900;
           text-transform: uppercase;
         }
@@ -928,7 +1214,7 @@ export default function BOMPage() {
           text-overflow: ellipsis;
           white-space: nowrap;
           font-family: monospace;
-          font-size: 15px;
+          font-size: 12px;
           color: #0f172a;
         }
 
@@ -942,7 +1228,7 @@ export default function BOMPage() {
         }
 
         .bom-modalFooterBasic {
-          padding: 12px 0 0;
+          padding: 7px 0 0;
           display: flex;
           justify-content: flex-end;
           gap: 8px;
@@ -950,6 +1236,115 @@ export default function BOMPage() {
           bottom: 0;
           background:
             linear-gradient(180deg,rgba(243,246,251,0),#f3f6fb 35%);
+        }
+
+
+        .bom-materialSelectWrap {
+          display: grid;
+          grid-template-columns: minmax(0,1fr) 27px;
+          gap: 3px;
+          align-items: center;
+        }
+
+        .bom-newMaterialBtn {
+          width: 27px;
+          height: 27px;
+          border: 1px solid #c7d2fe;
+          border-radius: 8px;
+          background: #eef2ff;
+          color: #4f46e5;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 11px;
+          font-weight: 950;
+          transition: .14s ease;
+        }
+
+        .bom-newMaterialBtn:hover {
+          background: #4f46e5;
+          border-color: #4f46e5;
+          color: white;
+        }
+
+        .bom-miniModalBack {
+          position: fixed;
+          inset: 0;
+          z-index: 220;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 12px;
+          background: rgba(15,23,42,.58);
+          backdrop-filter: blur(5px);
+        }
+
+        .bom-miniModal {
+          width: min(520px, 100%);
+          overflow: hidden;
+          border: 1px solid #cbd5e1;
+          border-radius: 16px;
+          background: #f8fafc;
+          box-shadow: 0 28px 80px rgba(15,23,42,.28);
+          animation: bomFadeSlide .18s ease-out both;
+        }
+
+        .bom-miniModalTitle {
+          min-height: 44px;
+          padding: 7px 12px;
+          background: linear-gradient(135deg,#0f172a,#1e293b);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .bom-miniCloseBtn {
+          width: 29px;
+          height: 29px;
+          border: 1px solid rgba(255,255,255,.22);
+          border-radius: 9px;
+          background: rgba(255,255,255,.08);
+          color: white;
+          cursor: pointer;
+        }
+
+        .bom-miniModalBody {
+          padding: 10px;
+        }
+
+        .bom-miniGrid {
+          display: grid;
+          grid-template-columns: 1.35fr 1fr 1fr;
+          gap: 7px;
+          align-items: end;
+        }
+
+        .bom-miniHint {
+          margin-top: 7px;
+          display: flex;
+          align-items: flex-start;
+          gap: 5px;
+          border: 1px solid #c7d2fe;
+          border-radius: 9px;
+          background: #eef2ff;
+          padding: 6px 8px;
+          color: #475569;
+          font-size: 8.5px;
+          font-weight: 700;
+          line-height: 1.35;
+        }
+
+        .bom-miniFooter {
+          display: flex;
+          justify-content: flex-end;
+          gap: 6px;
+          border-top: 1px solid #dbe3ee;
+          background: white;
+          padding: 8px 10px;
         }
 
         @media(max-width: 1120px) {
@@ -997,6 +1392,10 @@ export default function BOMPage() {
           .bom-modalFooterBasic {
             display: grid;
             grid-template-columns: 1fr 1fr;
+          }
+
+          .bom-miniGrid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
