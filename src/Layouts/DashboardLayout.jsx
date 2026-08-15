@@ -189,6 +189,11 @@ const ACCOUNT_ITEMS = [
     fallback: "Cash Book",
   },
   {
+    to: "/app/accounts/cheques",
+    key: "chequeVouchers",
+    fallback: "Cheque Vouchers",
+  },
+  {
     divider: true,
   },
   {
