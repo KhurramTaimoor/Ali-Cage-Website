@@ -52,6 +52,7 @@ import JournalVoucherPage from "./pages/JournalVoucherPage";
 import CashBookPage from "./pages/CashBookPage";
 import GeneralLedgerPage from "./pages/GeneralLedgerPage";
 import CashBookReportPage from "./pages/CashBookReportPage";
+import ChequeVoucherPage from "./pages/ChequeVoucherPage";
 
 import DepartmentPage from "./pages/DepartmentPage";
 import EmployeePage from "./pages/EmployeePage";
@@ -272,6 +273,11 @@ function App() {
             <Route
               path="accounts/cashbook"
               element={<CashBookPage />}
+            />
+
+            <Route
+              path="accounts/cheques"
+              element={<ChequeVoucherPage />}
             />
 
             <Route
