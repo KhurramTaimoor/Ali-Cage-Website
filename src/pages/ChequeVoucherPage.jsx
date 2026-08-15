@@ -278,9 +278,21 @@ const dueMeta = (dateValue, status, t, isUrdu) => {
 
 export default function ChequeVoucherPage() {
   const outlet = useOutletContext() || {};
-  const lang = outlet.lang === "ur" ? "ur" : "en";
+  const [fallbackLang, setFallbackLang] = useState("en");
+  const lang = outlet.lang === "ur" || outlet.lang === "en" ? outlet.lang : fallbackLang;
   const t = LANG[lang];
   const isUrdu = typeof outlet.isRTL === "boolean" ? outlet.isRTL : lang === "ur";
+
+  const toggleLanguage = () => {
+    const nextLanguage = lang === "en" ? "ur" : "en";
+
+    if (typeof outlet.setLang === "function") {
+      outlet.setLang(nextLanguage);
+      return;
+    }
+
+    setFallbackLang(nextLanguage);
+  };
   const [records, setRecords] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -557,6 +569,14 @@ export default function ChequeVoucherPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                onClick={toggleLanguage}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50"
+              >
+                {t.toggleLang}
+              </button>
+
+              <button
+                type="button"
                 onClick={loadRecords}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
               >
@@ -768,7 +788,7 @@ export default function ChequeVoucherPage() {
         >
           <form onSubmit={saveVoucher} className="space-y-3">
             <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[150px_minmax(160px,1.15fr)_minmax(190px,1.35fr)_165px_165px_140px]">
+              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[150px_minmax(175px,1fr)_minmax(210px,1.2fr)_170px_170px]">
               <Field label={t.voucherNo} hint={t.autoVoucher}>
                 <input
                   value={form.voucher_no}
@@ -827,7 +847,7 @@ export default function ChequeVoucherPage() {
                 />
               </Field>
 
-              <Field label={t.chequeTotal} required>
+              <Field label={t.chequeTotal} required className="xl:col-start-1">
                 <input
                   type="number"
                   min="0.01"
@@ -841,7 +861,7 @@ export default function ChequeVoucherPage() {
 
                 <Field
                   label={t.notes}
-                  className="sm:col-span-2 lg:col-span-3 xl:col-span-full"
+                  className="sm:col-span-2 lg:col-span-3 xl:col-span-4"
                 >
                   <textarea
                     value={form.notes}
