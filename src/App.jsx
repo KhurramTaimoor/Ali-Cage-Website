@@ -366,6 +366,17 @@ function App() {
               path="permissions"
               element={<PermissionsPage />}
             />
+
+            {/* Keep unknown dashboard URLs inside the authenticated app. */}
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="dashboard"
+                  replace
+                />
+              }
+            />
           </Route>
         </Route>
 
