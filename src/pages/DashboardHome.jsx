@@ -92,6 +92,16 @@ const LANG = {
     completed: "Completed",
     returned: "Returned",
     pending: "Pending",
+    chequeSchedule: "Upcoming Cheque Clearances",
+    chequeSubtitle: "Nearest pending clearance dates are shown first",
+    chequeVoucher: "Cheque Voucher",
+    viewAll: "View All",
+    noCheques: "No cheque vouchers found",
+    issuance: "Issued",
+    clearance: "Clearance",
+    remaining: "Remaining",
+    cleared: "Cleared",
+    partial: "Partially Paid",
   },
 
   ur: {
@@ -142,6 +152,16 @@ const LANG = {
     completed: "مکمل",
     returned: "واپس",
     pending: "زیر التواء",
+    chequeSchedule: "آنے والے چیک کلیئرنس",
+    chequeSubtitle: "قریب ترین زیر التواء کلیئرنس تاریخیں پہلے دکھائی گئی ہیں",
+    chequeVoucher: "چیک واؤچر",
+    viewAll: "تمام دیکھیں",
+    noCheques: "کوئی چیک واؤچر موجود نہیں",
+    issuance: "جاری ہونے کی تاریخ",
+    clearance: "کلیئرنس",
+    remaining: "بقایا",
+    cleared: "کلیئر",
+    partial: "جزوی ادائیگی",
   },
 };
 
@@ -161,6 +181,7 @@ const DashboardHome = () => {
   const [purchaseReturns, setPurchaseReturns] = useState([]);
   const [saleOrders, setSaleOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [chequeVouchers, setChequeVouchers] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [translating, setTranslating] = useState(false);
@@ -177,6 +198,7 @@ const DashboardHome = () => {
         purchaseReturnsData,
         saleOrdersData,
         productsData,
+        chequeVouchersData,
       ] = await Promise.all([
         apiFetch("/api/sales-invoices"),
         apiFetch("/api/sales-returns"),
@@ -184,6 +206,9 @@ const DashboardHome = () => {
         apiFetch("/api/purchase-returns"),
         apiFetch("/api/sale-orders"),
         apiFetch("/api/products"),
+        apiFetch("/api/cheque-vouchers/dashboard?limit=6").catch(() => ({
+          data: [],
+        })),
       ]);
 
       setSalesInvoices(normalizeArray(salesInvoicesData));
@@ -192,6 +217,7 @@ const DashboardHome = () => {
       setPurchaseReturns(normalizeArray(purchaseReturnsData));
       setSaleOrders(normalizeArray(saleOrdersData));
       setProducts(normalizeArray(productsData));
+      setChequeVouchers(normalizeArray(chequeVouchersData));
     } catch (err) {
       console.error("Dashboard data error:", err);
       setSalesInvoices([]);
@@ -200,6 +226,7 @@ const DashboardHome = () => {
       setPurchaseReturns([]);
       setSaleOrders([]);
       setProducts([]);
+      setChequeVouchers([]);
     } finally {
       setLoading(false);
     }
@@ -634,6 +661,73 @@ const DashboardHome = () => {
           />
         </div>
 
+        <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden mb-5">
+          <div className="px-6 py-5 border-b border-sky-100 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="font-extrabold text-slate-800">
+                {t.chequeSchedule}
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">{t.chequeSubtitle}</p>
+            </div>
+            <Link
+              to="/app/accounts/cheques"
+              className="inline-flex items-center gap-2 rounded-xl bg-sky-100 px-4 py-2 text-xs font-bold text-sky-700 hover:bg-sky-200"
+            >
+              {t.viewAll}
+              <i className={`bi bi-arrow-${isUrdu ? "left" : "right"}`}></i>
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[850px] text-sm">
+              <thead className="bg-sky-50 text-xs font-bold text-slate-500">
+                <tr>
+                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.chequeVoucher}</th>
+                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.party}</th>
+                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.issuance}</th>
+                  <th className={`px-5 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.clearance}</th>
+                  <th className={`px-5 py-3 ${isUrdu ? "text-left" : "text-right"}`}>{t.remaining}</th>
+                  <th className="px-5 py-3 text-center">{t.status}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sky-50">
+                {loading ? (
+                  <tr><td colSpan="6" className="px-5 py-8 text-center text-slate-400">{t.loading}</td></tr>
+                ) : chequeVouchers.length === 0 ? (
+                  <tr><td colSpan="6" className="px-5 py-8 text-center text-slate-400">{t.noCheques}</td></tr>
+                ) : (
+                  chequeVouchers.map((voucher) => {
+                    const status = String(voucher.status || "pending").toLowerCase();
+                    const statusLabel = status === "cleared" ? t.cleared : status === "partial" ? t.partial : t.remaining;
+                    const statusClass = status === "cleared" ? "bg-emerald-100 text-emerald-700" : status === "partial" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700";
+                    return (
+                      <tr key={voucher.id} className="hover:bg-sky-50/50">
+                        <td className="px-5 py-4 font-extrabold text-slate-900">
+                          <Link to="/app/accounts/cheques" className="hover:text-sky-700">{voucher.voucher_no}</Link>
+                        </td>
+                        <td className="px-5 py-4 font-semibold text-slate-700">{voucher.payee_name || "—"}</td>
+                        <td className="px-5 py-4 font-mono text-xs text-slate-600">{formatDate(voucher.issuance_date)}</td>
+                        <td className="px-5 py-4">
+                          <div className="font-mono text-xs text-slate-700">{formatDate(voucher.clearance_date)}</div>
+                          <div className={`mt-1 text-[11px] font-bold ${getChequeDueClass(voucher.clearance_date, status)}`}>
+                            {getChequeDueText(voucher.clearance_date, status)}
+                          </div>
+                        </td>
+                        <td className={`px-5 py-4 font-mono font-bold text-rose-700 ${isUrdu ? "text-left" : "text-right"}`}>
+                          {formatCurrency(voucher.remaining_amount)}
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${statusClass}`}>{statusLabel}</span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div className="bg-white rounded-3xl shadow-sm border border-sky-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-sky-100 bg-white">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -974,6 +1068,33 @@ function getStatusClass(status) {
   }
 
   return "bg-slate-100 text-slate-700";
+}
+
+function getChequeDays(clearanceDate) {
+  if (!clearanceDate) return null;
+  const due = new Date(`${String(clearanceDate).slice(0, 10)}T00:00:00`);
+  const current = new Date();
+  current.setHours(0, 0, 0, 0);
+  if (Number.isNaN(due.getTime())) return null;
+  return Math.round((due - current) / 86400000);
+}
+
+function getChequeDueText(clearanceDate, status) {
+  if (status === "cleared") return "";
+  const days = getChequeDays(clearanceDate);
+  if (days === null) return "";
+  if (days < 0) return `${Math.abs(days)} day overdue`;
+  if (days === 0) return "Due today";
+  return `Due in ${days} day${days === 1 ? "" : "s"}`;
+}
+
+function getChequeDueClass(clearanceDate, status) {
+  if (status === "cleared") return "text-emerald-700";
+  const days = getChequeDays(clearanceDate);
+  if (days === null) return "text-slate-400";
+  if (days < 0) return "text-rose-700";
+  if (days === 0) return "text-amber-700";
+  return "text-sky-700";
 }
 
 export default DashboardHome;
