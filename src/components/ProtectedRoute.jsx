@@ -1,29 +1,69 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React from "react";
+import {
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 
-// In a real app, you'd get this from your Auth Context or Redux store
-// For now, we simulate it with a simple function or localStorage
 const getUser = () => {
-  // Example: Retrieve user info from localStorage
-  const user = JSON.parse(localStorage.getItem('user'));
-  return user;
+  try {
+    const storedUser =
+      localStorage.getItem("user");
+
+    if (!storedUser) {
+      return null;
+    }
+
+    return JSON.parse(storedUser);
+  } catch (error) {
+    console.error(
+      "Invalid user data in localStorage:",
+      error
+    );
+
+    return null;
+  }
 };
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const user = getUser();
 
-  // 1. Check if user is logged in
+  // User login nahi hai
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
-  // 2. Check if user has the required role (if roles are specified)
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // User is logged in but doesn't have permission (e.g. Employee trying to access Admin)
-    return <Navigate to="/unauthorized" replace />; // Or redirect to dashboard
+  // Role ko lowercase mein normalize karna
+  const userRole = String(
+    user.role || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const normalizedAllowedRoles =
+    allowedRoles?.map((role) =>
+      String(role)
+        .trim()
+        .toLowerCase()
+    );
+
+  // Invalid role par logout nahi karna
+  if (
+    normalizedAllowedRoles?.length &&
+    !normalizedAllowedRoles.includes(userRole)
+  ) {
+    return (
+      <Navigate
+        to="/app/dashboard"
+        replace
+      />
+    );
   }
 
-  // 3. If all checks pass, render the child routes (Outlet)
   return <Outlet />;
 };
 
