@@ -22,6 +22,165 @@ const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000")
   .replace(/\/api$/i, "");
 const API_BASE = `${API_ROOT}/api`;
 
+const LANG = {
+  en: {
+    accounts: "Accounts",
+    title: "Cheque Vouchers",
+    subtitle: "Manage issued cheques, clearance dates and payment progress.",
+    toggleLang: "اردو",
+    refresh: "Refresh",
+    newVoucher: "New Voucher",
+    vouchers: "Vouchers",
+    issuedTotal: "Issued Total",
+    paidCleared: "Paid / Cleared",
+    remaining: "Remaining",
+    all: "All",
+    cleared: "Cleared",
+    partial: "Partially Paid",
+    search: "Search voucher, payee or account...",
+    voucherPayee: "Voucher / Payee",
+    issueDate: "Issue Date",
+    clearanceDate: "Clearance Date",
+    chequeAmount: "Cheque Amount",
+    paidRemaining: "Paid / Remaining",
+    paidShort: "Paid",
+    remShort: "Rem",
+    status: "Status",
+    actions: "Actions",
+    loading: "Loading vouchers...",
+    noVouchers: "No vouchers found",
+    noMatch: "No cheque vouchers match the selected filter.",
+    details: "Details",
+    viewDetails: "View complete details",
+    editPayment: "Edit / add payment",
+    delete: "Delete",
+    editVoucher: "Edit Cheque Voucher",
+    createVoucher: "New Cheque Voucher",
+    voucherNo: "Voucher No",
+    autoVoucher: "Leave blank to generate automatically",
+    voucherPlaceholder: "CHQ-00001",
+    payee: "Payee / Party Name",
+    payeePlaceholder: "Enter payee name",
+    ledgerAccount: "Ledger Account",
+    ledgerHint: "The amount is deducted from this ledger on the issuance date",
+    selectLedger: "Select ledger account",
+    issuanceDate: "Issuance Date",
+    chequeTotal: "Cheque Total",
+    notes: "Notes",
+    notesPlaceholder: "Optional voucher notes",
+    paymentDetails: "Payment / Clearance Details",
+    paymentHelp: "Add another row whenever a payment is cleared.",
+    addRow: "Add Row",
+    date: "Date",
+    detail: "Details",
+    amount: "Amount",
+    paymentPlaceholder: "Payment / clearance detail",
+    remainingBalance: "Remaining Balance",
+    cancel: "Cancel",
+    saveVoucher: "Save Voucher",
+    updateVoucher: "Update Voucher",
+    close: "Close",
+    paymentRows: "Payment Rows",
+    allPayments: "All Payment / Clearance Details",
+    noPayments: "No payment entries have been added yet.",
+    requiredMain: "Payee, ledger account and issuance date are required.",
+    requiredTotal: "Clearance date and a valid cheque total are required.",
+    overPaid: "Paid amount cannot be greater than the cheque total.",
+    loadError: "Unable to load cheque vouchers. Please try again.",
+    accountsError: "Unable to load ledger accounts. Please try again.",
+    detailsError: "Unable to load voucher details.",
+    saveError: "Unable to save the cheque voucher.",
+    deleteError: "Unable to delete the cheque voucher.",
+    saved: "Cheque voucher saved.",
+    updated: "Cheque voucher updated.",
+    deleted: "Cheque voucher deleted.",
+    deleteConfirm: "Delete cheque voucher",
+    dueToday: "Due today",
+    dueIn: "Due in",
+    overdue: "overdue",
+    day: "day",
+    days: "days",
+  },
+  ur: {
+    accounts: "اکاؤنٹس",
+    title: "چیک واؤچرز",
+    subtitle: "جاری شدہ چیکس، کلیئرنس کی تاریخ اور ادائیگی کی پیش رفت سنبھالیں۔",
+    toggleLang: "English",
+    refresh: "ری فریش",
+    newVoucher: "نیا واؤچر",
+    vouchers: "واؤچرز",
+    issuedTotal: "کل جاری رقم",
+    paidCleared: "ادا / کلیئر",
+    remaining: "باقی رقم",
+    all: "سب",
+    cleared: "کلیئر",
+    partial: "جزوی ادائیگی",
+    search: "واؤچر، پارٹی یا اکاؤنٹ تلاش کریں...",
+    voucherPayee: "واؤچر / پارٹی",
+    issueDate: "اجراء کی تاریخ",
+    clearanceDate: "کلیئرنس کی تاریخ",
+    chequeAmount: "چیک کی رقم",
+    paidRemaining: "ادا / باقی",
+    paidShort: "ادا",
+    remShort: "باقی",
+    status: "حالت",
+    actions: "ایکشنز",
+    loading: "واؤچرز لوڈ ہو رہے ہیں...",
+    noVouchers: "کوئی واؤچر نہیں ملا",
+    noMatch: "منتخب فلٹر کے مطابق کوئی چیک واؤچر نہیں ملا۔",
+    details: "تفصیلات",
+    viewDetails: "مکمل تفصیلات دیکھیں",
+    editPayment: "ترمیم / ادائیگی شامل کریں",
+    delete: "حذف کریں",
+    editVoucher: "چیک واؤچر میں ترمیم",
+    createVoucher: "نیا چیک واؤچر",
+    voucherNo: "واؤچر نمبر",
+    autoVoucher: "خالی چھوڑنے پر نمبر خود بن جائے گا",
+    voucherPlaceholder: "CHQ-00001",
+    payee: "پارٹی / وصول کنندہ",
+    payeePlaceholder: "پارٹی کا نام درج کریں",
+    ledgerAccount: "لیجر اکاؤنٹ",
+    ledgerHint: "اجراء کی تاریخ پر رقم اسی لیجر سے منہا ہوگی",
+    selectLedger: "لیجر اکاؤنٹ منتخب کریں",
+    issuanceDate: "اجراء کی تاریخ",
+    chequeTotal: "چیک کی کل رقم",
+    notes: "نوٹس",
+    notesPlaceholder: "اختیاری واؤچر نوٹس",
+    paymentDetails: "ادائیگی / کلیئرنس کی تفصیلات",
+    paymentHelp: "ہر ادائیگی کلیئر ہونے پر نئی قطار شامل کریں۔",
+    addRow: "قطار شامل کریں",
+    date: "تاریخ",
+    detail: "تفصیل",
+    amount: "رقم",
+    paymentPlaceholder: "ادائیگی یا کلیئرنس کی تفصیل",
+    remainingBalance: "باقی بیلنس",
+    cancel: "واپس",
+    saveVoucher: "واؤچر محفوظ کریں",
+    updateVoucher: "واؤچر اپڈیٹ کریں",
+    close: "بند کریں",
+    paymentRows: "ادائیگی کی قطاریں",
+    allPayments: "تمام ادائیگی / کلیئرنس تفصیلات",
+    noPayments: "ابھی کوئی ادائیگی شامل نہیں کی گئی۔",
+    requiredMain: "پارٹی، لیجر اکاؤنٹ اور اجراء کی تاریخ ضروری ہیں۔",
+    requiredTotal: "کلیئرنس کی تاریخ اور درست چیک رقم ضروری ہے۔",
+    overPaid: "ادا شدہ رقم چیک کی کل رقم سے زیادہ نہیں ہو سکتی۔",
+    loadError: "چیک واؤچرز لوڈ نہیں ہو سکے۔ دوبارہ کوشش کریں۔",
+    accountsError: "لیجر اکاؤنٹس لوڈ نہیں ہو سکے۔",
+    detailsError: "واؤچر کی تفصیلات لوڈ نہیں ہو سکیں۔",
+    saveError: "چیک واؤچر محفوظ نہیں ہو سکا۔",
+    deleteError: "چیک واؤچر حذف نہیں ہو سکا۔",
+    saved: "چیک واؤچر محفوظ ہوگیا۔",
+    updated: "چیک واؤچر اپڈیٹ ہوگیا۔",
+    deleted: "چیک واؤچر حذف ہوگیا۔",
+    deleteConfirm: "یہ چیک واؤچر حذف کریں",
+    dueToday: "آج واجب الادا",
+    dueIn: "باقی دن",
+    overdue: "دن تاخیر",
+    day: "دن",
+    days: "دن",
+  },
+};
+
 const today = () => {
   const date = new Date();
   const year = date.getFullYear();
@@ -67,28 +226,28 @@ const normalizeArray = (payload) => {
   return [];
 };
 
-const statusMeta = (status) => {
+const statusMeta = (status, t) => {
   if (status === "cleared") {
     return {
-      label: "Cleared",
+      label: t.cleared,
       className: "border-emerald-200 bg-emerald-50 text-emerald-700",
     };
   }
 
   if (status === "partial") {
     return {
-      label: "Partially Paid",
+      label: t.partial,
       className: "border-amber-200 bg-amber-50 text-amber-700",
     };
   }
 
   return {
-    label: "Remaining",
+    label: t.remaining,
     className: "border-rose-200 bg-rose-50 text-rose-700",
   };
 };
 
-const dueMeta = (dateValue, status) => {
+const dueMeta = (dateValue, status, t, isUrdu) => {
   if (status === "cleared" || !dateValue) return null;
 
   const due = new Date(`${String(dateValue).slice(0, 10)}T00:00:00`);
@@ -97,22 +256,29 @@ const dueMeta = (dateValue, status) => {
 
   if (days < 0) {
     return {
-      text: `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`,
+      text: isUrdu
+        ? `${Math.abs(days)} ${t.overdue}`
+        : `${Math.abs(days)} ${Math.abs(days) === 1 ? t.day : t.days} ${t.overdue}`,
       tone: "text-rose-600",
     };
   }
 
   if (days === 0) {
-    return { text: "Due today", tone: "text-amber-600" };
+    return { text: t.dueToday, tone: "text-amber-600" };
   }
 
   return {
-    text: `Due in ${days} day${days === 1 ? "" : "s"}`,
+    text: isUrdu
+      ? `${t.dueIn}: ${days}`
+      : `${t.dueIn} ${days} ${days === 1 ? t.day : t.days}`,
     tone: "text-sky-600",
   };
 };
 
 export default function ChequeVoucherPage() {
+  const [lang, setLang] = useState("en");
+  const t = LANG[lang];
+  const isUrdu = lang === "ur";
   const [records, setRecords] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -141,12 +307,12 @@ export default function ChequeVoucherPage() {
       setRecords([]);
       setError(
         requestError.response?.data?.message ||
-          "Unable to load cheque vouchers. Please try again."
+          t.loadError
       );
     } finally {
       setLoading(false);
     }
-  }, [filter, search]);
+  }, [filter, search, t.loadError]);
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -155,10 +321,10 @@ export default function ChequeVoucherPage() {
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
-          "Unable to load ledger accounts. Please try again."
+          t.accountsError
       );
     }
-  }, []);
+  }, [t.accountsError]);
 
   useEffect(() => {
     loadAccounts();
@@ -237,7 +403,7 @@ export default function ChequeVoucherPage() {
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
-          "Unable to load voucher details."
+          t.detailsError
       );
     }
   };
@@ -250,7 +416,7 @@ export default function ChequeVoucherPage() {
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
-          "Unable to load voucher details."
+          t.detailsError
       );
     }
   };
@@ -289,17 +455,17 @@ export default function ChequeVoucherPage() {
     setError("");
 
     if (!form.payee_name.trim() || !form.account_id || !form.issuance_date) {
-      setError("Payee, ledger account and issuance date are required.");
+      setError(t.requiredMain);
       return;
     }
 
     if (!form.clearance_date || formTotal <= 0) {
-      setError("Clearance date and a valid cheque total are required.");
+      setError(t.requiredTotal);
       return;
     }
 
     if (paidInForm > formTotal) {
-      setError("Paid amount cannot be greater than the cheque total.");
+      setError(t.overPaid);
       return;
     }
 
@@ -328,12 +494,12 @@ export default function ChequeVoucherPage() {
       }
 
       setShowForm(false);
-      flash(editingId ? "Cheque voucher updated." : "Cheque voucher saved.");
+      flash(editingId ? t.updated : t.saved);
       await loadRecords();
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
-          "Unable to save the cheque voucher."
+          t.saveError
       );
     } finally {
       setSaving(false);
@@ -341,52 +507,66 @@ export default function ChequeVoucherPage() {
   };
 
   const deleteVoucher = async (record) => {
-    if (!window.confirm(`Delete cheque voucher ${record.voucher_no}?`)) return;
+    if (!window.confirm(`${t.deleteConfirm} ${record.voucher_no}?`)) return;
 
     setError("");
 
     try {
       await axios.delete(`${API_BASE}/cheque-vouchers/${record.id}`);
-      flash("Cheque voucher deleted.");
+      flash(t.deleted);
       await loadRecords();
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
-          "Unable to delete the cheque voucher."
+          t.deleteError
       );
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-3 py-3 sm:px-4 sm:py-4 pb-16">
+    <div
+      className={`min-h-screen bg-slate-50 px-3 py-3 sm:px-4 sm:py-4 pb-16 ${
+        isUrdu ? "font-['Noto_Nastaliq_Urdu',serif]" : ""
+      }`}
+      dir={isUrdu ? "rtl" : "ltr"}
+    >
       {notice && (
         <div className="fixed bottom-4 right-4 z-[80] rounded-lg bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-lg">
           {notice}
         </div>
       )}
 
+      {!showForm && (
       <div className="mx-auto max-w-[1500px] space-y-3">
         <section className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="mb-1 inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-sky-700">
-                <WalletCards size={12} /> Accounts
+                <WalletCards size={12} /> {t.accounts}
               </div>
               <h1 className="text-xl font-extrabold leading-tight text-slate-900 sm:text-2xl">
-                Cheque Vouchers
+                {t.title}
               </h1>
               <p className="mt-0.5 text-xs text-slate-500">
-                Manage issued cheques, clearance dates and payment progress.
+                {t.subtitle}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                onClick={() => setLang(isUrdu ? "en" : "ur")}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50"
+              >
+                {t.toggleLang}
+              </button>
+
+              <button
+                type="button"
                 onClick={loadRecords}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
               >
-                <RefreshCw size={14} /> Refresh
+                <RefreshCw size={14} /> {t.refresh}
               </button>
 
               <button
@@ -394,7 +574,7 @@ export default function ChequeVoucherPage() {
                 onClick={openAdd}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700"
               >
-                <Plus size={15} /> New Voucher
+                <Plus size={15} /> {t.newVoucher}
               </button>
             </div>
           </div>
@@ -417,23 +597,23 @@ export default function ChequeVoucherPage() {
         <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <SummaryCard
             icon={<FileText />}
-            label="Vouchers"
+            label={t.vouchers}
             value={summary.count}
           />
           <SummaryCard
             icon={<CircleDollarSign />}
-            label="Issued Total"
+            label={t.issuedTotal}
             value={money(summary.total)}
           />
           <SummaryCard
             icon={<CheckCircle2 />}
-            label="Paid / Cleared"
+            label={t.paidCleared}
             value={money(summary.paid)}
             tone="emerald"
           />
           <SummaryCard
             icon={<CalendarClock />}
-            label="Remaining"
+            label={t.remaining}
             value={money(summary.remaining)}
             tone="rose"
           />
@@ -443,9 +623,9 @@ export default function ChequeVoucherPage() {
           <div className="flex flex-col gap-2 border-b border-slate-100 px-3 py-2.5 md:flex-row md:items-center md:justify-between">
             <div className="inline-flex w-fit rounded-lg bg-slate-100 p-1">
               {[
-                ["all", "All"],
-                ["remaining", "Remaining"],
-                ["cleared", "Cleared"],
+                ["all", t.all],
+                ["remaining", t.remaining],
+                ["cleared", t.cleared],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -470,7 +650,7 @@ export default function ChequeVoucherPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search voucher, payee or account..."
+                placeholder={t.search}
                 className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
               />
             </label>
@@ -480,13 +660,13 @@ export default function ChequeVoucherPage() {
             <table className="w-full min-w-[900px] text-left text-[11px]">
               <thead className="bg-slate-50 text-[9px] font-extrabold uppercase tracking-[0.08em] text-slate-500">
                 <tr>
-                  <th className="px-3 py-2">Voucher / Payee</th>
-                  <th className="px-3 py-2">Issue Date</th>
-                  <th className="px-3 py-2">Clearance Date</th>
-                  <th className="px-3 py-2 text-right">Cheque Amount</th>
-                  <th className="px-3 py-2 text-right">Paid / Remaining</th>
-                  <th className="px-3 py-2 text-center">Status</th>
-                  <th className="px-3 py-2 text-center">Actions</th>
+                  <th className="px-3 py-2">{t.voucherPayee}</th>
+                  <th className="px-3 py-2">{t.issueDate}</th>
+                  <th className="px-3 py-2">{t.clearanceDate}</th>
+                  <th className="px-3 py-2 text-right">{t.chequeAmount}</th>
+                  <th className="px-3 py-2 text-right">{t.paidRemaining}</th>
+                  <th className="px-3 py-2 text-center">{t.status}</th>
+                  <th className="px-3 py-2 text-center">{t.actions}</th>
                 </tr>
               </thead>
 
@@ -495,23 +675,23 @@ export default function ChequeVoucherPage() {
                   <tr>
                     <td colSpan="7" className="px-3 py-8 text-center text-slate-400">
                       <Loader2 className="mx-auto mb-2 animate-spin" size={22} />
-                      Loading vouchers...
+                      {t.loading}
                     </td>
                   </tr>
                 ) : records.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-3 py-8 text-center text-slate-400">
                       <WalletCards className="mx-auto mb-2 text-slate-300" size={26} />
-                      <div className="font-semibold text-slate-500">No vouchers found</div>
+                      <div className="font-semibold text-slate-500">{t.noVouchers}</div>
                       <div className="mt-0.5 text-[10px]">
-                        No cheque vouchers match the selected filter.
+                        {t.noMatch}
                       </div>
                     </td>
                   </tr>
                 ) : (
                   records.map((record) => {
-                    const status = statusMeta(record.status);
-                    const due = dueMeta(record.clearance_date, record.status);
+                    const status = statusMeta(record.status, t);
+                    const due = dueMeta(record.clearance_date, record.status, t, isUrdu);
 
                     return (
                       <tr key={record.id} className="transition hover:bg-sky-50/50">
@@ -545,10 +725,10 @@ export default function ChequeVoucherPage() {
 
                         <td className="whitespace-nowrap px-3 py-2 text-right">
                           <div className="font-mono text-[10px] font-bold text-emerald-700">
-                            Paid: {money(record.paid_amount)}
+                            {t.paidShort}: {money(record.paid_amount)}
                           </div>
                           <div className="font-mono text-[10px] font-bold text-rose-700">
-                            Rem: {money(record.remaining_amount)}
+                            {t.remShort}: {money(record.remaining_amount)}
                           </div>
                         </td>
 
@@ -560,14 +740,14 @@ export default function ChequeVoucherPage() {
 
                         <td className="px-3 py-2">
                           <div className="flex items-center justify-center gap-1">
-                            <ActionButton title="View complete details" primary onClick={() => openView(record)}>
+                            <ActionButton title={t.viewDetails} primary onClick={() => openView(record)}>
                               <Eye size={12} />
-                              <span>Details</span>
+                              <span>{t.details}</span>
                             </ActionButton>
-                            <ActionButton title="Edit / add payment" onClick={() => openEdit(record)}>
+                            <ActionButton title={t.editPayment} onClick={() => openEdit(record)}>
                               <Edit3 size={13} />
                             </ActionButton>
-                            <ActionButton title="Delete" danger onClick={() => deleteVoucher(record)}>
+                            <ActionButton title={t.delete} danger onClick={() => deleteVoucher(record)}>
                               <Trash2 size={13} />
                             </ActionButton>
                           </div>
@@ -581,45 +761,49 @@ export default function ChequeVoucherPage() {
           </div>
         </section>
       </div>
+      )}
 
       {showForm && (
         <Modal
-          title={editingId ? "Edit Cheque Voucher" : "New Cheque Voucher"}
+          title={editingId ? t.editVoucher : t.createVoucher}
+          eyebrow={`${t.accounts} • ${t.title}`}
+          closeLabel={t.cancel}
           onClose={() => !saving && setShowForm(false)}
           wide
+          inline
         >
           <form onSubmit={saveVoucher} className="space-y-3">
             <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-              <Field label="Voucher No" hint="Leave blank to generate automatically">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <Field label={t.voucherNo} hint={t.autoVoucher}>
                 <input
                   value={form.voucher_no}
                   onChange={(event) => updateForm("voucher_no", event.target.value)}
                   className="input"
-                  placeholder="CHQ-00001"
+                  placeholder={t.voucherPlaceholder}
                 />
               </Field>
 
-              <Field label="Payee / Party Name" required>
+              <Field label={t.payee} required>
                 <input
                   value={form.payee_name}
                   onChange={(event) => updateForm("payee_name", event.target.value)}
                   className="input"
-                  placeholder="Enter payee name"
+                  placeholder={t.payeePlaceholder}
                 />
               </Field>
 
               <Field
-                label="Ledger Account"
+                label={t.ledgerAccount}
                 required
-                hint="The amount is deducted from this ledger on the issuance date"
+                hint={t.ledgerHint}
               >
                 <select
                   value={form.account_id}
                   onChange={(event) => updateForm("account_id", event.target.value)}
                   className="input"
                 >
-                  <option value="">Select ledger account</option>
+                  <option value="">{t.selectLedger}</option>
                   {accounts.map((account) => (
                     <option key={account.id} value={account.id}>
                       {[account.account_code, account.account_title]
@@ -630,7 +814,7 @@ export default function ChequeVoucherPage() {
                 </select>
               </Field>
 
-              <Field label="Issuance Date" required>
+              <Field label={t.issuanceDate} required>
                 <input
                   type="date"
                   value={form.issuance_date}
@@ -639,7 +823,7 @@ export default function ChequeVoucherPage() {
                 />
               </Field>
 
-              <Field label="Clearance Date" required>
+              <Field label={t.clearanceDate} required>
                 <input
                   type="date"
                   min={form.issuance_date || undefined}
@@ -649,7 +833,7 @@ export default function ChequeVoucherPage() {
                 />
               </Field>
 
-              <Field label="Cheque Total" required>
+              <Field label={t.chequeTotal} required>
                 <input
                   type="number"
                   min="0.01"
@@ -663,12 +847,12 @@ export default function ChequeVoucherPage() {
             </div>
 
               <div className="mt-2.5">
-                <Field label="Notes">
+                <Field label={t.notes}>
                   <textarea
                     value={form.notes}
                     onChange={(event) => updateForm("notes", event.target.value)}
                     className="input min-h-14 resize-y"
-                    placeholder="Optional voucher notes"
+                    placeholder={t.notesPlaceholder}
                   />
                 </Field>
               </div>
@@ -678,10 +862,10 @@ export default function ChequeVoucherPage() {
               <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-slate-50 px-3 py-2">
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-900">
-                    Payment / Clearance Details
+                    {t.paymentDetails}
                   </h3>
                   <p className="text-[10px] text-slate-500">
-                    Add another row whenever a payment is cleared.
+                    {t.paymentHelp}
                   </p>
                 </div>
 
@@ -690,7 +874,7 @@ export default function ChequeVoucherPage() {
                   onClick={addPayment}
                   className="inline-flex h-8 items-center gap-1 rounded-md bg-sky-100 px-2.5 text-[10px] font-bold text-sky-700 transition hover:bg-sky-200"
                 >
-                  <Plus size={13} /> Add Row
+                  <Plus size={13} /> {t.addRow}
                 </button>
               </div>
 
@@ -698,9 +882,9 @@ export default function ChequeVoucherPage() {
                 <table className="w-full min-w-[680px] text-xs">
                   <thead className="text-left text-[10px] font-bold uppercase text-slate-500">
                     <tr>
-                      <th className="w-44 px-2 py-1.5">Date</th>
-                      <th className="px-2 py-1.5">Details</th>
-                      <th className="w-48 px-2 py-1.5">Amount</th>
+                      <th className="w-44 px-2 py-1.5">{t.date}</th>
+                      <th className="px-2 py-1.5">{t.detail}</th>
+                      <th className="w-48 px-2 py-1.5">{t.amount}</th>
                       <th className="w-10 px-2 py-1.5" />
                     </tr>
                   </thead>
@@ -726,7 +910,7 @@ export default function ChequeVoucherPage() {
                               updatePayment(row.local_id, "details", event.target.value)
                             }
                             className="input"
-                            placeholder="Payment / clearance detail"
+                            placeholder={t.paymentPlaceholder}
                           />
                         </td>
 
@@ -762,12 +946,12 @@ export default function ChequeVoucherPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <Total label="Cheque Total" value={money(formTotal)} />
-              <Total label="Paid" value={money(paidInForm)} tone="text-emerald-300" />
+              <Total label={t.chequeTotal} value={money(formTotal)} />
+              <Total label={t.paidShort} value={money(paidInForm)} tone="text-emerald-700" />
               <Total
-                label="Remaining Balance"
+                label={t.remainingBalance}
                 value={money(remainingInForm)}
-                tone="text-amber-300"
+                tone="text-amber-700"
               />
             </div>
 
@@ -778,7 +962,7 @@ export default function ChequeVoucherPage() {
                 onClick={() => setShowForm(false)}
                 className="h-9 rounded-lg border border-slate-200 px-3.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
               >
-                Cancel
+                {t.cancel}
               </button>
 
               <button
@@ -791,7 +975,7 @@ export default function ChequeVoucherPage() {
                 ) : (
                   <Save size={15} />
                 )}
-                {editingId ? "Update Voucher" : "Save Voucher"}
+                {editingId ? t.updateVoucher : t.saveVoucher}
               </button>
             </div>
           </form>
@@ -800,11 +984,12 @@ export default function ChequeVoucherPage() {
 
       {viewVoucher && (
         <Modal
-          title={`Cheque Voucher ${viewVoucher.voucher_no}`}
+          title={`${t.title} ${viewVoucher.voucher_no}`}
+          eyebrow={`${t.accounts} • ${t.details}`}
           onClose={() => setViewVoucher(null)}
           wide
         >
-          <VoucherDetails voucher={viewVoucher} />
+          <VoucherDetails voucher={viewVoucher} t={t} />
 
           <div className="mt-4 flex justify-end gap-2">
             <button
@@ -812,7 +997,7 @@ export default function ChequeVoucherPage() {
               onClick={() => setViewVoucher(null)}
               className="h-9 rounded-lg border border-slate-200 px-3.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
             >
-              Close
+              {t.close}
             </button>
 
             <button
@@ -823,7 +1008,7 @@ export default function ChequeVoucherPage() {
               }}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 text-xs font-bold text-white transition hover:bg-sky-700"
             >
-              <Edit3 size={14} /> Edit / Add Payment
+              <Edit3 size={14} /> {t.editPayment}
             </button>
           </div>
         </Modal>
@@ -903,17 +1088,31 @@ const Total = ({ label, value, tone = "text-slate-900" }) => (
   </div>
 );
 
-const Modal = ({ title, onClose, children, wide = false }) => (
-  <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-950/50 p-2.5 backdrop-blur-sm sm:p-3">
+const Modal = ({
+  title,
+  eyebrow,
+  closeLabel,
+  onClose,
+  children,
+  wide = false,
+  inline = false,
+}) => (
+  <div
+    className={
+      inline
+        ? "mx-auto w-full max-w-[1060px]"
+        : "fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-950/50 p-2.5 backdrop-blur-sm sm:p-3"
+    }
+  >
     <div
-      className={`my-auto w-full overflow-hidden rounded-[18px] border border-slate-300 bg-slate-50 shadow-[0_30px_90px_rgba(15,23,42,0.28)] ${
+      className={`${inline ? "" : "my-auto"} w-full overflow-hidden rounded-[18px] border border-slate-300 bg-slate-50 shadow-[0_30px_90px_rgba(15,23,42,0.28)] ${
         wide ? "max-w-[1060px]" : "max-w-2xl"
       }`}
     >
       <div className="flex h-[54px] items-center justify-between bg-gradient-to-br from-slate-900 to-slate-800 px-4 text-white sm:px-[18px]">
         <div className="min-w-0">
           <div className="mb-0.5 inline-flex rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide">
-            Accounts • Cheque Voucher
+            {eyebrow}
           </div>
           <h2 className="truncate text-[15px] font-black sm:text-[17px]">{title}</h2>
         </div>
@@ -921,10 +1120,18 @@ const Modal = ({ title, onClose, children, wide = false }) => (
         <button
           type="button"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/25 bg-white/10 text-white transition hover:bg-white/20"
+          className={`flex h-8 shrink-0 items-center justify-center rounded-[10px] border border-white/25 bg-white/10 text-white transition hover:bg-white/20 ${
+            inline ? "w-auto gap-1.5 px-3 text-[10px] font-black" : "w-8"
+          }`}
           aria-label="Close modal"
         >
-          <X size={17} />
+          {inline ? (
+            <>
+              <span aria-hidden="true">←</span> {closeLabel}
+            </>
+          ) : (
+            <X size={17} />
+          )}
         </button>
       </div>
 
@@ -935,47 +1142,47 @@ const Modal = ({ title, onClose, children, wide = false }) => (
   </div>
 );
 
-const VoucherDetails = ({ voucher }) => {
-  const status = statusMeta(voucher.status);
+const VoucherDetails = ({ voucher, t }) => {
+  const status = statusMeta(voucher.status, t);
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Detail label="Voucher No" value={voucher.voucher_no} />
-        <Detail label="Payee" value={voucher.payee_name} />
+        <Detail label={t.voucherNo} value={voucher.voucher_no} />
+        <Detail label={t.payee} value={voucher.payee_name} />
         <Detail
-          label="Ledger Account"
+          label={t.ledgerAccount}
           value={[voucher.account_code, voucher.account_title]
             .filter(Boolean)
             .join(" - ")}
         />
-        <Detail label="Status" value={status.label} />
-        <Detail label="Issuance Date" value={formatDate(voucher.issuance_date)} />
-        <Detail label="Clearance Date" value={formatDate(voucher.clearance_date)} />
-        <Detail label="Cheque Total" value={money(voucher.total_amount)} />
-        <Detail label="Paid Amount" value={money(voucher.paid_amount)} />
-        <Detail label="Remaining" value={money(voucher.remaining_amount)} />
-        <Detail label="Payment Rows" value={voucher.payments?.length || 0} />
+        <Detail label={t.status} value={status.label} />
+        <Detail label={t.issuanceDate} value={formatDate(voucher.issuance_date)} />
+        <Detail label={t.clearanceDate} value={formatDate(voucher.clearance_date)} />
+        <Detail label={t.chequeTotal} value={money(voucher.total_amount)} />
+        <Detail label={t.paidShort} value={money(voucher.paid_amount)} />
+        <Detail label={t.remaining} value={money(voucher.remaining_amount)} />
+        <Detail label={t.paymentRows} value={voucher.payments?.length || 0} />
       </div>
 
       {voucher.notes && (
         <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-          <strong className="text-slate-800">Notes:</strong> {voucher.notes}
+          <strong className="text-slate-800">{t.notes}:</strong> {voucher.notes}
         </div>
       )}
 
       <div className="overflow-hidden rounded-xl border border-slate-200">
         <div className="border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
-          All Payment / Clearance Details
+          {t.allPayments}
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] text-xs">
             <thead className="bg-white text-left text-[10px] font-bold uppercase text-slate-500">
               <tr>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Details</th>
-                <th className="px-3 py-2 text-right">Amount</th>
+                <th className="px-3 py-2">{t.date}</th>
+                <th className="px-3 py-2">{t.detail}</th>
+                <th className="px-3 py-2 text-right">{t.amount}</th>
               </tr>
             </thead>
 
@@ -997,7 +1204,7 @@ const VoucherDetails = ({ voucher }) => {
               ) : (
                 <tr>
                   <td colSpan="3" className="px-3 py-8 text-center text-slate-400">
-                    No payment entries have been added yet.
+                    {t.noPayments}
                   </td>
                 </tr>
               )}
@@ -1007,16 +1214,16 @@ const VoucherDetails = ({ voucher }) => {
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Total label="Total" value={money(voucher.total_amount)} />
-        <Total label="Paid" value={money(voucher.paid_amount)} tone="text-emerald-300" />
+        <Total label={t.chequeTotal} value={money(voucher.total_amount)} />
+        <Total label={t.paidShort} value={money(voucher.paid_amount)} tone="text-emerald-700" />
         <Total
-          label="Remaining"
+          label={t.remaining}
           value={money(voucher.remaining_amount)}
-          tone="text-amber-300"
+          tone="text-amber-700"
         />
         <div>
           <div className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-            Status
+            {t.status}
           </div>
           <span
             className={`mt-1 inline-flex rounded-md border px-2 py-1 text-[10px] font-bold ${status.className}`}
@@ -1039,4 +1246,3 @@ const Detail = ({ label, value }) => (
     </div>
   </div>
 );
-
