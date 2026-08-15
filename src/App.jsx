@@ -11,6 +11,7 @@ import AuthPage from "./pages/AuthPage";
 import AdminLogin from "./pages/AdminLogin";
 import DashboardLayout from "./Layouts/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import CustomerSalesLedgerPage from "./pages/CustomerSalesLedgerPage";
@@ -73,16 +74,24 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* Public routes */}
+        <Route
+          path="/"
+          element={<LandingPage />}
+        />
 
         <Route
           path="/login"
-          element={<AuthPage initialTab="login" />}
+          element={
+            <AuthPage initialTab="login" />
+          }
         />
 
         <Route
           path="/register"
-          element={<AuthPage initialTab="signup" />}
+          element={
+            <AuthPage initialTab="signup" />
+          }
         />
 
         <Route
@@ -90,10 +99,14 @@ function App() {
           element={<AdminLogin />}
         />
 
+        {/* Protected application routes */}
         <Route
           element={
             <ProtectedRoute
-              allowedRoles={["admin", "employee"]}
+              allowedRoles={[
+                "admin",
+                "employee",
+              ]}
             />
           }
         >
@@ -124,7 +137,9 @@ function App() {
 
             <Route
               path="sales/customer-ledger"
-              element={<CustomerSalesLedgerPage />}
+              element={
+                <CustomerSalesLedgerPage />
+              }
             />
 
             <Route
@@ -180,7 +195,9 @@ function App() {
 
             <Route
               path="purchase/invoice"
-              element={<PurchaseInvoicePage />}
+              element={
+                <PurchaseInvoicePage />
+              }
             />
 
             <Route
@@ -241,7 +258,9 @@ function App() {
 
             <Route
               path="inventory/reports"
-              element={<InventoryReportPage />}
+              element={
+                <InventoryReportPage />
+              }
             />
 
             <Route
@@ -257,7 +276,9 @@ function App() {
 
             <Route
               path="accounts/chart"
-              element={<ChartOfAccountsPage />}
+              element={
+                <ChartOfAccountsPage />
+              }
             />
 
             <Route
@@ -282,7 +303,9 @@ function App() {
 
             <Route
               path="accounts/ledger-summary"
-              element={<AllLedgerSummaryPage />}
+              element={
+                <AllLedgerSummaryPage />
+              }
             />
 
             <Route
@@ -292,7 +315,9 @@ function App() {
 
             <Route
               path="accounts/cash-report"
-              element={<CashBookReportPage />}
+              element={
+                <CashBookReportPage />
+              }
             />
 
             {/* Reports */}
@@ -347,7 +372,9 @@ function App() {
 
             <Route
               path="production/invoice"
-              element={<ProductionInvoicePage />}
+              element={
+                <ProductionInvoicePage />
+              }
             />
 
             <Route
@@ -359,21 +386,35 @@ function App() {
 
             <Route
               path="production/reports"
-              element={<ProductionReportsPage />}
+              element={
+                <ProductionReportsPage />
+              }
             />
 
             <Route
               path="permissions"
               element={<PermissionsPage />}
             />
+
+            {/* Invalid /app URL stays inside dashboard */}
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="dashboard"
+                  replace
+                />
+              }
+            />
           </Route>
         </Route>
 
+        {/* Global fallback */}
         <Route
           path="*"
           element={
             <Navigate
-              to="/"
+              to="/app/dashboard"
               replace
             />
           }
