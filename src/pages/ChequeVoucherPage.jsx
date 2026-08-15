@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { useOutletContext } from "react-router-dom";
 import {
   CalendarClock,
   CheckCircle2,
@@ -276,9 +277,10 @@ const dueMeta = (dateValue, status, t, isUrdu) => {
 };
 
 export default function ChequeVoucherPage() {
-  const [lang, setLang] = useState("en");
+  const outlet = useOutletContext() || {};
+  const lang = outlet.lang === "ur" ? "ur" : "en";
   const t = LANG[lang];
-  const isUrdu = lang === "ur";
+  const isUrdu = typeof outlet.isRTL === "boolean" ? outlet.isRTL : lang === "ur";
   const [records, setRecords] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -555,14 +557,6 @@ export default function ChequeVoucherPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setLang(isUrdu ? "en" : "ur")}
-                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50"
-              >
-                {t.toggleLang}
-              </button>
-
-              <button
-                type="button"
                 onClick={loadRecords}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
               >
@@ -774,12 +768,12 @@ export default function ChequeVoucherPage() {
         >
           <form onSubmit={saveVoucher} className="space-y-3">
             <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[150px_minmax(160px,1.15fr)_minmax(190px,1.35fr)_165px_165px_140px]">
               <Field label={t.voucherNo} hint={t.autoVoucher}>
                 <input
                   value={form.voucher_no}
                   onChange={(event) => updateForm("voucher_no", event.target.value)}
-                  className="input"
+                  className="input min-w-0"
                   placeholder={t.voucherPlaceholder}
                 />
               </Field>
@@ -788,7 +782,7 @@ export default function ChequeVoucherPage() {
                 <input
                   value={form.payee_name}
                   onChange={(event) => updateForm("payee_name", event.target.value)}
-                  className="input"
+                  className="input min-w-0"
                   placeholder={t.payeePlaceholder}
                 />
               </Field>
@@ -801,7 +795,7 @@ export default function ChequeVoucherPage() {
                 <select
                   value={form.account_id}
                   onChange={(event) => updateForm("account_id", event.target.value)}
-                  className="input"
+                  className="input min-w-0 truncate"
                 >
                   <option value="">{t.selectLedger}</option>
                   {accounts.map((account) => (
@@ -819,7 +813,7 @@ export default function ChequeVoucherPage() {
                   type="date"
                   value={form.issuance_date}
                   onChange={(event) => updateForm("issuance_date", event.target.value)}
-                  className="input"
+                  className="input min-w-0"
                 />
               </Field>
 
@@ -829,7 +823,7 @@ export default function ChequeVoucherPage() {
                   min={form.issuance_date || undefined}
                   value={form.clearance_date}
                   onChange={(event) => updateForm("clearance_date", event.target.value)}
-                  className="input"
+                  className="input min-w-0"
                 />
               </Field>
 
@@ -840,18 +834,19 @@ export default function ChequeVoucherPage() {
                   step="0.01"
                   value={form.total_amount}
                   onChange={(event) => updateForm("total_amount", event.target.value)}
-                  className="input"
+                  className="input min-w-0"
                   placeholder="0.00"
                 />
               </Field>
-            </div>
 
-              <div className="mt-2.5">
-                <Field label={t.notes}>
+                <Field
+                  label={t.notes}
+                  className="sm:col-span-2 lg:col-span-3 xl:col-span-full"
+                >
                   <textarea
                     value={form.notes}
                     onChange={(event) => updateForm("notes", event.target.value)}
-                    className="input min-h-14 resize-y"
+                    className="input block h-[52px] min-h-[52px] w-full min-w-0 resize-y"
                     placeholder={t.notesPlaceholder}
                   />
                 </Field>
@@ -1067,8 +1062,8 @@ const ActionButton = ({
   </button>
 );
 
-const Field = ({ label, hint, required, children }) => (
-  <label className="block">
+const Field = ({ label, hint, required, children, className = "" }) => (
+  <label className={`block min-w-0 ${className}`}>
     <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-600">
       {label} {required && <span className="text-rose-500">*</span>}
     </span>
