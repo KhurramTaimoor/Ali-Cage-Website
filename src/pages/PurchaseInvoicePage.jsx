@@ -255,12 +255,13 @@ const mapSalesPayloadToPurchase = (body) => {
     (sum, item) => sum + toNumber(item.amount),
     0
   );
-
+  const invoiceTotal = toNumber(body?.invoice_total) || calculated;
+  const previousBalance = toNumber(body?.previous_balance);
+  const deliveryCharges = toNumber(body?.delivery_charges);
+  const discount = toNumber(body?.discount);
   const total =
     toNumber(body?.grand_total) ||
-    toNumber(body?.invoice_total) ||
-    toNumber(body?.total_amount) ||
-    calculated;
+    invoiceTotal + previousBalance + deliveryCharges - discount;
 
   const selectedSupplier = findById(
     cache.suppliers,
@@ -271,6 +272,7 @@ const mapSalesPayloadToPurchase = (body) => {
     invoice_no: String(body?.invoice_no || "")
       .trim()
       .replace(/^sales-invoice/i, "purchase-invoice"),
+    supplier_id: Number(body?.supplier_id || body?.party_id || selectedSupplier?.id || 0) || null,
     supplier_name:
       String(
         body?.party_name ||
@@ -281,9 +283,16 @@ const mapSalesPayloadToPurchase = (body) => {
           ""
       ).trim(),
     invoice_date: body?.invoice_date || "",
+    reference_no: String(body?.reference_no || "").trim(),
+    address: String(body?.address || "").trim(),
+    previous_balance: previousBalance,
+    delivery_charges: deliveryCharges,
+    discount,
+    invoice_total: Number(invoiceTotal.toFixed(2)),
     total_amount: Number(total.toFixed(2)),
+    grand_total: Number(total.toFixed(2)),
     debit: Number(total.toFixed(2)),
-    credit: 0,
+    credit: toNumber(body?.credit),
     status: body?.status || "pending",
     items,
   };
@@ -348,14 +357,17 @@ const mapPurchaseInvoiceToSales = (invoice) => {
 
   return {
     ...invoice,
-    party_type: "supplier",
-    customer_type: "supplier",
+    // Internally keep SalesInvoicePage in its customer pricing mode. The
+    // "customer" records are supplier aliases on this screen, so this lets
+    // its customer-specific rate resolver apply supplier-specific purchase rates.
+    party_type: "customer",
+    customer_type: "customer",
     party_id: supplierId || "",
     supplier_id: supplierId || "",
     party_name: invoice?.supplier_name || "",
     customer_name: invoice?.supplier_name || "",
     customer_name_en: invoice?.supplier_name || "",
-    customer_id: null,
+    customer_id: supplierId || "",
     employee_id: null,
     general_ledger_id: null,
     reference_no: invoice?.reference_no || "",
@@ -364,9 +376,9 @@ const mapPurchaseInvoiceToSales = (invoice) => {
     previous_balance: toNumber(invoice?.previous_balance),
     delivery_charges: toNumber(invoice?.delivery_charges),
     discount: toNumber(invoice?.discount),
-    invoice_total: total,
+    invoice_total: toNumber(invoice?.invoice_total) || items.reduce((sum, item) => sum + toNumber(item.amount), 0),
     total_amount: total,
-    grand_total: total,
+    grand_total: toNumber(invoice?.grand_total) || total,
     total_qty: items.reduce((sum, item) => sum + toNumber(item.qty), 0),
     items_count: items.length,
     items,
@@ -509,6 +521,14 @@ const installPurchaseInvoiceApiAdapter = () => {
       return config;
     }
 
+    // SalesInvoicePage uses /api/rates for automatic pricing. On the purchase
+    // screen that same hook must resolve the selected supplier's purchase list.
+    if (/\/api\/rates(?:\?|$)/.test(originalUrl)) {
+      config.url = `${API_ROOT}/api/purchase-rates/flat`;
+      config.__purchaseRateAlias = true;
+      return config;
+    }
+
     if (
       originalUrl.includes("/api/employees") ||
       originalUrl.includes("/api/general-ledgers")
@@ -627,6 +647,8 @@ const TEXT_REPLACEMENTS = [
   ["Customer Type", "Supplier"],
   ["Select Name", "Select Supplier"],
   ["Customer", "Supplier"],
+  ["Delivery Charges", "Freight"],
+  ["Delivery Charge", "Freight"],
   ["Invoice saved.", "Purchase invoice saved."],
   ["Invoice updated.", "Purchase invoice updated."],
   ["Invoice deleted.", "Purchase invoice deleted."],
@@ -636,6 +658,7 @@ const TEXT_REPLACEMENTS = [
   ["کسٹمر کا نام", "سپلائر کا نام"],
   ["کسٹمر ٹائپ", "سپلائر"],
   ["کسٹمر", "سپلائر"],
+  ["ڈیلیوری چارجز", "فریٹ"],
 ];
 
 const replacePurchaseText = (value) => {
@@ -717,33 +740,30 @@ const fixNewPurchaseInvoiceNumber = (root) => {
 const forceSupplierOnly = (root) => {
   root.querySelectorAll("select").forEach((select) => {
     const options = Array.from(select.options || []);
-    const supplierOption = options.find(
-      (option) =>
-        option.value === "supplier" ||
-        /^(supplier|سپلائر)$/i.test(option.textContent.trim())
+    const customerOption = options.find(
+      (option) => option.value === "customer"
     );
     const isPartyTypeSelect =
-      supplierOption &&
-      options.some(
-        (option) =>
-          option.value === "customer" ||
-          option.value === "employee" ||
-          option.value === "general_ledger" ||
-          /customer|employee|general ledger|کسٹمر|ملازم|جنرل لیجر/i.test(
-            option.textContent
-          )
+      customerOption &&
+      options.some((option) =>
+        ["employee", "supplier", "general_ledger"].includes(option.value)
       );
 
     if (!isPartyTypeSelect) return;
 
+    // PurchaseInvoice reuses SalesInvoice's stable form engine. Suppliers are
+    // deliberately exposed to it through the /customers alias, so the
+    // internal value stays "customer" while the visible label is Supplier.
+    // This also makes supplier-specific purchase-rate lists auto-resolve.
+    customerOption.textContent = "Supplier";
     options.forEach((option) => {
-      const keep = option === supplierOption;
+      const keep = option === customerOption;
       option.hidden = !keep;
       option.disabled = !keep;
     });
 
-    if (select.value !== supplierOption.value) {
-      setNativeValue(select, supplierOption.value);
+    if (select.value !== customerOption.value) {
+      setNativeValue(select, customerOption.value);
     }
   });
 };

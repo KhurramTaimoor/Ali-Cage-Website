@@ -27,6 +27,7 @@ const fetchCategories = () => apiFetch("/api/categories");
 const fetchUnits = () => apiFetch("/api/units");
 const fetchProducts = () => apiFetch("/api/products");
 const fetchTypes = () => apiFetch("/api/product-types");
+const fetchCustomers = () => apiFetch("/api/customers");
 
 const createRate = (data) =>
   apiFetch("/api/rates", {
@@ -78,7 +79,11 @@ const LANG = {
     subtitle: "Manage product pricing and rates",
     addBtn: "Add Rate",
     summaryBtn: "View Summary",
-    searchPlaceholder: "Search by product, category, product type or unit…",
+    searchPlaceholder: "Search by list, customer, product, category, product type or unit…",
+    rateListName: "Rate List Name",
+    rateListPlaceholder: "e.g. Retail Customers",
+    customer: "Customer",
+    selectCustomer: "All / unassigned customer",
 
     productItem: "Product",
     productItemLabel: "Product",
@@ -96,6 +101,7 @@ const LANG = {
     unitLabel: "Unit",
     selectUnit: "Select unit…",
 
+    singleRate: "Single Rate (Pcs/Kgs)",
     retailRate: "Retail Rate",
     wholesaleRate: "Wholesale Rate",
     distributorRate: "Distributor Rate",
@@ -149,7 +155,11 @@ const LANG = {
     subtitle: "مصنوعات کی قیمتوں اور ریٹس کا انتظام کریں",
     addBtn: "ریٹ شامل کریں",
     summaryBtn: "سمری دیکھیں",
-    searchPlaceholder: "پروڈکٹ، کیٹگری، ٹائپ یا یونٹ سے تلاش کریں…",
+    searchPlaceholder: "ریٹ لسٹ، کسٹمر، پروڈکٹ، کیٹگری، ٹائپ یا یونٹ سے تلاش کریں…",
+    rateListName: "ریٹ لسٹ نام",
+    rateListPlaceholder: "مثلاً ریٹیل کسٹمرز",
+    customer: "کسٹمر",
+    selectCustomer: "تمام / غیر مقرر کسٹمر",
 
     productItem: "پروڈکٹ",
     productItemLabel: "پروڈکٹ",
@@ -167,6 +177,7 @@ const LANG = {
     unitLabel: "یونٹ",
     selectUnit: "یونٹ منتخب کریں…",
 
+    singleRate: "سنگل ریٹ (پیس/کلو)",
     retailRate: "ریٹیل ریٹ",
     wholesaleRate: "ہول سیل ریٹ",
     distributorRate: "ڈسٹری بیوٹر ریٹ",
@@ -220,6 +231,7 @@ const emptyPriceRow = () => ({
   category_id: "",
   product_type_id: "",
   unit_id: "",
+  single_rate: "",
   retail_rate: "",
   wholesale_rate: "",
   distributor_rate: "",
@@ -231,6 +243,7 @@ const normalizePriceOptions = (record) => {
       category_id: p?.category_id || record?.category_id || "",
       product_type_id: p?.product_type_id || record?.product_type_id || "",
       unit_id: p?.unit_id || "",
+      single_rate: p?.single_rate ?? "",
       retail_rate: p?.retail_rate ?? "",
       wholesale_rate: p?.wholesale_rate ?? "",
       distributor_rate: p?.distributor_rate ?? "",
@@ -432,6 +445,7 @@ function downloadRatePdf(filteredRates, lang, maps, urduCache) {
         getName(categoryMap, "category", price.category_id),
         getName(productTypeMap, "type", price.product_type_id),
         getName(unitMap, "unit", price.unit_id),
+        "PKR " + fmt(price.single_rate),
         "PKR " + fmt(price.retail_rate),
         "PKR " + fmt(price.wholesale_rate),
         "PKR " + fmt(price.distributor_rate),
@@ -451,6 +465,7 @@ function downloadRatePdf(filteredRates, lang, maps, urduCache) {
         t.category,
         t.type,
         t.unit,
+        t.singleRate,
         t.retailRate,
         t.wholesaleRate,
         t.distributorRate,
@@ -566,6 +581,7 @@ const RateListPage = () => {
   const [units, setUnits] = useState([]);
   const [products, setProducts] = useState([]);
   const [types, setTypes] = useState([]);
+  const [customers, setCustomers] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -586,6 +602,8 @@ const RateListPage = () => {
   const [translating, setTranslating] = useState(false);
 
   const [form, setForm] = useState({
+    list_name: "",
+    customer_id: "",
     product_id: "",
     price_options: [emptyPriceRow()],
   });
@@ -604,13 +622,14 @@ const RateListPage = () => {
     try {
       setLoading(true);
 
-      const [ratesData, catsData, unitsData, productsData, typesData] =
+      const [ratesData, catsData, unitsData, productsData, typesData, customersData] =
         await Promise.all([
           fetchAllRates(),
           fetchCategories(),
           fetchUnits(),
           fetchProducts(),
           fetchTypes(),
+          fetchCustomers(),
         ]);
 
       setRates(getList(ratesData));
@@ -618,6 +637,7 @@ const RateListPage = () => {
       setUnits(getList(unitsData));
       setProducts(getList(productsData));
       setTypes(getList(typesData));
+      setCustomers(getList(customersData));
     } catch (err) {
       showToast("error", err.message || t.fetchError);
     } finally {
@@ -794,6 +814,8 @@ const RateListPage = () => {
 
   const openAdd = () => {
     setForm({
+      list_name: "",
+      customer_id: "",
       product_id: "",
       price_options: [emptyPriceRow()],
     });
@@ -803,6 +825,8 @@ const RateListPage = () => {
 
   const openEdit = (rate) => {
     setForm({
+      list_name: rate.list_name || "Default Rate List",
+      customer_id: rate.customer_id || "",
       product_id: rate.product_id || "",
       price_options: normalizePriceOptions(rate),
     });
@@ -849,6 +873,7 @@ const RateListPage = () => {
         category_id: Number(row.category_id) || 0,
         product_type_id: Number(row.product_type_id) || 0,
         unit_id: Number(row.unit_id) || 0,
+        single_rate: Number(row.single_rate) || 0,
         retail_rate: Number(row.retail_rate) || 0,
         wholesale_rate: Number(row.wholesale_rate) || 0,
         distributor_rate: Number(row.distributor_rate) || 0,
@@ -858,6 +883,7 @@ const RateListPage = () => {
           row.category_id > 0 ||
           row.product_type_id > 0 ||
           row.unit_id > 0 ||
+          row.single_rate > 0 ||
           row.retail_rate > 0 ||
           row.wholesale_rate > 0 ||
           row.distributor_rate > 0
@@ -879,6 +905,8 @@ const RateListPage = () => {
     }
 
     const payload = {
+      list_name: String(form.list_name || "Default Rate List").trim() || "Default Rate List",
+      customer_id: Number(form.customer_id) || null,
       product_id: Number(form.product_id),
       price_options: cleanedOptions,
     };
@@ -945,6 +973,8 @@ const RateListPage = () => {
       if (!q) return true;
 
       return (
+        String(rate.list_name || "").toLowerCase().includes(q) ||
+        String(rate.customer_name || "").toLowerCase().includes(q) ||
         String(productMap[rate.product_id] || "").toLowerCase().includes(q) ||
         String(urduCache[`product:${rate.product_id}`] || "")
           .toLowerCase()
@@ -1356,6 +1386,7 @@ const RateListPage = () => {
             form={form}
             setForm={setForm}
             products={products}
+            customers={customers}
             categories={categories}
             types={types}
             units={units}
@@ -1372,10 +1403,12 @@ const RateListPage = () => {
 
         <div className="rate-slide-up bg-white border border-slate-200 rounded-[18px] sm:rounded-2xl overflow-hidden shadow-sm">
           <div className="hidden md:block overflow-x-auto rate-scroll">
-            <table className="rate-table w-full min-w-[980px] border-collapse">
+            <table className="rate-table w-full min-w-[1100px] border-collapse">
               <thead>
                 <tr>
                   <th className="text-center w-12">#</th>
+                  <th className={isUrdu ? "text-right" : "text-left"}>{t.rateListName}</th>
+                  <th className={isUrdu ? "text-right" : "text-left"}>{t.customer}</th>
                   <th className={isUrdu ? "text-right" : "text-left"}>
                     {t.productItem}
                   </th>
@@ -1386,6 +1419,9 @@ const RateListPage = () => {
                     {t.type}
                   </th>
                   <th className="text-center">{t.unit}</th>
+                  <th className={isUrdu ? "text-left" : "text-right"}>
+                    {t.singleRate}
+                  </th>
                   <th className={isUrdu ? "text-left" : "text-right"}>
                     {t.retailRate}
                   </th>
@@ -1402,7 +1438,7 @@ const RateListPage = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="!py-14 text-center text-slate-400">
+                    <td colSpan={12} className="!py-14 text-center text-slate-400">
                       <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
                       <p className="mt-2 text-sm font-semibold">{t.loading}</p>
                     </td>
@@ -1410,7 +1446,7 @@ const RateListPage = () => {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={12}
                       className="!py-14 text-center text-slate-400 text-sm font-semibold"
                     >
                       {t.noRecords}
@@ -1501,6 +1537,7 @@ const RateFormModal = ({
   form,
   setForm,
   products,
+  customers,
   categories,
   types,
   units,
@@ -1566,6 +1603,21 @@ const RateFormModal = ({
         </div>
 
         <div className="flex-1 overflow-y-auto rate-scroll bg-slate-50 p-3 sm:p-4 space-y-4">
+          <section className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.rateListName}</label>
+                <input value={form.list_name || ""} onChange={(e) => setForm((prev) => ({...prev, list_name:e.target.value}))} placeholder={t.rateListPlaceholder} className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`} />
+              </div>
+              <div>
+                <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.customer}</label>
+                <select value={form.customer_id || ""} onChange={(e) => setForm((prev) => ({...prev, customer_id:e.target.value}))} className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}>
+                  <option value="">{t.selectCustomer}</option>
+                  {(customers || []).map((customer) => <option key={customer.id} value={customer.id}>{customer.customer_name_en || customer.name || `#${customer.id}`}</option>)}
+                </select>
+              </div>
+            </div>
+          </section>
           <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div
               className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${
@@ -1765,6 +1817,15 @@ const RateFormModal = ({
                     />
 
                     <PriceInput
+                      label={t.singleRate}
+                      value={row.single_rate}
+                      onChange={(value) =>
+                        updatePriceRow(index, "single_rate", value)
+                      }
+                      isUrdu={isUrdu}
+                    />
+
+                    <PriceInput
                       label={t.retailRate}
                       value={row.retail_rate}
                       onChange={(value) =>
@@ -1917,6 +1978,8 @@ const RateDesktopRow = ({
       <td className="text-center text-slate-400 font-mono text-xs font-bold">
         {index + 1}
       </td>
+      <td className={`font-black text-indigo-700 ${isUrdu ? "text-right" : ""}`}>{rate.list_name || "Default Rate List"}</td>
+      <td className={`font-semibold text-slate-600 ${isUrdu ? "text-right" : ""}`}>{rate.customer_name || "—"}</td>
 
       <td
         className={`font-black text-slate-950 ${
@@ -1988,6 +2051,13 @@ const RateDesktopRow = ({
 
       <td className={isUrdu ? "text-left" : "text-right"}>
         <RateAmountList
+          values={priceOptions.map((price) => price.single_rate)}
+          color="violet"
+        />
+      </td>
+
+      <td className={isUrdu ? "text-left" : "text-right"}>
+        <RateAmountList
           values={priceOptions.map((price) => price.retail_rate)}
           color="emerald"
         />
@@ -2040,6 +2110,8 @@ const RateAmountList = ({ values, color }) => {
       ? "bg-emerald-50 text-emerald-700 border-emerald-100"
       : color === "blue"
       ? "bg-blue-50 text-blue-700 border-blue-100"
+      : color === "violet"
+      ? "bg-violet-50 text-violet-700 border-violet-100"
       : "bg-amber-50 text-amber-700 border-amber-100";
 
   return (
@@ -2101,9 +2173,8 @@ const RateMobileCard = ({
               {getProductName(rate.product_id)}
             </h3>
 
-            <p className="text-xs text-slate-500 mt-0.5">
-              {priceOptions.length} {t.priceGroup}
-            </p>
+            <p className="text-[11px] font-black text-indigo-700 mt-0.5">{rate.list_name || "Default Rate List"}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{rate.customer_name || "—"} · {priceOptions.length} {t.priceGroup}</p>
           </div>
         </div>
 
@@ -2155,7 +2226,13 @@ const RateMobileCard = ({
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+              <RateMiniAmount
+                label={t.singleRate}
+                value={price.single_rate}
+                color="violet"
+              />
+
               <RateMiniAmount
                 label={t.retailRate}
                 value={price.retail_rate}
@@ -2232,6 +2309,8 @@ const RateMiniAmount = ({ label, value, color }) => {
       ? "bg-emerald-50 text-emerald-700 border-emerald-100"
       : color === "blue"
       ? "bg-blue-50 text-blue-700 border-blue-100"
+      : color === "violet"
+      ? "bg-violet-50 text-violet-700 border-violet-100"
       : "bg-amber-50 text-amber-700 border-amber-100";
 
   return (

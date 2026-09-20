@@ -67,7 +67,7 @@ const LANG = {
   },
 };
 
-const API_BASE = "http://localhost:5000/api/areas";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api/areas`;
 
 // ─────────────────────────────────────────────────────────────────
 // PRINT SLIP

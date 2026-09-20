@@ -28,7 +28,7 @@ async function translateText(text) {
 const LANG = {
   en: {
     title: "Product Management",
-    subtitle: "Manage products with type, category, unit and master packing",
+    subtitle: "Manage products with type, category and unit",
     addBtn: "New Product",
     summaryBtn: "View Summary",
     summaryTitle: "Products Summary",
@@ -42,7 +42,7 @@ const LANG = {
     active: "Active",
     inactive: "Inactive",
     searchPlaceholder:
-      "Search by product, description, type, category, unit or quantity…",
+      "Search by product, type, category or unit…",
     productName: "Product Name",
     description: "Description",
     autoDescription: "Auto Description",
@@ -88,13 +88,13 @@ const LANG = {
     records: "Records",
     required: "Required",
     formSubtitle:
-      "Select product, type, category, unit, master packing unit and pieces",
+      "Select product, type, category and unit",
     companyName: "Ali Cages",
     savePdfHint: 'Choose "Save as PDF" in print dialog',
   },
   ur: {
     title: "پروڈکٹ مینجمنٹ",
-    subtitle: "پروڈکٹ، ٹائپ، کیٹیگری، یونٹ اور ماسٹر پیکنگ مینج کریں",
+    subtitle: "پروڈکٹ، ٹائپ، کیٹیگری اور یونٹ مینج کریں",
     addBtn: "نیا پروڈکٹ",
     summaryBtn: "سمری دیکھیں",
     summaryTitle: "پروڈکٹس سمری",
@@ -108,7 +108,7 @@ const LANG = {
     active: "ایکٹو",
     inactive: "ان ایکٹو",
     searchPlaceholder:
-      "پروڈکٹ، ڈسکرپشن، ٹائپ، کیٹیگری، یونٹ یا مقدار سے تلاش کریں…",
+      "پروڈکٹ، ٹائپ، کیٹیگری یا یونٹ سے تلاش کریں…",
     productName: "پروڈکٹ نام",
     description: "ڈسکرپشن",
     autoDescription: "آٹو ڈسکرپشن",
@@ -154,7 +154,7 @@ const LANG = {
     records: "ریکارڈز",
     required: "ضروری",
     formSubtitle:
-      "پروڈکٹ، ٹائپ، کیٹیگری، یونٹ، ماسٹر پیکنگ یونٹ اور پیسز",
+      "پروڈکٹ، ٹائپ، کیٹیگری اور یونٹ",
     companyName: "علی کیجز",
     savePdfHint: 'پرنٹ ڈائیلاگ میں "Save as PDF" منتخب کریں',
   },
@@ -167,8 +167,6 @@ const defaultForm = {
   product_type_id: "",
   category_id: "",
   unit_id: "",
-  master_packing_unit_id: "",
-  master_packing_pieces: "",
   is_active: "1",
 };
 
@@ -423,26 +421,7 @@ const ProductPage = () => {
       ? urduCache[`prod:${r.id}`] || r.product_name || "-"
       : r.product_name || "-";
 
-  const getRecordDescription = (r) => {
-    if (r.description) return r.description;
-
-    const parts = [];
-
-    if (r.product_name) parts.push(r.product_name);
-    if (getRecordTypeName(r) !== "-") parts.push(`Type: ${getRecordTypeName(r)}`);
-    if (getRecordCategoryName(r) !== "-")
-      parts.push(`Category: ${getRecordCategoryName(r)}`);
-    if (getRecordUnitName(r) !== "-") parts.push(`Unit: ${getRecordUnitName(r)}`);
-
-    const masterUnit = getRecordMasterPackingUnitName(r);
-    const pieces = Number(r.master_packing_pieces || r.pieces_per_carton || 0);
-
-    if (masterUnit !== "-" && pieces > 0) {
-      parts.push(`Master Packing: ${masterUnit} - ${pieces} Pieces`);
-    }
-
-    return parts.join(" | ");
-  };
+  const getRecordDescription = (r) => String(r.description || "").trim();
 
   const openAdd = () => {
     setForm(defaultForm);
@@ -456,15 +435,6 @@ const ProductPage = () => {
       product_type_id: r.product_type_id ? String(r.product_type_id) : "",
       category_id: r.category_id ? String(r.category_id) : "",
       unit_id: r.unit_id ? String(r.unit_id) : "",
-      master_packing_unit_id: r.master_packing_unit_id
-        ? String(r.master_packing_unit_id)
-        : "",
-      master_packing_pieces:
-        r.master_packing_pieces !== null && r.master_packing_pieces !== undefined
-          ? String(r.master_packing_pieces)
-          : r.pieces_per_carton !== null && r.pieces_per_carton !== undefined
-          ? String(r.pieces_per_carton)
-          : "",
       is_active: isRecordActive(r) ? "1" : "0",
     });
 
@@ -478,31 +448,14 @@ const ProductPage = () => {
       return;
     }
 
-    const hasMasterUnit = Boolean(form.master_packing_unit_id);
-    const hasPieces = Number(form.master_packing_pieces || 0) > 0;
-
-    if ((hasMasterUnit && !hasPieces) || (!hasMasterUnit && hasPieces)) {
-      showToast("error", t.masterPackingValidation);
-      return;
-    }
-
     const payload = {
       product_name: form.product_name.trim(),
-      description: autoDescription,
       product_type_id: form.product_type_id
         ? Number(form.product_type_id)
         : null,
       category_id: form.category_id ? Number(form.category_id) : null,
       unit_id: form.unit_id ? Number(form.unit_id) : null,
-      master_packing_unit_id: form.master_packing_unit_id
-        ? Number(form.master_packing_unit_id)
-        : null,
-      master_packing_pieces: Number(form.master_packing_pieces || 0),
       is_active: Number(form.is_active),
-
-      sale_unit: form.master_packing_unit_id ? "carton" : "single",
-      pieces_per_carton: Number(form.master_packing_pieces || 0),
-      piece_rate: 0,
     };
 
     try {
@@ -603,16 +556,6 @@ const ProductPage = () => {
       totalProducts: filtered.length,
       activeProducts: filtered.filter((r) => isRecordActive(r)).length,
       inactiveProducts: filtered.filter((r) => !isRecordActive(r)).length,
-      withMasterPacking: filtered.filter(
-        (r) =>
-          r.master_packing_unit_id ||
-          Number(r.master_packing_pieces || r.pieces_per_carton || 0) > 0
-      ).length,
-      withoutMasterPacking: filtered.filter(
-        (r) =>
-          !r.master_packing_unit_id &&
-          Number(r.master_packing_pieces || r.pieces_per_carton || 0) <= 0
-      ).length,
     }),
     [filtered]
   );
@@ -920,13 +863,11 @@ const ProductPage = () => {
                 <p className="text-sm text-slate-500">{t.summarySubtitle}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   [t.totalProducts, summary.totalProducts, "bi-box-seam-fill"],
                   [t.activeProducts, summary.activeProducts, "bi-check-circle-fill"],
                   [t.inactiveProducts, summary.inactiveProducts, "bi-x-circle-fill"],
-                  [t.withMasterPacking, summary.withMasterPacking, "bi-boxes"],
-                  [t.withoutMasterPacking, summary.withoutMasterPacking, "bi-box"],
                 ].map(([label, value, icon]) => (
                   <div
                     key={label}
@@ -1060,9 +1001,11 @@ const ProductPage = () => {
                                 {getProductName(r)}
                               </span>
 
-                              <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
-                                {getRecordDescription(r)}
-                              </p>
+                              {getRecordDescription(r) && (
+                                <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                                  {getRecordDescription(r)}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -1272,57 +1215,6 @@ const ProductPage = () => {
                   </div>
 
                   <div>
-                    <label className="same-label">{t.masterPackingUnit}</label>
-                    <select
-                      value={form.master_packing_unit_id}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          master_packing_unit_id: e.target.value,
-                        })
-                      }
-                      className={`same-field ${isUrdu ? "text-right" : ""}`}
-                    >
-                      <option value="">{t.selectMasterPackingUnit}</option>
-                      {units.map((unit) => (
-                        <option key={unit.id} value={unit.id}>
-                          {getUnitName(unit)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="same-label">{t.masterPackingPieces}</label>
-
-                    <div className="relative">
-                      <i
-                        className={`bi bi-123 absolute top-1/2 -translate-y-1/2 text-slate-400 ${
-                          isUrdu ? "right-3" : "left-3"
-                        }`}
-                      ></i>
-
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.master_packing_pieces}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            master_packing_pieces: e.target.value,
-                          })
-                        }
-                        placeholder={t.piecesPlaceholder}
-                        className={`same-field font-mono font-bold ${
-                          isUrdu
-                            ? "same-field-icon-right text-right"
-                            : "same-field-icon-left text-right"
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
                     <label className="same-label">
                       {t.activeInactive} <span className="text-rose-500">*</span>
                     </label>
@@ -1339,23 +1231,6 @@ const ProductPage = () => {
                     </select>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="same-label">{t.autoDescription}</label>
-
-                    <div
-                      className={`min-h-[52px] rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 leading-relaxed ${
-                        isUrdu ? "text-right" : ""
-                      }`}
-                    >
-                      {autoDescription || "-"}
-                    </div>
-
-                    <p className="text-xs text-slate-500 mt-2">
-                      Cotton Bundle ko master packing unit select karoge aur pieces
-                      likhoge to description auto ban jayegi, jaise:
-                      <b> Master Packing: Cotton Bundle - 12 Pieces</b>
-                    </p>
-                  </div>
                 </div>
               </div>
 

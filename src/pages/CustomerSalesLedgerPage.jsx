@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { oneMonthRange } from "../utils/dateDefaults";
 
 const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
@@ -269,8 +270,9 @@ export default function CustomerSalesLedgerPage() {
   const [loadingLedger, setLoadingLedger] = useState(false);
   const [error, setError] = useState("");
 
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const initialRange = useMemo(() => oneMonthRange(), []);
+  const [fromDate, setFromDate] = useState(initialRange.from_date);
+  const [toDate, setToDate] = useState(initialRange.to_date);
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
@@ -369,16 +371,25 @@ export default function CustomerSalesLedgerPage() {
   }
 
   function resetFilters() {
-    setFromDate("");
-    setToDate("");
+    const range = oneMonthRange();
+    setFromDate(range.from_date);
+    setToDate(range.to_date);
     setTypeFilter("all");
     if (selectedCustomerId) {
-      loadLedger(selectedCustomerId, { from: "", to: "" });
+      loadLedger(selectedCustomerId, { from: range.from_date, to: range.to_date });
     }
   }
 
   function printLedger() {
-    window.print();
+    const root = document.querySelector(".customer-detail-ledger");
+    if (!root) return;
+    const clone = root.cloneNode(true);
+    clone.querySelectorAll(".no-print, .ledger-mobile-list, .ledger-error-box, .ledger-empty-state, .ledger-loading-state").forEach((node) => node.remove());
+    const printWindow = window.open("", "_blank", "width=1200,height=850");
+    if (!printWindow) return;
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${t.title}</title><style>${ledgerStyles}</style></head><body>${clone.outerHTML}<script>window.onload=()=>{setTimeout(()=>window.print(),200);window.onafterprint=()=>window.close();}<\/script></body></html>`);
+    printWindow.document.close();
   }
 
   return (

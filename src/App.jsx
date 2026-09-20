@@ -13,6 +13,7 @@ import DashboardLayout from "./Layouts/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import GlobalUxEnhancer from "./components/GlobalUxEnhancer";
 
 import CustomerSalesLedgerPage from "./pages/CustomerSalesLedgerPage";
 
@@ -57,7 +58,7 @@ import ChequeVoucherPage from "./pages/ChequeVoucherPage";
 
 import DepartmentPage from "./pages/DepartmentPage";
 import EmployeePage from "./pages/EmployeePage";
-import EmployeeRatePage from "./pages/EmployeeRatePage";
+import EmployeeRatePage from "./pages/Employeeratepage";
 import HRReportPage from "./pages/HRReportPage";
 import EmployeeLedgerPage from "./pages/EmployeeLedgerPage";
 import ContractorPage from "./pages/ContractorPage";
@@ -73,6 +74,7 @@ import PermissionsPage from "./pages/PermissionsPage";
 function App() {
   return (
     <Router>
+      <GlobalUxEnhancer />
       <Routes>
         {/* Public routes */}
         <Route

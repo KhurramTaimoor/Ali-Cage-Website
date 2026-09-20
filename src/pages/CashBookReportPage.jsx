@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { oneMonthRange } from "../utils/dateDefaults";
 
 // ─────────────────────────────────────────────────────────────────
 // LANGUAGE STRINGS (Strictly English & Proper Urdu)
@@ -45,7 +46,7 @@ const LANG = {
   },
 };
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const CashBookReportPage = () => {
   const [lang, setLang] = useState("en");
@@ -55,7 +56,7 @@ const CashBookReportPage = () => {
   const fmt = (n) => parseFloat(n || 0).toLocaleString("en-PK", { minimumFractionDigits: 2 });
 
   const [records, setRecords] = useState([]);
-  const [filters, setFilters] = useState({ from_date: "", to_date: "" });
+  const [filters, setFilters] = useState(() => oneMonthRange());
   const [searched, setSearched] = useState(false);
 
   // ── Fetch Data ──
@@ -72,12 +73,8 @@ const CashBookReportPage = () => {
       const r = await axios.get(`${API_BASE}/cash-book-report?${params.toString()}`);
       setRecords(Array.isArray(r.data) ? r.data : []);
     } catch (error) {
-      // Fallback Mock Data if API is down
-      setRecords([
-        { id: 1, entry_date: "2024-10-01", description: "Opening Balance", cash_in: 50000, cash_out: 0, balance: 50000 },
-        { id: 2, entry_date: "2024-10-15", description: "Cash Sales", cash_in: 15000, cash_out: 0, balance: 65000 },
-        { id: 3, entry_date: "2024-10-20", description: "Office Supplies", cash_in: 0, cash_out: 5000, balance: 60000 },
-      ]);
+      console.error("Cash book report load failed:", error);
+      setRecords([]);
     }
     setSearched(true);
   };

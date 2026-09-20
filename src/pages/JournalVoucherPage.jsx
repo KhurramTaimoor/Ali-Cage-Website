@@ -1,473 +1,137 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { todayIso } from "../utils/dateDefaults";
 
-// ─────────────────────────────────────────────────────────────────
-// LANGUAGE STRINGS (Strictly English & Proper Urdu)
-// ─────────────────────────────────────────────────────────────────
-const LANG = {
-  en: {
-    title: "Journal Voucher",
-    subtitle: "Manage double-entry accounting transactions",
-    addBtn: "New Voucher",
-    searchPlaceholder: "Search by voucher no or account...",
-    voucherNo: "Voucher No",
-    date: "Date",
-    accountDr: "Debit Account (Dr)",
-    accountCr: "Credit Account (Cr)",
-    selectAccount: "-- Select Account --",
-    amount: "Amount (PKR)",
-    narration: "Narration (Remarks)",
-    save: "Save",
-    cancel: "Cancel",
-    edit: "Edit",
-    delete: "Delete",
-    actions: "Actions",
-    noRecords: "No journal vouchers found.",
-    toggleLang: "اردو",
-    printBtn: "Print List",
-    pdfBtn: "Download PDF",
-    reportHeader: "Journal Vouchers List",
-    printedOn: "Printed On",
-    successSave: "Voucher saved successfully!",
-    successUpdate: "Voucher updated successfully!",
-    errorMsg: "Please fill all required fields correctly.",
-    sameAccErr: "Debit and Credit accounts cannot be the same!",
-    deleteConfirm: "Are you sure you want to delete this voucher?",
-  },
-  ur: {
-    title: "جرنل واؤچر",
-    subtitle: "ڈبل انٹری اکاؤنٹنگ ٹرانزیکشنز کا انتظام کریں",
-    addBtn: "نیا واؤچر",
-    searchPlaceholder: "واؤچر نمبر یا اکاؤنٹ سے تلاش کریں...",
-    voucherNo: "واؤچر نمبر",
-    date: "تاریخ",
-    accountDr: "ڈیبٹ اکاؤنٹ (Dr)",
-    accountCr: "کریڈٹ اکاؤنٹ (Cr)",
-    selectAccount: "-- اکاؤنٹ منتخب کریں --",
-    amount: "رقم (روپے)",
-    narration: "تفصیل (ریمارکس)",
-    save: "محفوظ کریں",
-    cancel: "منسوخ",
-    edit: "ترمیم",
-    delete: "حذف",
-    actions: "اقدامات",
-    noRecords: "کوئی جرنل واؤچر نہیں ملا۔",
-    toggleLang: "English",
-    printBtn: "فہرست پرنٹ کریں",
-    pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
-    reportHeader: "جرنل واؤچرز کی فہرست",
-    printedOn: "پرنٹ کی تاریخ",
-    successSave: "واؤچر کامیابی سے محفوظ ہو گیا!",
-    successUpdate: "واؤچر کامیابی سے اپڈیٹ ہو گیا!",
-    errorMsg: "براہ کرم تمام لازمی خانے درست طریقے سے پُر کریں۔",
-    sameAccErr: "ڈیبٹ اور کریڈٹ اکاؤنٹس ایک جیسے نہیں ہو سکتے!",
-    deleteConfirm: "کیا آپ واقعی یہ واؤچر حذف کرنا چاہتے ہیں؟",
-  },
-};
-
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
+const money = (value) => Number(value || 0).toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const emptyLine = () => ({ account_type: "", account_id: "", description: "", debit: "", credit: "" });
+const emptyForm = () => ({ voucher_no: "", voucher_date: todayIso(), narration: "", lines: [emptyLine(), emptyLine()] });
 
 export default function JournalVoucherPage() {
   const [lang, setLang] = useState("en");
-  const t = LANG[lang];
-  const isUrdu = lang === "ur";
-  const dir = isUrdu ? "rtl" : "ltr";
-  const fmt = (n) => parseFloat(n || 0).toLocaleString("en-PK", { minimumFractionDigits: 2 });
-
-  const [records, setRecords] = useState([]);
+  const ur = lang === "ur";
+  const [rows, setRows] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const [form, setForm] = useState({
-    voucher_no: "", voucher_date: "", account_dr_id: "", account_cr_id: "", amount: "", narration: ""
-  });
+  const text = ur ? {
+    title: "جرنل واؤچر", subtitle: "ملٹی لائن ڈبل انٹری واؤچر", add: "نیا واؤچر", voucher: "واؤچر نمبر", date: "تاریخ",
+    accountType: "اکاؤنٹ ٹائپ", account: "اکاؤنٹ", description: "تفصیل", debit: "ڈیبٹ", credit: "کریڈٹ", addRow: "+ لائن شامل کریں",
+    narration: "نوٹس", save: "محفوظ کریں", update: "اپڈیٹ", cancel: "منسوخ", actions: "ایکشن", edit: "ترمیم", del: "حذف",
+    search: "واؤچر، اکاؤنٹ یا تفصیل تلاش کریں...", total: "کل", balanced: "بیلنسڈ", notBalanced: "ڈیبٹ اور کریڈٹ برابر ہونے چاہئیں",
+    noRows: "کوئی واؤچر نہیں ملا", selectType: "تمام اکاؤنٹ ٹائپس", selectAccount: "اکاؤنٹ منتخب کریں", print: "پرنٹ", language: "English"
+  } : {
+    title: "Journal Voucher", subtitle: "Multi-line double-entry accounting vouchers", add: "New Voucher", voucher: "Voucher No", date: "Date",
+    accountType: "Account Type", account: "Account", description: "Description", debit: "Debit", credit: "Credit", addRow: "+ Add Row",
+    narration: "Narration / Notes", save: "Save", update: "Update", cancel: "Cancel", actions: "Actions", edit: "Edit", del: "Delete",
+    search: "Search voucher, account or description...", total: "Total", balanced: "Balanced", notBalanced: "Debit and credit totals must match",
+    noRows: "No vouchers found", selectType: "All Account Types", selectAccount: "Select Account", print: "Print", language: "اردو"
+  };
 
-  // ── Fetch Data ──
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const load = async () => {
     try {
-      const [resJV, resAcc] = await Promise.all([
+      setLoading(true);
+      const [voucherRes, accountRes] = await Promise.all([
         axios.get(`${API_BASE}/journal-vouchers`),
-        axios.get(`${API_BASE}/chart-of-accounts`)
+        axios.get(`${API_BASE}/chart-of-accounts`),
       ]);
-      setRecords(resJV.data);
-      setAccounts(resAcc.data);
-    } catch (err) {
-      // Mock data if API is down
-      setAccounts([
-        { id: 1, account_title: "Cash in Hand", account_code: "1001" },
-        { id: 2, account_title: "Bank Account (Meezan)", account_code: "1002" },
-        { id: 3, account_title: "Office Expenses", account_code: "5001" },
-        { id: 4, account_title: "Accounts Payable", account_code: "2001" },
-      ]);
-      setRecords([
-        { id: 1, voucher_no: "JV-1001", voucher_date: "2024-10-25", account_dr_id: 3, account_dr_name: "Office Expenses", account_cr_id: 1, account_cr_name: "Cash in Hand", amount: 15000, narration: "Paid for office stationery" },
-        { id: 2, voucher_no: "JV-1002", voucher_date: "2024-10-26", account_dr_id: 4, account_dr_name: "Accounts Payable", account_cr_id: 2, account_cr_name: "Bank Account (Meezan)", amount: 50000, narration: "Payment to supplier" },
-      ]);
-    }
+      setRows(Array.isArray(voucherRes.data) ? voucherRes.data : []);
+      setAccounts(Array.isArray(accountRes.data) ? accountRes.data : []);
+    } catch (error) {
+      console.error(error);
+      setRows([]);
+      setMessage(error?.response?.data?.error || "Data load failed.");
+    } finally { setLoading(false); }
   };
 
-  const showToast = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+  useEffect(() => { load(); }, []);
+
+  const accountTypes = useMemo(() => [...new Set(accounts.map(a => a.account_type || a.group_name).filter(Boolean))].sort(), [accounts]);
+  const totals = useMemo(() => form.lines.reduce((acc, line) => ({ debit: acc.debit + Number(line.debit || 0), credit: acc.credit + Number(line.credit || 0) }), { debit: 0, credit: 0 }), [form.lines]);
+  const isBalanced = totals.debit > 0 && Math.abs(totals.debit - totals.credit) < 0.01;
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(row => [row.voucher_no, row.voucher_date, row.narration, ...(row.lines || []).flatMap(l => [l.account_title, l.account_type, l.description])].join(" ").toLowerCase().includes(q));
+  }, [rows, search]);
+
+  const updateLine = (index, key, value) => setForm(prev => ({ ...prev, lines: prev.lines.map((line, i) => i === index ? {
+    ...line,
+    [key]: value,
+    ...(key === "debit" && Number(value) > 0 ? { credit: "" } : {}),
+    ...(key === "credit" && Number(value) > 0 ? { debit: "" } : {}),
+  } : line) }));
+
+  const openNew = () => { setEditingId(null); setForm(emptyForm()); setShowForm(true); setMessage(""); };
+  const openEdit = (row) => {
+    const lines = Array.isArray(row.lines) && row.lines.length ? row.lines.map(line => ({
+      account_type: line.account_type || "", account_id: String(line.account_id || ""), description: line.description || "",
+      debit: Number(line.debit || 0) ? String(line.debit) : "", credit: Number(line.credit || 0) ? String(line.credit) : ""
+    })) : [
+      { account_type: "", account_id: String(row.account_dr_id || ""), description: row.narration || "", debit: String(row.amount || ""), credit: "" },
+      { account_type: "", account_id: String(row.account_cr_id || ""), description: row.narration || "", debit: "", credit: String(row.amount || "") },
+    ];
+    setEditingId(row.id); setForm({ voucher_no: row.voucher_no || "", voucher_date: String(row.voucher_date || todayIso()).slice(0, 10), narration: row.narration || "", lines }); setShowForm(true); setMessage("");
   };
 
-  // ── Form Handlers ──
-  const openAdd = () => {
-    setForm({ voucher_no: "", voucher_date: "", account_dr_id: "", account_cr_id: "", amount: "", narration: "" });
-    setEditingId(null);
-    setShowForm(true);
-  };
-
-  const openEdit = (r) => {
-    setForm({
-      voucher_no: r.voucher_no, voucher_date: r.voucher_date,
-      account_dr_id: r.account_dr_id, account_cr_id: r.account_cr_id,
-      amount: r.amount, narration: r.narration || ""
-    });
-    setEditingId(r.id);
-    setShowForm(true);
-  };
-
-  const handleSave = async () => {
-    if (!form.voucher_no || !form.account_dr_id || !form.account_cr_id || !form.amount) {
-      showToast("error", t.errorMsg);
-      return;
-    }
-    if (form.account_dr_id === form.account_cr_id) {
-      showToast("error", t.sameAccErr);
-      return;
-    }
-
+  const save = async () => {
+    const validLines = form.lines.filter(line => line.account_id && (Number(line.debit || 0) > 0 || Number(line.credit || 0) > 0));
+    if (!form.voucher_no.trim() || validLines.length < 2 || !isBalanced) { setMessage(text.notBalanced); return; }
     try {
-      if (editingId) {
-        await axios.put(`${API_BASE}/journal-vouchers/${editingId}`, form);
-        showToast("success", t.successUpdate);
-      } else {
-        await axios.post(`${API_BASE}/journal-vouchers`, form);
-        showToast("success", t.successSave);
-      }
-      fetchData();
-      setShowForm(false);
-    } catch (err) {
-      // Optimistic UI update for mock testing
-      const accDr = accounts.find(a => String(a.id) === String(form.account_dr_id));
-      const accCr = accounts.find(a => String(a.id) === String(form.account_cr_id));
-      
-      const newRec = { 
-        ...form, 
-        id: editingId || Date.now(),
-        account_dr_name: accDr?.account_title || "-",
-        account_cr_name: accCr?.account_title || "-"
-      };
-      
-      if (editingId) setRecords(prev => prev.map(r => r.id === editingId ? newRec : r));
-      else setRecords(prev => [...prev, newRec]);
-      
-      showToast("success", editingId ? t.successUpdate : t.successSave);
-      setShowForm(false);
-    }
+      setSaving(true); setMessage("");
+      const payload = { ...form, lines: validLines.map(line => ({ ...line, debit: Number(line.debit || 0), credit: Number(line.credit || 0) })) };
+      if (editingId) await axios.put(`${API_BASE}/journal-vouchers/${editingId}`, payload); else await axios.post(`${API_BASE}/journal-vouchers`, payload);
+      setShowForm(false); await load();
+    } catch (error) { setMessage(error?.response?.data?.error || error?.response?.data?.message || "Save failed."); }
+    finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(t.deleteConfirm)) return;
-    try {
-      await axios.delete(`${API_BASE}/journal-vouchers/${id}`);
-      fetchData();
-    } catch (err) {
-      setRecords(prev => prev.filter(r => r.id !== id));
-    }
+  const remove = async (id) => {
+    if (!window.confirm(ur ? "یہ واؤچر حذف کریں؟" : "Delete this voucher?")) return;
+    try { await axios.delete(`${API_BASE}/journal-vouchers/${id}`); await load(); }
+    catch (error) { setMessage(error?.response?.data?.error || "Delete failed."); }
   };
 
-  // ── Search & Filter ──
-  const filtered = records.filter(r =>
-    [r.voucher_no, r.account_dr_name, r.account_cr_name, r.narration].some(v => (v || "").toLowerCase().includes(search.toLowerCase()))
-  );
-
-  // ── Print / PDF Generator ──
-  const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
-    const rowsHtml = filtered.map((r, i) => `
-      <tr>
-        <td style="text-align: center;">${i + 1}</td>
-        <td style="font-family: monospace; font-weight: bold;">${r.voucher_no}</td>
-        <td>${r.voucher_date || "-"}</td>
-        <td style="color: #047857; font-weight: bold;">${r.account_dr_name}</td>
-        <td style="color: #b91c1c; font-weight: bold;">${r.account_cr_name}</td>
-        <td style="text-align:${isUrdu ? 'left' : 'right'}; font-weight: bold;">₨ ${fmt(r.amount)}</td>
-        <td style="font-size: 11px;">${r.narration || "-"}</td>
-      </tr>
-    `).join("");
-
-    const html = `
-      <!DOCTYPE html>
-      <html dir="${dir}" lang="${lang}">
-      <head>
-        <meta charset="UTF-8"/>
-        <title>${t.title}</title>
-        ${isUrdu ? `<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">` : ""}
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: ${font}; background: #fff; color: #0f172a; padding: 40px; }
-          .report-container { max-width: 1000px; margin: 0 auto; }
-          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #6d28d9; padding-bottom: 20px; margin-bottom: 30px; }
-          .brand { font-size: 28px; font-weight: bold; color: #6d28d9; text-transform: uppercase; letter-spacing: 1px; }
-          .report-title { font-size: 18px; color: #64748b; margin-top: 5px; }
-          .meta { text-align: ${isUrdu ? "left" : "right"}; font-size: 12px; color: #64748b; }
-          table { width: 100%; border-collapse: collapse; font-size: 13px; }
-          th { background: #6d28d9; color: #fff; text-align: ${isUrdu ? "right" : "left"}; padding: 12px; font-weight: normal; }
-          td { border-bottom: 1px solid #e2e8f0; padding: 10px; color: #334155; }
-          tr:nth-child(even) td { background: #f5f3ff; }
-          .print-instruct { background: #ede9fe; color: #6d28d9; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #ddd6fe; }
-          @media print { body { padding: 0; } .print-instruct { display: none; } }
-        </style>
-      </head>
-      <body>
-        <div class="report-container">
-          ${isPdf ? `<div class="print-instruct">Please select <strong>"Save as PDF"</strong> in the destination dropdown to download this report.</div>` : ""}
-          <div class="header">
-            <div>
-              <div class="brand">Unique Wear</div>
-              <div class="report-title">${t.reportHeader}</div>
-            </div>
-            <div class="meta">
-              <div>${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 40px; text-align: center;">#</th>
-                <th>${t.voucherNo}</th>
-                <th>${t.date}</th>
-                <th>${t.accountDr}</th>
-                <th>${t.accountCr}</th>
-                <th style="text-align:${isUrdu ? 'left' : 'right'};">${t.amount}</th>
-                <th>${t.narration}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filtered.length > 0 ? rowsHtml : `<tr><td colspan="7" style="text-align:center;">${t.noRecords}</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-        <script>
-          window.onload = () => { setTimeout(() => { window.print(); ${!isPdf ? "window.onafterprint = () => window.close();" : ""} }, 300); }
-        </script>
-      </body>
-      </html>
-    `;
-    const w = window.open("", "_blank");
-    w.document.write(html);
+  const printList = () => {
+    const body = filtered.map((row, i) => `<tr><td>${i + 1}</td><td>${row.voucher_no}</td><td>${String(row.voucher_date || "").slice(0,10)}</td><td>${(row.lines || []).map(l => `${l.account_title || "#"+l.account_id}: ${Number(l.debit||0)>0?"Dr "+money(l.debit):"Cr "+money(l.credit)}`).join("<br>")}</td><td>${row.narration || ""}</td></tr>`).join("");
+    const w = window.open("", "_blank", "width=1100,height=800"); if (!w) return;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${text.title}</title><style>body{font-family:Arial;padding:24px}h1{margin:0 0 16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}th{background:#111827;color:#fff}@media print{body{padding:0}}</style></head><body><h1>${text.title}</h1><table><thead><tr><th>#</th><th>${text.voucher}</th><th>${text.date}</th><th>${text.account}</th><th>${text.narration}</th></tr></thead><tbody>${body}</tbody></table><script>window.onload=()=>window.print();window.onafterprint=()=>window.close();<\/script></body></html>`);
     w.document.close();
   };
 
-  return (
-    <div dir={dir} style={{ fontFamily: isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif" }} className="min-h-screen bg-slate-50 p-6 pb-20">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
-      {isUrdu && <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet" />}
-
-      {/* Floating Toast Message */}
-      {message.text && (
-        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 transition-all ${message.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
-          <i className={`bi ${message.type === 'error' ? 'bi-exclamation-triangle' : 'bi-check-circle'}`}></i>
-          {message.text}
-        </div>
-      )}
-
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3 max-w-7xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">{t.title}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{t.subtitle}</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setLang(lang === "en" ? "ur" : "en")} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition">
-            <i className="bi bi-translate"></i>{t.toggleLang}
-          </button>
-          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-700 text-white text-sm font-semibold hover:bg-violet-800 transition shadow">
-            <i className="bi bi-plus-lg"></i>{t.addBtn}
-          </button>
-        </div>
+  return <div dir={ur ? "rtl" : "ltr"} className="min-h-screen bg-slate-50 p-3 sm:p-6 text-slate-800">
+    <div className="max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <div><h1 className="text-2xl font-black">{text.title}</h1><p className="text-sm text-slate-500">{text.subtitle}</p></div>
+        <div className="flex flex-wrap gap-2"><button onClick={() => setLang(ur ? "en" : "ur")} className="px-4 py-2 rounded-lg border bg-white">{text.language}</button><button onClick={printList} className="px-4 py-2 rounded-lg border bg-white">{text.print}</button><button onClick={openNew} className="px-4 py-2 rounded-lg bg-violet-700 text-white font-semibold">{text.add}</button></div>
       </div>
-
-      <div className="max-w-7xl mx-auto">
-        
-        {/* ── Search & Actions ── */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="relative w-full max-w-sm">
-            <i className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder}
-              className={`w-full border border-slate-200 rounded-lg py-2.5 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-sm ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-          </div>
-          
-          <div className={`flex gap-2 ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button onClick={() => generatePrintDocument(false)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm">
-              <i className="bi bi-printer text-violet-600"></i> {t.printBtn}
-            </button>
-            <button onClick={() => generatePrintDocument(true)} className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm">
-              <i className="bi bi-file-earmark-pdf text-red-600"></i> {t.pdfBtn}
-            </button>
-          </div>
-        </div>
-
-        {/* ── Table ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-600">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
-                <tr>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} w-12`}>#</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.voucherNo}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.date}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.accountDr}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"}`}>{t.accountCr}</th>
-                  <th className="px-4 py-3 text-right">{t.amount}</th>
-                  <th className={`px-4 py-3 ${isUrdu ? "text-right" : "text-left"} max-w-[150px]`}>{t.narration}</th>
-                  <th className="px-4 py-3 text-center">{t.actions}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-400">{t.noRecords}</td></tr>
-                ) : (
-                  filtered.map((r, i) => (
-                    <tr key={r.id} className="hover:bg-violet-50 transition">
-                      <td className="px-4 py-3.5 text-slate-400 font-mono text-xs text-center">{i + 1}</td>
-                      <td className="px-4 py-3.5 font-bold text-slate-700">
-                        <span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono border border-slate-200">{r.voucher_no}</span>
-                      </td>
-                      <td className="px-4 py-3.5 text-slate-500 text-xs">{r.voucher_date || "-"}</td>
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md text-xs">
-                          Dr. {r.account_dr_name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1 text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-md text-xs">
-                          Cr. {r.account_cr_name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-mono font-bold text-violet-700">₨ {fmt(r.amount)}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-500 truncate max-w-[150px]" title={r.narration}>{r.narration || "-"}</td>
-                      <td className="px-4 py-3.5">
-                        <div className={`flex items-center justify-center gap-1.5 flex-wrap ${isUrdu ? "flex-row-reverse" : ""}`}>
-                          <button onClick={() => openEdit(r)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-xs font-semibold hover:bg-violet-200 transition"><i className="bi bi-pencil-square"></i></button>
-                          <button onClick={() => handleDelete(r.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 transition"><i className="bi bi-trash3"></i></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ── Modal Form ── */}
-        {showForm && (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col" dir={dir}>
-              
-              <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
-                <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-                  <i className="bi bi-journal-text text-violet-700 text-lg"></i>
-                </div>
-                <h2 className="text-xl font-bold text-slate-800">{editingId ? t.edit : t.addBtn}</h2>
-              </div>
-              
-              <div className="p-6 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  
-                  {/* Voucher No */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.voucherNo} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-hash absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <input type="text" value={form.voucher_no} onChange={e => setForm({ ...form, voucher_no: e.target.value })} placeholder="JV-001"
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-violet-500 font-mono ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
-
-                  {/* Date */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.date}</label>
-                    <div className="relative">
-                      <i className={`bi bi-calendar-event absolute top-1/2 -translate-y-1/2 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <input type="date" value={form.voucher_date} onChange={e => setForm({ ...form, voucher_date: e.target.value })}
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-violet-500 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
-
-                  {/* Debit Account */}
-                  <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                    <label className="block text-xs font-bold text-emerald-800 mb-1">{t.accountDr} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-box-arrow-in-right absolute top-1/2 -translate-y-1/2 text-emerald-500 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <select value={form.account_dr_id} onChange={e => setForm({ ...form, account_dr_id: e.target.value })}
-                        className={`w-full border border-emerald-200 rounded-lg py-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500 appearance-none ${isUrdu ? "pr-9 pl-8 text-right" : "pl-9 pr-8"}`}>
-                        <option value="">{t.selectAccount}</option>
-                        {accounts.map(a => <option key={a.id} value={a.id}>[{a.account_code}] {a.account_title}</option>)}
-                      </select>
-                      <i className={`bi bi-chevron-down absolute top-1/2 -translate-y-1/2 text-emerald-400 text-xs pointer-events-none ${isUrdu ? "left-3" : "right-3"}`}></i>
-                    </div>
-                  </div>
-
-                  {/* Credit Account */}
-                  <div className="bg-red-50/50 p-4 rounded-xl border border-red-100">
-                    <label className="block text-xs font-bold text-red-800 mb-1">{t.accountCr} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-box-arrow-right absolute top-1/2 -translate-y-1/2 text-red-500 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <select value={form.account_cr_id} onChange={e => setForm({ ...form, account_cr_id: e.target.value })}
-                        className={`w-full border border-red-200 rounded-lg py-2.5 text-sm bg-white focus:ring-2 focus:ring-red-500 appearance-none ${isUrdu ? "pr-9 pl-8 text-right" : "pl-9 pr-8"}`}>
-                        <option value="">{t.selectAccount}</option>
-                        {accounts.map(a => <option key={a.id} value={a.id}>[{a.account_code}] {a.account_title}</option>)}
-                      </select>
-                      <i className={`bi bi-chevron-down absolute top-1/2 -translate-y-1/2 text-red-400 text-xs pointer-events-none ${isUrdu ? "left-3" : "right-3"}`}></i>
-                    </div>
-                  </div>
-
-                  {/* Amount */}
-                  <div>
-                    <label className="block text-xs font-bold text-violet-700 mb-1">{t.amount} *</label>
-                    <div className="relative">
-                      <i className={`bi bi-currency-rupee absolute top-1/2 -translate-y-1/2 text-violet-500 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <input type="number" min="0" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00"
-                        className={`w-full border border-violet-200 rounded-lg py-2.5 text-sm bg-violet-50/30 focus:ring-2 focus:ring-violet-500 font-mono font-bold text-violet-800 ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
-
-                  {/* Narration */}
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">{t.narration}</label>
-                    <div className="relative">
-                      <i className={`bi bi-chat-left-text absolute top-3 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}></i>
-                      <textarea rows="2" value={form.narration} onChange={e => setForm({ ...form, narration: e.target.value })} placeholder="..."
-                        className={`w-full border border-slate-200 rounded-lg py-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-violet-500 resize-none ${isUrdu ? "pr-9 pl-3 text-right" : "pl-9 pr-3"}`} />
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-              
-              {/* Footer */}
-              <div className={`px-6 py-4 border-t border-slate-100 bg-slate-50 flex gap-3 flex-shrink-0 rounded-b-2xl ${isUrdu ? "flex-row-reverse justify-start" : "justify-end"}`}>
-                <button onClick={() => setShowForm(false)} className="border border-slate-300 text-slate-600 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-100 transition bg-white">{t.cancel}</button>
-                <button onClick={handleSave} className="bg-violet-700 text-white px-8 py-2.5 rounded-lg font-semibold text-sm hover:bg-violet-800 transition shadow-lg shadow-violet-700/20 flex items-center gap-2">
-                  <i className="bi bi-save"></i> {t.save}
-                </button>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
+      {message && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">{message}</div>}
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={text.search} className="w-full sm:max-w-md mb-4 border rounded-lg px-3 py-2.5 bg-white" />
+      <div className="bg-white rounded-xl border shadow-sm overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm min-w-[780px]"><thead className="bg-slate-900 text-white"><tr><th className="p-3">#</th><th className="p-3 text-left">{text.voucher}</th><th className="p-3 text-left">{text.date}</th><th className="p-3 text-left">{text.account}</th><th className="p-3 text-right">{text.debit}</th><th className="p-3 text-right">{text.credit}</th><th className="p-3 text-center">{text.actions}</th></tr></thead><tbody>
+        {loading ? <tr><td colSpan={7} className="p-10 text-center text-slate-400">Loading...</td></tr> : filtered.length === 0 ? <tr><td colSpan={7} className="p-10 text-center text-slate-400">{text.noRows}</td></tr> : filtered.map((row, i) => {
+          const debit = (row.lines || []).reduce((s,l)=>s+Number(l.debit||0),0) || Number(row.amount||0); const credit=(row.lines||[]).reduce((s,l)=>s+Number(l.credit||0),0) || Number(row.amount||0);
+          return <tr key={row.id} className="border-t align-top"><td className="p-3">{i+1}</td><td className="p-3 font-bold">{row.voucher_no}<div className="text-xs text-slate-400 mt-1">{row.narration}</div></td><td className="p-3">{String(row.voucher_date||"").slice(0,10)}</td><td className="p-3">{(row.lines||[]).map(l=><div key={l.id || `${l.account_id}-${l.line_no}`} className="mb-1"><span className="font-medium">{l.account_title || `#${l.account_id}`}</span><span className="text-slate-400"> — {l.description || ""}</span></div>)}</td><td className="p-3 text-right font-mono">{money(debit)}</td><td className="p-3 text-right font-mono">{money(credit)}</td><td className="p-3 text-center whitespace-nowrap"><button onClick={()=>openEdit(row)} className="px-2 py-1 text-violet-700">{text.edit}</button><button onClick={()=>remove(row.id)} className="px-2 py-1 text-red-600">{text.del}</button></td></tr>;
+        })}
+      </tbody></table></div></div>
     </div>
-  );
+
+    {showForm && <div className="fixed inset-0 z-50 bg-slate-900/60 p-2 sm:p-4 flex items-center justify-center"><div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto shadow-2xl">
+      <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-4 flex justify-between items-center z-10"><div><h2 className="text-xl font-black">{editingId ? text.update : text.add}</h2><p className="text-xs text-slate-500">{text.notBalanced}</p></div><button onClick={()=>setShowForm(false)} className="text-2xl">×</button></div>
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5"><div><label className="text-xs font-bold">{text.voucher}</label><input value={form.voucher_no} onChange={e=>setForm({...form,voucher_no:e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="JV-001" /></div><div><label className="text-xs font-bold">{text.date}</label><input type="date" value={form.voucher_date} onChange={e=>setForm({...form,voucher_date:e.target.value})} className="w-full border rounded-lg px-3 py-2" /></div><div><label className="text-xs font-bold">{text.narration}</label><input value={form.narration} onChange={e=>setForm({...form,narration:e.target.value})} className="w-full border rounded-lg px-3 py-2" /></div></div>
+        <div className="overflow-x-auto border rounded-xl"><table className="w-full min-w-[920px] text-sm"><thead className="bg-slate-100"><tr><th className="p-2">#</th><th className="p-2 text-left">{text.accountType}</th><th className="p-2 text-left">{text.account}</th><th className="p-2 text-left">{text.description}</th><th className="p-2 text-right">{text.debit}</th><th className="p-2 text-right">{text.credit}</th><th className="p-2"></th></tr></thead><tbody>
+          {form.lines.map((line,index)=>{ const visibleAccounts=line.account_type?accounts.filter(a=>(a.account_type||a.group_name)===line.account_type):accounts; return <tr key={index} className="border-t"><td className="p-2 text-center">{index+1}</td><td className="p-2"><select value={line.account_type} onChange={e=>updateLine(index,"account_type",e.target.value)} className="w-full border rounded px-2 py-2"><option value="">{text.selectType}</option>{accountTypes.map(type=><option key={type} value={type}>{type}</option>)}</select></td><td className="p-2"><select value={line.account_id} onChange={e=>updateLine(index,"account_id",e.target.value)} className="w-full border rounded px-2 py-2"><option value="">{text.selectAccount}</option>{visibleAccounts.map(a=><option key={a.id} value={a.id}>[{a.account_code || a.id}] {a.account_title}</option>)}</select></td><td className="p-2"><input value={line.description} onChange={e=>updateLine(index,"description",e.target.value)} className="w-full border rounded px-2 py-2" /></td><td className="p-2"><input type="number" min="0" step="0.01" value={line.debit} onChange={e=>updateLine(index,"debit",e.target.value)} className="w-full border rounded px-2 py-2 text-right" /></td><td className="p-2"><input type="number" min="0" step="0.01" value={line.credit} onChange={e=>updateLine(index,"credit",e.target.value)} className="w-full border rounded px-2 py-2 text-right" /></td><td className="p-2 text-center"><button disabled={form.lines.length<=2} onClick={()=>setForm(prev=>({...prev,lines:prev.lines.filter((_,i)=>i!==index)}))} className="text-red-600 disabled:opacity-30">×</button></td></tr> })}
+        </tbody><tfoot className="bg-slate-50 font-bold"><tr><td colSpan={4} className="p-3 text-right">{text.total}</td><td className="p-3 text-right font-mono">{money(totals.debit)}</td><td className="p-3 text-right font-mono">{money(totals.credit)}</td><td></td></tr></tfoot></table></div>
+        <div className="mt-3 flex flex-wrap justify-between gap-3"><button onClick={()=>setForm(prev=>({...prev,lines:[...prev.lines,emptyLine()]}))} className="px-4 py-2 rounded-lg border bg-white">{text.addRow}</button><span className={`px-4 py-2 rounded-lg text-sm font-bold ${isBalanced?"bg-emerald-50 text-emerald-700":"bg-amber-50 text-amber-700"}`}>{isBalanced?text.balanced:text.notBalanced}</span></div>
+        <div className="mt-6 flex justify-end gap-2"><button onClick={()=>setShowForm(false)} className="px-4 py-2 rounded-lg border">{text.cancel}</button><button disabled={saving || !isBalanced} onClick={save} className="px-5 py-2 rounded-lg bg-violet-700 text-white font-semibold disabled:opacity-50">{saving?"...":editingId?text.update:text.save}</button></div>
+      </div>
+    </div></div>}
+  </div>;
 }

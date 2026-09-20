@@ -65,7 +65,7 @@ const LANG = {
   },
 };
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 export default function OpeningBalancePage() {
   const [lang, setLang] = useState("en");
@@ -99,17 +99,10 @@ export default function OpeningBalancePage() {
       setRecords(resBal.data);
       setAccounts(resAcc.data);
     } catch (err) {
-      // Mock data if API is down
-      setAccounts([
-        { id: 1, account_title: "Cash in Hand", account_code: "1001" },
-        { id: 2, account_title: "Accounts Payable", account_code: "2001" },
-        { id: 3, account_title: "Bank Account (Meezan)", account_code: "1002" },
-      ]);
-      setRecords([
-        { id: 1, fiscal_year: "2024-2025", account_id: 1, account_title: "Cash in Hand", entry_date: "2024-07-01", debit: 500000, credit: 0 },
-        { id: 2, fiscal_year: "2024-2025", account_id: 2, account_title: "Accounts Payable", entry_date: "2024-07-01", debit: 0, credit: 150000 },
-        { id: 3, fiscal_year: "2024-2025", account_id: 3, account_title: "Bank Account (Meezan)", entry_date: "2024-07-01", debit: 1200000, credit: 0 },
-      ]);
+      console.error(err);
+      setAccounts([]);
+      setRecords([]);
+      showToast("error", err?.response?.data?.message || "Failed to load opening balances.");
     }
   };
 
@@ -158,19 +151,8 @@ export default function OpeningBalancePage() {
       fetchData();
       setShowForm(false);
     } catch (err) {
-      // Optimistic UI update for mock testing
-      const acc = accounts.find(a => String(a.id) === String(form.account_id));
-      const newRec = { 
-        ...submitData, 
-        id: editingId || Date.now(),
-        account_title: acc?.account_title || "-"
-      };
-      
-      if (editingId) setRecords(prev => prev.map(r => r.id === editingId ? newRec : r));
-      else setRecords(prev => [...prev, newRec]);
-      
-      showToast("success", editingId ? t.successUpdate : t.successSave);
-      setShowForm(false);
+      console.error(err);
+      showToast("error", err?.response?.data?.message || "Opening balance could not be saved.");
     }
   };
 

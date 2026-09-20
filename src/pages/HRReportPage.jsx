@@ -51,7 +51,7 @@ const LANG = {
   },
 };
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const HRReportPage = () => {
   const [lang, setLang] = useState("en");
@@ -76,14 +76,8 @@ const HRReportPage = () => {
       })
       .catch(e => { 
         console.error(e);
-        // Fallback Mock Data
-        const mockData = [
-          { id: 1, full_name: "Ahmed Raza", department_name: "Production", joining_date: "2023-01-15T00:00:00.000Z", basic_salary: 45000, rate_type: "Monthly", current_rate: null, status: "active" },
-          { id: 2, full_name: "Hassan Ali", department_name: "Sales", joining_date: "2023-05-10T00:00:00.000Z", basic_salary: 55000, rate_type: "Commission", current_rate: 500, status: "active" },
-          { id: 3, full_name: "Zainab Bibi", department_name: "Administration", joining_date: "2022-11-01T00:00:00.000Z", basic_salary: 60000, rate_type: "Monthly", current_rate: null, status: "inactive" },
-        ];
-        setData(mockData);
-        setFiltered(mockData);
+        setData([]);
+        setFiltered([]);
         setLoading(false); 
       });
   }, []);

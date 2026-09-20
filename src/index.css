@@ -38,3 +38,57 @@
     100% { transform: translateY(0px); }
   }
 }
+/* ERP-wide responsive safety net. Individual pages keep their own design,
+   while these rules prevent forms/tables/modals from breaking on phones. */
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+input, select, textarea, button {
+  max-width: 100%;
+}
+
+.overflow-x-auto,
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 767px) {
+  main, [role="main"] {
+    min-width: 0 !important;
+  }
+
+  .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl {
+    max-width: 100% !important;
+  }
+
+  .min-w-\[260px\], .min-w-\[280px\], .min-w-\[300px\], .min-w-\[320px\] {
+    min-width: 0 !important;
+  }
+
+  .fixed.inset-0 > div,
+  [class*="fixed"][class*="inset-0"] > div {
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100vh - 1rem) !important;
+  }
+
+  table {
+    font-size: 12px;
+  }
+
+  th, td {
+    white-space: nowrap;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+}
+
+@media print {
+  aside, header, nav, .no-print, button.no-print {
+    display: none !important;
+  }
+}

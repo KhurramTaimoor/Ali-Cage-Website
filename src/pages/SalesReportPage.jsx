@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import axios from "axios";
+import { oneMonthRange } from "../utils/dateDefaults";
 
 const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
@@ -38,6 +39,9 @@ const LANG = {
     return: "Sales Return",
     loading: "Loading...",
     details: "Details",
+    summaryReport: "Summary",
+    detailReport: "Details",
+    shipment: "Shipment",
     invoiceDetails: "Invoice Details",
     returnDetails: "Sales Return Details",
     close: "Close",
@@ -88,6 +92,9 @@ const LANG = {
     return: "سیلز ریٹرن",
     loading: "لوڈ ہو رہا ہے...",
     details: "تفصیل",
+    summaryReport: "سمری",
+    detailReport: "تفصیل",
+    shipment: "شپمنٹ",
     invoiceDetails: "انوائس تفصیل",
     returnDetails: "سیلز ریٹرن تفصیل",
     close: "بند کریں",
@@ -362,6 +369,7 @@ function normalizeRecord(row) {
     entry_type: type,
     reference_no: getRefNo(row),
     person_name: getPersonName(row),
+    shipment_to: row.shipment_to || row.ship_to || "-",
     entry_date: String(getEntryDate(row)).slice(0, 10),
     invoice_amount: type === "invoice" ? amountAbs : 0,
     return_amount: type === "return" ? amountAbs : 0,
@@ -471,14 +479,14 @@ export default function SalesReportPage() {
   const dir = isUrdu ? "rtl" : "ltr";
 
   const [records, setRecords] = useState([]);
-  const [filters, setFilters] = useState({
-    from_date: "",
-    to_date: "",
+  const [filters, setFilters] = useState(() => ({
+    ...oneMonthRange(),
     name: "",
-  });
+  }));
 
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reportMode, setReportMode] = useState("details");
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -557,8 +565,7 @@ export default function SalesReportPage() {
 
   const handleReset = () => {
     setFilters({
-      from_date: "",
-      to_date: "",
+      ...oneMonthRange(),
       name: "",
     });
 
@@ -609,27 +616,45 @@ export default function SalesReportPage() {
     };
   }, [records]);
 
+  const summaryRows = useMemo(() => {
+    const map = new Map();
+    records.forEach((record) => {
+      const key = record.person_name || "Unassigned";
+      const current = map.get(key) || { person_name: key, invoice_amount: 0, return_amount: 0, net_total: 0, count: 0 };
+      current.invoice_amount += toNum(record.invoice_amount);
+      current.return_amount += toNum(record.return_amount);
+      current.net_total += toNum(record.net_total);
+      current.count += 1;
+      map.set(key, current);
+    });
+    return [...map.values()].sort((a, b) => a.person_name.localeCompare(b.person_name));
+  }, [records]);
+
   const generatePrintDocument = (isPdf = false) => {
     const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "Arial, sans-serif";
 
-    const rowsHtml = records
-      .map(
-        (record, index) => `
+    const rowsHtml = reportMode === "summary"
+      ? summaryRows.map((record, index) => `
+          <tr>
+            <td class="center">${index + 1}</td>
+            <td><strong>${record.person_name || "-"}</strong></td>
+            <td class="center">${record.count}</td>
+            <td class="num green">Rs ${fmt(record.invoice_amount)}</td>
+            <td class="num red">Rs ${fmt(record.return_amount)}</td>
+            <td class="num strong ${record.net_total < 0 ? "red" : "green"}">Rs ${fmt(record.net_total)}</td>
+          </tr>`).join("")
+      : records.map((record, index) => `
           <tr>
             <td class="center">${index + 1}</td>
             <td>${typeLabel(record.entry_type)}</td>
             <td><strong>${record.reference_no || "-"}</strong></td>
             <td>${record.person_name || "-"}</td>
+            <td>${record.shipment_to || "-"}</td>
             <td class="center">${formatDate(record.entry_date)}</td>
             <td class="num">Rs ${fmt(record.invoice_amount)}</td>
             <td class="num">Rs ${fmt(record.return_amount)}</td>
-            <td class="num strong ${
-              record.net_total < 0 ? "red" : "green"
-            }">Rs ${fmt(record.net_total)}</td>
-          </tr>
-        `
-      )
-      .join("");
+            <td class="num strong ${record.net_total < 0 ? "red" : "green"}">Rs ${fmt(record.net_total)}</td>
+          </tr>`).join("");
 
     const html = `
       <!doctype html>
@@ -714,24 +739,13 @@ export default function SalesReportPage() {
 
           <table>
             <thead>
-              <tr>
-                <th class="center">#</th>
-                <th>${t.type}</th>
-                <th>${t.referenceNo}</th>
-                <th>${t.name}</th>
-                <th class="center">${t.date}</th>
-                <th class="num">${t.invoiceAmount}</th>
-                <th class="num">${t.returnAmount}</th>
-                <th class="num">${t.netTotal}</th>
-              </tr>
+              ${reportMode === "summary" ? `
+              <tr><th class="center">#</th><th>${t.name}</th><th class="center">${t.records}</th><th class="num">${t.invoiceAmount}</th><th class="num">${t.returnAmount}</th><th class="num">${t.netTotal}</th></tr>` : `
+              <tr><th class="center">#</th><th>${t.type}</th><th>${t.referenceNo}</th><th>${t.name}</th><th>${t.shipment}</th><th class="center">${t.date}</th><th class="num">${t.invoiceAmount}</th><th class="num">${t.returnAmount}</th><th class="num">${t.netTotal}</th></tr>`}
             </thead>
 
             <tbody>
-              ${
-                records.length
-                  ? rowsHtml
-                  : `<tr><td colspan="8" class="center">${t.noRecords}</td></tr>`
-              }
+              ${records.length ? rowsHtml : `<tr><td colspan="${reportMode === "summary" ? 6 : 9}" class="center">${t.noRecords}</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -1336,6 +1350,15 @@ export default function SalesReportPage() {
                   <span className="count-pill">{records.length}</span>
                 </div>
 
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <button className={`btn ${reportMode === "summary" ? "btn-dark" : ""}`} onClick={() => setReportMode("summary")}>
+                    <i className="bi bi-pie-chart"></i>{t.summaryReport}
+                  </button>
+                  <button className={`btn ${reportMode === "details" ? "btn-dark" : ""}`} onClick={() => setReportMode("details")}>
+                    <i className="bi bi-list-ul"></i>{t.detailReport}
+                  </button>
+                </div>
+
                 {records.length > 0 && (
                   <div
                     style={{
@@ -1370,99 +1393,39 @@ export default function SalesReportPage() {
               )}
 
               <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th className="center" style={{ width: 50 }}>
-                        #
-                      </th>
-                      <th>{t.type}</th>
-                      <th>{t.referenceNo}</th>
-                      <th>{t.name}</th>
-                      <th className="center">{t.date}</th>
-                      <th className="num">{t.invoiceAmount}</th>
-                      <th className="num">{t.returnAmount}</th>
-                      <th className="num">{t.netTotal}</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {records.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="center muted"
-                          style={{ padding: 42 }}
-                        >
-                          {t.noRecords}
-                        </td>
-                      </tr>
-                    ) : (
-                      records.map((row, index) => (
-                        <tr
-                          key={`${row.entry_type}-${row.id}-${index}`}
-                          className="clickable-row"
-                          onClick={() => openDetails(row)}
-                        >
-                          <td
-                            className="center muted"
-                            style={{
-                              fontFamily: "monospace",
-                            }}
-                          >
-                            {index + 1}
-                          </td>
-
-                          <td>
-                            <span
-                              className={`tag ${
-                                row.entry_type === "return"
-                                  ? "tag-return"
-                                  : "tag-invoice"
-                              }`}
-                            >
-                              {typeLabel(row.entry_type)}
-                            </span>
-                          </td>
-
-                          <td>
-                            <b
-                              style={{
-                                fontFamily: "monospace",
-                              }}
-                            >
-                              {row.reference_no}
-                            </b>
-                          </td>
-
-                          <td>
-                            <b>{row.person_name || "-"}</b>
-                          </td>
-
-                          <td className="center">
-                            {formatDate(row.entry_date)}
-                          </td>
-
-                          <td className="num green">
-                            Rs {fmt(row.invoice_amount)}
-                          </td>
-
-                          <td className="num red">
-                            Rs {fmt(row.return_amount)}
-                          </td>
-
-                          <td
-                            className={`num ${
-                              row.net_total < 0 ? "red" : "green"
-                            }`}
-                          >
-                            Rs {fmt(row.net_total)}
-                          </td>
+                {reportMode === "summary" ? (
+                  <table>
+                    <thead><tr><th className="center">#</th><th>{t.name}</th><th className="center">{t.records}</th><th className="num">{t.invoiceAmount}</th><th className="num">{t.returnAmount}</th><th className="num">{t.netTotal}</th></tr></thead>
+                    <tbody>
+                      {summaryRows.length === 0 ? (
+                        <tr><td colSpan={6} className="center muted" style={{ padding: 42 }}>{t.noRecords}</td></tr>
+                      ) : summaryRows.map((row, index) => (
+                        <tr key={`summary-${row.person_name}-${index}`}>
+                          <td className="center muted">{index + 1}</td><td><b>{row.person_name}</b></td><td className="center">{row.count}</td>
+                          <td className="num green">Rs {fmt(row.invoice_amount)}</td><td className="num red">Rs {fmt(row.return_amount)}</td>
+                          <td className={`num ${row.net_total < 0 ? "red" : "green"}`}>Rs {fmt(row.net_total)}</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table>
+                    <thead><tr><th className="center" style={{ width: 50 }}>#</th><th>{t.type}</th><th>{t.referenceNo}</th><th>{t.name}</th><th>{t.shipment}</th><th className="center">{t.date}</th><th className="num">{t.invoiceAmount}</th><th className="num">{t.returnAmount}</th><th className="num">{t.netTotal}</th></tr></thead>
+                    <tbody>
+                      {records.length === 0 ? (
+                        <tr><td colSpan={9} className="center muted" style={{ padding: 42 }}>{t.noRecords}</td></tr>
+                      ) : records.map((row, index) => (
+                        <tr key={`${row.entry_type}-${row.id}-${index}`} className="clickable-row" onClick={() => openDetails(row)}>
+                          <td className="center muted" style={{ fontFamily: "monospace" }}>{index + 1}</td>
+                          <td><span className={`tag ${row.entry_type === "return" ? "tag-return" : "tag-invoice"}`}>{typeLabel(row.entry_type)}</span></td>
+                          <td><b style={{ fontFamily: "monospace" }}>{row.reference_no}</b></td><td><b>{row.person_name || "-"}</b></td><td>{row.shipment_to || "-"}</td>
+                          <td className="center">{formatDate(row.entry_date)}</td><td className="num green">Rs {fmt(row.invoice_amount)}</td><td className="num red">Rs {fmt(row.return_amount)}</td>
+                          <td className={`num ${row.net_total < 0 ? "red" : "green"}`}>Rs {fmt(row.net_total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </>

@@ -9,6 +9,8 @@ const LANG = {
     summaryBtn: "Summary",
     searchPlaceholder: "Search by supplier, product, unit, category, type or rate...",
     supplier: "Supplier",
+    rateListName: "Rate List Name",
+    rateListPlaceholder: "e.g. Main Supplier Rates",
     product: "Product",
     unit: "Unit",
     category: "Category",
@@ -69,6 +71,8 @@ const LANG = {
     summaryBtn: "سمری",
     searchPlaceholder: "سپلائر، پروڈکٹ، یونٹ، کیٹیگری، ٹائپ یا ریٹ سے تلاش کریں...",
     supplier: "سپلائر",
+    rateListName: "ریٹ لسٹ نام",
+    rateListPlaceholder: "مثلاً مین سپلائر ریٹس",
     product: "پروڈکٹ",
     unit: "یونٹ",
     category: "کیٹیگری",
@@ -124,7 +128,7 @@ const LANG = {
   },
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const emptyProduct = () => ({
   product_name: "",
@@ -295,6 +299,7 @@ const PurchaseRatePage = () => {
   const [masterIssue, setMasterIssue] = useState(false);
 
   const [form, setForm] = useState({
+    list_name: "",
     supplier_name: "",
     products: [emptyProduct()],
   });
@@ -353,13 +358,14 @@ const PurchaseRatePage = () => {
   }, []);
 
   const openAdd = () => {
-    setForm({ supplier_name: "", products: [emptyProduct()] });
+    setForm({ list_name: "", supplier_name: "", products: [emptyProduct()] });
     setEditingName(null);
     setShowForm(true);
   };
 
   const openEdit = (record) => {
     setForm({
+      list_name: record.list_name || "Default Purchase Rate",
       supplier_name: record.supplier_name || "",
       products: getProducts(record).length
         ? getProducts(record).map((product) => ({
@@ -373,7 +379,7 @@ const PurchaseRatePage = () => {
           }))
         : [emptyProduct()],
     });
-    setEditingName(record.supplier_name || "");
+    setEditingName(record.group_key || `${record.list_name || "Default Purchase Rate"}|||${record.supplier_name || ""}`);
     setShowForm(true);
   };
 
@@ -419,6 +425,7 @@ const PurchaseRatePage = () => {
     }
 
     const payload = {
+      list_name: String(form.list_name || "Default Purchase Rate").trim() || "Default Purchase Rate",
       supplier_name: String(form.supplier_name || "").trim() || null,
       products: cleanedProducts,
     };
@@ -435,7 +442,7 @@ const PurchaseRatePage = () => {
       showToast("success", t.successSave);
       setShowForm(false);
       setEditingName(null);
-      setForm({ supplier_name: "", products: [emptyProduct()] });
+      setForm({ list_name: "", supplier_name: "", products: [emptyProduct()] });
       await fetchData();
     } catch (err) {
       showToast("error", err?.response?.data?.message || t.saveError);
@@ -444,13 +451,13 @@ const PurchaseRatePage = () => {
     }
   };
 
-  const handleDelete = async (supplierName) => {
+  const handleDelete = async (groupKey) => {
     if (!window.confirm(t.deleteConfirm)) return;
 
     try {
-      await axios.delete(`${API_BASE}/purchase-rates/${encodeURIComponent(supplierName || "")}`);
+      await axios.delete(`${API_BASE}/purchase-rates/${encodeURIComponent(groupKey || "")}`);
       showToast("success", t.successDelete);
-      setRecords((prev) => prev.filter((record) => record.supplier_name !== supplierName));
+      setRecords((prev) => prev.filter((record) => record.group_key !== groupKey));
     } catch (err) {
       showToast("error", err?.response?.data?.message || t.deleteError);
     }
@@ -461,7 +468,7 @@ const PurchaseRatePage = () => {
     if (!query) return records;
 
     return records.filter((record) =>
-      [record.supplier_name]
+      [record.list_name, record.supplier_name]
         .concat(
           getProducts(record).flatMap((product) => [
             product.product_name,
@@ -654,7 +661,7 @@ const PurchaseRatePage = () => {
                             <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                               <i className="bi bi-building-fill"></i>
                             </span>
-                            <span>{record.supplier_name || "—"}</span>
+                            <span className="block text-[11px] font-black text-blue-700">{record.list_name || "Default Purchase Rate"}</span><span>{record.supplier_name || "—"}</span>
                           </div>
                         </td>
                         <td className="px-4 py-4">
@@ -701,7 +708,7 @@ const PurchaseRatePage = () => {
                               <i className="bi bi-pencil-square text-sm"></i>
                             </button>
                             <button
-                              onClick={() => handleDelete(record.supplier_name)}
+                              onClick={() => handleDelete(record.group_key)}
                               className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition flex items-center justify-center"
                               title={t.delete}
                             >
@@ -727,6 +734,11 @@ const PurchaseRatePage = () => {
               <h2 className="text-xl font-bold text-slate-800 mb-5">
                 {editingName ? t.edit : t.addBtn}
               </h2>
+
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-slate-500 mb-1">{t.rateListName}</label>
+                <input value={form.list_name || ""} onChange={(e) => setForm((prev) => ({...prev, list_name:e.target.value}))} placeholder={t.rateListPlaceholder} className="w-full border border-slate-200 rounded-lg py-2.5 px-3 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-300" />
+              </div>
 
               <div className="mb-4">
                 <label className="block text-xs font-semibold text-slate-500 mb-1">

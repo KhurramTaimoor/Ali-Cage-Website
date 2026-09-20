@@ -4,7 +4,7 @@ import axios from "axios";
 import { useOutletContext } from "react-router-dom";
 import { tLabel, tUi, tValue } from "../utils/uiI18n";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const computeAutoValue = (formula, form, precision = 2) => {
   if (!formula) return null;

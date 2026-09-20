@@ -61,7 +61,7 @@ const LANG = {
   },
 };
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const DepartmentPage = () => {
   const [lang, setLang] = useState("en");
@@ -103,11 +103,9 @@ const DepartmentPage = () => {
       const res = await axios.get(`${API_BASE}/departments`);
       setRecords(res.data);
     } catch (err) {
-      // Mock Data Fallback
-      setRecords([
-        { id: 1, department_name: "Production", head_of_dept: "Ali Khan", extension_no: "101" },
-        { id: 2, department_name: "Accounts", head_of_dept: "Omer", extension_no: "105" },
-      ]);
+      console.error(err);
+      setRecords([]);
+      showToast("error", err?.response?.data?.message || "Failed to load departments.");
     }
   };
 
@@ -127,7 +125,9 @@ const DepartmentPage = () => {
       // Saving new option directly to DB
       await axios.post(`${API_BASE}/departments`, { department_name: newItem.trim(), head_of_dept: "", extension_no: "" });
     } catch (e) {
-      // Mock success for adding new option
+      console.error(e);
+      showToast("error", e?.response?.data?.message || "Department could not be saved.");
+      return;
     }
 
     setOptions(prev => [...prev, entry]);
@@ -166,11 +166,8 @@ const DepartmentPage = () => {
       setShowForm(false);
       fetchAll();
     } catch (err) {
-      // Mock Save
-      const newRec = { ...form, id: Date.now() };
-      setRecords(prev => [...prev, newRec]);
-      showToast("success", t.successSave);
-      setShowForm(false);
+      console.error(err);
+      showToast("error", err?.response?.data?.message || "Department could not be saved.");
     }
   };
 
@@ -180,7 +177,8 @@ const DepartmentPage = () => {
       await axios.delete(`${API_BASE}/departments/${id}`);
       fetchAll();
     } catch (err) {
-      setRecords(prev => prev.filter(r => r.id !== id));
+      console.error(err);
+      showToast("error", err?.response?.data?.message || "Department could not be deleted.");
     }
   };
 

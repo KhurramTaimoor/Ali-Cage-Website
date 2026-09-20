@@ -57,7 +57,7 @@ const LANG = {
   },
 };
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const EmployeeLedgerPage = () => {
   const [lang, setLang] = useState("en");
@@ -75,12 +75,9 @@ const EmployeeLedgerPage = () => {
   useEffect(() => {
     axios.get(`${API_BASE}/employee-ledger/employees`)
       .then(r => setEmployees(Array.isArray(r.data) ? r.data : []))
-      .catch(() => {
-        // Fallback Mock Data
-        setEmployees([
-          { id: 1, full_name: "Ahmed Raza" },
-          { id: 2, full_name: "Hassan Ali" }
-        ]);
+      .catch((err) => {
+        console.error(err);
+        setEmployees([]);
       });
   }, []);
 
@@ -100,21 +97,10 @@ const EmployeeLedgerPage = () => {
         setLedgerData(r.data); 
         setLoading(false); 
       })
-      .catch(() => {
-        // Fallback Mock Ledger Data
-        setTimeout(() => {
-          setLedgerData({
-            employee: { name: employees.find(emp => String(emp.id) === String(id))?.full_name || "Unknown", department: "Production" },
-            total_paid: 120000,
-            total_due: 45000,
-            records: [
-              { id: 1, month: "August", year: "2024", basic_salary: 45000, allowances: 2000, deductions: 0, net_salary: 47000, status: "Paid" },
-              { id: 2, month: "September", year: "2024", basic_salary: 45000, allowances: 0, deductions: 1500, net_salary: 43500, status: "Paid" },
-              { id: 3, month: "October", year: "2024", basic_salary: 45000, allowances: 0, deductions: 0, net_salary: 45000, status: "Pending" },
-            ]
-          });
-          setLoading(false);
-        }, 500);
+      .catch((err) => {
+        console.error(err);
+        setLedgerData(null);
+        setLoading(false);
       });
   };
 

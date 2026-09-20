@@ -1,5 +1,6 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import axios from "axios";
+import { oneMonthRange } from "../utils/dateDefaults";
 
 const LANG = {
   en: {
@@ -60,8 +61,7 @@ const LANG = {
   },
 };
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const GeneralLedgerPage = () => {
   const [lang, setLang] = useState("en");
@@ -76,10 +76,7 @@ const GeneralLedgerPage = () => {
     });
 
   const [records, setRecords] = useState([]);
-  const [filters, setFilters] = useState({
-    from_date: "",
-    to_date: "",
-  });
+  const [filters, setFilters] = useState(() => oneMonthRange());
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState("");

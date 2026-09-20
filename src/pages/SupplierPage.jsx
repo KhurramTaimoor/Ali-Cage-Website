@@ -98,6 +98,10 @@ const LANG = {
     supplierNameLabel: "Supplier Name",
     phone: "Phone No",
     openingBalance: "Opening Balance",
+    closingBalance: "Closing Balance",
+    openingDebit: "Opening Balance (Dr)",
+    openingCredit: "Opening Balance (Cr)",
+    address: "Address",
     totalOpeningBalance: "Total Opening Balance",
     balancePlaceholder: "0",
     save: "Save",
@@ -128,7 +132,7 @@ const LANG = {
     printedOn: "Printed On",
     formTitleAdd: "New Supplier",
     formTitleEdit: "Edit Supplier",
-    formSubtitle: "Supplier name, phone and opening balance information",
+    formSubtitle: "Supplier name, phone, address and opening debit/credit information",
     details: "Details",
     ledger: "Ledger",
     ledgerTitle: "Supplier Ledger",
@@ -168,6 +172,10 @@ const LANG = {
     supplierNameLabel: "سپلائر کا نام",
     phone: "فون نمبر",
     openingBalance: "اوپننگ بیلنس",
+    closingBalance: "کلوزنگ بیلنس",
+    openingDebit: "اوپننگ بیلنس (ڈیبٹ)",
+    openingCredit: "اوپننگ بیلنس (کریڈٹ)",
+    address: "پتہ",
     totalOpeningBalance: "کل اوپننگ بیلنس",
     balancePlaceholder: "0",
     save: "محفوظ کریں",
@@ -231,6 +239,9 @@ const LANG = {
 const defaultForm = {
   supplier_name: "",
   phone: "",
+  address: "",
+  opening_debit: "",
+  opening_credit: "",
   opening_balance: "",
 };
 
@@ -295,7 +306,7 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
           <td class="center">${index + 1}</td>
           <td class="strong">${nameDisplay}</td>
           <td class="mono">${supplier.phone || "—"}</td>
-          <td class="mono num">PKR ${formatMoney(supplier.opening_balance)}</td>
+          <td class="mono num">PKR ${formatMoney(supplier.closing_balance ?? supplier.opening_balance)}</td>
         </tr>
       `;
     })
@@ -532,11 +543,10 @@ const SupplierPage = () => {
     setForm({
       supplier_name: supplier.supplier_name || "",
       phone: supplier.phone || "",
-      opening_balance:
-        supplier.opening_balance !== undefined &&
-        supplier.opening_balance !== null
-          ? String(supplier.opening_balance)
-          : "",
+      address: supplier.address || "",
+      opening_debit: String(supplier.opening_debit ?? (Number(supplier.opening_balance) > 0 ? supplier.opening_balance : "")),
+      opening_credit: String(supplier.opening_credit ?? (Number(supplier.opening_balance) < 0 ? Math.abs(Number(supplier.opening_balance)) : "")),
+      opening_balance: String(supplier.opening_balance ?? ""),
     });
 
     setEditingId(supplier.id);
@@ -549,10 +559,15 @@ const SupplierPage = () => {
       return;
     }
 
+    const openingDebit = Number(form.opening_debit || 0);
+    const openingCredit = Number(form.opening_credit || 0);
     const payload = {
       supplier_name: form.supplier_name.trim(),
       phone: form.phone.trim(),
-      opening_balance: Number(form.opening_balance || 0),
+      address: String(form.address || "").trim(),
+      opening_debit: openingDebit,
+      opening_credit: openingCredit,
+      opening_balance: openingDebit - openingCredit,
     };
 
     try {
@@ -772,7 +787,7 @@ const SupplierPage = () => {
       (supplier) =>
         (supplier.supplier_name || "").toLowerCase().includes(q) ||
         (supplier.phone || "").toLowerCase().includes(q) ||
-        String(supplier.opening_balance || "").toLowerCase().includes(q) ||
+        String(supplier.closing_balance ?? supplier.opening_balance ?? "").toLowerCase().includes(q) ||
         (urduCache[`name:${supplier.id}`] || "").toLowerCase().includes(q)
     );
   }, [suppliers, search, urduCache]);
@@ -1756,7 +1771,7 @@ const SupplierPage = () => {
                   </th>
 
                   <th style={{ textAlign: "left", paddingLeft: 8 }}>
-                    {t.openingBalance}
+                    {t.closingBalance}
                   </th>
 
                   <th>{t.actions}</th>
@@ -1853,7 +1868,7 @@ const SupplierPage = () => {
                           paddingLeft: 8,
                         }}
                       >
-                        {formatMoney(supplier.opening_balance)}
+                        {formatMoney(supplier.closing_balance ?? supplier.opening_balance)}
                       </td>
 
                       <td style={{ textAlign: "center" }}>
@@ -2383,8 +2398,23 @@ const SupplierPage = () => {
                   </div>
 
                   <div className="field">
+                    <label className="label">{t.address}</label>
+                    <div className="input-wrap">
+                      <i className={`bi bi-geo-alt-fill input-icon ${isUrdu ? "input-icon-right" : "input-icon-left"}`}></i>
+                      <input
+                        type="text"
+                        value={form.address}
+                        onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+                        placeholder={t.address}
+                        className={`input-field ${isUrdu ? "input-field-with-right" : "input-field-with-left"}`}
+                        style={{ textAlign: isUrdu ? "right" : "left" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field">
                     <label className="label" style={{ color: "#3730a3" }}>
-                      {t.openingBalance}
+                      {t.openingDebit}
                     </label>
 
                     <div className="input-wrap">
@@ -2396,11 +2426,11 @@ const SupplierPage = () => {
 
                       <input
                         type="number"
-                        value={form.opening_balance}
+                        value={form.opening_debit}
                         onChange={(e) =>
                           setForm((prev) => ({
                             ...prev,
-                            opening_balance: e.target.value,
+                            opening_debit: e.target.value,
                           }))
                         }
                         placeholder={t.balancePlaceholder}
@@ -2415,6 +2445,21 @@ const SupplierPage = () => {
                           color: "#1d4ed8",
                           textAlign: isUrdu ? "right" : "left",
                         }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field">
+                    <label className="label" style={{ color: "#b91c1c" }}>{t.openingCredit}</label>
+                    <div className="input-wrap">
+                      <i className={`bi bi-wallet2 input-icon ${isUrdu ? "input-icon-right" : "input-icon-left"}`}></i>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={form.opening_credit}
+                        onChange={(e) => setForm((prev) => ({ ...prev, opening_credit: e.target.value }))}
+                        placeholder={t.balancePlaceholder}
+                        className={`input-field ${isUrdu ? "input-field-with-right" : "input-field-with-left"}`}
+                        style={{ fontFamily: "monospace", fontWeight: 900, color: "#b91c1c", textAlign: isUrdu ? "right" : "left" }}
                       />
                     </div>
                   </div>

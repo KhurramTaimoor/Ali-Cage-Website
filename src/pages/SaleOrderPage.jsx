@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { resolveSalesRate } from "../utils/salesRateResolver";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const SALE_ORDER_API = "/api/sale-orders";
 const SALES_INVOICE_API = "/api/sales-invoices";
+const SALES_RATES_API = "/api/rates";
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_ROOT}${path}`, {
@@ -779,6 +781,7 @@ export default function SaleOrderPage() {
   const [employees, setEmployees] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [generalLedgers, setGeneralLedgers] = useState([]);
+  const [salesRates, setSalesRates] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -879,9 +882,13 @@ export default function SaleOrderPage() {
     try {
       setLoading(true);
 
-      const pageData = await getSaleOrderPageData();
+      const [pageData, ratesData] = await Promise.all([
+        getSaleOrderPageData(),
+        apiFetch(SALES_RATES_API).catch(() => []),
+      ]);
       const dropdowns = pageData?.dropdowns || {};
 
+      setSalesRates(getList(ratesData));
       setOrders(getList(pageData?.orders || pageData?.data || pageData));
       setCategories(getList(dropdowns.categories));
       setUnits(getList(dropdowns.units));
@@ -1097,16 +1104,45 @@ export default function SaleOrderPage() {
   const handlePartyChange = (id) => {
     const selected = partyOptions.find((x) => String(x.id) === String(id));
 
-    setForm((prev) => ({
-      ...prev,
-      party_id: id,
-      party_name: selected?.name || "",
-      customer_id: prev.party_type === "customer" ? id : "",
-      employee_id: prev.party_type === "employee" ? id : "",
-      supplier_id: prev.party_type === "supplier" ? id : "",
-      general_ledger_id: prev.party_type === "general_ledger" ? id : "",
-      previous_balance: id ? String(selected?.previous_balance ?? 0) : "0",
-    }));
+    setForm((prev) => {
+      const isCustomer = prev.party_type === "customer";
+      const nextItems = (prev.order_items || []).map((item) => {
+        if (!isCustomer || !item.product_id) return item;
+        const product = products.find((p) => String(getId(p)) === String(item.product_id));
+        const listed = resolveSalesRate(salesRates, {
+          customerId: id,
+          productId: item.product_id,
+          categoryId: item.category_id || getProductCategoryId(product || {}),
+          productTypeId: item.product_type_id || getProductTypeId(product || {}),
+          unitId: item.unit_id || getProductUnitId(product || {}),
+          rateMode: "retail",
+        });
+        return listed?.rate ? { ...item, rate: String(listed.rate) } : item;
+      });
+      return {
+        ...prev,
+        party_id: id,
+        party_name: selected?.name || "",
+        customer_id: prev.party_type === "customer" ? id : "",
+        employee_id: prev.party_type === "employee" ? id : "",
+        supplier_id: prev.party_type === "supplier" ? id : "",
+        general_ledger_id: prev.party_type === "general_ledger" ? id : "",
+        previous_balance: id ? String(selected?.previous_balance ?? 0) : "0",
+        order_items: nextItems,
+      };
+    });
+  };
+
+  const listedRateForItem = (item, product, customerId = form.party_type === "customer" ? form.party_id : null) => {
+    const listed = resolveSalesRate(salesRates, {
+      customerId,
+      productId: item.product_id || getId(product || {}),
+      categoryId: item.category_id || getProductCategoryId(product || {}),
+      productTypeId: item.product_type_id || getProductTypeId(product || {}),
+      unitId: item.unit_id || getProductUnitId(product || {}),
+      rateMode: "retail",
+    });
+    return listed?.rate || getProductRate(product || {}) || 0;
   };
 
   const updateItem = (index, key, value) => {
@@ -1120,30 +1156,31 @@ export default function SaleOrderPage() {
             (p) => String(getId(p)) === String(value)
           );
 
-          const productRate = getProductRate(selectedProduct);
+          const baseItem = {
+            ...item,
+            product_id: value,
+            product_type_id: String(getProductTypeId(selectedProduct) || item.product_type_id || defaultFmsTypeId || ""),
+            category_id: String(getProductCategoryId(selectedProduct) || item.category_id || ""),
+            unit_id: String(getProductUnitId(selectedProduct) || item.unit_id || ""),
+          };
+          const productRate = listedRateForItem(baseItem, selectedProduct);
 
           return {
             ...item,
-            product_id: value,
-            product_description:
-              getProductDescription(selectedProduct) ||
-              item.product_description ||
-              "",
-            product_type_id: String(
-              getProductTypeId(selectedProduct) ||
-                item.product_type_id ||
-                defaultFmsTypeId ||
-                ""
-            ),
-            category_id: String(
-              getProductCategoryId(selectedProduct) || item.category_id || ""
-            ),
-            unit_id: String(getProductUnitId(selectedProduct) || item.unit_id || ""),
+            ...baseItem,
+            // Description is entered manually to match invoice workflow.
+            product_description: item.product_description || "",
             rate: String(productRate || ""),
           };
         }
 
-        return { ...item, [key]: value };
+        const next = { ...item, [key]: value };
+        if (["category_id", "product_type_id", "unit_id"].includes(key) && next.product_id) {
+          const selectedProduct = products.find((p) => String(getId(p)) === String(next.product_id));
+          const listedRate = listedRateForItem(next, selectedProduct);
+          if (listedRate) next.rate = String(listedRate);
+        }
+        return next;
       }),
     }));
   };
@@ -2962,6 +2999,22 @@ th{background:#111827;color:white;text-align:left}
                               </option>
                             ))}
                           </select>
+                          {item.product_id && (() => {
+                            const product = products.find((p) => String(getId(p)) === String(item.product_id));
+                            const listed = resolveSalesRate(salesRates, {
+                              customerId: form.party_type === "customer" ? form.party_id : null,
+                              productId: item.product_id,
+                              categoryId: item.category_id || getProductCategoryId(product || {}),
+                              productTypeId: item.product_type_id || getProductTypeId(product || {}),
+                              unitId: item.unit_id || getProductUnitId(product || {}),
+                              rateMode: "retail",
+                            });
+                            return listed?.single_rate > 0 ? (
+                              <div style={{ marginTop: 3, fontSize: 10, fontWeight: 800, color: "#475569" }}>
+                                (Single Rate Pcs/Kgs @{fmt(listed.single_rate)})
+                              </div>
+                            ) : null;
+                          })()}
                         </td>
 
                         <td>

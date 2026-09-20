@@ -4,7 +4,7 @@ import { Save, Trash2, Plus, Search, Edit } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { tUi, tValue } from "../utils/uiI18n";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
 
 const ROLE_OPTIONS = ["Admin", "Manager", "Employee"];
 const ACCESS_OPTIONS = ["Read", "Read/Write", "Read/Write/Delete"];
