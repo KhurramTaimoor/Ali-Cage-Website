@@ -353,7 +353,7 @@ const cleanSupplierLedgerLayout = (root) => {
       avatar.style.setProperty("border-radius", "16px", "important");
       avatar.style.setProperty(
         "background",
-        "linear-gradient(135deg, #315efb, #4f46e5)",
+        "linear-gradient(135deg, #0B4E9B, #0B4E9B)",
         "important"
       );
       avatar.style.setProperty("color", "#ffffff", "important");
@@ -395,7 +395,7 @@ const cleanSupplierLedgerLayout = (root) => {
         name.style.setProperty("display", "block", "important");
         name.style.setProperty("overflow", "hidden", "important");
         name.style.setProperty("margin", "0", "important");
-        name.style.setProperty("color", "#0b1730", "important");
+        name.style.setProperty("color", "#13263A", "important");
         name.style.setProperty("font-size", "21px", "important");
         name.style.setProperty("font-weight", "900", "important");
         name.style.setProperty("line-height", "1.25", "important");
@@ -607,10 +607,10 @@ export default function SupplierLedgerPage() {
       <style>{`
 
       [data-page="supplier-ledger-customer-layout"] {
-        --purchase-blue: #315efb;
+        --purchase-blue: #0B4E9B;
         --purchase-blue-dark: #244bd4;
-        --purchase-indigo: #4f46e5;
-        --purchase-navy: #0b1730;
+        --purchase-indigo: #0B4E9B;
+        --purchase-navy: #13263A;
         --purchase-text: #101b36;
         --purchase-muted: #6c7b98;
         --purchase-border: #d8e2f3;
@@ -699,7 +699,7 @@ export default function SupplierLedgerPage() {
         background: linear-gradient(
           135deg,
           var(--purchase-blue-dark),
-          #4338ca
+          #0A65BD
         ) !important;
         box-shadow: 0 11px 23px rgba(49, 94, 251, 0.26) !important;
       }
@@ -914,9 +914,9 @@ export default function SupplierLedgerPage() {
 
       
         [data-page="supplier-ledger-customer-layout"] .customer-detail-ledger {
-          --ledger-primary: #315efb !important;
+          --ledger-primary: #0B4E9B !important;
           --ledger-primary-hover: #244bd4 !important;
-          --ledger-ink: #0b1730 !important;
+          --ledger-ink: #13263A !important;
           --ledger-muted: #6b7a99 !important;
           --ledger-border: #d9e2f3 !important;
           --ledger-soft: #f4f7ff !important;
@@ -945,7 +945,7 @@ export default function SupplierLedgerPage() {
         [data-page="supplier-ledger-customer-layout"] .ledger-filter-pill.active,
         [data-page="supplier-ledger-customer-layout"] .ledger-customer-avatar {
           border-color: transparent !important;
-          background: linear-gradient(135deg, #315efb, #4f46e5) !important;
+          background: linear-gradient(135deg, #0B4E9B, #0B4E9B) !important;
           color: #ffffff !important;
           box-shadow: 0 8px 18px rgba(49, 94, 251, 0.2) !important;
         }
@@ -977,7 +977,7 @@ export default function SupplierLedgerPage() {
 
         [data-page="supplier-ledger-customer-layout"] .ledger-field input:focus,
         [data-page="supplier-ledger-customer-layout"] .ledger-field select:focus {
-          border-color: #315efb !important;
+          border-color: #0B4E9B !important;
           box-shadow: 0 0 0 4px rgba(49, 94, 251, 0.12) !important;
         }
 
@@ -985,7 +985,7 @@ export default function SupplierLedgerPage() {
         [data-page="supplier-ledger-customer-layout"] .ledger-product-table th {
           padding: 13px 12px !important;
           border-bottom: 0 !important;
-          background: #0b1730 !important;
+          background: #13263A !important;
           color: #ffffff !important;
         }
 
@@ -1009,7 +1009,7 @@ export default function SupplierLedgerPage() {
           max-width: 100% !important;
           box-sizing: border-box !important;
           overflow-wrap: break-word !important;
-          border-top: 3px solid #315efb !important;
+          border-top: 3px solid #0B4E9B !important;
         }
 
         @media (max-width: 620px) {
@@ -1028,7 +1028,7 @@ export default function SupplierLedgerPage() {
         }
 
         [data-page="supplier-ledger-customer-layout"] .ledger-summary-strong {
-          border-top-color: #4f46e5 !important;
+          border-top-color: #0B4E9B !important;
           background: #f8faff !important;
         }
         

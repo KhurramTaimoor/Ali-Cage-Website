@@ -322,7 +322,7 @@ function generatePrintDocument(suppliers, lang, urduCache, isPdf = false) {
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:${font};background:#f8fafc;color:#0f172a;padding:20px}
 .page{width:100%;min-height:100vh;background:#f8fafc;padding:20px}
-.sheet{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #dbe3ee;box-shadow:0 12px 40px rgba(15,23,42,.08);border-radius:20px;overflow:hidden}
+.sheet{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #D6E0EE;box-shadow:0 12px 40px rgba(15,23,42,.08);border-radius:20px;overflow:hidden}
 .header{background:#0f172a;color:#fff;padding:24px 28px}
 .header-row{display:flex;justify-content:space-between;align-items:center;gap:20px}
 .brand{display:flex;align-items:center;gap:14px}
@@ -333,7 +333,7 @@ h1{font-size:28px;font-weight:900;margin:0}
 .content{padding:18px;display:flex;flex-direction:column;gap:14px}
 .hint{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:14px;padding:12px 14px;font-size:13px}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.card{border-radius:16px;padding:14px 16px;border:1px solid #dbe3ee;background:#f8fafc}
+.card{border-radius:16px;padding:14px 16px;border:1px solid #D6E0EE;background:#f8fafc}
 .card small{display:block;font-size:12px;color:#64748b;margin-bottom:6px}
 .card .value{font-size:22px;font-weight:900;color:#0f172a}
 table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:14px}
@@ -823,7 +823,7 @@ const SupplierPage = () => {
 
         .supplier-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
+          background: linear-gradient(135deg, #EFF6FF 0%, #f8fafc 48%, #f1f5f9 100%);
           padding: 18px;
           color: #0f172a;
           font-family: ${
@@ -840,7 +840,7 @@ const SupplierPage = () => {
 
         .top-card {
           background: rgba(255,255,255,.94);
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 22px;
           padding: 20px 22px;
           box-shadow: 0 18px 50px rgba(15,23,42,.08);
@@ -892,21 +892,21 @@ const SupplierPage = () => {
         }
 
         .btn-primary {
-          background: #4f46e5;
+          background: #0B4E9B;
           color: white;
           box-shadow: 0 12px 25px rgba(79,70,229,.28);
         }
 
         .btn-summary {
-          background: #eef2ff;
-          color: #3730a3;
-          border: 1px solid #c7d2fe;
+          background: #EFF6FF;
+          color: #285DB8;
+          border: 1px solid #DBEAFE;
         }
 
         .btn-summary-active {
-          background: #4f46e5;
+          background: #0B4E9B;
           color: white;
-          border: 1px solid #4f46e5;
+          border: 1px solid #0B4E9B;
           box-shadow: 0 12px 25px rgba(79,70,229,.25);
         }
 
@@ -937,7 +937,7 @@ const SupplierPage = () => {
         }
 
         .btn-ledger {
-          background: #4f46e5;
+          background: #0B4E9B;
           color: white;
           min-width: 88px;
           padding: 7px 9px;
@@ -1028,7 +1028,7 @@ const SupplierPage = () => {
 
         .summary-card {
           background: white;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           padding: 14px;
           box-shadow: 0 8px 22px rgba(15,23,42,.05);
@@ -1038,8 +1038,8 @@ const SupplierPage = () => {
           width: 40px;
           height: 40px;
           border-radius: 13px;
-          background: #eef2ff;
-          color: #4f46e5;
+          background: #EFF6FF;
+          color: #0B4E9B;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1086,13 +1086,13 @@ const SupplierPage = () => {
 
         .search:focus,
         .input-field:focus {
-          border-color: #4f46e5;
+          border-color: #0B4E9B;
           box-shadow: 0 0 0 3px rgba(79,70,229,.10);
         }
 
         .card {
           background: white;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           box-shadow: 0 8px 24px rgba(15,23,42,.05);
           overflow: hidden;
@@ -1150,8 +1150,8 @@ const SupplierPage = () => {
           width: 34px;
           height: 34px;
           border-radius: 13px;
-          background: #eef2ff;
-          color: #4f46e5;
+          background: #EFF6FF;
+          color: #0B4E9B;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1208,7 +1208,7 @@ const SupplierPage = () => {
 
         .supplier-mobile-card {
           background: #ffffff;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           padding: 14px;
           box-shadow: 0 8px 24px rgba(15,23,42,.06);
@@ -1374,13 +1374,13 @@ const SupplierPage = () => {
 
         .form-section {
           background: white;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           overflow: hidden;
         }
 
         .form-section-head {
-          background: linear-gradient(135deg,#eef2ff,#f8fafc);
+          background: linear-gradient(135deg,#EFF6FF,#f8fafc);
           border-bottom: 1px solid #e2e8f0;
           padding: 12px 14px;
           display: flex;
@@ -1393,7 +1393,7 @@ const SupplierPage = () => {
           height: 36px;
           border-radius: 12px;
           background: white;
-          color: #4f46e5;
+          color: #0B4E9B;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2413,7 +2413,7 @@ const SupplierPage = () => {
                   </div>
 
                   <div className="field">
-                    <label className="label" style={{ color: "#3730a3" }}>
+                    <label className="label" style={{ color: "#285DB8" }}>
                       {t.openingDebit}
                     </label>
 

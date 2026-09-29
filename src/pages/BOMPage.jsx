@@ -1064,13 +1064,13 @@ export default function BOMPage() {
         .bom-basicSelect:focus,
         .bom-productInput:focus,
         .bom-basicTextarea:focus {
-          border-color: #4f46e5;
+          border-color: #0B4E9B;
           box-shadow: 0 0 0 3px rgba(79,70,229,.10);
         }
 
         .bom-sectionHead {
           min-height: 32px;
-          background: linear-gradient(135deg,#eef2ff,#f8fafc);
+          background: linear-gradient(135deg,#EFF6FF,#f8fafc);
           border: 1px solid #cbd5e1;
           border-radius: 14px 14px 0 0;
           display: flex;
@@ -1117,8 +1117,8 @@ export default function BOMPage() {
 
         .bom-saveBtn {
           min-height: 29px;
-          border: 1px solid #4f46e5;
-          background: #4f46e5;
+          border: 1px solid #0B4E9B;
+          background: #0B4E9B;
           color: white;
           padding: 4px 11px;
           font-size: 9px;
@@ -1132,8 +1132,8 @@ export default function BOMPage() {
         }
 
         .bom-saveBtn:hover {
-          background: #4338ca;
-          border-color: #4338ca;
+          background: #0A65BD;
+          border-color: #0A65BD;
         }
 
         .bom-saveBtn:disabled,
@@ -1153,7 +1153,7 @@ export default function BOMPage() {
 
         .bom-basicProductTable th,
         .bom-basicProductTable td {
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           padding: 3px;
           font-size: 9px;
           vertical-align: middle;
@@ -1192,7 +1192,7 @@ export default function BOMPage() {
         }
 
         .bom-totalBox {
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           background: #f8fafc;
           border-radius: 10px;
           padding: 7px 8px;
@@ -1219,12 +1219,12 @@ export default function BOMPage() {
         }
 
         .bom-grandBox {
-          background: #eef2ff;
-          border-color: #c7d2fe;
+          background: #EFF6FF;
+          border-color: #DBEAFE;
         }
 
         .bom-grandBox b {
-          color: #3730a3;
+          color: #285DB8;
         }
 
         .bom-modalFooterBasic {
@@ -1249,10 +1249,10 @@ export default function BOMPage() {
         .bom-newMaterialBtn {
           width: 27px;
           height: 27px;
-          border: 1px solid #c7d2fe;
+          border: 1px solid #DBEAFE;
           border-radius: 8px;
-          background: #eef2ff;
-          color: #4f46e5;
+          background: #EFF6FF;
+          color: #0B4E9B;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -1263,8 +1263,8 @@ export default function BOMPage() {
         }
 
         .bom-newMaterialBtn:hover {
-          background: #4f46e5;
-          border-color: #4f46e5;
+          background: #0B4E9B;
+          border-color: #0B4E9B;
           color: white;
         }
 
@@ -1328,9 +1328,9 @@ export default function BOMPage() {
           display: flex;
           align-items: flex-start;
           gap: 5px;
-          border: 1px solid #c7d2fe;
+          border: 1px solid #DBEAFE;
           border-radius: 9px;
-          background: #eef2ff;
+          background: #EFF6FF;
           padding: 6px 8px;
           color: #475569;
           font-size: 8.5px;
@@ -1342,7 +1342,7 @@ export default function BOMPage() {
           display: flex;
           justify-content: flex-end;
           gap: 6px;
-          border-top: 1px solid #dbe3ee;
+          border-top: 1px solid #D6E0EE;
           background: white;
           padding: 8px 10px;
         }

@@ -1001,10 +1001,10 @@ function PurchaseInvoicePage() {
       <style>{`
 
       [data-page="purchase-invoice-exact-sales-layout"] {
-        --purchase-blue: #315efb;
+        --purchase-blue: #0B4E9B;
         --purchase-blue-dark: #244bd4;
-        --purchase-indigo: #4f46e5;
-        --purchase-navy: #0b1730;
+        --purchase-indigo: #0B4E9B;
+        --purchase-navy: #13263A;
         --purchase-text: #101b36;
         --purchase-muted: #6c7b98;
         --purchase-border: #d8e2f3;
@@ -1093,7 +1093,7 @@ function PurchaseInvoicePage() {
         background: linear-gradient(
           135deg,
           var(--purchase-blue-dark),
-          #4338ca
+          #0A65BD
         ) !important;
         box-shadow: 0 11px 23px rgba(49, 94, 251, 0.26) !important;
       }

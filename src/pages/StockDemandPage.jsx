@@ -249,7 +249,7 @@ export default function StockDemandPage() {
   .brand h1{font-size:28px;font-weight:900}
   .brand p,.meta{font-size:12px;color:#cbd5e1;margin-top:5px}
   .content{padding:18px}
-  .hint{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:12px;padding:12px;margin-bottom:14px;font-weight:700;font-size:13px}
+  .hint{background:#EFF6FF;color:#285DB8;border:1px solid #DBEAFE;border-radius:12px;padding:12px;margin-bottom:14px;font-weight:700;font-size:13px}
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
   .card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px}
   .card small{font-size:11px;color:#64748b;font-weight:700}

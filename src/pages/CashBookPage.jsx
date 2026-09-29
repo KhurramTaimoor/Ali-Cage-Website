@@ -1350,7 +1350,7 @@ export default function CashBookPage() {
             linear-gradient(
               135deg,
               #f8fafc,
-              #eef2ff
+              #EFF6FF
             );
           font-family:
             ${
@@ -1414,7 +1414,7 @@ export default function CashBookPage() {
           flex-wrap: wrap;
           gap: 12px;
           padding: 20px 22px;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 22px;
           background:
             rgba(
@@ -1498,7 +1498,7 @@ export default function CashBookPage() {
 
         .summary-card {
           padding: 14px;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           background: white;
           box-shadow:
@@ -1564,7 +1564,7 @@ export default function CashBookPage() {
         }
 
         .search:focus {
-          border-color: #4f46e5;
+          border-color: #0B4E9B;
           box-shadow:
             0 0 0 3px
             rgba(
@@ -1577,7 +1577,7 @@ export default function CashBookPage() {
 
         .card {
           overflow: hidden;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           background: white;
           box-shadow:
@@ -1759,7 +1759,7 @@ export default function CashBookPage() {
         .basicInput:focus,
         .basicSelect:focus,
         .productInput:focus {
-          border-color: #4f46e5;
+          border-color: #0B4E9B;
           box-shadow:
             0 0 0 3px
             rgba(
@@ -1784,7 +1784,7 @@ export default function CashBookPage() {
           background:
             linear-gradient(
               135deg,
-              #eef2ff,
+              #EFF6FF,
               #f8fafc
             );
           color: #0f172a;
@@ -1837,7 +1837,7 @@ export default function CashBookPage() {
         .basicProductTable th,
         .basicProductTable td {
           padding: 5px;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           font-size: 12px;
         }
 
@@ -1901,7 +1901,7 @@ export default function CashBookPage() {
 
         .totalBox {
           padding: 10px 12px;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 14px;
           background: #f8fafc;
         }
@@ -1927,9 +1927,9 @@ export default function CashBookPage() {
         }
 
         .grandBox {
-          border-color: #c7d2fe;
-          background: #eef2ff;
-          color: #3730a3;
+          border-color: #DBEAFE;
+          background: #EFF6FF;
+          color: #285DB8;
         }
 
         .modalFooterBasic {

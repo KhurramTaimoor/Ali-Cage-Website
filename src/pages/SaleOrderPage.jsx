@@ -1468,12 +1468,12 @@ body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jame
 .head h1{margin:0;font-size:24px}
 .body{padding:16px}
 .info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.box{border:1px solid #dbe3ee;border-radius:10px;padding:9px;background:#fff}
+.box{border:1px solid #D6E0EE;border-radius:10px;padding:9px;background:#fff}
 .box small{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}
 .box b{display:block;margin-top:5px}
 table{width:100%;border-collapse:collapse}
 th{background:#1f2937;color:white;text-align:${isUrdu ? "right" : "left"};font-size:11px;text-transform:uppercase}
-th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
+th,td{border:1px solid #D6E0EE;padding:8px;font-size:12px}
 .center{text-align:center}
 .num{text-align:right;font-family:monospace}
 @media print{@page{size:A4 landscape;margin:8mm}.page{padding:0}.sheet{border:none;border-radius:0}}
@@ -1555,7 +1555,7 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 <style>
 body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};line-height:${isUrdu ? "1.9" : "1.45"};margin:20px}
 table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
+th,td{border:1px solid #D6E0EE;padding:8px;font-size:12px}
 th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 .num{text-align:right;font-family:monospace;font-weight:900}
 @media print{@page{size:A4 landscape;margin:8mm}}
@@ -1613,7 +1613,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 
         .sale-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #f1f5f9 100%);
+          background: linear-gradient(135deg, #EFF6FF 0%, #f8fafc 48%, #f1f5f9 100%);
           padding: 18px;
           color: #0f172a;
           font-family: ${isUrdu ? "'Noto Nastaliq Urdu', Arial, sans-serif" : "Inter, Arial, sans-serif"};
@@ -1626,7 +1626,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 
         .top-card {
           background: rgba(255,255,255,.94);
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 22px;
           padding: 20px 22px;
           box-shadow: 0 18px 50px rgba(15,23,42,.08);
@@ -1677,21 +1677,21 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         }
 
         .btn-primary {
-          background: #4f46e5;
+          background: #0B4E9B;
           color: white;
           box-shadow: 0 12px 25px rgba(79,70,229,.28);
         }
 
         .btn-summary {
-          background: #eef2ff;
-          color: #3730a3;
-          border: 1px solid #c7d2fe;
+          background: #EFF6FF;
+          color: #285DB8;
+          border: 1px solid #DBEAFE;
         }
 
         .btn-summary-active {
-          background: #4f46e5;
+          background: #0B4E9B;
           color: white;
-          border: 1px solid #4f46e5;
+          border: 1px solid #0B4E9B;
           box-shadow: 0 12px 25px rgba(79,70,229,.25);
         }
 
@@ -1712,7 +1712,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         }
 
         .convertAction {
-          background: linear-gradient(135deg,#4f46e5,#2563eb) !important;
+          background: linear-gradient(135deg,#0B4E9B,#2563eb) !important;
           color: white !important;
           border: none !important;
           box-shadow: 0 12px 25px rgba(37,99,235,.28) !important;
@@ -1734,7 +1734,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 
         .summary-card {
           background: white;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           padding: 14px;
           box-shadow: 0 8px 22px rgba(15,23,42,.05);
@@ -1781,13 +1781,13 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         .basicInput:focus,
         .basicSelect:focus,
         .productInput:focus {
-          border-color: #4f46e5;
+          border-color: #0B4E9B;
           box-shadow: 0 0 0 3px rgba(79,70,229,.10);
         }
 
         .card {
           background: white;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           box-shadow: 0 8px 24px rgba(15,23,42,.05);
           overflow: hidden;
@@ -1899,7 +1899,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 
         .order-mobile-card {
           background: #ffffff;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           padding: 14px;
           box-shadow: 0 8px 24px rgba(15,23,42,.06);
@@ -2090,7 +2090,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 
         .sectionHead {
           min-height: 38px;
-          background: linear-gradient(135deg,#eef2ff,#f8fafc);
+          background: linear-gradient(135deg,#EFF6FF,#f8fafc);
           border: 1px solid #cbd5e1;
           border-radius: 14px 14px 0 0;
           display: flex;
@@ -2141,7 +2141,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 
         .basicProductTable th,
         .basicProductTable td {
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           padding: 6px;
           font-size: 12px;
         }
@@ -2182,7 +2182,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         }
 
         .totalBox {
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           background: #f8fafc;
           border-radius: 14px;
           padding: 10px 12px;
@@ -2204,9 +2204,9 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         }
 
         .grandBox {
-          background: #eef2ff;
-          border-color: #c7d2fe;
-          color: #3730a3;
+          background: #EFF6FF;
+          border-color: #DBEAFE;
+          color: #285DB8;
         }
 
         .remainingBox {
@@ -2269,7 +2269,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         }
 
         .printOptionBtn {
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           background: linear-gradient(180deg,#fff,#f8fafc);
           border-radius: 16px;
           padding: 13px 12px;
@@ -2286,15 +2286,15 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         .printOptionBtn:hover {
           transform: translateY(-2px);
           box-shadow: 0 14px 30px rgba(15,23,42,.10);
-          border-color: #c7d2fe;
+          border-color: #DBEAFE;
         }
 
         .printIcon {
           width: 38px;
           height: 38px;
           border-radius: 13px;
-          background: #eef2ff;
-          color: #4f46e5;
+          background: #EFF6FF;
+          color: #0B4E9B;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2337,7 +2337,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
         .miniChargeBtn:hover {
           background: #e0e7ff;
           border-color: #a5b4fc;
-          color: #3730a3;
+          color: #285DB8;
         }
 
         @media(max-width: 1100px) {

@@ -725,11 +725,11 @@ export default function EmployeePage() {
         <style>
           *{box-sizing:border-box}
           body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};direction:${dir};line-height:${isUrdu ? "1.9" : "1.45"};color:#0f172a;padding:20px}
-          .sheet{max-width:1200px;margin:auto;border:1px solid #dbe3ee}
+          .sheet{max-width:1200px;margin:auto;border:1px solid #D6E0EE}
           .header{background:#0f172a;color:#fff;padding:20px;display:flex;justify-content:space-between}
           h1{margin:0;font-size:24px}
           .sub{margin-top:4px;color:#cbd5e1;font-size:12px}
-          .hint{padding:10px;background:#eef2ff;color:#3730a3;text-align:center}
+          .hint{padding:10px;background:#EFF6FF;color:#285DB8;text-align:center}
           table{width:100%;border-collapse:collapse;font-size:11px}
           th{background:#0f172a;color:#fff;padding:10px 8px;border:1px solid #334155}
           td{padding:9px 8px;border:1px solid #e2e8f0}
@@ -817,7 +817,7 @@ export default function EmployeePage() {
           min-height:100vh;
           padding:12px;
           color:#0f172a;
-          background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 48%,#f1f5f9 100%);
+          background:linear-gradient(135deg,#EFF6FF 0%,#f8fafc 48%,#f1f5f9 100%);
           font-family:${
             isUrdu
               ? "'Noto Nastaliq Urdu',Arial,sans-serif"
@@ -834,7 +834,7 @@ export default function EmployeePage() {
         .top-card{
           padding:18px 18px 15px;
           background:rgba(255,255,255,.95);
-          border:1px solid #dbe3ee;
+          border:1px solid #D6E0EE;
           border-radius:22px;
           box-shadow:0 18px 50px rgba(15,23,42,.08);
         }
@@ -888,9 +888,9 @@ export default function EmployeePage() {
         }
 
         .btn-summary{
-          background:#eef2ff;
-          color:#4338ca;
-          border-color:#c7d2fe;
+          background:#EFF6FF;
+          color:#0A65BD;
+          border-color:#DBEAFE;
         }
 
         .btn-dark{
@@ -899,7 +899,7 @@ export default function EmployeePage() {
         }
 
         .btn-primary{
-          background:#4f46e5;
+          background:#0B4E9B;
           color:#fff;
           box-shadow:0 12px 24px rgba(79,70,229,.25);
         }
@@ -928,7 +928,7 @@ export default function EmployeePage() {
 
         .summary-card{
           background:#fff;
-          border:1px solid #dbe3ee;
+          border:1px solid #D6E0EE;
           border-radius:16px;
           padding:15px;
           box-shadow:0 8px 24px rgba(15,23,42,.05);
@@ -984,7 +984,7 @@ export default function EmployeePage() {
         .search-input:focus,
         .field-input:focus,
         .field-select:focus{
-          border-color:#6366f1;
+          border-color:#4A86F7;
           box-shadow:0 0 0 3px rgba(99,102,241,.12);
         }
 
@@ -992,7 +992,7 @@ export default function EmployeePage() {
           overflow:hidden;
           width:100%;
           background:#fff;
-          border:1px solid #dbe3ee;
+          border:1px solid #D6E0EE;
           border-radius:18px;
           box-shadow:0 18px 45px rgba(15,23,42,.07);
         }
@@ -1045,8 +1045,8 @@ export default function EmployeePage() {
           display:flex;
           align-items:center;
           justify-content:center;
-          background:#eef2ff;
-          color:#4f46e5;
+          background:#EFF6FF;
+          color:#0B4E9B;
           font-weight:950;
         }
 
@@ -1097,16 +1097,16 @@ export default function EmployeePage() {
         }
 
         .department-pill{
-          border-color:#c7d2fe;
-          background:#eef2ff;
-          color:#4338ca;
+          border-color:#DBEAFE;
+          background:#EFF6FF;
+          color:#0A65BD;
         }
 
         .view-btn{
-          border:1px solid #c7d2fe;
+          border:1px solid #DBEAFE;
           border-radius:9px;
-          background:#eef2ff;
-          color:#4338ca;
+          background:#EFF6FF;
+          color:#0A65BD;
           padding:6px 8px;
           font-size:9px;
           font-weight:900;
@@ -1119,7 +1119,7 @@ export default function EmployeePage() {
         .ledger-btn{
           border:0;
           border-radius:9px;
-          background:#4f46e5;
+          background:#0B4E9B;
           color:#fff;
           min-width:76px;
           padding:6px 8px;
@@ -1133,7 +1133,7 @@ export default function EmployeePage() {
           white-space:nowrap;
         }
 
-        .ledger-btn:hover{background:#4338ca}
+        .ledger-btn:hover{background:#0A65BD}
 
         .call-btn{
           border:0;
@@ -1311,7 +1311,7 @@ export default function EmployeePage() {
         }
 
         .detail-card{
-          border:1px solid #dbe3ee;
+          border:1px solid #D6E0EE;
           border-radius:12px;
           padding:12px;
           background:#fff;

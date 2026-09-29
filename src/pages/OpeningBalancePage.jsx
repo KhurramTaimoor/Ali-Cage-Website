@@ -199,16 +199,16 @@ export default function OpeningBalancePage() {
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { font-family: ${font}; background: #fff; color: #0f172a; padding: 40px; }
           .report-container { max-width: 900px; margin: 0 auto; }
-          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
-          .brand { font-size: 28px; font-weight: bold; color: #4f46e5; text-transform: uppercase; letter-spacing: 1px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0B4E9B; padding-bottom: 20px; margin-bottom: 30px; }
+          .brand { font-size: 28px; font-weight: bold; color: #0B4E9B; text-transform: uppercase; letter-spacing: 1px; }
           .report-title { font-size: 18px; color: #64748b; margin-top: 5px; }
           .meta { text-align: ${isUrdu ? "left" : "right"}; font-size: 12px; color: #64748b; }
           table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;}
-          th { background: #4f46e5; color: #fff; text-align: ${isUrdu ? "right" : "left"}; padding: 12px; font-weight: normal; }
+          th { background: #0B4E9B; color: #fff; text-align: ${isUrdu ? "right" : "left"}; padding: 12px; font-weight: normal; }
           td { border-bottom: 1px solid #e2e8f0; padding: 10px; color: #334155; }
-          tr:nth-child(even) td { background: #eef2ff; }
-          .totals-row td { background: #e0e7ff !important; font-weight: bold; border-top: 2px solid #4f46e5; font-size: 14px; color: #0f172a;}
-          .print-instruct { background: #e0e7ff; color: #4f46e5; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #c7d2fe; }
+          tr:nth-child(even) td { background: #EFF6FF; }
+          .totals-row td { background: #e0e7ff !important; font-weight: bold; border-top: 2px solid #0B4E9B; font-size: 14px; color: #0f172a;}
+          .print-instruct { background: #e0e7ff; color: #0B4E9B; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #DBEAFE; }
           @media print { body { padding: 0; } .print-instruct { display: none; } }
         </style>
       </head>

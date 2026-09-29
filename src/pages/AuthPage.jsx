@@ -108,7 +108,7 @@ const AuthPage = () => {
 
         <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row z-10">
           <div className="hidden md:flex w-5/12 relative items-center justify-center overflow-hidden bg-[#0C2134] transition-all duration-500">
-            <div className="absolute inset-0 bg-gradient-to-br z-10 from-[#0C2134]/90 to-[#071A2B]"></div>
+            <div className="absolute inset-0 bg-gradient-to-br z-10 from-[#0C2134]/90 to-[#0C2134]"></div>
 
             <img
               src={cageImage}

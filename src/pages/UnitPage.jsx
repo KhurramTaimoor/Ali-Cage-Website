@@ -292,7 +292,7 @@ const UnitPage = () => {
   .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
   .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;line-height:1.8;}
   .content{padding:18px;}
-  .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
+  .print-inst{background:#EFF6FF;color:#285DB8;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #DBEAFE;font-size:13px;font-weight:700;}
   table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;overflow:hidden;}
   th{background:#0f172a;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px 10px;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
   td{border-bottom:1px solid #f1f5f9;padding:11px 10px;color:#334155;vertical-align:middle;}
@@ -356,13 +356,13 @@ const UnitPage = () => {
           background:#fff; padding:0 12px; font-size:13px; color:#0f172a; outline:none;
           transition:border-color .15s ease, box-shadow .15s ease;
         }
-        .same-field:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+        .same-field:focus { border-color:#4A86F7; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
         .same-field-icon-left { padding-left:34px; }
         .same-field-icon-right { padding-right:34px; }
         .same-label { display:block; font-size:10.5px; line-height:1; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:7px; }
         .same-section { background:#fff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,.05); }
         .same-section-head { padding:13px 16px; border-bottom:1px solid #eef2f7; display:flex; align-items:center; justify-content:space-between; gap:12px; background:#fff; }
-        .same-section-icon { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#eef2ff; color:#4f46e5; }
+        .same-section-icon { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#EFF6FF; color:#0B4E9B; }
         .same-dark-table th { background:#111827!important; color:#fff!important; font-size:11px!important; text-transform:uppercase; letter-spacing:.04em; padding:11px 14px!important; white-space:nowrap; }
         .same-dark-table td { padding:12px 14px!important; border-bottom:1px solid #f1f5f9!important; }
       `}</style>

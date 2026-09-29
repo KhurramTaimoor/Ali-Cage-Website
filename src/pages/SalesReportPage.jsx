@@ -1122,7 +1122,7 @@ export default function SalesReportPage() {
 
         .detail-record-card {
           background: #fff;
-          border: 1px solid #dbe3ee;
+          border: 1px solid #D6E0EE;
           border-radius: 18px;
           overflow: hidden;
           box-shadow: 0 8px 22px rgba(15, 23, 42, .04);

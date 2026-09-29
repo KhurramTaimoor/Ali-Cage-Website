@@ -597,7 +597,7 @@ const ProductPage = () => {
     .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
     .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;}
     .content{padding:18px;}
-    .print-inst{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
+    .print-inst{background:#EFF6FF;color:#285DB8;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #DBEAFE;font-size:13px;font-weight:700;}
     table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
     th{background:#111827;color:#fff;text-align:left;padding:11px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
     td{border-bottom:1px solid #f1f5f9;padding:10px 11px;color:#334155;vertical-align:top;text-align:left;}
@@ -698,7 +698,7 @@ const ProductPage = () => {
         }
 
         .same-field:focus {
-          border-color:#6366f1;
+          border-color:#4A86F7;
           box-shadow:0 0 0 3px rgba(99,102,241,.12);
         }
 
@@ -741,8 +741,8 @@ const ProductPage = () => {
           display:flex;
           align-items:center;
           justify-content:center;
-          background:#eef2ff;
-          color:#4f46e5;
+          background:#EFF6FF;
+          color:#0B4E9B;
         }
 
         .same-dark-table th {

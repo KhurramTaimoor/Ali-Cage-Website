@@ -513,7 +513,7 @@ export default function StockReceivePage() {
           .report-title{font-size:13px;color:#cbd5e1;margin-top:4px;}
           .meta{text-align:${isUrdu ? "left" : "right"};font-size:12px;color:#cbd5e1;line-height:1.8;}
           .content{padding:18px;}
-          .hint{background:#eef2ff;color:#3730a3;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #c7d2fe;font-size:13px;font-weight:700;}
+          .hint{background:#EFF6FF;color:#285DB8;padding:12px 14px;text-align:center;border-radius:12px;margin-bottom:16px;border:1px solid #DBEAFE;font-size:13px;font-weight:700;}
           table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;overflow:hidden;}
           th{background:#0f172a;color:#fff;text-align:${isUrdu ? "right" : "left"};padding:12px 10px;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
           td{border-bottom:1px solid #f1f5f9;padding:11px 10px;color:#334155;vertical-align:top;}

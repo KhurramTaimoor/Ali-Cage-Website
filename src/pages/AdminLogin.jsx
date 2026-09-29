@@ -59,12 +59,12 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#071A2B] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0C2134] flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#4A86F7] via-[#17344D] to-[#0C2134]" />
       <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] -top-20 -left-20" />
 
       <div className="w-full max-w-md bg-[#0C2134] border border-[#30485F] rounded-2xl shadow-2xl overflow-hidden relative z-10">
-        <div className="bg-[#071A2B]/40 p-8 border-b border-white/[0.08] text-center">
+        <div className="bg-[#0C2134]/40 p-8 border-b border-white/[0.08] text-center">
           <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-400/20 text-[#4A86F7]">
             <ShieldAlert size={32} />
           </div>
@@ -90,7 +90,7 @@ const AdminLogin = () => {
                   name="identifier"
                   value={formData.identifier}
                   onChange={handleChange}
-                  className="w-full bg-[#071A2B] border border-[#30485F] text-slate-100 pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/30 transition text-sm"
+                  className="w-full bg-[#0C2134] border border-[#30485F] text-slate-100 pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/30 transition text-sm"
                   placeholder="Admin email ya username"
                   autoComplete="username"
                 />
@@ -106,7 +106,7 @@ const AdminLogin = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full bg-[#071A2B] border border-[#30485F] text-slate-100 pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/30 transition text-sm"
+                  className="w-full bg-[#0C2134] border border-[#30485F] text-slate-100 pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/30 transition text-sm"
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
@@ -130,7 +130,7 @@ const AdminLogin = () => {
           </div>
         </div>
 
-        <div className="bg-[#071A2B] p-3 text-center border-t border-white/[0.08] text-xs text-slate-600">
+        <div className="bg-[#0C2134] p-3 text-center border-t border-white/[0.08] text-xs text-slate-600">
           Database-backed admin authentication
         </div>
       </div>

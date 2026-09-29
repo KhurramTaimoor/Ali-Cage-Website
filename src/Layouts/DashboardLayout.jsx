@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Outlet,
   Link,
@@ -19,6 +19,7 @@ import {
   Globe,
   BarChart3,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { translations } from "../data/translations";
 
@@ -100,6 +101,7 @@ const PRODUCTION_ITEMS = [
 const DashboardLayout = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [lang, setLang] = useState("en");
+  const [openGroups, setOpenGroups] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -128,26 +130,90 @@ const DashboardLayout = () => {
 
   const closeMobileSidebar = () => setMobileSidebarOpen(false);
 
-  const renderGroup = (label, icon, items) => (
-    <NavGroup label={label} icon={icon}>
-      {items.map((item, index) => {
-        if (item.divider) {
-          return <div key={`divider-${label}-${index}`} className="my-2 border-t border-white/[0.06]" />;
-        }
+  const groupIsActive = (items) =>
+    items.some((item) => item.to && !item.divider && isActive(item.to));
 
-        return (
-          <SidebarNavLink
-            key={item.to}
-            to={item.to}
-            label={text(item.key, item.fallback)}
-            icon={icon}
-            active={isActive(item.to)}
-            onNavigate={closeMobileSidebar}
+  useEffect(() => {
+    const groups = {
+      sales: SALES_ITEMS,
+      purchase: PURCHASE_ITEMS,
+      inventory: INVENTORY_ITEMS,
+      accounts: ACCOUNT_ITEMS,
+      reports: REPORT_ITEMS,
+      hr: HR_ITEMS,
+      production: PRODUCTION_ITEMS,
+      administration: ADMIN_ITEMS,
+    };
+
+    const activeEntry = Object.entries(groups).find(([, items]) =>
+      groupIsActive(items)
+    );
+
+    if (activeEntry) {
+      const [key] = activeEntry;
+      setOpenGroups((prev) => ({ ...prev, [key]: true }));
+    }
+  }, [location.pathname]);
+
+  const toggleGroup = (key) => {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderGroup = (groupKey, label, icon, items) => {
+    const open = Boolean(openGroups[groupKey]);
+    const activeGroup = groupIsActive(items);
+
+    return (
+      <div className="mb-2">
+        <button
+          type="button"
+          onClick={() => toggleGroup(groupKey)}
+          className={[
+            "group flex h-10 w-full items-center gap-3 rounded-xl px-3 text-[12.5px] font-semibold transition-all duration-200",
+            open || activeGroup
+              ? "bg-[#142B40] text-white"
+              : "text-[#9CACBC] hover:bg-[#17344D] hover:text-white",
+          ].join(" ")}
+        >
+          <span className={open || activeGroup ? "text-[#4A86F7]" : "text-[#8294A6] group-hover:text-white"}>
+            {icon}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-left rtl:text-right">{label}</span>
+          <ChevronDown
+            size={15}
+            className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           />
-        );
-      })}
-    </NavGroup>
-  );
+        </button>
+
+        {open && (
+          <nav className={`mt-1.5 space-y-1 ${isRTL ? "pr-2" : "pl-2"}`}>
+            {items.map((item, index) => {
+              if (item.divider) {
+                return (
+                  <div
+                    key={`divider-${groupKey}-${index}`}
+                    className="mx-3 my-1.5 border-t border-white/[0.06]"
+                  />
+                );
+              }
+
+              return (
+                <SidebarNavLink
+                  key={item.to}
+                  to={item.to}
+                  label={text(item.key, item.fallback)}
+                  active={isActive(item.to)}
+                  onNavigate={closeMobileSidebar}
+                  nested
+                  isRTL={isRTL}
+                />
+              );
+            })}
+          </nav>
+        )}
+      </div>
+    );
+  };
 
   const navigation = (
     <>
@@ -159,25 +225,26 @@ const DashboardLayout = () => {
           scrollbarGutter: "stable",
         }}
       >
-        <NavGroup label="Workspace" icon={<LayoutDashboard size={17} />}>
+        <div className="mb-2">
           <SidebarNavLink
             to="/app/dashboard"
             label={text("dashboard", "Dashboard")}
             icon={<LayoutDashboard size={17} />}
             active={isActive("/app/dashboard")}
             onNavigate={closeMobileSidebar}
+            isRTL={isRTL}
           />
-        </NavGroup>
+        </div>
 
-        {renderGroup(text("sales", "Sales"), <ShoppingCart size={17} />, SALES_ITEMS)}
-        {renderGroup(text("purchase", "Purchase"), <Truck size={17} />, PURCHASE_ITEMS)}
-        {renderGroup(text("inventory", "Inventory"), <Package size={17} />, INVENTORY_ITEMS)}
-        {renderGroup(text("accounts", "Accounts"), <Calculator size={17} />, ACCOUNT_ITEMS)}
-        {renderGroup(text("reports", "Reports"), <BarChart3 size={17} />, REPORT_ITEMS)}
-        {renderGroup(text("hr", "HR"), <Users size={17} />, HR_ITEMS)}
-        {renderGroup(text("production", "Production"), <Factory size={17} />, PRODUCTION_ITEMS)}
+        {renderGroup("sales", text("sales", "Sales"), <ShoppingCart size={17} />, SALES_ITEMS)}
+        {renderGroup("purchase", text("purchase", "Purchase"), <Truck size={17} />, PURCHASE_ITEMS)}
+        {renderGroup("inventory", text("inventory", "Inventory"), <Package size={17} />, INVENTORY_ITEMS)}
+        {renderGroup("accounts", text("accounts", "Accounts"), <Calculator size={17} />, ACCOUNT_ITEMS)}
+        {renderGroup("reports", text("reports", "Reports"), <BarChart3 size={17} />, REPORT_ITEMS)}
+        {renderGroup("hr", text("hr", "HR"), <Users size={17} />, HR_ITEMS)}
+        {renderGroup("production", text("production", "Production"), <Factory size={17} />, PRODUCTION_ITEMS)}
 
-        {isAdmin && renderGroup(text("administration", "Administration"), <ShieldCheck size={17} />, ADMIN_ITEMS)}
+        {isAdmin && renderGroup("administration", text("administration", "Administration"), <ShieldCheck size={17} />, ADMIN_ITEMS)}
       </div>
 
       <div className="mt-2 shrink-0 border-t border-white/[0.07] pt-3">
@@ -314,35 +381,46 @@ const DashboardLayout = () => {
   );
 };
 
-const NavGroup = ({ label, children }) => (
-  <div className="mb-5">
-    <p className="mb-2 px-3 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#718296]">{label}</p>
-    <nav className="space-y-1">{children}</nav>
-  </div>
-);
-
-const SidebarNavLink = ({ to, label, icon, active, onNavigate }) => (
+const SidebarNavLink = ({ to, label, icon, active, onNavigate, nested = false, isRTL = false }) => (
   <Link
     to={to}
     onClick={onNavigate}
     className={[
-      "group relative flex h-10 items-center gap-3 overflow-hidden rounded-xl px-3",
-      "text-[12.5px] font-semibold transition-all duration-200",
+      "group relative flex items-center overflow-hidden transition-all duration-200",
+      nested
+        ? "h-9 gap-2.5 rounded-lg px-3 text-[11.5px] font-semibold"
+        : "h-10 gap-3 rounded-xl px-3 text-[12.5px] font-semibold",
       active
         ? "bg-[#F7F9FC] text-[#10243A] shadow-sm"
         : "text-[#9CACBC] hover:bg-[#17344D] hover:text-white",
     ].join(" ")}
   >
-    {active && <span className="absolute inset-y-0 left-0 w-1 rounded-r-full bg-[#4A86F7]" />}
-    <span
-      className={
-        active
-          ? "shrink-0 text-[#4A86F7]"
-          : "shrink-0 text-[#8294A6] transition group-hover:text-white"
-      }
-    >
-      {icon}
-    </span>
+    {active && (
+      <span
+        className={`absolute inset-y-0 w-1 bg-[#4A86F7] ${
+          isRTL ? "right-0 rounded-l-full" : "left-0 rounded-r-full"
+        }`}
+      />
+    )}
+
+    {nested ? (
+      <span
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+          active ? "bg-[#4A86F7]" : "bg-[#718296] group-hover:bg-white"
+        }`}
+      />
+    ) : (
+      <span
+        className={
+          active
+            ? "shrink-0 text-[#4A86F7]"
+            : "shrink-0 text-[#8294A6] transition group-hover:text-white"
+        }
+      >
+        {icon}
+      </span>
+    )}
+
     <span className="truncate">{label}</span>
   </Link>
 );

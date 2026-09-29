@@ -49,14 +49,14 @@ const LandingPage = () => {
   return (
     <div
       className={`antialiased transition-all duration-300 ${
-        darkMode ? 'bg-[#071A2B] text-white' : 'bg-white text-slate-900'
+        darkMode ? 'bg-[#0C2134] text-white' : 'bg-white text-slate-900'
       }`}
     >
       {/* NAVBAR */}
       <nav
         className={`fixed w-full z-50 transition-all duration-300 border-b ${
           darkMode
-            ? 'bg-[#071A2B]/95 border-slate-800 backdrop-blur-md'
+            ? 'bg-[#0C2134]/95 border-slate-800 backdrop-blur-md'
             : isScrolled
             ? 'bg-white/95 shadow-md backdrop-blur-md border-blue-100'
             : 'bg-white/80 border-blue-100 backdrop-blur-md'
@@ -180,7 +180,7 @@ const LandingPage = () => {
       <header
         className={`relative pt-32 pb-24 lg:pt-44 lg:pb-32 overflow-hidden min-h-[95vh] flex items-center transition-all duration-300 ${
           darkMode
-            ? 'bg-[#071A2B]'
+            ? 'bg-[#0C2134]'
             : 'bg-gradient-to-br from-white via-blue-50 to-sky-100'
         }`}
       >
@@ -408,7 +408,7 @@ const LandingPage = () => {
 
                     <div
                       className={`col-span-2 p-5 ${
-                        darkMode ? 'bg-[#071A2B]/60' : 'bg-sky-50/80'
+                        darkMode ? 'bg-[#0C2134]/60' : 'bg-sky-50/80'
                       }`}
                     >
                       <div className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -585,7 +585,7 @@ const LandingPage = () => {
       <section
         id="analytics"
         className={`py-24 overflow-hidden border-t ${
-          darkMode ? 'bg-[#071A2B] border-slate-800' : 'bg-white border-blue-100'
+          darkMode ? 'bg-[#0C2134] border-slate-800' : 'bg-white border-blue-100'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -717,7 +717,7 @@ const LandingPage = () => {
       {/* EXTRA STRIP */}
       <section
         className={`py-20 ${
-          darkMode ? 'bg-[#071A2B] text-white' : 'bg-white text-slate-900'
+          darkMode ? 'bg-[#0C2134] text-white' : 'bg-white text-slate-900'
         } border-t ${darkMode ? 'border-slate-800' : 'border-blue-100'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

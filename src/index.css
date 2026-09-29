@@ -506,3 +506,277 @@ input, select, textarea, button {
   background: #F7F9FC !important;
   color: #64748B !important;
 }
+
+
+/* ========================================================================
+   PART 6 — CAMZ SOURCE (src (3).zip) EXACT ADMIN DESIGN TOKENS
+   Accent/sidebar blue is #4A86F7. Standard action blue is #0B4E9B.
+   Dropdown behavior remains Ali Cage-specific while visuals mirror Camz.
+   ======================================================================== */
+.camz-app {
+  --camz-page: #F4F7FB;
+  --camz-card: #FFFFFF;
+  --camz-soft: #F8FAFD;
+  --camz-heading: #13263A;
+  --camz-body: #334155;
+  --camz-muted: #64748B;
+  --camz-border: #E2E8F0;
+  --camz-input-border: #D6E0EE;
+  --camz-placeholder: #98A9C2;
+  --camz-icon-muted: #91A6C6;
+  --camz-primary: #0B4E9B;
+  --camz-primary-hover: #0A65BD;
+  --camz-accent: #4A86F7;
+  --camz-accent-soft: #EFF6FF;
+  --camz-sidebar: #0C2134;
+  --camz-sidebar-hover: #17344D;
+  --camz-sidebar-row: #142B40;
+  --camz-sidebar-text: #9CACBC;
+  --camz-sidebar-muted: #718296;
+}
+
+/* Exact Camz canvas + card language. */
+.camz-app main {
+  background: var(--camz-page) !important;
+  color: var(--camz-body) !important;
+}
+
+.camz-app main > div[class*="min-h-screen"],
+.camz-app main .page-wrap,
+.camz-app main .form-page-wrap,
+.camz-app main .invoice-page {
+  background: var(--camz-page) !important;
+  background-image: none !important;
+}
+
+.camz-app main section,
+.camz-app main article,
+.camz-app main .card,
+.camz-app main .panel,
+.camz-app main .box,
+.camz-app main .content-card,
+.camz-app main .summary-card,
+.camz-app main .table-card,
+.camz-app main .table-container,
+.camz-app main .table-wrap,
+.camz-app main .form-box,
+.camz-app main .inputModalBox,
+.camz-app main .modal-box,
+.camz-app main .modal-content {
+  border-color: var(--camz-border) !important;
+}
+
+.camz-app main h1,
+.camz-app main h2,
+.camz-app main h3,
+.camz-app main h4,
+.camz-app main .title,
+.camz-app main .heading {
+  color: var(--camz-heading) !important;
+}
+
+/* Camz input language copied from CRM/admin source. */
+.camz-app main input:not([type="checkbox"]):not([type="radio"]),
+.camz-app main select,
+.camz-app main textarea,
+.camz-app main .input,
+.camz-app main .search,
+.camz-app main .basicInput,
+.camz-app main .basicSelect,
+.camz-app main .productInput {
+  border: 1px solid var(--camz-input-border) !important;
+  background: var(--camz-soft) !important;
+  color: #334155 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+.camz-app main input:not([type="checkbox"]):not([type="radio"]):focus,
+.camz-app main select:focus,
+.camz-app main textarea:focus,
+.camz-app main .input:focus,
+.camz-app main .search:focus,
+.camz-app main .basicInput:focus,
+.camz-app main .basicSelect:focus,
+.camz-app main .productInput:focus {
+  border-color: var(--camz-accent) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(74, 134, 247, .12) !important;
+  outline: none !important;
+}
+
+.camz-app main input::placeholder,
+.camz-app main textarea::placeholder {
+  color: var(--camz-placeholder) !important;
+  font-weight: 600;
+}
+
+/* Standard Camz admin button: h-9, rounded-lg, 11px bold, dark action blue. */
+.camz-app main .btn-primary,
+.camz-app main .basicBtn:not(.basicBtnRed):not(.basicBtnGreen),
+.camz-app main .same-btn:not(.danger),
+.camz-app main .primary-btn,
+.camz-app main .bom-saveBtn,
+.camz-app main button.bg-indigo-600,
+.camz-app main button.bg-blue-600,
+.camz-app main button.bg-purple-600,
+.camz-app main button.bg-violet-600,
+.camz-app main button.bg-cyan-600,
+.camz-app main button.bg-teal-600,
+.camz-app main button.bg-green-600:not([data-status]),
+.camz-app main button.bg-emerald-600:not([data-status]),
+.camz-app main a.bg-indigo-600,
+.camz-app main a.bg-blue-600,
+.camz-app main a.bg-purple-600,
+.camz-app main a.bg-violet-600,
+.camz-app main a.bg-cyan-600,
+.camz-app main a.bg-teal-600 {
+  background: var(--camz-primary) !important;
+  border-color: var(--camz-primary) !important;
+  color: #fff !important;
+}
+
+.camz-app main .btn-primary:hover,
+.camz-app main .basicBtn:not(.basicBtnRed):not(.basicBtnGreen):hover,
+.camz-app main .same-btn:not(.danger):hover,
+.camz-app main .primary-btn:hover,
+.camz-app main .bom-saveBtn:hover,
+.camz-app main button.bg-indigo-600:hover,
+.camz-app main button.bg-blue-600:hover,
+.camz-app main button.bg-purple-600:hover,
+.camz-app main button.bg-violet-600:hover,
+.camz-app main button.bg-cyan-600:hover,
+.camz-app main button.bg-teal-600:hover {
+  background: var(--camz-primary-hover) !important;
+  border-color: var(--camz-primary-hover) !important;
+}
+
+.camz-app main button,
+.camz-app main a[role="button"],
+.camz-app main .btn,
+.camz-app main .basicBtn,
+.camz-app main .same-btn,
+.camz-app main .primary-btn,
+.camz-app main .secondary-btn {
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+}
+
+.camz-app main .btn,
+.camz-app main .basicBtn,
+.camz-app main .same-btn,
+.camz-app main .primary-btn,
+.camz-app main .secondary-btn {
+  min-height: 36px;
+  font-size: 11px !important;
+}
+
+/* Camz secondary/outline actions. */
+.camz-app main .btn-soft,
+.camz-app main .secondary-btn,
+.camz-app main button.bg-white,
+.camz-app main a.bg-white {
+  background: #fff !important;
+  border-color: var(--camz-border) !important;
+  color: #475569 !important;
+}
+.camz-app main .btn-soft:hover,
+.camz-app main .secondary-btn:hover,
+.camz-app main button.bg-white:hover,
+.camz-app main a.bg-white:hover {
+  background: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: var(--camz-primary) !important;
+}
+
+/* Links, accents and selected states use the bright Camz accent. */
+.camz-app main .text-indigo-600,
+.camz-app main .text-indigo-700,
+.camz-app main .text-blue-600,
+.camz-app main .text-blue-700 {
+  color: var(--camz-primary) !important;
+}
+.camz-app main .focus\:border-indigo-500:focus,
+.camz-app main .focus\:border-blue-500:focus {
+  border-color: var(--camz-accent) !important;
+}
+
+/* Tables copied from Camz compact admin styling. */
+.camz-app main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.camz-app main thead,
+.camz-app main thead tr,
+.camz-app main thead th,
+.camz-app main table thead td {
+  background: var(--camz-soft) !important;
+  color: var(--camz-muted) !important;
+}
+.camz-app main th {
+  border-color: var(--camz-border) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.camz-app main td {
+  border-color: #EEF2F7 !important;
+  color: #334155 !important;
+}
+.camz-app main tbody tr:hover td {
+  background: #F8FBFF !important;
+}
+
+/* Camz card/header surfaces: no old purple/navy gradients inside modules. */
+.camz-app main .bg-gradient-to-r,
+.camz-app main [class*="from-indigo"],
+.camz-app main [class*="from-purple"],
+.camz-app main [class*="from-violet"] {
+  background-image: none !important;
+  background-color: #fff !important;
+  color: var(--camz-heading) !important;
+}
+.camz-app main .bg-gradient-to-r .text-white,
+.camz-app main [class*="from-indigo"] .text-white,
+.camz-app main [class*="from-purple"] .text-white,
+.camz-app main [class*="from-violet"] .text-white {
+  color: var(--camz-heading) !important;
+}
+
+/* Details/dialog surfaces mirror Camz CRM. */
+.camz-app main .inputModalBox,
+.camz-app main .fullPageInputBox,
+.camz-app main .modal-box,
+.camz-app main .modal-content,
+.camz-app main .invoice-modal {
+  background: #fff !important;
+  border: 1px solid var(--camz-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, .11) !important;
+}
+.camz-app main .inputModalTitle,
+.camz-app main .modal-header,
+.camz-app main .sectionHead {
+  background: #fff !important;
+  color: var(--camz-heading) !important;
+  border-color: #EEF2F7 !important;
+}
+
+/* Keep semantic destructive/success states distinct, just match Camz shape. */
+.camz-app main .basicBtnRed,
+.camz-app main .danger,
+.camz-app main button.bg-red-600,
+.camz-app main button.bg-rose-600 {
+  border-radius: 8px !important;
+}
+
+@media (max-width: 767px) {
+  .camz-app main { padding: 10px !important; }
+  .camz-app main .btn,
+  .camz-app main .basicBtn,
+  .camz-app main .same-btn,
+  .camz-app main .primary-btn,
+  .camz-app main .secondary-btn { min-height: 36px; }
+}
