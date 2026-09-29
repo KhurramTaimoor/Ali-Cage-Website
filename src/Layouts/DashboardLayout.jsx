@@ -164,6 +164,11 @@ const INVENTORY_ITEMS = [
 
 const ACCOUNT_ITEMS = [
   {
+    to: "/app/accounts/profiles",
+    key: "accountProfiles",
+    fallback: "Profiles",
+  },
+  {
     to: "/app/accounts/groups",
     key: "accountGroups",
     fallback: "Account Groups",
@@ -247,6 +252,11 @@ const HR_ITEMS = [
   },
 ];
 
+const ADMIN_ITEMS = [
+  { to: "/app/admin/transactions", key: "transactionHistory", fallback: "Transaction History" },
+  { to: "/app/permissions", key: "permissions", fallback: "User Permissions" },
+];
+
 const PRODUCTION_ITEMS = [
   {
     to: "/app/production/bom",
@@ -291,6 +301,12 @@ const DashboardLayout = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "null") || {}; }
+    catch { return {}; }
+  })();
+  const userRole = String(user.role || "employee").toLowerCase();
+  const isAdmin = userRole === "admin";
 
   const t =
     translations[lang] ||
@@ -310,6 +326,7 @@ const DashboardLayout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("auth_token");
     navigate("/login");
   };
 
@@ -536,21 +553,17 @@ const DashboardLayout = () => {
             {renderItems(PRODUCTION_ITEMS)}
           </SidebarGroup>
 
-          <SidebarItem
-            icon={
-              <ShieldCheck size={18} />
-            }
-            label={text(
-              "permissions",
-              "Permissions"
-            )}
-            to="/app/permissions"
-            isOpen={sidebarOpen}
-            active={isActive(
-              "/app/permissions"
-            )}
-            onNavigate={closeMobileSidebar}
-          />
+          {isAdmin && (
+            <SidebarGroup
+              icon={<ShieldCheck size={18} />}
+              label={text("administration", "Administration")}
+              isOpen={sidebarOpen}
+              isRTL={isRTL}
+              active={isActive("/app/admin") || isActive("/app/permissions")}
+            >
+              {renderItems(ADMIN_ITEMS)}
+            </SidebarGroup>
+          )}
         </nav>
 
         <div className="p-3 border-t border-slate-800 shrink-0">
@@ -620,16 +633,16 @@ const DashboardLayout = () => {
                     "welcome",
                     "Welcome"
                   )}{" "}
-                  Admin
+                  {user.name || user.username || "User"}
                 </div>
 
                 <div className="text-[10px] text-slate-400 uppercase tracking-wide">
-                  Administrator
+                  {userRole || "employee"}
                 </div>
               </div>
 
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 text-sm">
-                A
+                {String(user.name || user.username || "U").charAt(0).toUpperCase()}
               </div>
             </div>
           </div>

@@ -354,34 +354,23 @@ function parseDisplayDate(value) {
 }
 
 function DateTextInput({ value, onChange, className = "", style = {}, readOnly = false, ...props }) {
-  const [draft, setDraft] = useState(formatFullDate(value));
-
-  useEffect(() => {
-    setDraft(formatFullDate(value));
-  }, [value]);
-
   return (
     <input
       {...props}
-      type="text"
-      inputMode="numeric"
-      placeholder="dd/mm/yyyy"
+      type="date"
       className={className}
       style={style}
-      value={draft === "-" ? "" : draft}
+      value={String(value || "").slice(0, 10)}
       readOnly={readOnly}
-      onChange={(e) => {
-        if (readOnly) return;
-        const next = e.target.value;
-        setDraft(next);
-        const parsed = parseDisplayDate(next);
-        if (parsed) onChange(parsed);
+      onChange={(e) => !readOnly && onChange(e.target.value)}
+      onClick={(e) => {
+        if (!readOnly && typeof e.currentTarget.showPicker === "function") {
+          try { e.currentTarget.showPicker(); } catch { /* browser fallback */ }
+        }
       }}
-      onBlur={() => setDraft(formatFullDate(value))}
     />
   );
 }
-
 function useLookup(url) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -474,8 +463,8 @@ function getReturnPartyName(ret) {
 }
 
 function printReturn(ret, t, isUrdu) {
-  const html = `<!doctype html><html dir="${isUrdu ? "rtl" : "ltr"}"><head><title>${ret.return_no || "Sales Return"}</title><style>
-  body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
+  const html = `<!doctype html><html dir="${isUrdu ? "rtl" : "ltr"}"><head><meta charset="UTF-8"/><title>${ret.return_no || "Sales Return"}</title><style>
+  body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};direction:${isUrdu ? "rtl" : "ltr"};line-height:${isUrdu ? "1.9" : "1.4"};margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.num{text-align:right;font-family:monospace}.strong{font-weight:900}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
   </style></head><body><div class="page"><div class="sheet"><div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.returnNo}: <b>${ret.return_no || "-"}</b><br/>${t.returnDate}: ${formatFullDate(ret.return_date)}</div></div><div class="body">
   <div class="grid"><div class="box"><small>${t.returnNo}</small><b>${ret.return_no || "-"}</b></div><div class="box"><small>${t.invoiceRef}</small><b>${ret.invoice_ref || "-"}</b></div><div class="box"><small>${t.name}</small><b>${getReturnPartyName(ret) || "-"}</b></div><div class="box"><small>${t.returnDate}</small><b>${formatFullDate(ret.return_date)}</b></div><div class="box"><small>${t.saleDate}</small><b>${formatFullDate(ret.sale_order_date)}</b></div></div>
   <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.returnQty}</th><th>${t.rate}</th><th>${t.returnAmount}</th><th>${t.reason}</th></tr></thead><tbody><tr><td>1</td><td>${ret.product_name || "-"}</td><td class="num">${money(ret.return_qty)}</td><td class="num">${money(ret.rate)}</td><td class="num strong">${money(ret.return_amount)}</td><td>${ret.reason || "-"}</td></tr></tbody></table>

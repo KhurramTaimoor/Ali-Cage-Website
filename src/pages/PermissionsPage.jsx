@@ -22,6 +22,10 @@ const PermissionsPage = () => {
     role: "",
     access_level: "",
     module_access: "",
+    username: "",
+    email: "",
+    password: "",
+    status: "active",
   });
 
   const fetchAll = async () => {
@@ -42,6 +46,10 @@ const PermissionsPage = () => {
       setMessage(tUi("User, role, access level aur module access required hain.", isRTL));
       return;
     }
+    if (!editId && (!form.username.trim() || !form.password)) {
+      setMessage(tUi("New user ke liye username aur password required hain.", isRTL));
+      return;
+    }
     try {
       if (editId) {
         await axios.put(`${API_BASE}/permissions/${editId}`, form);
@@ -50,7 +58,7 @@ const PermissionsPage = () => {
         await axios.post(`${API_BASE}/permissions`, form);
         setMessage(tUi("Permission saved!", isRTL));
       }
-      setForm({ employee_id: "", role: "", access_level: "", module_access: "" });
+      setForm({ employee_id: "", role: "", access_level: "", module_access: "", username: "", email: "", password: "", status: "active" });
       setEditId(null);
       fetchAll();
     } catch (error) {
@@ -64,6 +72,10 @@ const PermissionsPage = () => {
       role: row.role || "",
       access_level: row.access_level || "",
       module_access: row.module_access || "",
+      username: row.username || "",
+      email: row.email || "",
+      password: "",
+      status: row.status || "active",
     });
     setEditId(row.id);
     setMessage(tUi("Edit mode enabled", isRTL));
@@ -71,7 +83,7 @@ const PermissionsPage = () => {
 
   const handleCancelEdit = () => {
     setEditId(null);
-    setForm({ employee_id: "", role: "", access_level: "", module_access: "" });
+    setForm({ employee_id: "", role: "", access_level: "", module_access: "", username: "", email: "", password: "", status: "active" });
     setMessage("");
   };
 
@@ -172,6 +184,32 @@ const PermissionsPage = () => {
                 className="w-full px-3 py-2.5 rounded border border-slate-300 focus:border-blue-500 outline-none text-sm"
               />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">{tUi("Login Username", isRTL)}</label>
+              <input type="text" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })}
+                placeholder={tUi("e.g. ali.sales", isRTL)} className="w-full px-3 py-2.5 rounded border border-slate-300 focus:border-blue-500 outline-none text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">{tUi("Login Email (optional)", isRTL)}</label>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="user@example.com" className="w-full px-3 py-2.5 rounded border border-slate-300 focus:border-blue-500 outline-none text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">{tUi(editId ? "New Password (leave blank to keep old)" : "Login Password", isRTL)}</label>
+              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full px-3 py-2.5 rounded border border-slate-300 focus:border-blue-500 outline-none text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">{tUi("Login Status", isRTL)}</label>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                className="w-full px-3 py-2.5 rounded border border-slate-300 focus:border-blue-500 outline-none text-sm">
+                <option value="active">{tUi("Active", isRTL)}</option>
+                <option value="inactive">{tUi("Inactive", isRTL)}</option>
+              </select>
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end">
@@ -218,6 +256,8 @@ const PermissionsPage = () => {
                 <th className="px-4 py-3 text-left">{tUi("Role", isRTL)}</th>
                 <th className="px-4 py-3 text-left">{tUi("Access Level", isRTL)}</th>
                 <th className="px-4 py-3 text-left">{tUi("Module Access", isRTL)}</th>
+                <th className="px-4 py-3 text-left">{tUi("Username", isRTL)}</th>
+                <th className="px-4 py-3 text-left">{tUi("Status", isRTL)}</th>
                 <th className="px-4 py-3 text-center">{tUi("Actions", isRTL)}</th>
               </tr>
             </thead>
@@ -229,6 +269,8 @@ const PermissionsPage = () => {
                   <td className="px-4 py-3">{tValue(row.role, isRTL)}</td>
                   <td className="px-4 py-3">{tValue(row.access_level, isRTL)}</td>
                   <td className="px-4 py-3">{tValue(row.module_access, isRTL)}</td>
+                  <td className="px-4 py-3"><b>{row.username || "—"}</b>{row.email && <div className="text-[11px] text-slate-400">{row.email}</div>}</td>
+                  <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-bold ${row.status === "inactive" ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}>{row.status || "active"}</span></td>
                   <td className="px-4 py-3 text-center">
                     <button onClick={() => handleEdit(row)} className="text-blue-500 hover:bg-blue-100 p-1.5 rounded transition mr-1">
                       <Edit size={14} />
@@ -241,7 +283,7 @@ const PermissionsPage = () => {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-slate-400 text-sm">
+                  <td colSpan="8" className="px-6 py-8 text-center text-slate-400 text-sm">
                         {tUi("Koi record nahi mila", isRTL)}
                       </td>
                     </tr>

@@ -724,7 +724,7 @@ export default function EmployeePage() {
         <title>${t.reportTitle}</title>
         <style>
           *{box-sizing:border-box}
-          body{font-family:Arial,sans-serif;color:#0f172a;padding:20px}
+          body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};direction:${dir};line-height:${isUrdu ? "1.9" : "1.45"};color:#0f172a;padding:20px}
           .sheet{max-width:1200px;margin:auto;border:1px solid #dbe3ee}
           .header{background:#0f172a;color:#fff;padding:20px;display:flex;justify-content:space-between}
           h1{margin:0;font-size:24px}

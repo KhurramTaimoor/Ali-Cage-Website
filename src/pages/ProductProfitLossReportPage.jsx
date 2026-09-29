@@ -7,6 +7,8 @@ const LANG = {
     title: "Product Profit / Loss",
     subtitle: "Product-wise sales, cost and profit/loss report",
     refresh: "Refresh",
+    fromDate: "From Date",
+    toDate: "To Date",
     searchPlaceholder: "Search product, category, type or unit...",
     all: "All",
     profitOnly: "Profit",
@@ -42,6 +44,8 @@ const LANG = {
     title: "پروڈکٹ پرافٹ / لاس",
     subtitle: "پروڈکٹ وائز سیلز، کاسٹ اور پرافٹ/لاس رپورٹ",
     refresh: "ریفرش",
+    fromDate: "ابتدائی تاریخ",
+    toDate: "آخری تاریخ",
     searchPlaceholder: "پروڈکٹ، کیٹیگری، ٹائپ یا یونٹ سے تلاش کریں...",
     all: "سب",
     profitOnly: "پرافٹ",
@@ -151,6 +155,8 @@ export default function ProductProfitLossReportPage() {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const showToast = useCallback((type, text) => {
     setMessage({ type, text });
@@ -160,7 +166,11 @@ export default function ProductProfitLossReportPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiFetch("/api/reports/product-profit-loss");
+      const params = new URLSearchParams();
+      if (fromDate) params.set("from_date", fromDate);
+      if (toDate) params.set("to_date", toDate);
+      const query = params.toString();
+      const data = await apiFetch(`/api/reports/product-profit-loss${query ? `?${query}` : ""}`);
       setRows(getList(data).map(normalizeProfitRow));
     } catch (err) {
       setRows([]);
@@ -168,7 +178,7 @@ export default function ProductProfitLossReportPage() {
     } finally {
       setLoading(false);
     }
-  }, [showToast, t.fetchError]);
+  }, [showToast, t.fetchError, fromDate, toDate]);
 
   useEffect(() => {
     loadData();
@@ -219,7 +229,9 @@ export default function ProductProfitLossReportPage() {
   };
 
   const generatePrintDocument = (isPdf = false) => {
-    const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Inter', Arial, sans-serif";
+    const font = isUrdu
+      ? "'Noto Nastaliq Urdu','Noto Naskh Arabic','Jameel Noori Nastaleeq','Segoe UI',Arial,sans-serif"
+      : "'Inter','Segoe UI',Arial,sans-serif";
 
     const rowsHtml = filtered
       .map((r, i) => {
@@ -249,7 +261,7 @@ export default function ProductProfitLossReportPage() {
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:20px}
+  body{font-family:${font};background:#f8fafc;color:#0f172a;padding:20px;line-height:${isUrdu ? "1.9" : "1.45"};unicode-bidi:plaintext}
   .sheet{max-width:1500px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:22px;overflow:hidden;box-shadow:0 18px 45px rgba(15,23,42,.08)}
   .header{background:#0f172a;color:white;padding:24px 28px;display:flex;align-items:center;justify-content:space-between}
   .brand h1{font-size:28px;font-weight:900}
@@ -276,7 +288,7 @@ export default function ProductProfitLossReportPage() {
         <h1>${t.companyName}</h1>
         <p>${t.reportTitle}</p>
       </div>
-      <div class="meta">${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</div>
+      <div class="meta">${t.printedOn}: ${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}${fromDate || toDate ? `<br/>${t.fromDate}: ${fromDate || "—"} &nbsp; ${t.toDate}: ${toDate || "—"}` : ""}</div>
     </div>
     <div class="content">
       ${isPdf ? `<div class="hint">Choose <strong>Save as PDF</strong> in print dialog.</div>` : ""}
@@ -322,8 +334,8 @@ export default function ProductProfitLossReportPage() {
       dir={dir}
       style={{
         fontFamily: isUrdu
-          ? "'Noto Nastaliq Urdu', serif"
-          : "Helvetica, 'Helvetica Neue', Arial, sans-serif",
+          ? "'Noto Nastaliq Urdu','Noto Naskh Arabic','Jameel Noori Nastaleeq','Segoe UI',Arial,sans-serif"
+          : "Helvetica, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif",
       }}
       className="min-h-screen bg-slate-50 p-0 pb-16"
     >
@@ -435,7 +447,15 @@ export default function ProductProfitLossReportPage() {
         </div>
 
         {/* Search and filters */}
-        <div className={`flex flex-wrap items-center gap-3 mb-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
+        <div className={`flex flex-wrap items-end gap-3 mb-4 ${isUrdu ? "flex-row-reverse" : ""}`}>
+          <label className={`text-xs font-bold text-slate-600 ${isUrdu ? "text-right" : ""}`}>
+            <span className="block mb-1">{t.fromDate}</span>
+            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-10 border border-slate-200 rounded-xl bg-white px-3 text-sm shadow-sm" />
+          </label>
+          <label className={`text-xs font-bold text-slate-600 ${isUrdu ? "text-right" : ""}`}>
+            <span className="block mb-1">{t.toDate}</span>
+            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-10 border border-slate-200 rounded-xl bg-white px-3 text-sm shadow-sm" />
+          </label>
           <div className="relative flex-1 min-w-[260px] max-w-md">
             <i
               className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${

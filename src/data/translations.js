@@ -41,6 +41,9 @@ export const translations = {
     productLedger: "Product Ledger",
 
     // ACCOUNTS KEYS
+    accountProfiles: "Profiles",
+    transactionHistory: "Transaction History",
+    administration: "Administration",
     chartGroups: "Chart Groups",
     chartAccount: "Chart of Account",
     openingBalance: "Opening Balance",
@@ -120,6 +123,9 @@ export const translations = {
     productLedger: "پروڈکٹ لیجر",
 
     // ACCOUNTS KEYS
+    accountProfiles: "پروفائلز",
+    transactionHistory: "ٹرانزیکشن ہسٹری",
+    administration: "انتظامیہ",
     chartGroups: "چارٹ گروپس",
     chartAccount: "چارٹ آف اکاؤنٹ",
     openingBalance: "ابتدائی بیلنس",

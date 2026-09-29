@@ -26,9 +26,10 @@ const getUser = () => {
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const user = getUser();
+  const token = localStorage.getItem("auth_token");
 
-  // User login nahi hai
-  if (!user) {
+  // Valid session requires both user details and the signed auth token.
+  if (!user || !token) {
     return (
       <Navigate
         to="/login"

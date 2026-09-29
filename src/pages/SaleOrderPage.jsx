@@ -1455,12 +1455,13 @@ export default function SaleOrderPage() {
       .join("");
 
     const html = `<!doctype html>
-<html>
+<html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
 <head>
+<meta charset="UTF-8"/>
 <title>${t.saleOrderPrint}</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
+body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};line-height:${isUrdu ? "1.9" : "1.45"};margin:0;background:#f8fafc;color:#0f172a}
 .page{padding:18px}
 .sheet{background:#fff;border:1px solid #cbd5e1;border-radius:16px;overflow:hidden}
 .head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}
@@ -1471,7 +1472,7 @@ body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#0f172a}
 .box small{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}
 .box b{display:block;margin-top:5px}
 table{width:100%;border-collapse:collapse}
-th{background:#1f2937;color:white;text-align:left;font-size:11px;text-transform:uppercase}
+th{background:#1f2937;color:white;text-align:${isUrdu ? "right" : "left"};font-size:11px;text-transform:uppercase}
 th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
 .center{text-align:center}
 .num{text-align:right;font-family:monospace}
@@ -1547,14 +1548,15 @@ th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
       .join("");
 
     const html = `<!doctype html>
-<html>
+<html lang="${isUrdu ? "ur" : "en"}" dir="${isUrdu ? "rtl" : "ltr"}">
 <head>
+<meta charset="UTF-8"/>
 <title>${t.allSaleOrders}</title>
 <style>
-body{font-family:Arial,sans-serif;margin:20px}
+body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};line-height:${isUrdu ? "1.9" : "1.45"};margin:20px}
 table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #dbe3ee;padding:8px;font-size:12px}
-th{background:#111827;color:white;text-align:left}
+th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
 .num{text-align:right;font-family:monospace;font-weight:900}
 @media print{@page{size:A4 landscape;margin:8mm}}
 </style>

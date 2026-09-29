@@ -55,6 +55,8 @@ import CashBookPage from "./pages/CashBookPage";
 import GeneralLedgerPage from "./pages/GeneralLedgerPage";
 import CashBookReportPage from "./pages/CashBookReportPage";
 import ChequeVoucherPage from "./pages/ChequeVoucherPage";
+import AccountProfilesPage from "./pages/AccountProfilesPage";
+import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 
 import DepartmentPage from "./pages/DepartmentPage";
 import EmployeePage from "./pages/EmployeePage";
@@ -107,6 +109,7 @@ function App() {
             <ProtectedRoute
               allowedRoles={[
                 "admin",
+                "manager",
                 "employee",
               ]}
             />
@@ -272,6 +275,11 @@ function App() {
 
             {/* Accounts */}
             <Route
+              path="accounts/profiles"
+              element={<AccountProfilesPage />}
+            />
+
+            <Route
               path="accounts/groups"
               element={<AccountGroupsPage />}
             />
@@ -393,10 +401,17 @@ function App() {
               }
             />
 
-            <Route
-              path="permissions"
-              element={<PermissionsPage />}
-            />
+            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route
+                path="admin/transactions"
+                element={<TransactionHistoryPage />}
+              />
+
+              <Route
+                path="permissions"
+                element={<PermissionsPage />}
+              />
+            </Route>
 
             {/* Invalid /app URL stays inside dashboard */}
             <Route

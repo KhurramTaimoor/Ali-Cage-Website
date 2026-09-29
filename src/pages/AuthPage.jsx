@@ -20,7 +20,7 @@ const AuthPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [adminData, setAdminData] = useState({ email: '', password: '' });
+  const [adminData, setAdminData] = useState({ identifier: '', password: '' });
 
   const cageImage =
     'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/...'; // same image rakh lo
@@ -33,8 +33,8 @@ const AuthPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!adminData.email.trim() || !adminData.password.trim()) {
-      setError('Email aur password required hain');
+    if (!adminData.identifier.trim() || !adminData.password.trim()) {
+      setError('Email/username aur password required hain');
       return;
     }
 
@@ -42,13 +42,14 @@ const AuthPage = () => {
       setIsLoading(true);
 
       const response = await axios.post(`${API_BASE}/api/auth/login`, {
-        email: adminData.email,
+        identifier: adminData.identifier,
         password: adminData.password,
       });
 
       const data = response.data;
 
       if (data?.success) {
+        localStorage.setItem('auth_token', data.token || '');
         localStorage.setItem(
           'user',
           JSON.stringify({
@@ -56,6 +57,7 @@ const AuthPage = () => {
             name: data.user.name,
             email: data.user.email,
             role: data.user.role,
+            username: data.user.username,
             isLoggedIn: true,
           })
         );
@@ -94,7 +96,7 @@ const AuthPage = () => {
 
             <div className="hidden md:flex items-center gap-2 text-xs text-red-600 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
               <ShieldAlert size={12} className="text-red-500" />
-              Admin Access Only
+              Admin & User Access
             </div>
           </div>
         </div>
@@ -117,11 +119,11 @@ const AuthPage = () => {
             <div className="relative z-20 p-8 text-white text-center">
               <h2 className="text-3xl font-bold mb-4">Restricted Area</h2>
               <p className="text-slate-300 mb-6 font-light">
-                Authorized Personnel Only
+                Authorized Users Only
               </p>
 
               <div className="inline-flex items-center px-4 py-2 border border-red-500/50 rounded-lg bg-red-900/30 backdrop-blur-sm text-sm text-red-200">
-                <ShieldAlert size={14} className="mr-2" /> Admin Zone
+                <ShieldAlert size={14} className="mr-2" /> Secure Access
               </div>
             </div>
           </div>
@@ -129,13 +131,13 @@ const AuthPage = () => {
           <div className="w-full md:w-7/12 p-8 md:p-12 bg-white">
             <div className="mb-10 border-b border-gray-100 pb-4">
               <div className="pb-3 text-sm font-bold text-red-600 border-b-2 border-red-600 inline-flex items-center gap-2">
-                <ShieldAlert size={14} /> Admin Login
+                <ShieldAlert size={14} /> User Login
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-slate-900 mb-1">Admin Access</h3>
+            <h3 className="text-2xl font-bold text-slate-900 mb-1">Secure Login</h3>
             <p className="text-slate-500 text-sm mb-8">
-              Secure login for system administrators.
+              Admin aur authorized users apne credentials se login kar sakte hain.
             </p>
 
             {error && (
@@ -148,19 +150,19 @@ const AuthPage = () => {
             <form onSubmit={handleAdminLogin}>
               <div className="mb-5">
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-                  Gmail
+                  Email or Username
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-slate-400">
                     <Mail size={16} />
                   </span>
                   <input
-                    type="email"
-                    value={adminData.email}
+                    type="text"
+                    value={adminData.identifier}
                     className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition bg-slate-50 focus:bg-white text-sm"
-                    placeholder="admin@gmail.com"
+                    placeholder="Email ya username"
                     onChange={(e) =>
-                      setAdminData({ ...adminData, email: e.target.value })
+                      setAdminData({ ...adminData, identifier: e.target.value })
                     }
                   />
                 </div>
