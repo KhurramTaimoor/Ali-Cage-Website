@@ -1,2324 +1,531 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  BadgeDollarSign,
+  Check,
+  ChevronRight,
+  Download,
+  Edit3,
+  Eye,
+  ListChecks,
+  Plus,
+  Search,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
-async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || err.error || "Request failed");
-  }
-
-  if (res.status === 204) return null;
-  return res.json();
-}
-
-const fetchAllRates = () => apiFetch("/api/rates");
-const fetchCategories = () => apiFetch("/api/categories");
-const fetchUnits = () => apiFetch("/api/units");
-const fetchProducts = () => apiFetch("/api/products");
-const fetchTypes = () => apiFetch("/api/product-types");
-const fetchCustomers = () => apiFetch("/api/customers");
-
-const createRate = (data) =>
-  apiFetch("/api/rates", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
-const updateRate = (id, data) =>
-  apiFetch(`/api/rates/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-
-const deleteRate = (id) =>
-  apiFetch(`/api/rates/${id}`, {
-    method: "DELETE",
-  });
-
-async function translateText(text) {
-  if (!text || !String(text).trim()) return text;
-
-  try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-      String(text).trim()
-    )}&langpair=en|ur`;
-
-    const res = await fetch(url);
-    if (!res.ok) return text;
-
-    const data = await res.json();
-    const translated = data?.responseData?.translatedText;
-
-    if (
-      !translated ||
-      translated.toLowerCase() === String(text).trim().toLowerCase()
-    ) {
-      return text;
-    }
-
-    return translated;
-  } catch {
-    return text;
-  }
-}
-
-const LANG = {
+const copy = {
   en: {
-    title: "Rate List",
-    subtitle: "Manage product pricing and rates",
-    addBtn: "Add Rate",
-    summaryBtn: "View Summary",
-    searchPlaceholder: "Search by list, customer, product, category, product type or unit…",
-    rateListName: "Rate List Name",
-    rateListPlaceholder: "e.g. Retail Customers",
-    customer: "Customer",
-    selectCustomer: "All / unassigned customer",
-
-    productItem: "Product",
-    productItemLabel: "Product",
-    selectProduct: "Select product…",
-
-    category: "Category",
-    categoryLabel: "Category",
-    selectCategory: "Select category…",
-
-    type: "Product Type",
-    typeLabel: "Product Type",
-    selectType: "Select product type…",
-
-    unit: "Unit",
-    unitLabel: "Unit",
-    selectUnit: "Select unit…",
-
-    singleRate: "Single Rate (Pcs/Kgs)",
-    retailRate: "Retail Rate",
-    wholesaleRate: "Wholesale Rate",
-    distributorRate: "Distributor Rate",
-
-    save: "Save",
-    saving: "Saving...",
-    cancel: "Cancel",
+    title: "Sales Rate Lists",
+    subtitle: "Create one price list for all products and assign it to selected customers.",
+    newList: "New Rate List",
+    searchLists: "Search rate lists...",
+    listName: "Rate List Name",
+    products: "Products",
+    customers: "Customers",
+    updated: "Updated",
+    actions: "Actions",
     edit: "Edit",
     delete: "Delete",
-    noRecords: "No rates found.",
-    actions: "Actions",
-    loading: "Loading rates...",
-
-    productRequired: "Product is required.",
-    categoryRequired: "Category is required.",
-    typeRequired: "Product type is required.",
-    successSave: "Rate saved successfully!",
-    successDelete: "Rate deleted successfully!",
-    deleteConfirm: "Are you sure you want to delete this rate?",
-
-    addPriceRow: "Add Price Row",
-    removePriceRow: "Remove",
-    priceGroup: "Price Set",
-    atLeastOnePrice: "At least one price row is required.",
-
-    saveError: "Error saving record!",
-    deleteError: "Error deleting record!",
-    fetchError: "Failed to load rates.",
-
-    totalProducts: "Total Records",
-    totalPriceSets: "Total Price Sets",
-    all: "All",
-
+    details: "View Details",
+    assign: "Assign Customers",
+    save: "Save Rate List",
+    saving: "Saving...",
+    cancel: "Cancel",
+    productSearch: "Search product...",
+    customerSearch: "Search customer by name or phone...",
+    product: "Product",
+    category: "Category",
+    type: "Product Type",
+    unit: "Unit",
+    single: "Single",
+    retail: "Retail",
+    wholesale: "Wholesale",
+    distributor: "Distributor",
+    selected: "Selected",
+    allProductsHint: "All products are shown in this single form. Set the required prices and save once.",
+    assignedHint: "Search and select every customer who should use this rate list on Sales Invoice.",
+    noLists: "No rate lists found.",
+    noProducts: "No products found.",
+    noCustomers: "No customers found.",
+    loading: "Loading...",
+    deleteConfirm: "Delete this complete rate list?",
+    listRequired: "Rate List Name is required.",
+    saved: "Rate list saved.",
+    assigned: "Customers assigned.",
+    deleted: "Rate list deleted.",
+    exportPdf: "PDF",
+    global: "Global / unassigned",
+    assignedCustomers: "Assigned Customers",
+    close: "Close",
     toggleLang: "اردو",
-    translating: "Translating to Urdu…",
-    downloadPdf: "Download PDF",
-
-    companyName: "Ali Cages",
-    reportTitle: "Rate List Report",
-    generated: "Generated",
-    totalLabel: "Total",
-    recordsLabel: "records",
-    required: "Required",
-    readyToSave: "Ready to save rate record",
-    productHint: "Select product first, then add price sets below",
-    priceHint: "Category, type, unit and pricing in compact rows",
   },
-
   ur: {
-    title: "ریٹ لسٹ",
-    subtitle: "مصنوعات کی قیمتوں اور ریٹس کا انتظام کریں",
-    addBtn: "ریٹ شامل کریں",
-    summaryBtn: "سمری دیکھیں",
-    searchPlaceholder: "ریٹ لسٹ، کسٹمر، پروڈکٹ، کیٹگری، ٹائپ یا یونٹ سے تلاش کریں…",
-    rateListName: "ریٹ لسٹ نام",
-    rateListPlaceholder: "مثلاً ریٹیل کسٹمرز",
-    customer: "کسٹمر",
-    selectCustomer: "تمام / غیر مقرر کسٹمر",
-
-    productItem: "پروڈکٹ",
-    productItemLabel: "پروڈکٹ",
-    selectProduct: "پروڈکٹ منتخب کریں…",
-
-    category: "کیٹگری",
-    categoryLabel: "کیٹگری",
-    selectCategory: "کیٹگری منتخب کریں…",
-
-    type: "پروڈکٹ ٹائپ",
-    typeLabel: "پروڈکٹ ٹائپ",
-    selectType: "پروڈکٹ ٹائپ منتخب کریں…",
-
-    unit: "یونٹ",
-    unitLabel: "یونٹ",
-    selectUnit: "یونٹ منتخب کریں…",
-
-    singleRate: "سنگل ریٹ (پیس/کلو)",
-    retailRate: "ریٹیل ریٹ",
-    wholesaleRate: "ہول سیل ریٹ",
-    distributorRate: "ڈسٹری بیوٹر ریٹ",
-
-    save: "محفوظ کریں",
-    saving: "محفوظ ہو رہا ہے...",
-    cancel: "منسوخ",
+    title: "سیلز ریٹ لسٹس",
+    subtitle: "تمام پروڈکٹس کے لیے ایک ریٹ لسٹ بنائیں اور منتخب کسٹمرز کو اسائن کریں۔",
+    newList: "نئی ریٹ لسٹ",
+    searchLists: "ریٹ لسٹ تلاش کریں...",
+    listName: "ریٹ لسٹ نام",
+    products: "پروڈکٹس",
+    customers: "کسٹمرز",
+    updated: "اپڈیٹ",
+    actions: "اقدامات",
     edit: "ترمیم",
     delete: "حذف",
-    noRecords: "کوئی ریٹ نہیں ملا۔",
-    actions: "اقدامات",
-    loading: "ریٹس لوڈ ہو رہے ہیں...",
-
-    productRequired: "پروڈکٹ ضروری ہے۔",
-    categoryRequired: "کیٹگری ضروری ہے۔",
-    typeRequired: "پروڈکٹ ٹائپ ضروری ہے۔",
-    successSave: "ریٹ محفوظ ہو گیا!",
-    successDelete: "ریٹ حذف ہو گیا!",
-    deleteConfirm: "کیا آپ واقعی یہ ریٹ حذف کرنا چاہتے ہیں؟",
-
-    addPriceRow: "قیمت کی قطار شامل کریں",
-    removePriceRow: "ہٹائیں",
-    priceGroup: "قیمت سیٹ",
-    atLeastOnePrice: "کم از کم ایک قیمت کی قطار ضروری ہے۔",
-
-    saveError: "ریکارڈ محفوظ کرنے میں خرابی!",
-    deleteError: "ریکارڈ حذف کرنے میں خرابی!",
-    fetchError: "ریٹس لوڈ نہیں ہو سکے۔",
-
-    totalProducts: "کل ریکارڈز",
-    totalPriceSets: "کل قیمت سیٹس",
-    all: "سب",
-
+    details: "تفصیل دیکھیں",
+    assign: "کسٹمر اسائن کریں",
+    save: "ریٹ لسٹ محفوظ کریں",
+    saving: "محفوظ ہو رہی ہے...",
+    cancel: "منسوخ",
+    productSearch: "پروڈکٹ تلاش کریں...",
+    customerSearch: "نام یا فون سے کسٹمر تلاش کریں...",
+    product: "پروڈکٹ",
+    category: "کیٹیگری",
+    type: "پروڈکٹ ٹائپ",
+    unit: "یونٹ",
+    single: "سنگل",
+    retail: "ریٹیل",
+    wholesale: "ہول سیل",
+    distributor: "ڈسٹری بیوٹر",
+    selected: "منتخب",
+    allProductsHint: "تمام پروڈکٹس اسی ایک فارم میں ہیں۔ ریٹس درج کریں اور ایک دفعہ محفوظ کریں۔",
+    assignedHint: "وہ تمام کسٹمر منتخب کریں جن پر یہ ریٹ لسٹ سیلز انوائس میں لاگو ہو۔",
+    noLists: "کوئی ریٹ لسٹ نہیں ملی۔",
+    noProducts: "کوئی پروڈکٹ نہیں ملا۔",
+    noCustomers: "کوئی کسٹمر نہیں ملا۔",
+    loading: "لوڈ ہو رہا ہے...",
+    deleteConfirm: "یہ مکمل ریٹ لسٹ حذف کرنی ہے؟",
+    listRequired: "ریٹ لسٹ نام ضروری ہے۔",
+    saved: "ریٹ لسٹ محفوظ ہو گئی۔",
+    assigned: "کسٹمر اسائن ہو گئے۔",
+    deleted: "ریٹ لسٹ حذف ہو گئی۔",
+    exportPdf: "پی ڈی ایف",
+    global: "تمام / غیر اسائن",
+    assignedCustomers: "اسائن شدہ کسٹمرز",
+    close: "بند کریں",
     toggleLang: "English",
-    translating: "اردو میں ترجمہ ہو رہا ہے…",
-    downloadPdf: "پی ڈی ایف ڈاؤنلوڈ",
-
-    companyName: "علی کیجز",
-    reportTitle: "ریٹ لسٹ رپورٹ",
-    generated: "تیار کردہ",
-    totalLabel: "کل",
-    recordsLabel: "ریکارڈز",
-    required: "ضروری",
-    readyToSave: "ریٹ ریکارڈ محفوظ کرنے کے لیے تیار",
-    productHint: "پہلے پروڈکٹ منتخب کریں، پھر نیچے قیمت سیٹس شامل کریں",
-    priceHint: "کیٹگری، ٹائپ، یونٹ اور قیمتیں",
   },
 };
 
-const emptyPriceRow = () => ({
-  category_id: "",
-  product_type_id: "",
-  unit_id: "",
+const getList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.lists)) return value.lists;
+  if (Array.isArray(value?.products)) return value.products;
+  return [];
+};
+
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || data.error || "Request failed");
+  return data;
+}
+
+const productName = (p) => String(p?.product_name || p?.product_name_en || p?.name || `#${p?.id || ""}`);
+const customerName = (c) => String(c?.customer_name_en || c?.customer_name || c?.name || `#${c?.id || ""}`);
+const categoryName = (p) => String(p?.category_name || p?.category_name_en || "—");
+const typeName = (p) => String(p?.product_type_en || p?.type_name || p?.product_type_name || "—");
+const unitName = (p) => String(p?.unit_name || p?.unit || "—");
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+const money = (v) => num(v).toLocaleString("en-PK", { maximumFractionDigits: 2 });
+
+const emptyRates = (p) => ({
+  product_id: Number(p.id),
+  product_name: productName(p),
+  category_id: Number(p.category_id) || 0,
+  category_name: categoryName(p),
+  product_type_id: Number(p.product_type_id) || 0,
+  type_name: typeName(p),
+  unit_id: Number(p.unit_id) || 0,
+  unit_name: unitName(p),
   single_rate: "",
   retail_rate: "",
   wholesale_rate: "",
   distributor_rate: "",
 });
 
-const normalizePriceOptions = (record) => {
-  if (Array.isArray(record?.price_options) && record.price_options.length) {
-    return record.price_options.map((p) => ({
-      category_id: p?.category_id || record?.category_id || "",
-      product_type_id: p?.product_type_id || record?.product_type_id || "",
-      unit_id: p?.unit_id || "",
-      single_rate: p?.single_rate ?? "",
-      retail_rate: p?.retail_rate ?? "",
-      wholesale_rate: p?.wholesale_rate ?? "",
-      distributor_rate: p?.distributor_rate ?? "",
-    }));
-  }
+const firstOption = (record) => (Array.isArray(record?.price_options) && record.price_options.length ? record.price_options[0] : {});
 
-  return [emptyPriceRow()];
-};
-
-const fmt = (value) => Number(value || 0).toLocaleString("en-PK");
-
-function downloadRatePdf(filteredRates, lang, maps, urduCache) {
-  const t = LANG[lang];
-  const { productMap, categoryMap, productTypeMap, unitMap } = maps;
-  const isUrdu = lang === "ur";
-
-  const getName = (map, key, id) =>
-    isUrdu
-      ? urduCache[`${key}:${id}`] || map[id] || `#${id}`
-      : map[id] || `#${id}`;
-
-  const doc = new jsPDF({
-    unit: "mm",
-    format: "a4",
-    orientation: "landscape",
-  });
-
-  const W = doc.internal.pageSize.getWidth();
-  const H = doc.internal.pageSize.getHeight();
-
-  const C = {
-    brand: [14, 90, 168],
-    brandDark: [7, 55, 110],
-    brandLight: [224, 242, 254],
-    brandMid: [56, 143, 220],
-    emerald: [5, 150, 105],
-    emeraldBg: [236, 253, 245],
-    violet: [109, 40, 217],
-    violetBg: [245, 243, 255],
-    amber: [180, 83, 9],
-    white: [255, 255, 255],
-    slate50: [248, 250, 252],
-    slate100: [241, 245, 249],
-    slate200: [226, 232, 240],
-    slate400: [148, 163, 184],
-    slate600: [71, 85, 105],
-    slate900: [15, 23, 42],
-  };
-
-  const fill = (rgb) => doc.setFillColor(...rgb);
-  const text = (rgb) => doc.setTextColor(...rgb);
-  const font = (style, size) => {
-    doc.setFont("helvetica", style);
-    doc.setFontSize(size);
-  };
-  const rect = (x, y, w, h, r = 0, mode = "F") =>
-    r > 0 ? doc.roundedRect(x, y, w, h, r, r, mode) : doc.rect(x, y, w, h, mode);
-
-  const totalRecords = filteredRates.length;
-  const totalPriceSets = filteredRates.reduce(
-    (sum, rate) => sum + normalizePriceOptions(rate).length,
-    0
+function Modal({ title, children, onClose, wide = false }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/45 p-2 sm:p-5 backdrop-blur-sm">
+      <div className={`my-2 w-full ${wide ? "max-w-[1450px]" : "max-w-2xl"} overflow-hidden rounded-2xl border border-slate-200 bg-[#F4F7FB] shadow-2xl sm:my-6`}>
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
+          <h2 className="text-base font-extrabold text-[#13263A] sm:text-lg">{title}</h2>
+          <button onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" aria-label="Close">
+            <X size={17} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
   );
-
-  const dateStr = new Date().toLocaleString("en-PK", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  fill(C.brand);
-  rect(0, 0, W, 38, 0, "F");
-
-  fill(C.brandMid);
-  doc.triangle(W - 60, 0, W, 0, W, 38, "F");
-
-  fill(C.white);
-  doc.circle(18, 19, 10, "F");
-
-  fill(C.brand);
-  doc.circle(18, 19, 8, "F");
-
-  font("bold", 9);
-  text(C.white);
-  doc.text("AC", 18, 19.5, {
-    align: "center",
-    baseline: "middle",
-  });
-
-  font("bold", 18);
-  text(C.white);
-  doc.text(t.companyName, 33, 15);
-
-  font("normal", 9);
-  text([180, 215, 248]);
-  doc.text(t.reportTitle, 33, 23);
-
-  font("normal", 8);
-  text([180, 215, 248]);
-  doc.text(`${t.generated}: ${dateStr}`, W - 68, 20, {
-    align: "left",
-  });
-
-  fill(C.brandMid);
-  rect(0, 38, W, 1.5, 0, "F");
-
-  const cardY = 44;
-  const cardH = 28;
-  const cardW = (W - 20 - 8) / 3;
-  const gap = 4;
-
-  const cards = [
-    {
-      label: t.totalProducts,
-      value: String(totalRecords),
-      icon: "RATE",
-      fillBg: C.brandLight,
-      iconFill: C.brand,
-      valColor: C.brandDark,
-    },
-    {
-      label: t.totalPriceSets,
-      value: String(totalPriceSets),
-      icon: "SETS",
-      fillBg: C.emeraldBg,
-      iconFill: C.emerald,
-      valColor: C.emerald,
-    },
-    {
-      label: t.type,
-      value: "Retail / WS / Dist.",
-      icon: "PKR",
-      fillBg: C.violetBg,
-      iconFill: C.violet,
-      valColor: C.violet,
-    },
-  ];
-
-  cards.forEach((card, index) => {
-    const cx = 8 + index * (cardW + gap);
-
-    fill(card.fillBg);
-    doc.setDrawColor(...card.iconFill);
-    doc.setLineWidth(0.4);
-    rect(cx, cardY, cardW, cardH, 3, "FD");
-
-    fill(card.iconFill);
-    rect(cx, cardY, 3, cardH, 0, "F");
-
-    fill(card.iconFill);
-    rect(cx + cardW - 18, cardY + 4, 14, 7, 2, "F");
-
-    font("bold", 5.5);
-    text(C.white);
-    doc.text(card.icon, cx + cardW - 11, cardY + 8.5, {
-      align: "center",
-    });
-
-    font("normal", 7.5);
-    text(C.slate600);
-    doc.text(card.label, cx + 7, cardY + 9);
-
-    font("bold", 11);
-    text(card.valColor);
-    doc.text(card.value, cx + 7, cardY + 21);
-  });
-
-  const sectionY = cardY + cardH + 5;
-
-  fill(C.slate100);
-  rect(8, sectionY, W - 16, 7, 2, "F");
-
-  font("bold", 7.5);
-  text(C.slate600);
-  doc.text("RATE RECORDS", 14, sectionY + 5);
-
-  font("normal", 7);
-  text(C.slate400);
-  doc.text(
-    `${totalRecords} ${t.recordsLabel} • ${totalPriceSets} ${t.totalPriceSets}`,
-    W - 14,
-    sectionY + 5,
-    { align: "right" }
-  );
-
-  const rows = [];
-  let srNo = 1;
-
-  filteredRates.forEach((rate) => {
-    const priceOptions = normalizePriceOptions(rate);
-    const productName = getName(productMap, "product", rate.product_id);
-
-    priceOptions.forEach((price, index) => {
-      rows.push([
-        index === 0 ? srNo : "",
-        index === 0 ? productName : "",
-        getName(categoryMap, "category", price.category_id),
-        getName(productTypeMap, "type", price.product_type_id),
-        getName(unitMap, "unit", price.unit_id),
-        "PKR " + fmt(price.single_rate),
-        "PKR " + fmt(price.retail_rate),
-        "PKR " + fmt(price.wholesale_rate),
-        "PKR " + fmt(price.distributor_rate),
-      ]);
-    });
-
-    srNo++;
-  });
-
-  autoTable(doc, {
-    startY: sectionY + 9,
-    margin: { left: 8, right: 8 },
-    head: [
-      [
-        "#",
-        t.productItem,
-        t.category,
-        t.type,
-        t.unit,
-        t.singleRate,
-        t.retailRate,
-        t.wholesaleRate,
-        t.distributorRate,
-      ],
-    ],
-    body: rows,
-    theme: "plain",
-
-    headStyles: {
-      fillColor: C.brandDark,
-      textColor: C.white,
-      fontStyle: "bold",
-      fontSize: 8,
-      halign: "center",
-      valign: "middle",
-      cellPadding: {
-        top: 4,
-        bottom: 4,
-        left: 3,
-        right: 3,
-      },
-    },
-
-    bodyStyles: {
-      textColor: C.slate900,
-      fontSize: 7.5,
-      cellPadding: {
-        top: 3,
-        bottom: 3,
-        left: 3,
-        right: 3,
-      },
-      valign: "middle",
-      lineColor: C.slate200,
-      lineWidth: 0.1,
-    },
-
-    alternateRowStyles: {
-      fillColor: C.slate50,
-    },
-
-    columnStyles: {
-      0: {
-        halign: "center",
-        cellWidth: 10,
-        fontStyle: "bold",
-        textColor: C.brand,
-      },
-      1: {
-        halign: "left",
-        cellWidth: 50,
-        fontStyle: "bold",
-      },
-      2: {
-        halign: "left",
-        cellWidth: 38,
-      },
-      3: {
-        halign: "left",
-        cellWidth: 38,
-      },
-      4: {
-        halign: "center",
-        cellWidth: 22,
-      },
-      5: {
-        halign: "right",
-        cellWidth: 38,
-        fontStyle: "bold",
-        textColor: C.emerald,
-      },
-      6: {
-        halign: "right",
-        cellWidth: 38,
-        fontStyle: "bold",
-        textColor: C.violet,
-      },
-      7: {
-        halign: "right",
-        cellWidth: 38,
-        fontStyle: "bold",
-        textColor: C.amber,
-      },
-    },
-
-    didDrawPage() {
-      const pg = doc.internal.getCurrentPageInfo().pageNumber;
-      const total = doc.internal.getNumberOfPages();
-
-      fill(C.brandDark);
-      rect(0, H - 10, W, 10, 0, "F");
-
-      font("normal", 7);
-      text([180, 215, 248]);
-      doc.text(`${t.companyName} — ${t.reportTitle}`, 10, H - 4);
-      doc.text(`Page ${pg} / ${total}`, W - 10, H - 4, {
-        align: "right",
-      });
-    },
-  });
-
-  doc.save(`rate-list-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
-const RateListPage = () => {
+export default function RateListPage() {
   const [lang, setLang] = useState("en");
-  const t = LANG[lang];
+  const t = copy[lang];
   const isUrdu = lang === "ur";
-  const dir = isUrdu ? "rtl" : "ltr";
-
-  const [rates, setRates] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [units, setUnits] = useState([]);
+  const [lists, setLists] = useState([]);
   const [products, setProducts] = useState([]);
-  const [types, setTypes] = useState([]);
   const [customers, setCustomers] = useState([]);
-
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
   const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
+  const [toast, setToast] = useState("");
 
-  const [showForm, setShowForm] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [originalName, setOriginalName] = useState("");
+  const [listName, setListName] = useState("");
+  const [rows, setRows] = useState([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [message, setMessage] = useState({
-    type: "",
-    text: "",
-  });
+  const [assignList, setAssignList] = useState(null);
+  const [assignedIds, setAssignedIds] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [assignSaving, setAssignSaving] = useState(false);
 
-  const [urduCache, setUrduCache] = useState({});
-  const [translating, setTranslating] = useState(false);
+  const [detailList, setDetailList] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    list_name: "",
-    customer_id: "",
-    product_id: "",
-    price_options: [emptyPriceRow()],
-  });
-
-  const showToast = useCallback((type, text) => {
-    setMessage({ type, text });
-
-    setTimeout(() => {
-      setMessage({ type: "", text: "" });
-    }, 3000);
+  const notify = useCallback((message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2500);
   }, []);
 
-  const getList = (data) => (Array.isArray(data) ? data : data?.data || []);
-
-  const loadAll = useCallback(async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      const [ratesData, catsData, unitsData, productsData, typesData, customersData] =
-        await Promise.all([
-          fetchAllRates(),
-          fetchCategories(),
-          fetchUnits(),
-          fetchProducts(),
-          fetchTypes(),
-          fetchCustomers(),
-        ]);
-
-      setRates(getList(ratesData));
-      setCategories(getList(catsData));
-      setUnits(getList(unitsData));
-      setProducts(getList(productsData));
-      setTypes(getList(typesData));
-      setCustomers(getList(customersData));
+      const [listData, productData, customerData] = await Promise.all([
+        api("/api/rates/lists"),
+        api("/api/products"),
+        api("/api/customers"),
+      ]);
+      setLists(getList(listData));
+      setProducts(getList(productData));
+      setCustomers(getList(customerData));
     } catch (err) {
-      showToast("error", err.message || t.fetchError);
+      notify(err.message);
     } finally {
       setLoading(false);
     }
-  }, [showToast, t.fetchError]);
+  }, [notify]);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+    load();
+  }, [load]);
 
-  const productMap = useMemo(() => {
-    const map = {};
-
-    products.forEach((product) => {
-      map[product.id] =
-        product.name ||
-        product.name_en ||
-        product.product_name ||
-        product.product_item_en ||
-        `#${product.id}`;
+  const filteredLists = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return lists;
+    return lists.filter((list) => {
+      const customerText = (list.assigned_customers || []).map((c) => c.customer_name).join(" ");
+      return `${list.list_name || ""} ${customerText}`.toLowerCase().includes(q);
     });
+  }, [lists, search]);
 
-    return map;
-  }, [products]);
+  const visibleRows = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => `${r.product_name} ${r.category_name} ${r.type_name} ${r.unit_name}`.toLowerCase().includes(q));
+  }, [rows, productSearch]);
 
-  const categoryMap = useMemo(() => {
-    const map = {};
+  const visibleCustomers = useMemo(() => {
+    const q = customerSearch.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter((c) => `${customerName(c)} ${c.phone || ""} ${c.city_en || ""}`.toLowerCase().includes(q));
+  }, [customers, customerSearch]);
 
-    categories.forEach((category) => {
-      map[category.id] =
-        category.name || category.name_en || category.category_name || `#${category.id}`;
-    });
+  const newList = () => {
+    setOriginalName("");
+    setListName("");
+    setRows(products.map(emptyRates));
+    setProductSearch("");
+    setFormOpen(true);
+  };
 
-    return map;
-  }, [categories]);
-
-  const productTypeMap = useMemo(() => {
-    const map = {};
-
-    types.forEach((type) => {
-      map[type.id] =
-        type.product_type_en ||
-        type.name ||
-        type.name_en ||
-        type.type_name ||
-        `#${type.id}`;
-    });
-
-    return map;
-  }, [types]);
-
-  const unitMap = useMemo(() => {
-    const map = {};
-
-    units.forEach((unit) => {
-      map[unit.id] =
-        unit.name || unit.name_en || unit.unit_name || `#${unit.id}`;
-    });
-
-    return map;
-  }, [units]);
-
-  const getProductName = (id) =>
-    isUrdu
-      ? urduCache[`product:${id}`] || productMap[id] || `#${id}`
-      : productMap[id] || `#${id}`;
-
-  const getCategoryName = (id) =>
-    isUrdu
-      ? urduCache[`category:${id}`] || categoryMap[id] || `#${id}`
-      : categoryMap[id] || `#${id}`;
-
-  const getTypeName = (id) =>
-    isUrdu
-      ? urduCache[`type:${id}`] || productTypeMap[id] || `#${id}`
-      : productTypeMap[id] || `#${id}`;
-
-  const getUnitName = (id) =>
-    isUrdu
-      ? urduCache[`unit:${id}`] || unitMap[id] || `#${id}`
-      : unitMap[id] || `#${id}`;
-
-  const handleLangToggle = async () => {
-    const newLang = lang === "en" ? "ur" : "en";
-    setLang(newLang);
-
-    if (newLang !== "ur") return;
-
-    const toTranslate = [];
-
-    products.forEach((product) => {
-      const name =
-        product.name ||
-        product.name_en ||
-        product.product_name ||
-        product.product_item_en ||
-        "";
-
-      if (name && !urduCache[`product:${product.id}`]) {
-        toTranslate.push({
-          key: `product:${product.id}`,
-          text: name,
-        });
-      }
-    });
-
-    categories.forEach((category) => {
-      const name =
-        category.name || category.name_en || category.category_name || "";
-
-      if (name && !urduCache[`category:${category.id}`]) {
-        toTranslate.push({
-          key: `category:${category.id}`,
-          text: name,
-        });
-      }
-    });
-
-    types.forEach((type) => {
-      const name =
-        type.product_type_en ||
-        type.name ||
-        type.name_en ||
-        type.type_name ||
-        "";
-
-      if (name && !urduCache[`type:${type.id}`]) {
-        toTranslate.push({
-          key: `type:${type.id}`,
-          text: name,
-        });
-      }
-    });
-
-    units.forEach((unit) => {
-      const name = unit.name || unit.name_en || unit.unit_name || "";
-
-      if (name && !urduCache[`unit:${unit.id}`]) {
-        toTranslate.push({
-          key: `unit:${unit.id}`,
-          text: name,
-        });
-      }
-    });
-
-    if (toTranslate.length === 0) return;
-
-    setTranslating(true);
-
+  const editList = async (summary) => {
     try {
-      const results = await Promise.all(
-        toTranslate.map(async ({ key, text }) => ({
-          key,
-          translated: await translateText(text),
-        }))
+      const response = await api(`/api/rates/lists/${encodeURIComponent(summary.list_name)}`);
+      const detail = response.data || response;
+      const existing = new Map((detail.items || []).map((item) => [String(item.product_id), item]));
+      setRows(
+        products.map((p) => {
+          const base = emptyRates(p);
+          const record = existing.get(String(p.id));
+          if (!record) return base;
+          const opt = firstOption(record);
+          return {
+            ...base,
+            single_rate: opt.single_rate ?? "",
+            retail_rate: opt.retail_rate ?? "",
+            wholesale_rate: opt.wholesale_rate ?? "",
+            distributor_rate: opt.distributor_rate ?? "",
+          };
+        })
       );
-
-      setUrduCache((prev) => {
-        const next = { ...prev };
-
-        results.forEach(({ key, translated }) => {
-          next[key] = translated;
-        });
-
-        return next;
-      });
+      setOriginalName(summary.list_name);
+      setListName(summary.list_name);
+      setProductSearch("");
+      setFormOpen(true);
     } catch (err) {
-      console.error("Translation error:", err);
-    } finally {
-      setTranslating(false);
+      notify(err.message);
     }
   };
 
-  const openAdd = () => {
-    setForm({
-      list_name: "",
-      customer_id: "",
-      product_id: "",
-      price_options: [emptyPriceRow()],
-    });
-    setEditingId(null);
-    setShowForm(true);
+  const changeRate = (productId, field, value) => {
+    setRows((current) => current.map((row) => (String(row.product_id) === String(productId) ? { ...row, [field]: value } : row)));
   };
 
-  const openEdit = (rate) => {
-    setForm({
-      list_name: rate.list_name || "Default Rate List",
-      customer_id: rate.customer_id || "",
-      product_id: rate.product_id || "",
-      price_options: normalizePriceOptions(rate),
-    });
-
-    setEditingId(rate.id);
-    setShowForm(true);
-  };
-
-  const updatePriceRow = (index, key, value) => {
-    setForm((prev) => ({
-      ...prev,
-      price_options: prev.price_options.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, [key]: value } : row
-      ),
-    }));
-  };
-
-  const addPriceRow = () => {
-    setForm((prev) => ({
-      ...prev,
-      price_options: [...prev.price_options, emptyPriceRow()],
-    }));
-  };
-
-  const removePriceRow = (index) => {
-    setForm((prev) => {
-      if (prev.price_options.length === 1) return prev;
-
-      return {
-        ...prev,
-        price_options: prev.price_options.filter((_, rowIndex) => rowIndex !== index),
+  const saveList = async () => {
+    const cleanName = listName.trim();
+    if (!cleanName) return notify(t.listRequired);
+    setSaving(true);
+    try {
+      const payload = {
+        list_name: cleanName,
+        items: rows.map((r) => ({
+          product_id: r.product_id,
+          category_id: r.category_id,
+          product_type_id: r.product_type_id,
+          unit_id: r.unit_id,
+          single_rate: num(r.single_rate),
+          retail_rate: num(r.retail_rate),
+          wholesale_rate: num(r.wholesale_rate),
+          distributor_rate: num(r.distributor_rate),
+        })),
       };
-    });
-  };
-
-  const handleSave = async () => {
-    if (!form.product_id) {
-      showToast("error", t.productRequired);
-      return;
-    }
-
-    const cleanedOptions = form.price_options
-      .map((row) => ({
-        category_id: Number(row.category_id) || 0,
-        product_type_id: Number(row.product_type_id) || 0,
-        unit_id: Number(row.unit_id) || 0,
-        single_rate: Number(row.single_rate) || 0,
-        retail_rate: Number(row.retail_rate) || 0,
-        wholesale_rate: Number(row.wholesale_rate) || 0,
-        distributor_rate: Number(row.distributor_rate) || 0,
-      }))
-      .filter(
-        (row) =>
-          row.category_id > 0 ||
-          row.product_type_id > 0 ||
-          row.unit_id > 0 ||
-          row.single_rate > 0 ||
-          row.retail_rate > 0 ||
-          row.wholesale_rate > 0 ||
-          row.distributor_rate > 0
-      );
-
-    if (!cleanedOptions.length) {
-      showToast("error", t.atLeastOnePrice);
-      return;
-    }
-
-    if (cleanedOptions.some((row) => !row.category_id)) {
-      showToast("error", t.categoryRequired);
-      return;
-    }
-
-    if (cleanedOptions.some((row) => !row.product_type_id)) {
-      showToast("error", t.typeRequired);
-      return;
-    }
-
-    const payload = {
-      list_name: String(form.list_name || "Default Rate List").trim() || "Default Rate List",
-      customer_id: Number(form.customer_id) || null,
-      product_id: Number(form.product_id),
-      price_options: cleanedOptions,
-    };
-
-    try {
-      setSubmitting(true);
-
-      if (editingId) {
-        const res = await updateRate(editingId, payload);
-        const updated = res?.data || res;
-
-        setRates((prev) =>
-          prev.map((rate) => (rate.id === editingId ? updated : rate))
-        );
-      } else {
-        const res = await createRate(payload);
-        const created = res?.data || res;
-
-        setRates((prev) => [created, ...prev]);
-      }
-
-      showToast("success", t.successSave);
-      setShowForm(false);
-      setEditingId(null);
+      const path = originalName ? `/api/rates/lists/${encodeURIComponent(originalName)}` : "/api/rates/lists";
+      await api(path, { method: originalName ? "PUT" : "POST", body: JSON.stringify(payload) });
+      setFormOpen(false);
+      notify(t.saved);
+      await load();
     } catch (err) {
-      showToast("error", err.message || t.saveError);
+      notify(err.message);
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(t.deleteConfirm)) return;
+  const openAssign = (summary) => {
+    setAssignList(summary);
+    setAssignedIds((summary.assigned_customer_ids || []).map(Number));
+    setCustomerSearch("");
+  };
 
+  const toggleCustomer = (id) => {
+    const n = Number(id);
+    setAssignedIds((current) => (current.includes(n) ? current.filter((x) => x !== n) : [...current, n]));
+  };
+
+  const saveAssignments = async () => {
+    if (!assignList) return;
+    setAssignSaving(true);
     try {
-      await deleteRate(id);
-
-      setRates((prev) => prev.filter((rate) => rate.id !== id));
-      showToast("success", t.successDelete);
+      await api(`/api/rates/lists/${encodeURIComponent(assignList.list_name)}/assign-customers`, {
+        method: "POST",
+        body: JSON.stringify({ customer_ids: assignedIds }),
+      });
+      setAssignList(null);
+      notify(t.assigned);
+      await load();
     } catch (err) {
-      showToast("error", err.message || t.deleteError);
+      notify(err.message);
+    } finally {
+      setAssignSaving(false);
     }
   };
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+  const showDetails = async (summary) => {
+    setDetailLoading(true);
+    try {
+      const response = await api(`/api/rates/lists/${encodeURIComponent(summary.list_name)}`);
+      setDetailList(response.data || response);
+    } catch (err) {
+      notify(err.message);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
-    return rates.filter((rate) => {
-      const priceOptions = normalizePriceOptions(rate);
+  const removeList = async (summary) => {
+    if (!window.confirm(t.deleteConfirm)) return;
+    try {
+      await api(`/api/rates/lists/${encodeURIComponent(summary.list_name)}`, { method: "DELETE" });
+      notify(t.deleted);
+      await load();
+    } catch (err) {
+      notify(err.message);
+    }
+  };
 
-      const rowCategoryIds = [
-        ...new Set(
-          priceOptions
-            .map((price) => price.category_id || rate.category_id)
-            .filter(Boolean)
-            .map(String)
-        ),
-      ];
-
-      const matchCat =
-        !filterCategory || rowCategoryIds.includes(String(filterCategory));
-
-      if (!matchCat) return false;
-      if (!q) return true;
-
-      return (
-        String(rate.list_name || "").toLowerCase().includes(q) ||
-        String(rate.customer_name || "").toLowerCase().includes(q) ||
-        String(productMap[rate.product_id] || "").toLowerCase().includes(q) ||
-        String(urduCache[`product:${rate.product_id}`] || "")
-          .toLowerCase()
-          .includes(q) ||
-        priceOptions.some(
-          (price) =>
-            String(categoryMap[price.category_id] || "")
-              .toLowerCase()
-              .includes(q) ||
-            String(urduCache[`category:${price.category_id}`] || "")
-              .toLowerCase()
-              .includes(q) ||
-            String(productTypeMap[price.product_type_id] || "")
-              .toLowerCase()
-              .includes(q) ||
-            String(urduCache[`type:${price.product_type_id}`] || "")
-              .toLowerCase()
-              .includes(q) ||
-            String(unitMap[price.unit_id] || "").toLowerCase().includes(q) ||
-            String(urduCache[`unit:${price.unit_id}`] || "")
-              .toLowerCase()
-              .includes(q)
-        )
-      );
-    });
-  }, [
-    rates,
-    search,
-    filterCategory,
-    productMap,
-    categoryMap,
-    productTypeMap,
-    unitMap,
-    urduCache,
-  ]);
-
-  const summary = useMemo(
-    () => ({
-      total: rates.length,
-      totalPriceSets: rates.reduce(
-        (sum, rate) => sum + normalizePriceOptions(rate).length,
-        0
-      ),
-    }),
-    [rates]
-  );
-
-  const usedCategories = useMemo(() => {
-    const ids = new Set();
-
-    rates.forEach((rate) => {
-      normalizePriceOptions(rate).forEach((price) => {
-        if (price.category_id) ids.add(price.category_id);
+  const exportPdf = async (summary) => {
+    try {
+      const response = await api(`/api/rates/lists/${encodeURIComponent(summary.list_name)}`);
+      const detail = response.data || response;
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text(`Ali Cages - ${detail.list_name}`, 14, 16);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Assigned customers: ${(detail.assigned_customers || []).map((x) => x.customer_name).join(", ") || "Global / unassigned"}`, 14, 23);
+      autoTable(doc, {
+        startY: 29,
+        head: [["#", "Product", "Category", "Type", "Unit", "Single", "Retail", "Wholesale", "Distributor"]],
+        body: (detail.items || []).map((item, index) => {
+          const p = products.find((x) => String(x.id) === String(item.product_id)) || {};
+          const opt = firstOption(item);
+          return [
+            index + 1,
+            productName(p),
+            categoryName(p),
+            typeName(p),
+            unitName(p),
+            money(opt.single_rate),
+            money(opt.retail_rate),
+            money(opt.wholesale_rate),
+            money(opt.distributor_rate),
+          ];
+        }),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [19, 38, 58] },
       });
-    });
-
-    return [...ids];
-  }, [rates]);
+      doc.save(`${detail.list_name.replace(/[^a-z0-9]+/gi, "-") || "rate-list"}.pdf`);
+    } catch (err) {
+      notify(err.message);
+    }
+  };
 
   return (
-    <div
-      dir={dir}
-      style={{
-        fontFamily: isUrdu
-          ? "'Noto Nastaliq Urdu', serif"
-          : "'Poppins', Helvetica, 'Helvetica Neue', Arial, sans-serif",
-      }}
-      className="min-h-screen bg-[#f8fafc] p-3 sm:p-4 pb-16"
-    >
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
-      />
+    <div dir={isUrdu ? "rtl" : "ltr"} className="min-h-screen bg-[#F4F7FB] px-3 py-4 text-slate-900 sm:px-5 lg:px-6">
+      {toast && <div className="fixed bottom-5 right-5 z-[140] rounded-xl bg-[#13263A] px-4 py-3 text-sm font-bold text-white shadow-xl">{toast}</div>}
 
-      <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap"
-        rel="stylesheet"
-      />
-
-      <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        @keyframes rateSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(14px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes rateFadeIn {
-          from {
-            opacity: 0;
-          }
-
-          to {
-            opacity: 1;
-          }
-        }
-
-        .rate-slide-up {
-          animation: rateSlideUp .28s ease-out both;
-        }
-
-        .rate-fade-in {
-          animation: rateFadeIn .18s ease-out both;
-        }
-
-        .rate-btn {
-          transition: all .15s ease;
-        }
-
-        .rate-btn:hover {
-          transform: translateY(-1px);
-        }
-
-        .rate-field {
-          height: 40px;
-          border-radius: 10px;
-          border: 1px solid #cbd5e1;
-          background: #fff;
-          color: #0f172a;
-          font-size: 12px;
-          font-weight: 700;
-          outline: none;
-          transition: all .15s ease;
-        }
-
-        .rate-field:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, .14);
-        }
-
-        .rate-price-grid {
-          display: grid;
-          grid-template-columns:
-            minmax(190px, 2fr)
-            minmax(190px, 2fr)
-            minmax(145px, 1.25fr)
-            minmax(112px, 1fr)
-            minmax(126px, 1fr)
-            minmax(126px, 1fr);
-          gap: 10px;
-          align-items: end;
-        }
-
-        @media (max-width: 1100px) {
-          .rate-price-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-
-        @media (max-width: 640px) {
-          .rate-price-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .rate-price-label {
-          min-height: 18px;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          white-space: nowrap;
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: .05em;
-          text-transform: uppercase;
-          color: #475569;
-          margin-bottom: 6px;
-          line-height: 1;
-        }
-
-        .rate-table thead th {
-          background: #0f172a;
-          color: #f8fafc;
-          font-size: 10.5px;
-          font-weight: 800;
-          letter-spacing: .04em;
-          text-transform: uppercase;
-          padding: 10px 12px;
-          white-space: nowrap;
-        }
-
-        .rate-table tbody td {
-          padding: 12px;
-          font-size: 12px;
-          color: #334155;
-          border-bottom: 1px solid #eef2f7;
-          vertical-align: top;
-        }
-
-        .rate-table tbody tr:hover td {
-          background: #f8fafc;
-        }
-
-        .rate-scroll::-webkit-scrollbar {
-          width: 6px;
-          height: 6px;
-        }
-
-        .rate-scroll::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-
-        .rate-scroll::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 999px;
-        }
-      `}</style>
-
-      {message.text && (
-        <div
-          className={`rate-fade-in fixed bottom-6 ${
-            isUrdu ? "left-6" : "right-6"
-          } z-[80] px-4 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold flex items-center gap-2 ${
-            message.type === "error" ? "bg-rose-600" : "bg-emerald-600"
-          }`}
-        >
-          <i
-            className={`bi ${
-              message.type === "error"
-                ? "bi-exclamation-triangle-fill"
-                : "bi-check-circle-fill"
-            }`}
-          ></i>
-          {message.text}
-        </div>
-      )}
-
-      {translating && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] px-4 py-3 rounded-2xl shadow-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2">
-          <i className="bi bi-arrow-repeat animate-spin"></i>
-          {t.translating}
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto">
-        <div className="rate-slide-up bg-white border border-slate-200 rounded-[18px] sm:rounded-[22px] shadow-sm px-4 sm:px-5 py-4 mb-5">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-            <div className={isUrdu ? "text-right" : ""}>
-              <h1 className="m-0 text-[22px] sm:text-[28px] leading-tight font-black tracking-tight text-slate-900">
-                {t.title}
-              </h1>
-              <p className="m-0 mt-1 text-[13px] font-medium text-slate-400">
-                {t.subtitle}
-              </p>
-            </div>
-
-            <div
-              className={`grid grid-cols-1 sm:grid-cols-2 lg:flex gap-2 w-full lg:w-auto ${
-                isUrdu ? "lg:flex-row-reverse" : ""
-              }`}
-            >
-              <button
-                onClick={handleLangToggle}
-                disabled={translating}
-                className="rate-btn w-full lg:w-auto justify-center h-10 inline-flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <i
-                  className={`bi ${
-                    translating
-                      ? "bi-arrow-repeat animate-spin"
-                      : "bi-translate"
-                  }`}
-                ></i>
-                {t.toggleLang}
-              </button>
-
-              <button
-                onClick={() => setShowSummary((value) => !value)}
-                className={`rate-btn w-full lg:w-auto justify-center h-10 inline-flex items-center gap-2 px-4 rounded-xl text-sm font-bold border ${
-                  showSummary
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <i className="bi bi-bar-chart-line-fill"></i>
-                {t.summaryBtn}
-                <i
-                  className={`bi bi-chevron-${
-                    showSummary ? "up" : "down"
-                  } text-[10px]`}
-                ></i>
-              </button>
-
-              <button
-                onClick={() =>
-                  downloadRatePdf(
-                    filtered,
-                    lang,
-                    {
-                      productMap,
-                      categoryMap,
-                      productTypeMap,
-                      unitMap,
-                    },
-                    urduCache
-                  )
-                }
-                className="rate-btn w-full lg:w-auto justify-center h-10 inline-flex items-center gap-2 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50"
-              >
-                <i className="bi bi-file-earmark-pdf-fill"></i>
-                {t.downloadPdf}
-              </button>
-
-              <button
-                onClick={openAdd}
-                className="rate-btn w-full lg:w-auto justify-center h-10 inline-flex items-center gap-2 px-4 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 shadow-lg shadow-indigo-200"
-              >
-                <i className="bi bi-plus-circle-fill"></i>
-                {t.addBtn}
-              </button>
-            </div>
+      <div className="mx-auto max-w-[1500px]">
+        <section className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:px-5">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#4A86F7]">Ali Cages ERP</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#13263A]">{t.title}</h1>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">{t.subtitle}</p>
           </div>
-
-          {showSummary && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5 pt-5 border-t border-slate-100">
-              <SummaryCard
-                icon="bi-tags-fill"
-                label={t.totalProducts}
-                value={summary.total}
-                color="indigo"
-              />
-
-              <SummaryCard
-                icon="bi-layers-fill"
-                label={t.totalPriceSets}
-                value={summary.totalPriceSets}
-                color="emerald"
-              />
-            </div>
-          )}
-        </div>
-
-        <div
-          className={`flex flex-col lg:flex-row lg:items-center gap-3 mb-5 ${
-            isUrdu ? "lg:flex-row-reverse" : ""
-          }`}
-        >
-          <div className="relative w-full lg:max-w-md">
-            <i
-              className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 text-sm ${
-                isUrdu ? "right-3" : "left-3"
-              }`}
-            ></i>
-
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t.searchPlaceholder}
-              className={`w-full h-10 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 shadow-sm ${
-                isUrdu ? "pr-10 pl-3 text-right" : "pl-10 pr-3"
-              }`}
-            />
-          </div>
-
-          <div
-            className={`flex gap-2 overflow-x-auto pb-1 rate-scroll ${
-              isUrdu ? "flex-row-reverse" : ""
-            }`}
-          >
-            <button
-              onClick={() => setFilterCategory("")}
-              className={`rate-btn shrink-0 h-9 px-3 rounded-xl text-xs font-black border ${
-                !filterCategory
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              <i className="bi bi-list-ul me-1"></i>
-              {t.all}
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setLang((v) => (v === "en" ? "ur" : "en"))} className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50">{t.toggleLang}</button>
+            <button onClick={newList} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#4A86F7] px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-600">
+              <Plus size={15} /> {t.newList}
             </button>
-
-            {usedCategories.map((catId) => (
-              <button
-                key={catId}
-                onClick={() =>
-                  setFilterCategory(
-                    String(filterCategory) === String(catId) ? "" : catId
-                  )
-                }
-                className={`rate-btn shrink-0 h-9 px-3 rounded-xl text-xs font-black border ${
-                  String(filterCategory) === String(catId)
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <span className={translating ? "opacity-40" : ""}>
-                  {getCategoryName(catId)}
-                </span>
-              </button>
-            ))}
           </div>
-        </div>
+        </section>
 
-        {showForm && (
-          <RateFormModal
-            t={t}
-            dir={dir}
-            isUrdu={isUrdu}
-            editingId={editingId}
-            form={form}
-            setForm={setForm}
-            products={products}
-            customers={customers}
-            categories={categories}
-            types={types}
-            units={units}
-            submitting={submitting}
-            translating={translating}
-            getProductName={getProductName}
-            updatePriceRow={updatePriceRow}
-            addPriceRow={addPriceRow}
-            removePriceRow={removePriceRow}
-            handleSave={handleSave}
-            onClose={() => setShowForm(false)}
-          />
-        )}
+        <section className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-blue-50 p-2 text-blue-600"><ListChecks size={18}/></span><div><p className="text-xs text-slate-500">{t.title}</p><b className="text-xl text-[#13263A]">{lists.length}</b></div></div></div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-emerald-50 p-2 text-emerald-600"><BadgeDollarSign size={18}/></span><div><p className="text-xs text-slate-500">{t.products}</p><b className="text-xl text-[#13263A]">{products.length}</b></div></div></div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-violet-50 p-2 text-violet-600"><Users size={18}/></span><div><p className="text-xs text-slate-500">{t.customers}</p><b className="text-xl text-[#13263A]">{customers.length}</b></div></div></div>
+        </section>
 
-        <div className="rate-slide-up bg-white border border-slate-200 rounded-[18px] sm:rounded-2xl overflow-hidden shadow-sm">
-          <div className="hidden md:block overflow-x-auto rate-scroll">
-            <table className="rate-table w-full min-w-[1100px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-center w-12">#</th>
-                  <th className={isUrdu ? "text-right" : "text-left"}>{t.rateListName}</th>
-                  <th className={isUrdu ? "text-right" : "text-left"}>{t.customer}</th>
-                  <th className={isUrdu ? "text-right" : "text-left"}>
-                    {t.productItem}
-                  </th>
-                  <th className={isUrdu ? "text-right" : "text-left"}>
-                    {t.category}
-                  </th>
-                  <th className={isUrdu ? "text-right" : "text-left"}>
-                    {t.type}
-                  </th>
-                  <th className="text-center">{t.unit}</th>
-                  <th className={isUrdu ? "text-left" : "text-right"}>
-                    {t.singleRate}
-                  </th>
-                  <th className={isUrdu ? "text-left" : "text-right"}>
-                    {t.retailRate}
-                  </th>
-                  <th className={isUrdu ? "text-left" : "text-right"}>
-                    {t.wholesaleRate}
-                  </th>
-                  <th className={isUrdu ? "text-left" : "text-right"}>
-                    {t.distributorRate}
-                  </th>
-                  <th className="text-center w-28">{t.actions}</th>
-                </tr>
+        <section className="mt-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-md">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchLists} className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-[#4A86F7] focus:bg-white" />
+            </div>
+            <p className="text-xs font-semibold text-slate-400">{filteredLists.length} {t.title}</p>
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[980px] text-sm">
+              <thead className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+                <tr><th className="px-4 py-3 text-left">{t.listName}</th><th className="px-4 py-3 text-center">{t.products}</th><th className="px-4 py-3 text-left">{t.assignedCustomers}</th><th className="px-4 py-3 text-left">{t.updated}</th><th className="px-4 py-3 text-center">{t.actions}</th></tr>
               </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={12} className="!py-14 text-center text-slate-400">
-                      <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                      <p className="mt-2 text-sm font-semibold">{t.loading}</p>
-                    </td>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? <tr><td colSpan="5" className="px-4 py-10 text-center text-slate-400">{t.loading}</td></tr> : filteredLists.length === 0 ? <tr><td colSpan="5" className="px-4 py-10 text-center text-slate-400">{t.noLists}</td></tr> : filteredLists.map((list) => (
+                  <tr key={list.list_name} className="hover:bg-slate-50/70">
+                    <td className="px-4 py-4"><div className="font-extrabold text-[#13263A]">{list.list_name}</div><div className="mt-1 text-[11px] text-slate-400">Rate list</div></td>
+                    <td className="px-4 py-4 text-center"><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{list.product_count}</span></td>
+                    <td className="px-4 py-4"><div className="flex max-w-xl flex-wrap gap-1">{(list.assigned_customers || []).length ? (list.assigned_customers || []).slice(0,4).map((c) => <span key={c.customer_id} className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">{c.customer_name}</span>) : <span className="text-xs text-slate-400">{t.global}</span>}{(list.assigned_customers || []).length > 4 && <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">+{list.assigned_customers.length - 4}</span>}</div></td>
+                    <td className="px-4 py-4 text-xs text-slate-500">{list.updated_at ? new Date(list.updated_at).toLocaleString() : "—"}</td>
+                    <td className="px-4 py-4"><div className="flex items-center justify-center gap-1.5"><Action icon={<Eye size={14}/>} label={t.details} onClick={() => showDetails(list)}/><Action icon={<UserPlus size={14}/>} label={t.assign} onClick={() => openAssign(list)}/><Action icon={<Edit3 size={14}/>} label={t.edit} onClick={() => editList(list)}/><Action icon={<Download size={14}/>} label={t.exportPdf} onClick={() => exportPdf(list)}/><Action danger icon={<Trash2 size={14}/>} label={t.delete} onClick={() => removeList(list)}/></div></td>
                   </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={12}
-                      className="!py-14 text-center text-slate-400 text-sm font-semibold"
-                    >
-                      {t.noRecords}
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((rate, index) => (
-                    <RateDesktopRow
-                      key={rate.id}
-                      rate={rate}
-                      index={index}
-                      t={t}
-                      isUrdu={isUrdu}
-                      translating={translating}
-                      getProductName={getProductName}
-                      getCategoryName={getCategoryName}
-                      getTypeName={getTypeName}
-                      getUnitName={getUnitName}
-                      openEdit={openEdit}
-                      handleDelete={handleDelete}
-                    />
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
 
-          <div className="md:hidden">
-            {loading ? (
-              <div className="px-6 py-10 text-center text-slate-400">
-                <i className="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                <p className="mt-2 text-sm font-semibold">{t.loading}</p>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="px-6 py-10 text-center text-slate-400 text-sm font-semibold">
-                {t.noRecords}
-              </div>
-            ) : (
-              <div className="p-3 space-y-3">
-                {filtered.map((rate, index) => (
-                  <RateMobileCard
-                    key={rate.id}
-                    rate={rate}
-                    index={index}
-                    t={t}
-                    isUrdu={isUrdu}
-                    translating={translating}
-                    getProductName={getProductName}
-                    getCategoryName={getCategoryName}
-                    getTypeName={getTypeName}
-                    getUnitName={getUnitName}
-                    openEdit={openEdit}
-                    handleDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="grid gap-3 p-3 md:hidden">
+            {loading ? <div className="py-10 text-center text-sm text-slate-400">{t.loading}</div> : filteredLists.length === 0 ? <div className="py-10 text-center text-sm text-slate-400">{t.noLists}</div> : filteredLists.map((list) => (
+              <article key={list.list_name} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate font-extrabold text-[#13263A]">{list.list_name}</h3><p className="mt-1 text-xs text-slate-500">{list.product_count} {t.products} · {(list.assigned_customer_ids || []).length} {t.customers}</p></div><span className="rounded-lg bg-blue-50 p-2 text-blue-600"><BadgeDollarSign size={16}/></span></div>
+                <button onClick={() => showDetails(list)} className="mt-4 flex h-10 w-full items-center justify-between rounded-lg bg-[#13263A] px-3 text-xs font-bold text-white"><span className="inline-flex items-center gap-2"><Eye size={14}/>{t.details}</span><ChevronRight size={14}/></button>
+                <div className="mt-2 grid grid-cols-2 gap-2"><button onClick={() => openAssign(list)} className="h-9 rounded-lg border border-blue-100 bg-blue-50 text-xs font-bold text-blue-700">{t.assign}</button><button onClick={() => editList(list)} className="h-9 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700">{t.edit}</button></div>
+              </article>
+            ))}
           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SummaryCard = ({ icon, label, value, color }) => {
-  const colorClass =
-    color === "emerald"
-      ? "border-emerald-100 bg-emerald-50/70 text-emerald-600"
-      : "border-indigo-100 bg-indigo-50/70 text-indigo-600";
-
-  return (
-    <div className={`rounded-2xl border p-4 ${colorClass}`}>
-      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm mb-3">
-        <i className={`bi ${icon}`}></i>
+        </section>
       </div>
 
-      <p className="m-0 text-xs font-bold text-slate-500">{label}</p>
-      <p className="m-0 mt-1 text-3xl font-black text-slate-950">{value}</p>
-    </div>
-  );
-};
-
-const RateFormModal = ({
-  t,
-  dir,
-  isUrdu,
-  editingId,
-  form,
-  setForm,
-  products,
-  customers,
-  categories,
-  types,
-  units,
-  submitting,
-  getProductName,
-  updatePriceRow,
-  addPriceRow,
-  removePriceRow,
-  handleSave,
-  onClose,
-}) => {
-  return (
-    <div className="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-sm p-0 sm:p-5 overflow-y-auto">
-      <div
-        className="rate-slide-up mx-auto w-full sm:max-w-[1180px] min-h-screen sm:min-h-0 sm:max-h-[calc(100vh-36px)] bg-white sm:rounded-[22px] shadow-2xl border border-white/70 overflow-hidden flex flex-col"
-        dir={dir}
-      >
-        <div
-          className={`sticky top-0 z-20 bg-white border-b border-slate-200 px-4 sm:px-5 py-4 flex items-center justify-between gap-4 ${
-            isUrdu ? "flex-row-reverse" : ""
-          }`}
-        >
-          <div
-            className={`flex items-center gap-3 min-w-0 ${
-              isUrdu ? "flex-row-reverse text-right" : ""
-            }`}
-          >
-            <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
-              <i className="bi bi-tags-fill text-lg"></i>
+      {formOpen && (
+        <Modal wide title={originalName ? `${t.edit}: ${originalName}` : t.newList} onClose={() => setFormOpen(false)}>
+          <div className="p-3 sm:p-5">
+            <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(240px,360px)_1fr]">
+              <div><label className="mb-1.5 block text-[11px] font-extrabold uppercase text-slate-500">{t.listName}</label><input value={listName} onChange={(e) => setListName(e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[#4A86F7]" placeholder="e.g. Dealer A / Retail 2026" /></div>
+              <div><label className="mb-1.5 block text-[11px] font-extrabold uppercase text-slate-500">{t.productSearch}</label><div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-[#4A86F7] focus:bg-white" placeholder={t.productSearch}/></div></div>
+              <p className="lg:col-span-2 text-xs text-slate-500">{t.allProductsHint}</p>
             </div>
 
-            <div className="min-w-0">
-              <div
-                className={`flex items-center gap-2 flex-wrap ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <h2 className="m-0 text-lg sm:text-xl font-black text-slate-950 tracking-tight">
-                  {editingId ? t.edit : t.addBtn}
-                </h2>
-
-                {form.product_id && (
-                  <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[11px] font-black uppercase tracking-wide truncate max-w-[180px] sm:max-w-[280px]">
-                    {getProductName(form.product_id)}
-                  </span>
-                )}
-              </div>
-
-              <p className="m-0 mt-1 text-[12px] font-medium text-slate-500">
-                {t.subtitle}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition flex items-center justify-center shrink-0"
-            aria-label="Close"
-          >
-            <i className="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto rate-scroll bg-slate-50 p-3 sm:p-4 space-y-4">
-          <section className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.rateListName}</label>
-                <input value={form.list_name || ""} onChange={(e) => setForm((prev) => ({...prev, list_name:e.target.value}))} placeholder={t.rateListPlaceholder} className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`} />
-              </div>
-              <div>
-                <label className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${isUrdu ? "text-right" : ""}`}>{t.customer}</label>
-                <select value={form.customer_id || ""} onChange={(e) => setForm((prev) => ({...prev, customer_id:e.target.value}))} className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}>
-                  <option value="">{t.selectCustomer}</option>
-                  {(customers || []).map((customer) => <option key={customer.id} value={customer.id}>{customer.customer_name_en || customer.name || `#${customer.id}`}</option>)}
-                </select>
+            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="max-h-[62vh] overflow-auto">
+                <table className="w-full min-w-[1050px] text-xs">
+                  <thead className="sticky top-0 z-10 bg-[#13263A] text-[10px] font-extrabold uppercase tracking-wide text-white/80"><tr><th className="px-3 py-3 text-left">#</th><th className="px-3 py-3 text-left">{t.product}</th><th className="px-3 py-3 text-left">{t.category}</th><th className="px-3 py-3 text-left">{t.type}</th><th className="px-3 py-3 text-left">{t.unit}</th><th className="px-2 py-3">{t.single}</th><th className="px-2 py-3">{t.retail}</th><th className="px-2 py-3">{t.wholesale}</th><th className="px-2 py-3">{t.distributor}</th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibleRows.length === 0 ? <tr><td colSpan="9" className="px-4 py-10 text-center text-slate-400">{t.noProducts}</td></tr> : visibleRows.map((row, index) => (
+                      <tr key={row.product_id} className="hover:bg-blue-50/30"><td className="px-3 py-2 font-mono text-slate-400">{index+1}</td><td className="px-3 py-2 font-extrabold text-[#13263A]">{row.product_name}</td><td className="px-3 py-2 text-slate-500">{row.category_name}</td><td className="px-3 py-2 text-slate-500">{row.type_name}</td><td className="px-3 py-2 text-slate-500">{row.unit_name}</td>{["single_rate","retail_rate","wholesale_rate","distributor_rate"].map((field) => <td key={field} className="px-2 py-2"><input type="number" min="0" step="0.01" value={row[field]} onChange={(e) => changeRate(row.product_id, field, e.target.value)} className="h-9 w-24 rounded-lg border border-slate-200 px-2 text-right font-mono font-bold outline-none focus:border-[#4A86F7]" placeholder="0"/></td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </section>
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div
-              className={`px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 ${
-                isUrdu ? "flex-row-reverse text-right" : ""
-              }`}
-            >
-              <div
-                className={`flex items-center gap-3 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                  <i className="bi bi-box-seam-fill"></i>
-                </div>
-
-                <div>
-                  <h3 className="m-0 text-sm font-black text-slate-950">
-                    {t.productItemLabel}
-                  </h3>
-                  <p className="m-0 mt-0.5 text-[11px] font-medium text-slate-500">
-                    {t.productHint}
-                  </p>
-                </div>
-              </div>
-
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5">
-                <i className="bi bi-asterisk text-rose-500"></i>
-                {t.required}
-              </span>
-            </div>
-
-            <div className="p-4">
-              <label
-                className={`block text-[10px] font-black uppercase tracking-wide text-slate-500 mb-1.5 ${
-                  isUrdu ? "text-right" : ""
-                }`}
-              >
-                {t.productItemLabel} <span className="text-rose-500">*</span>
-              </label>
-
-              <select
-                value={form.product_id}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    product_id: event.target.value,
-                  }))
-                }
-                className={`rate-field w-full px-3 ${
-                  isUrdu ? "text-right" : ""
-                }`}
-              >
-                <option value="">{t.selectProduct}</option>
-
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name ||
-                      product.name_en ||
-                      product.product_name ||
-                      product.product_item_en ||
-                      `#${product.id}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </section>
-
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div
-              className={`px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
-                isUrdu ? "sm:flex-row-reverse text-right" : ""
-              }`}
-            >
-              <div
-                className={`flex items-center gap-3 ${
-                  isUrdu ? "flex-row-reverse" : ""
-                }`}
-              >
-                <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center">
-                  <i className="bi bi-cash-coin"></i>
-                </div>
-
-                <div>
-                  <h3 className="m-0 text-sm font-black text-slate-950">
-                    {t.totalPriceSets}
-                  </h3>
-                  <p className="m-0 mt-0.5 text-[11px] font-medium text-slate-500">
-                    {t.priceHint}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={addPriceRow}
-                className="rate-btn w-full sm:w-auto justify-center h-9 px-4 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 flex items-center gap-2"
-              >
-                <i className="bi bi-plus-lg"></i>
-                {t.addPriceRow}
-              </button>
-            </div>
-
-            <div className="p-3 sm:p-4 space-y-3">
-              {form.price_options.map((row, index) => (
-                <div
-                  key={index}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden"
-                >
-                  <div
-                    className={`px-3 py-2 bg-white border-b border-slate-100 flex items-center justify-between gap-3 ${
-                      isUrdu ? "flex-row-reverse" : ""
-                    }`}
-                  >
-                    <div
-                      className={`flex items-center gap-2 ${
-                        isUrdu ? "flex-row-reverse" : ""
-                      }`}
-                    >
-                      <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-black font-mono">
-                        {index + 1}
-                      </span>
-
-                      <div>
-                        <p className="m-0 text-sm font-black text-slate-950">
-                          {t.priceGroup} {index + 1}
-                        </p>
-                        <p className="m-0 text-[11px] font-medium text-slate-400">
-                          Retail · Wholesale · Distributor
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => removePriceRow(index)}
-                      disabled={form.price_options.length === 1}
-                      className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center"
-                      title={t.removePriceRow}
-                    >
-                      <i className="bi bi-trash3 text-sm"></i>
-                    </button>
-                  </div>
-
-                  <div className="p-3 rate-price-grid">
-                    <PriceSelect
-                      label={t.categoryLabel}
-                      required
-                      value={row.category_id}
-                      onChange={(value) =>
-                        updatePriceRow(index, "category_id", value)
-                      }
-                      placeholder={t.selectCategory}
-                      items={categories}
-                      isUrdu={isUrdu}
-                      getLabel={(item) =>
-                        item.name ||
-                        item.name_en ||
-                        item.category_name ||
-                        `#${item.id}`
-                      }
-                    />
-
-                    <PriceSelect
-                      label={t.typeLabel}
-                      required
-                      value={row.product_type_id}
-                      onChange={(value) =>
-                        updatePriceRow(index, "product_type_id", value)
-                      }
-                      placeholder={t.selectType}
-                      items={types}
-                      isUrdu={isUrdu}
-                      getLabel={(item) =>
-                        item.product_type_en ||
-                        item.name ||
-                        item.name_en ||
-                        item.type_name ||
-                        `#${item.id}`
-                      }
-                    />
-
-                    <PriceSelect
-                      label={t.unitLabel}
-                      value={row.unit_id}
-                      onChange={(value) =>
-                        updatePriceRow(index, "unit_id", value)
-                      }
-                      placeholder={t.selectUnit}
-                      items={units}
-                      isUrdu={isUrdu}
-                      getLabel={(item) =>
-                        item.name ||
-                        item.name_en ||
-                        item.unit_name ||
-                        `#${item.id}`
-                      }
-                    />
-
-                    <PriceInput
-                      label={t.singleRate}
-                      value={row.single_rate}
-                      onChange={(value) =>
-                        updatePriceRow(index, "single_rate", value)
-                      }
-                      isUrdu={isUrdu}
-                    />
-
-                    <PriceInput
-                      label={t.retailRate}
-                      value={row.retail_rate}
-                      onChange={(value) =>
-                        updatePriceRow(index, "retail_rate", value)
-                      }
-                      isUrdu={isUrdu}
-                    />
-
-                    <PriceInput
-                      label={t.wholesaleRate}
-                      value={row.wholesale_rate}
-                      onChange={(value) =>
-                        updatePriceRow(index, "wholesale_rate", value)
-                      }
-                      isUrdu={isUrdu}
-                    />
-
-                    <PriceInput
-                      label={t.distributorRate}
-                      value={row.distributor_rate}
-                      onChange={(value) =>
-                        updatePriceRow(index, "distributor_rate", value)
-                      }
-                      isUrdu={isUrdu}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <div
-          className={`sticky bottom-0 z-20 bg-white border-t border-slate-200 px-4 sm:px-5 py-3 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3 items-center ${
-            isUrdu ? "sm:[direction:rtl]" : ""
-          }`}
-        >
-          <div
-            className={`hidden sm:flex items-center gap-2 text-xs font-bold text-slate-500 ${
-              isUrdu ? "flex-row-reverse text-right" : ""
-            }`}
-          >
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <i className="bi bi-shield-check"></i>
-            </span>
-            {t.readyToSave}
+            <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button onClick={() => setFormOpen(false)} className="h-10 rounded-lg border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 hover:bg-slate-50">{t.cancel}</button><button disabled={saving} onClick={saveList} className="h-10 rounded-lg bg-[#4A86F7] px-5 text-xs font-bold text-white shadow-sm hover:bg-blue-600 disabled:opacity-50">{saving ? t.saving : t.save}</button></div>
           </div>
+        </Modal>
+      )}
 
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="rate-btn h-11 sm:min-w-[150px] rounded-xl bg-white border border-slate-300 text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-60"
-          >
-            {t.cancel}
-          </button>
-
-          <button
-            onClick={handleSave}
-            disabled={submitting}
-            className="rate-btn h-11 sm:min-w-[170px] rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <i
-              className={`bi ${
-                submitting ? "bi-arrow-repeat animate-spin" : "bi-save-fill"
-              }`}
-            ></i>
-            {submitting ? t.saving : t.save}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const PriceSelect = ({
-  label,
-  required = false,
-  value,
-  onChange,
-  placeholder,
-  items,
-  isUrdu,
-  getLabel,
-}) => (
-  <div>
-    <label
-      className={`rate-price-label ${
-        isUrdu ? "justify-end text-right" : ""
-      }`}
-    >
-      {label}
-      {required && <span className="text-rose-500">*</span>}
-    </label>
-
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={`rate-field w-full px-3 ${isUrdu ? "text-right" : ""}`}
-    >
-      <option value="">{placeholder}</option>
-
-      {items.map((item) => (
-        <option key={item.id} value={item.id}>
-          {getLabel(item)}
-        </option>
-      ))}
-    </select>
-  </div>
-);
-
-const PriceInput = ({ label, value, onChange, isUrdu }) => (
-  <div>
-    <label
-      className={`rate-price-label ${
-        isUrdu ? "justify-end text-right" : ""
-      }`}
-    >
-      {label}
-    </label>
-
-    <input
-      type="number"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={`rate-field w-full px-3 font-mono text-right ${
-        isUrdu ? "text-left" : ""
-      }`}
-      placeholder="0"
-    />
-  </div>
-);
-
-const RateDesktopRow = ({
-  rate,
-  index,
-  t,
-  isUrdu,
-  translating,
-  getProductName,
-  getCategoryName,
-  getTypeName,
-  getUnitName,
-  openEdit,
-  handleDelete,
-}) => {
-  const priceOptions = normalizePriceOptions(rate);
-
-  return (
-    <tr className="align-top">
-      <td className="text-center text-slate-400 font-mono text-xs font-bold">
-        {index + 1}
-      </td>
-      <td className={`font-black text-indigo-700 ${isUrdu ? "text-right" : ""}`}>{rate.list_name || "Default Rate List"}</td>
-      <td className={`font-semibold text-slate-600 ${isUrdu ? "text-right" : ""}`}>{rate.customer_name || "—"}</td>
-
-      <td
-        className={`font-black text-slate-950 ${
-          isUrdu ? "text-right" : ""
-        }`}
-      >
-        <div
-          className={`flex items-center gap-3 ${
-            isUrdu ? "flex-row-reverse" : ""
-          }`}
-        >
-          <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <i className="bi bi-box-seam-fill"></i>
-          </span>
-
-          <span className={translating ? "opacity-40" : ""}>
-            {getProductName(rate.product_id)}
-          </span>
-        </div>
-      </td>
-
-      <td className={isUrdu ? "text-right" : ""}>
-        <div className="space-y-1.5">
-          {priceOptions.map((price, idx) => (
-            <div key={idx}>
-              <span
-                className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100 ${
-                  translating ? "opacity-40" : ""
-                }`}
-              >
-                {getCategoryName(price.category_id)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </td>
-
-      <td className={isUrdu ? "text-right" : ""}>
-        <div className="space-y-1.5">
-          {priceOptions.map((price, idx) => (
-            <div key={idx}>
-              <span
-                className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-black bg-violet-50 text-violet-700 border border-violet-100 ${
-                  translating ? "opacity-40" : ""
-                }`}
-              >
-                {getTypeName(price.product_type_id)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </td>
-
-      <td className="text-center">
-        <div className="space-y-1.5">
-          {priceOptions.map((price, idx) => (
-            <div key={idx}>
-              <span
-                className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-black bg-slate-100 text-slate-700 border border-slate-200 ${
-                  translating ? "opacity-40" : ""
-                }`}
-              >
-                {getUnitName(price.unit_id)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </td>
-
-      <td className={isUrdu ? "text-left" : "text-right"}>
-        <RateAmountList
-          values={priceOptions.map((price) => price.single_rate)}
-          color="violet"
-        />
-      </td>
-
-      <td className={isUrdu ? "text-left" : "text-right"}>
-        <RateAmountList
-          values={priceOptions.map((price) => price.retail_rate)}
-          color="emerald"
-        />
-      </td>
-
-      <td className={isUrdu ? "text-left" : "text-right"}>
-        <RateAmountList
-          values={priceOptions.map((price) => price.wholesale_rate)}
-          color="blue"
-        />
-      </td>
-
-      <td className={isUrdu ? "text-left" : "text-right"}>
-        <RateAmountList
-          values={priceOptions.map((price) => price.distributor_rate)}
-          color="amber"
-        />
-      </td>
-
-      <td>
-        <div
-          className={`flex items-center justify-center gap-2 ${
-            isUrdu ? "flex-row-reverse" : ""
-          }`}
-        >
-          <button
-            onClick={() => openEdit(rate)}
-            className="rate-btn w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 flex items-center justify-center"
-            title={t.edit}
-          >
-            <i className="bi bi-pencil-square"></i>
-          </button>
-
-          <button
-            onClick={() => handleDelete(rate.id)}
-            className="rate-btn w-9 h-9 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100 flex items-center justify-center"
-            title={t.delete}
-          >
-            <i className="bi bi-trash3-fill"></i>
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-};
-
-const RateAmountList = ({ values, color }) => {
-  const colorClass =
-    color === "emerald"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-      : color === "blue"
-      ? "bg-blue-50 text-blue-700 border-blue-100"
-      : color === "violet"
-      ? "bg-violet-50 text-violet-700 border-violet-100"
-      : "bg-amber-50 text-amber-700 border-amber-100";
-
-  return (
-    <div className="space-y-1.5">
-      {values.map((value, index) => (
-        <div key={index}>
-          <span
-            className={`inline-flex px-2 py-0.5 rounded-lg font-mono font-black border ${colorClass}`}
-          >
-            {fmt(value)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const RateMobileCard = ({
-  rate,
-  index,
-  t,
-  isUrdu,
-  translating,
-  getProductName,
-  getCategoryName,
-  getTypeName,
-  getUnitName,
-  openEdit,
-  handleDelete,
-}) => {
-  const priceOptions = normalizePriceOptions(rate);
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
-      <div
-        className={`flex items-start justify-between gap-3 ${
-          isUrdu ? "flex-row-reverse" : ""
-        }`}
-      >
-        <div
-          className={`flex items-center gap-3 min-w-0 ${
-            isUrdu ? "flex-row-reverse" : ""
-          }`}
-        >
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
-            <i className="bi bi-box-seam-fill"></i>
+      {assignList && (
+        <Modal title={`${t.assign}: ${assignList.list_name}`} onClose={() => setAssignList(null)}>
+          <div className="p-4 sm:p-5">
+            <p className="mb-3 text-xs text-slate-500">{t.assignedHint}</p>
+            <div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder={t.customerSearch} className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-[#4A86F7]"/></div>
+            <div className="mt-3 flex items-center justify-between text-xs"><span className="font-bold text-slate-600">{assignedIds.length} {t.selected}</span><button onClick={() => setAssignedIds([])} className="font-bold text-blue-600">Clear</button></div>
+            <div className="mt-2 max-h-[52vh] space-y-2 overflow-y-auto pr-1">{visibleCustomers.length === 0 ? <div className="py-8 text-center text-sm text-slate-400">{t.noCustomers}</div> : visibleCustomers.map((customer) => { const checked = assignedIds.includes(Number(customer.id)); return <button key={customer.id} onClick={() => toggleCustomer(customer.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${checked ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-md border ${checked ? "border-[#4A86F7] bg-[#4A86F7] text-white" : "border-slate-300 bg-white text-transparent"}`}><Check size={14}/></span><span className="min-w-0 flex-1"><b className="block truncate text-sm text-[#13263A]">{customerName(customer)}</b><span className="text-[11px] text-slate-400">{customer.phone || "—"} · {customer.city_en || "—"}</span></span></button>; })}</div>
+            <div className="mt-4 flex justify-end gap-2"><button onClick={() => setAssignList(null)} className="h-10 rounded-lg border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700">{t.cancel}</button><button disabled={assignSaving} onClick={saveAssignments} className="h-10 rounded-lg bg-[#4A86F7] px-5 text-xs font-bold text-white disabled:opacity-50">{assignSaving ? t.saving : t.assign}</button></div>
           </div>
+        </Modal>
+      )}
 
-          <div className="min-w-0">
-            <p className="text-[11px] text-slate-400 font-bold">
-              #{index + 1}
-            </p>
-
-            <h3
-              className={`font-extrabold text-slate-950 text-sm truncate ${
-                translating ? "opacity-40" : ""
-              }`}
-            >
-              {getProductName(rate.product_id)}
-            </h3>
-
-            <p className="text-[11px] font-black text-indigo-700 mt-0.5">{rate.list_name || "Default Rate List"}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{rate.customer_name || "—"} · {priceOptions.length} {t.priceGroup}</p>
-          </div>
-        </div>
-
-        <span className="shrink-0 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-black border border-indigo-100">
-          {t.totalPriceSets}: {priceOptions.length}
-        </span>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {priceOptions.map((price, priceIndex) => (
-          <div
-            key={priceIndex}
-            className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3"
-          >
-            <div
-              className={`flex items-center justify-between gap-2 mb-3 ${
-                isUrdu ? "flex-row-reverse" : ""
-              }`}
-            >
-              <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs font-black font-mono">
-                {priceIndex + 1}
-              </span>
-
-              <span className="text-xs font-black text-slate-500">
-                {t.priceGroup} {priceIndex + 1}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              <InfoLine
-                label={t.category}
-                value={getCategoryName(price.category_id)}
-                color="indigo"
-                translating={translating}
-              />
-
-              <InfoLine
-                label={t.type}
-                value={getTypeName(price.product_type_id)}
-                color="violet"
-                translating={translating}
-              />
-
-              <InfoLine
-                label={t.unit}
-                value={getUnitName(price.unit_id)}
-                color="slate"
-                translating={translating}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
-              <RateMiniAmount
-                label={t.singleRate}
-                value={price.single_rate}
-                color="violet"
-              />
-
-              <RateMiniAmount
-                label={t.retailRate}
-                value={price.retail_rate}
-                color="emerald"
-              />
-
-              <RateMiniAmount
-                label={t.wholesaleRate}
-                value={price.wholesale_rate}
-                color="blue"
-              />
-
-              <RateMiniAmount
-                label={t.distributorRate}
-                value={price.distributor_rate}
-                color="amber"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div
-        className={`mt-4 grid grid-cols-2 gap-2 ${
-          isUrdu ? "text-right" : ""
-        }`}
-      >
-        <button
-          onClick={() => openEdit(rate)}
-          className="h-10 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center justify-center gap-1 text-xs font-bold border border-indigo-100"
-        >
-          <i className="bi bi-pencil-square"></i>
-          {t.edit}
-        </button>
-
-        <button
-          onClick={() => handleDelete(rate.id)}
-          className="h-10 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 transition flex items-center justify-center gap-1 text-xs font-bold border border-rose-100"
-        >
-          <i className="bi bi-trash3-fill"></i>
-          {t.delete}
-        </button>
-      </div>
+      {(detailList || detailLoading) && (
+        <Modal wide title={detailList?.list_name || t.details} onClose={() => setDetailList(null)}>
+          <div className="p-3 sm:p-5">{detailLoading && !detailList ? <div className="py-16 text-center text-sm text-slate-400">{t.loading}</div> : detailList && <>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><InfoCard icon={<BadgeDollarSign size={17}/>} label={t.listName} value={detailList.list_name}/><InfoCard icon={<ListChecks size={17}/>} label={t.products} value={detailList.product_count}/><InfoCard icon={<Users size={17}/>} label={t.customers} value={(detailList.assigned_customer_ids || []).length}/></div>
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><h3 className="text-xs font-extrabold uppercase text-slate-500">{t.assignedCustomers}</h3><div className="mt-2 flex flex-wrap gap-1.5">{(detailList.assigned_customers || []).length ? detailList.assigned_customers.map((c) => <span key={c.customer_id} className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{c.customer_name}</span>) : <span className="text-xs text-slate-400">{t.global}</span>}</div></div>
+            <div className="mt-3 max-h-[58vh] overflow-auto rounded-xl border border-slate-200 bg-white"><table className="w-full min-w-[950px] text-xs"><thead className="sticky top-0 bg-[#13263A] text-[10px] uppercase text-white/80"><tr><th className="px-3 py-3 text-left">#</th><th className="px-3 py-3 text-left">{t.product}</th><th className="px-3 py-3 text-left">{t.category}</th><th className="px-3 py-3 text-left">{t.type}</th><th className="px-3 py-3 text-left">{t.unit}</th><th className="px-3 py-3 text-right">{t.single}</th><th className="px-3 py-3 text-right">{t.retail}</th><th className="px-3 py-3 text-right">{t.wholesale}</th><th className="px-3 py-3 text-right">{t.distributor}</th></tr></thead><tbody className="divide-y divide-slate-100">{(detailList.items || []).map((item, index) => { const p = products.find((x) => String(x.id) === String(item.product_id)) || {}; const opt = firstOption(item); return <tr key={item.id || item.product_id}><td className="px-3 py-2 text-slate-400">{index+1}</td><td className="px-3 py-2 font-bold text-[#13263A]">{productName(p)}</td><td className="px-3 py-2 text-slate-500">{categoryName(p)}</td><td className="px-3 py-2 text-slate-500">{typeName(p)}</td><td className="px-3 py-2 text-slate-500">{unitName(p)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.single_rate)}</td><td className="px-3 py-2 text-right font-mono font-bold text-emerald-700">{money(opt.retail_rate)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.wholesale_rate)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.distributor_rate)}</td></tr>; })}</tbody></table></div>
+          </>}</div>
+        </Modal>
+      )}
     </div>
   );
-};
+}
 
-const InfoLine = ({ label, value, color, translating }) => {
-  const colorClass =
-    color === "indigo"
-      ? "bg-indigo-50 text-indigo-700 border-indigo-100"
-      : color === "violet"
-      ? "bg-violet-50 text-violet-700 border-violet-100"
-      : "bg-slate-100 text-slate-700 border-slate-200";
+function Action({ icon, label, onClick, danger = false }) {
+  return <button onClick={onClick} title={label} className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-bold ${danger ? "border-rose-100 bg-rose-50 text-rose-700 hover:bg-rose-100" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>{icon}<span className="hidden xl:inline">{label}</span></button>;
+}
 
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2">
-      <span className="text-xs text-slate-500 font-bold">{label}</span>
-
-      <span
-        className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${colorClass} ${
-          translating ? "opacity-40" : ""
-        }`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-};
-
-const RateMiniAmount = ({ label, value, color }) => {
-  const colorClass =
-    color === "emerald"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-      : color === "blue"
-      ? "bg-blue-50 text-blue-700 border-blue-100"
-      : color === "violet"
-      ? "bg-violet-50 text-violet-700 border-violet-100"
-      : "bg-amber-50 text-amber-700 border-amber-100";
-
-  return (
-    <div className={`rounded-xl border px-2 py-2 ${colorClass}`}>
-      <p className="text-[9px] font-black leading-tight">{label}</p>
-      <p className="text-xs font-black font-mono mt-1">{fmt(value)}</p>
-    </div>
-  );
-};
-
-export default RateListPage;
+function InfoCard({ icon, label, value }) {
+  return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-blue-50 p-2 text-blue-600">{icon}</span><div><p className="text-[11px] font-bold uppercase text-slate-400">{label}</p><b className="text-base text-[#13263A]">{value}</b></div></div></div>;
+}
