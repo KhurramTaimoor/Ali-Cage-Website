@@ -780,3 +780,65 @@ input, select, textarea, button {
   .camz-app main .primary-btn,
   .camz-app main .secondary-btn { min-height: 36px; }
 }
+
+/* ========================================================================
+   PART 9 — GLOBAL SEARCHABLE LONG LISTS + CAMZ CRM ACTION CONTROLS
+   Any native select with 7+ options is upgraded by GlobalUxEnhancer.
+   data-searchable="true" can force the searchable popup for shorter lists.
+   ======================================================================== */
+.camz-app select[data-search-enhanced="true"],
+.camz-app select[data-searchable="true"] {
+  cursor: text !important;
+  padding-right: 30px !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #91A6C6 50%),
+    linear-gradient(135deg, #91A6C6 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 15px) 50%,
+    calc(100% - 10px) 50% !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+}
+
+[dir="rtl"] .camz-app select[data-search-enhanced="true"],
+[dir="rtl"] .camz-app select[data-searchable="true"] {
+  padding-left: 30px !important;
+  padding-right: 10px !important;
+  background-position: 15px 50%, 10px 50% !important;
+}
+
+/* Camz CRM uses compact icon actions on desktop tables. */
+.camz-app main .invoice-icon-btn {
+  min-height: 34px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+/* Sweep remaining legacy action colors into the same Camz admin language. */
+.camz-app main button.bg-violet-700,
+.camz-app main button.bg-purple-700,
+.camz-app main button.bg-indigo-700,
+.camz-app main button.bg-blue-700,
+.camz-app main button.bg-slate-900,
+.camz-app main a.bg-violet-700,
+.camz-app main a.bg-purple-700,
+.camz-app main a.bg-indigo-700,
+.camz-app main a.bg-blue-700 {
+  background: #0B4E9B !important;
+  border-color: #0B4E9B !important;
+  color: #fff !important;
+}
+.camz-app main button.bg-violet-700:hover,
+.camz-app main button.bg-purple-700:hover,
+.camz-app main button.bg-indigo-700:hover,
+.camz-app main button.bg-blue-700:hover,
+.camz-app main button.bg-slate-900:hover {
+  background: #0A65BD !important;
+  border-color: #0A65BD !important;
+}
+.camz-app main .text-violet-700,
+.camz-app main .text-purple-700,
+.camz-app main .text-indigo-700,
+.camz-app main .text-blue-700 {
+  color: #0B4E9B !important;
+}

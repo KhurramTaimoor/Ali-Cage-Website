@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { escapeHtml, openUnicodePrint, printableText } from "../utils/unicodePrint";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
@@ -376,22 +375,15 @@ function getSignedOpeningBalance(value, type) {
 
 function downloadAllPdf(customers, lang, cache) {
   const t = LANG[lang];
-
-  const doc = new jsPDF({
-    unit: "mm",
-    format: "a4",
-    orientation: "landscape",
-  });
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-
+  const isUrdu = lang === "ur";
+  const dir = isUrdu ? "rtl" : "ltr";
   const totalCustomers = customers.length;
   const totalBalance = customers.reduce(
     (sum, customer) => sum + Number(customer.current_balance || 0),
     0
   );
 
-  const dateStr = new Date().toLocaleString("en-PK", {
+  const dateStr = new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -399,109 +391,108 @@ function downloadAllPdf(customers, lang, cache) {
     minute: "2-digit",
   });
 
-  doc.setFillColor(14, 90, 168);
-  doc.rect(0, 0, pageWidth, 34, "F");
+  const rowsHtml = customers
+    .map((customer, index) => {
+      const name = isUrdu
+        ? cache[`name:${customer.id}`] || customer.customer_name_en || "-"
+        : customer.customer_name_en || "-";
+      const city = isUrdu
+        ? cache[`city:${customer.id}`] || customer.city_en || "-"
+        : customer.city_en || "-";
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(255, 255, 255);
-  doc.text(t.companyName, 14, 14);
+      return `<tr>
+        <td class="center num">${index + 1}</td>
+        <td class="name-cell">${printableText(name)}</td>
+        <td class="center ltr-text">${escapeHtml(customer.phone || "-")}</td>
+        <td>${printableText(city)}</td>
+        <td class="amount num">${escapeHtml(formatBalanceWithSide(customer.current_balance))}</td>
+      </tr>`;
+    })
+    .join("");
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(220, 235, 250);
-  doc.text(t.reportTitle, 14, 22);
-  doc.text(`${t.generated}: ${dateStr}`, pageWidth - 14, 22, {
-    align: "right",
+  const bodyHtml = `
+    <div class="pdf-hint">${
+      isUrdu
+        ? "پی ڈی ایف محفوظ کرنے کے لیے پرنٹ ڈائیلاگ میں Save as PDF منتخب کریں۔"
+        : "Choose Save as PDF in the print dialog. Urdu/Arabic customer names are rendered with Unicode support."
+    }</div>
+    <main class="report-sheet">
+      <header class="report-head">
+        <div>
+          <div class="brand">${escapeHtml(t.companyName)}</div>
+          <div class="report-title">${escapeHtml(t.reportTitle)}</div>
+        </div>
+        <div class="generated">${escapeHtml(t.generated)}: ${escapeHtml(dateStr)}</div>
+      </header>
+
+      <section class="summary-grid">
+        <div class="summary-card">
+          <span>${escapeHtml(t.totalCustomers)}</span>
+          <strong class="num">${totalCustomers}</strong>
+        </div>
+        <div class="summary-card wide">
+          <span>${escapeHtml(t.totalBalance)}</span>
+          <strong class="num">${escapeHtml(formatBalanceWithSide(totalBalance))}</strong>
+        </div>
+      </section>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="center">#</th>
+            <th>${escapeHtml(t.name)}</th>
+            <th class="center">${escapeHtml(t.phone)}</th>
+            <th>${escapeHtml(t.city)}</th>
+            <th class="amount">${escapeHtml(t.amount)}</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml || `<tr><td colspan="5" class="empty">${escapeHtml(t.noRecords)}</td></tr>`}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="total-label">${escapeHtml(t.totalLabel)}</td>
+            <td class="amount num">${escapeHtml(formatBalanceWithSide(totalBalance))}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </main>`;
+
+  return openUnicodePrint({
+    title: `${t.companyName} - ${t.reportTitle}`,
+    bodyHtml,
+    dir,
+    lang,
+    pageSize: "A4 landscape",
+    styles: `
+      .report-sheet{width:100%;margin:0 auto;color:#13263A}
+      .report-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;background:#0B4E9B;color:#fff;padding:16px 18px;border-radius:10px;margin-bottom:16px}
+      .brand{font-size:22px;font-weight:800;line-height:1.3}
+      .report-title{font-size:12px;margin-top:4px;opacity:.88}
+      .generated{font-size:10px;opacity:.9;text-align:${isUrdu ? "left" : "right"}}
+      .summary-grid{display:grid;grid-template-columns:minmax(170px,1fr) minmax(230px,1.15fr);gap:12px;max-width:650px;margin:0 0 18px}
+      .summary-card{background:#F4F7FB;border:1px solid #E2E8F0;border-radius:10px;padding:12px 16px;min-height:68px}
+      .summary-card span{display:block;color:#475569;font-size:9px;margin-bottom:6px}
+      .summary-card strong{display:block;color:#0F172A;font-size:17px}
+      table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9.5px}
+      thead{display:table-header-group}
+      tfoot{display:table-footer-group}
+      tr{break-inside:avoid;page-break-inside:avoid}
+      th{background:#0C2134;color:#fff;border:1px solid #0C2134;padding:7px 8px;text-align:${isUrdu ? "right" : "left"};font-weight:700}
+      td{border:1px solid #CBD5E1;padding:7px 8px;vertical-align:middle;color:#13263A;background:#fff;overflow-wrap:anywhere}
+      tbody tr:nth-child(odd) td{background:#F8FAFC}
+      th:nth-child(1),td:nth-child(1){width:5%}
+      th:nth-child(2),td:nth-child(2){width:36%}
+      th:nth-child(3),td:nth-child(3){width:18%}
+      th:nth-child(4),td:nth-child(4){width:20%}
+      th:nth-child(5),td:nth-child(5){width:21%}
+      .center{text-align:center!important}
+      .amount{text-align:right!important}
+      .name-cell{font-weight:600}
+      .empty{text-align:center;padding:28px;color:#64748B}
+      tfoot td{background:#0C2134!important;color:#fff;font-weight:700}
+      .total-label{text-align:${isUrdu ? "left" : "right"}}
+      @media print{.report-head{border-radius:0}}
+    `,
   });
-
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(10, 42, 85, 24, 3, 3, "F");
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(71, 85, 105);
-  doc.text(t.totalCustomers, 16, 51);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(15, 23, 42);
-  doc.text(String(totalCustomers), 16, 61);
-
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(100, 42, 95, 24, 3, 3, "F");
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(71, 85, 105);
-  doc.text(t.totalBalance, 106, 51);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(
-    totalBalance < 0 ? 190 : 15,
-    totalBalance < 0 ? 18 : 23,
-    totalBalance < 0 ? 60 : 42
-  );
-  doc.text(formatBalanceWithSide(totalBalance), 106, 61);
-
-  const rows = customers.map((customer, index) => [
-    index + 1,
-    lang === "ur"
-      ? cache[`name:${customer.id}`] || customer.customer_name_en
-      : customer.customer_name_en,
-    customer.phone || "-",
-    lang === "ur"
-      ? cache[`city:${customer.id}`] || customer.city_en
-      : customer.city_en,
-    formatBalanceWithSide(customer.current_balance),
-  ]);
-
-  autoTable(doc, {
-    startY: 76,
-    margin: { left: 10, right: 10 },
-    head: [["#", t.name, t.phone, t.city, t.amount]],
-    body: rows,
-    foot: [
-      ["", "", "", `── ${t.totalLabel} ──`, formatBalanceWithSide(totalBalance)],
-    ],
-    theme: "grid",
-
-    headStyles: {
-      fillColor: [15, 23, 42],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 8,
-      halign: "center",
-    },
-
-    bodyStyles: {
-      textColor: [15, 23, 42],
-      fontSize: 8,
-      cellPadding: 3,
-    },
-
-    footStyles: {
-      fillColor: [15, 23, 42],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 8,
-    },
-
-    alternateRowStyles: {
-      fillColor: [248, 250, 252],
-    },
-
-    columnStyles: {
-      0: { halign: "center", cellWidth: 12 },
-      1: { halign: "left", cellWidth: 80, fontStyle: "bold" },
-      2: { halign: "center", cellWidth: 45 },
-      3: { halign: "left", cellWidth: 55 },
-      4: { halign: "right", cellWidth: 55, fontStyle: "bold" },
-    },
-  });
-
-  doc.save(`customers-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 const CustomerPage = () => {

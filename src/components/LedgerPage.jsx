@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Printer, Download, Search, Filter, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { escapeHtml, openUnicodePrint, printableText } from '../utils/unicodePrint';
 
 const LedgerPage = ({ title, entityName }) => {
   const { t, isRTL } = useOutletContext();
@@ -31,30 +30,27 @@ const LedgerPage = ({ title, entityName }) => {
 
   // --- FUNCTION: Export PDF ---
   const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(18);
-    doc.text('Global Soft - ' + title, 14, 20);
-    doc.setFontSize(12);
-    doc.text(`Account: ${entityName || 'General'}`, 14, 30);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 36);
+    const rows = ledgerData.map((row) => `<tr>
+      <td class="ltr-text">${escapeHtml(row.date)}</td>
+      <td>${printableText(row.desc)}</td>
+      <td class="ltr-text">${escapeHtml(row.ref)}</td>
+      <td class="num">${escapeHtml(row.debit.toLocaleString())}</td>
+      <td class="num">${escapeHtml(row.credit.toLocaleString())}</td>
+      <td class="num">${escapeHtml(row.balance.toLocaleString())}</td>
+    </tr>`).join('');
 
-    // Table
-    doc.autoTable({
-      startY: 45,
-      head: [['Date', 'Description', 'Ref', 'Debit', 'Credit', 'Balance']],
-      body: ledgerData.map(row => [
-        row.date, row.desc, row.ref, 
-        row.debit.toLocaleString(), 
-        row.credit.toLocaleString(), 
-        row.balance.toLocaleString()
-      ]),
-      theme: 'grid',
-      headStyles: { fillColor: [11, 58, 130] }, // Global Soft Blue
+    openUnicodePrint({
+      title,
+      dir: isRTL ? 'rtl' : 'ltr',
+      lang: isRTL ? 'ur' : 'en',
+      pageSize: 'A4 landscape',
+      bodyHtml: `<div class="pdf-hint">${isRTL ? 'پی ڈی ایف کے لیے Save as PDF منتخب کریں۔' : 'Choose Save as PDF in the print dialog.'}</div>
+        <main class="ledger-report">
+          <header><h1>${printableText(title)}</h1><div>${isRTL ? 'اکاؤنٹ' : 'Account'}: ${printableText(entityName || 'General')}<br/>${isRTL ? 'تیار کردہ' : 'Generated'}: ${escapeHtml(new Date().toLocaleDateString(isRTL ? 'ur-PK' : 'en-PK'))}</div></header>
+          <table><thead><tr><th>Date</th><th>Description</th><th>Ref</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table>
+        </main>`,
+      styles: `.ledger-report header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;background:#0C2134;color:#fff;padding:14px 16px;margin-bottom:14px}.ledger-report h1{font-size:20px;margin:0}.ledger-report header div{font-size:9px;line-height:1.7}.ledger-report table{width:100%;border-collapse:collapse;font-size:9px}.ledger-report th{background:#0B4E9B;color:#fff;padding:7px;text-align:${isRTL ? 'right' : 'left'}}.ledger-report td{border:1px solid #CBD5E1;padding:7px}.ledger-report .num{text-align:right}`
     });
-
-    doc.save(`${title.replace(/\s/g, '_')}.pdf`);
   };
 
   return (

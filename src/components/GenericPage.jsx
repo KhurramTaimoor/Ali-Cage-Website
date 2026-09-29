@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Save, Search, Edit, Trash2, FileText, Plus, Printer, Download, ChevronDown, X, Check } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { escapeHtml, openUnicodePrint, printableText } from '../utils/unicodePrint';
 
 // ─── Default dropdown options ─────────────────────────────────────────────────
 const DEFAULT_OPTIONS = {
@@ -316,14 +315,18 @@ const GenericPage = ({ title, inputs = [], isReport = false }) => {
   const handlePrint = () => window.print();
 
   const handlePDF = () => {
-    const doc = new jsPDF();
-    doc.text(title, 14, 20);
-    doc.autoTable({
-      startY: 30,
-      head: [inputs],
-      body: [inputs.map(f => isPKRField(f) ? 'PKR 0.00' : 'Sample Data')],
+    const headers = inputs.map((field) => `<th>${printableText(field)}</th>`).join('');
+    const values = inputs
+      .map((field) => `<td>${printableText(isPKRField(field) ? 'PKR 0.00' : 'Sample Data')}</td>`)
+      .join('');
+    openUnicodePrint({
+      title,
+      dir: isRTL ? 'rtl' : 'ltr',
+      lang: isRTL ? 'ur' : 'en',
+      pageSize: 'A4 landscape',
+      bodyHtml: `<div class="pdf-hint">${isRTL ? 'پی ڈی ایف کے لیے Save as PDF منتخب کریں۔' : 'Choose Save as PDF in the print dialog.'}</div><main class="generic-report"><h1>${printableText(title)}</h1><table><thead><tr>${headers}</tr></thead><tbody><tr>${values}</tr></tbody></table></main>`,
+      styles: `.generic-report h1{font-size:20px;color:#13263A;margin:0 0 14px}.generic-report table{width:100%;border-collapse:collapse;font-size:10px}.generic-report th{background:#0C2134;color:#fff;padding:8px;text-align:${isRTL ? 'right' : 'left'}}.generic-report td{border:1px solid #CBD5E1;padding:8px}`
     });
-    doc.save(`${title}.pdf`);
   };
 
   const renderField = (field, idx) => {

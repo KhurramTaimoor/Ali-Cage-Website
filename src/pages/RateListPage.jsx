@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { escapeHtml, openUnicodePrint, printableText } from "../utils/unicodePrint";
 import {
   BadgeDollarSign,
   Check,
@@ -372,35 +371,66 @@ export default function RateListPage() {
     try {
       const response = await api(`/api/rates/lists/${encodeURIComponent(summary.list_name)}`);
       const detail = response.data || response;
-      const doc = new jsPDF({ orientation: "landscape" });
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text(`Ali Cages - ${detail.list_name}`, 14, 16);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.text(`Assigned customers: ${(detail.assigned_customers || []).map((x) => x.customer_name).join(", ") || "Global / unassigned"}`, 14, 23);
-      autoTable(doc, {
-        startY: 29,
-        head: [["#", "Product", "Category", "Type", "Unit", "Single", "Retail", "Wholesale", "Distributor"]],
-        body: (detail.items || []).map((item, index) => {
+      const assigned = (detail.assigned_customers || [])
+        .map((x) => x.customer_name || x.customer_name_en || "")
+        .filter(Boolean);
+
+      const rowsHtml = (detail.items || [])
+        .map((item, index) => {
           const p = products.find((x) => String(x.id) === String(item.product_id)) || {};
           const opt = firstOption(item);
-          return [
-            index + 1,
-            productName(p),
-            categoryName(p),
-            typeName(p),
-            unitName(p),
-            money(opt.single_rate),
-            money(opt.retail_rate),
-            money(opt.wholesale_rate),
-            money(opt.distributor_rate),
-          ];
-        }),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [19, 38, 58] },
+          return `<tr>
+            <td class="center num">${index + 1}</td>
+            <td>${printableText(productName(p))}</td>
+            <td>${printableText(categoryName(p))}</td>
+            <td>${printableText(typeName(p))}</td>
+            <td>${printableText(unitName(p))}</td>
+            <td class="num amount">${escapeHtml(money(opt.single_rate))}</td>
+            <td class="num amount">${escapeHtml(money(opt.retail_rate))}</td>
+            <td class="num amount">${escapeHtml(money(opt.wholesale_rate))}</td>
+            <td class="num amount">${escapeHtml(money(opt.distributor_rate))}</td>
+          </tr>`;
+        })
+        .join("");
+
+      const bodyHtml = `
+        <div class="pdf-hint">${
+          isUrdu
+            ? "پی ڈی ایف کے لیے پرنٹ ڈائیلاگ میں Save as PDF منتخب کریں۔"
+            : "Choose Save as PDF in the print dialog. Urdu/Arabic product and customer names are Unicode-safe."
+        }</div>
+        <main class="report">
+          <header class="report-head">
+            <div><div class="brand">Ali Cages</div><div class="title">${printableText(detail.list_name || t.listName)}</div></div>
+            <div class="assigned"><b>${escapeHtml(t.assignedCustomers)}:</b><br/>${
+              assigned.length ? assigned.map((name) => printableText(name)).join("، ") : escapeHtml(t.global)
+            }</div>
+          </header>
+          <table>
+            <thead><tr>
+              <th>#</th><th>${escapeHtml(t.product)}</th><th>${escapeHtml(t.category)}</th><th>${escapeHtml(t.type)}</th><th>${escapeHtml(t.unit)}</th>
+              <th>${escapeHtml(t.single)}</th><th>${escapeHtml(t.retail)}</th><th>${escapeHtml(t.wholesale)}</th><th>${escapeHtml(t.distributor)}</th>
+            </tr></thead>
+            <tbody>${rowsHtml || `<tr><td colspan="9" class="empty">${escapeHtml(t.noProducts)}</td></tr>`}</tbody>
+          </table>
+        </main>`;
+
+      openUnicodePrint({
+        title: `Ali Cages - ${detail.list_name || "Rate List"}`,
+        bodyHtml,
+        dir: isUrdu ? "rtl" : "ltr",
+        lang,
+        pageSize: "A4 landscape",
+        styles: `
+          .report{width:100%}.report-head{display:flex;justify-content:space-between;align-items:flex-end;gap:22px;background:#0C2134;color:#fff;padding:14px 16px;margin-bottom:14px}
+          .brand{color:#4A86F7;font-size:21px;font-weight:800}.title{font-size:13px;font-weight:700;margin-top:4px}.assigned{max-width:55%;font-size:9px;line-height:1.8;text-align:${isUrdu ? "left" : "right"};color:#E2E8F0}
+          table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8px}thead{display:table-header-group}tr{break-inside:avoid}
+          th{background:#0B4E9B;color:#fff;border:1px solid #0B4E9B;padding:7px 5px;text-align:${isUrdu ? "right" : "left"}}
+          td{border:1px solid #CBD5E1;padding:6px 5px;overflow-wrap:anywhere}tbody tr:nth-child(odd) td{background:#F8FAFC}
+          th:nth-child(1),td:nth-child(1){width:4%}th:nth-child(2),td:nth-child(2){width:23%}th:nth-child(3),td:nth-child(3){width:13%}th:nth-child(4),td:nth-child(4){width:12%}th:nth-child(5),td:nth-child(5){width:8%}
+          th:nth-child(n+6),td:nth-child(n+6){width:10%}.center{text-align:center!important}.amount{text-align:right!important}.empty{text-align:center;padding:24px;color:#64748B}
+        `,
       });
-      doc.save(`${detail.list_name.replace(/[^a-z0-9]+/gi, "-") || "rate-list"}.pdf`);
     } catch (err) {
       notify(err.message);
     }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { escapeHtml, openUnicodePrint, printableText } from "../utils/unicodePrint";
 
 // ─────────────────────────────────────────────────────────────────
 // LANGUAGE STRINGS
@@ -76,202 +75,128 @@ const LANG = {
 const API_BASE = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api/salesmen`;
 
 // ─────────────────────────────────────────────────────────────────
-// SINGLE SALESMAN PDF
+// UNICODE-SAFE PRINT / PDF
+// Browser print rendering is used so Urdu/Arabic names are preserved.
 // ─────────────────────────────────────────────────────────────────
-function downloadSalesmanPdf(salesman, lang) {
-  const t = LANG[lang];
-  const doc = new jsPDF({ unit: "mm", format: "a5" });
-
-  doc.setFillColor(26, 26, 46);
-  doc.rect(0, 0, 148, 30, "F");
-  doc.setTextColor(240, 192, 64);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Ali Cage", 74, 13, { align: "center" });
-  doc.setFontSize(10);
-  doc.setTextColor(220, 220, 220);
-  doc.text(t.slipTitle, 74, 21, { align: "center" });
-  doc.setFontSize(8);
-  doc.setTextColor(180, 180, 180);
-  doc.text(new Date().toLocaleDateString("en-PK"), 74, 27, { align: "center" });
-
-  doc.setTextColor(30, 30, 30);
-  autoTable(doc, {
-    startY: 36,
-    head: [],
-    body: [
-      [t.slipName, salesman.salesman_name || "-"],
-      [t.slipPhone, salesman.phone || "-"],
-      [t.slipCnic, salesman.cnic || "-"],
-      [
-        t.slipCommission,
-        `PKR ${Number(salesman.commission || 0).toLocaleString("en-PK")}`,
-      ],
-      [t.slipDate, new Date().toLocaleDateString("en-PK")],
-    ],
-    theme: "grid",
-    styles: { fontSize: 11, cellPadding: 5 },
-    columnStyles: {
-      0: { fontStyle: "bold", fillColor: [245, 245, 250], cellWidth: 48 },
-      1: { cellWidth: 82 },
-    },
-  });
-
-  const finalY = doc.lastAutoTable.finalY + 10;
-  doc.setFontSize(9);
-  doc.setTextColor(130, 130, 130);
-  doc.text(t.slipThank, 74, finalY, { align: "center" });
-
-  doc.save(`salesman-${(salesman.salesman_name || "record").replace(/\s+/g, "-")}.pdf`);
-}
-
-// ─────────────────────────────────────────────────────────────────
-// ALL SALESMEN PDF
-// ─────────────────────────────────────────────────────────────────
-function downloadAllPdf(salesmen, lang) {
-  const t = LANG[lang];
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
-
-  doc.setFillColor(26, 26, 46);
-  doc.rect(0, 0, 297, 22, "F");
-  doc.setTextColor(240, 192, 64);
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text("Ali Cage — Salesmen Report", 148, 10, { align: "center" });
-  doc.setFontSize(9);
-  doc.setTextColor(200, 200, 200);
-  doc.text(
-    `Generated: ${new Date().toLocaleString("en-PK")}  |  Total: ${salesmen.length} salesmen`,
-    148,
-    18,
-    { align: "center" }
-  );
-
-  const rows = salesmen.map((s, i) => [
-    i + 1,
-    s.salesman_name || "-",
-    s.phone || "-",
-    s.cnic || "-",
-    `PKR ${Number(s.commission || 0).toLocaleString("en-PK")}`,
-    t.active,
-  ]);
-
-  autoTable(doc, {
-    startY: 28,
-    head: [[
-      "#",
-      t.salesmanName,
-      t.phone,
-      t.cnic,
-      t.commission,
-      t.status,
-    ]],
-    body: rows,
-    theme: "striped",
-    headStyles: {
-      fillColor: [26, 26, 46],
-      textColor: [240, 192, 64],
-      fontStyle: "bold",
-      fontSize: 10,
-    },
-    styles: { fontSize: 9, cellPadding: 4 },
-    alternateRowStyles: { fillColor: [248, 248, 252] },
-    columnStyles: {
-      4: { halign: "right", fontStyle: "bold" },
-      5: { halign: "center" },
-    },
-  });
-
-  doc.save(`salesmen-report-${new Date().toISOString().slice(0, 10)}.pdf`);
-}
-
-// ─────────────────────────────────────────────────────────────────
-// PRINT SLIP
-// ─────────────────────────────────────────────────────────────────
-function printSlip(salesman, lang) {
+function salesmanSlipDocument(salesman, lang, showPdfHint = false) {
   const t = LANG[lang];
   const isUrdu = lang === "ur";
   const dir = isUrdu ? "rtl" : "ltr";
-  const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
+  const commission = `PKR ${Number(salesman.commission || 0).toLocaleString("en-PK")}`;
+  const date = new Date().toLocaleDateString(isUrdu ? "ur-PK" : "en-PK");
 
-  const html = `
-    <!DOCTYPE html>
-    <html dir="${dir}" lang="${lang}">
-    <head>
-      <meta charset="UTF-8"/>
-      <title>${t.slipTitle}</title>
-      ${isUrdu ? `<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">` : ""}
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: ${font}; background: #fff; color: #0f172a; padding: 40px; }
-        .slip { max-width: 440px; margin: 0 auto; border: 2px solid #0f172a; border-radius: 14px; overflow: hidden; }
-        .header { background: #0f172a; color: #38bdf8; padding: 24px; text-align: center; }
-        .header img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #38bdf8; }
-        .header h1 { font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin: 0; }
-        .header h2 { font-size: 15px; color: #fff; font-weight: normal; margin: 5px 0 0 0; }
-        .header p { font-size: 11px; margin-top: 5px; opacity: 0.6; color: #fff; }
-        .badge-wrap { display: flex; justify-content: center; padding: 20px 28px 4px; }
-        .avatar { width: 64px; height: 64px; border-radius: 50%; background: #e0f2fe; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #0284c7; border: 3px solid #bae6fd; }
-        .body { padding: 16px 28px 28px; }
-        .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
-        .row:last-child { border-bottom: none; }
-        .label { color: #64748b; }
-        .value { font-weight: bold; color: #0f172a; }
-        .salary-badge { display: inline-block; background: #dcfce7; color: #16a34a; padding: 3px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; font-family: monospace; }
-        .footer { text-align: center; padding: 14px; background: #f8fafc; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
-        @media print { body { padding: 0; } }
-      </style>
-    </head>
-    <body>
-      <div class="slip">
-        <div class="header">
-          <img src="https://ui-avatars.com/api/?name=Ali+Cage&background=38bdf8&color=0f172a&rounded=true&bold=true" alt="Ali Cage Logo" />
-          <h1>Ali Cage</h1>
-          <h2>${t.slipTitle}</h2>
-          <p>${new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK")}</p>
-        </div>
-        <div class="badge-wrap">
-          <div class="avatar">👤</div>
-        </div>
-        <div class="body">
-          <div class="row">
-            <span class="label">${t.slipName}</span>
-            <span class="value">${salesman.salesman_name || "—"}</span>
-          </div>
-          <div class="row">
-            <span class="label">${t.slipPhone}</span>
-            <span class="value" style="font-family: monospace;">${salesman.phone || "—"}</span>
-          </div>
-          <div class="row">
-            <span class="label">${t.slipCnic}</span>
-            <span class="value" style="font-family: monospace;">${salesman.cnic || "—"}</span>
-          </div>
-          <div class="row">
-            <span class="label">${t.slipCommission}</span>
-            <span class="value"><span class="salary-badge">₨ ${Number(salesman.commission || 0).toLocaleString("en-PK")}</span></span>
-          </div>
-          <div class="row">
-            <span class="label">${t.slipDate}</span>
-            <span class="value">${new Date().toLocaleDateString(isUrdu ? "ur-PK" : "en-PK")}</span>
-          </div>
-        </div>
-        <div class="footer">${t.slipThank}</div>
-      </div>
-      <script>
-        window.onload = () => {
-          setTimeout(() => {
-            window.print();
-            window.onafterprint = () => window.close();
-          }, 300);
-        };
-      </script>
-    </body>
-    </html>
-  `;
+  const bodyHtml = `
+    ${
+      showPdfHint
+        ? `<div class="pdf-hint">${
+            isUrdu
+              ? "پی ڈی ایف کے لیے پرنٹ ڈائیلاگ میں Save as PDF منتخب کریں۔"
+              : "Choose Save as PDF in the print dialog."
+          }</div>`
+        : ""
+    }
+    <main class="slip">
+      <header class="head">
+        <div class="brand">Ali Cage</div>
+        <div class="subtitle">${escapeHtml(t.slipTitle)}</div>
+        <div class="date">${escapeHtml(date)}</div>
+      </header>
+      <section class="body">
+        <div class="row"><span class="label">${escapeHtml(t.slipName)}</span><strong>${printableText(salesman.salesman_name || "—")}</strong></div>
+        <div class="row"><span class="label">${escapeHtml(t.slipPhone)}</span><strong class="ltr-text">${escapeHtml(salesman.phone || "—")}</strong></div>
+        <div class="row"><span class="label">${escapeHtml(t.slipCnic)}</span><strong class="ltr-text">${escapeHtml(salesman.cnic || "—")}</strong></div>
+        <div class="row"><span class="label">${escapeHtml(t.slipCommission)}</span><strong class="money num">${escapeHtml(commission)}</strong></div>
+        <div class="row"><span class="label">${escapeHtml(t.slipDate)}</span><strong>${escapeHtml(date)}</strong></div>
+      </section>
+      <footer>${escapeHtml(t.slipThank)}</footer>
+    </main>`;
 
-  const w = window.open("", "_blank", "width=520,height=780");
-  w.document.write(html);
-  w.document.close();
+  return openUnicodePrint({
+    title: `${t.slipTitle} - ${salesman.salesman_name || "Salesman"}`,
+    bodyHtml,
+    dir,
+    lang,
+    pageSize: "A5 portrait",
+    windowFeatures: "width=600,height=800",
+    styles: `
+      body{padding:10px}
+      .slip{max-width:135mm;margin:0 auto;border:1.5px solid #0C2134;border-radius:12px;overflow:hidden}
+      .head{background:#0C2134;color:#fff;text-align:center;padding:20px 18px}
+      .brand{font-size:25px;font-weight:800;color:#4A86F7;letter-spacing:.03em}
+      .subtitle{margin-top:5px;font-size:14px;font-weight:700}
+      .date{margin-top:5px;font-size:9px;color:#CBD5E1}
+      .body{padding:17px 22px}
+      .row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px 0;border-bottom:1px dashed #CBD5E1;font-size:12px}
+      .row:last-child{border-bottom:0}
+      .label{color:#64748B;font-weight:600}
+      strong{color:#13263A;text-align:${isUrdu ? "left" : "right"}}
+      .money{display:inline-block;padding:4px 9px;border-radius:999px;background:#ECFDF5;color:#047857}
+      footer{border-top:1px solid #E2E8F0;background:#F4F7FB;color:#64748B;text-align:center;padding:11px 16px;font-size:9px}
+      @media print{body{padding:0}.slip{border-radius:0}}
+    `,
+  });
+}
+
+function downloadSalesmanPdf(salesman, lang) {
+  return salesmanSlipDocument(salesman, lang, true);
+}
+
+function printSlip(salesman, lang) {
+  return salesmanSlipDocument(salesman, lang, false);
+}
+
+function downloadAllPdf(salesmen, lang) {
+  const t = LANG[lang];
+  const isUrdu = lang === "ur";
+  const dir = isUrdu ? "rtl" : "ltr";
+  const generated = new Date().toLocaleString(isUrdu ? "ur-PK" : "en-PK");
+
+  const rows = salesmen
+    .map(
+      (s, i) => `<tr>
+        <td class="center num">${i + 1}</td>
+        <td>${printableText(s.salesman_name || "-")}</td>
+        <td class="center ltr-text">${escapeHtml(s.phone || "-")}</td>
+        <td class="center ltr-text">${escapeHtml(s.cnic || "-")}</td>
+        <td class="amount num">PKR ${escapeHtml(Number(s.commission || 0).toLocaleString("en-PK"))}</td>
+        <td class="center">${escapeHtml(t.active)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const bodyHtml = `
+    <div class="pdf-hint">${
+      isUrdu
+        ? "پی ڈی ایف کے لیے پرنٹ ڈائیلاگ میں Save as PDF منتخب کریں۔"
+        : "Choose Save as PDF in the print dialog."
+    }</div>
+    <main class="report">
+      <header>
+        <div><div class="brand">Ali Cage</div><div class="sub">${escapeHtml(t.title)}</div></div>
+        <div class="meta">${escapeHtml(generated)}<br/>${escapeHtml(t.status)}: ${salesmen.length}</div>
+      </header>
+      <table>
+        <thead><tr><th>#</th><th>${escapeHtml(t.salesmanName)}</th><th>${escapeHtml(t.phone)}</th><th>${escapeHtml(t.cnic)}</th><th>${escapeHtml(t.commission)}</th><th>${escapeHtml(t.status)}</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="6" class="empty">${escapeHtml(t.noRecords)}</td></tr>`}</tbody>
+      </table>
+    </main>`;
+
+  return openUnicodePrint({
+    title: `${t.title} - Ali Cage`,
+    bodyHtml,
+    dir,
+    lang,
+    pageSize: "A4 landscape",
+    styles: `
+      .report{width:100%}
+      header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;background:#0C2134;color:#fff;padding:14px 17px;margin-bottom:14px}
+      .brand{font-size:21px;font-weight:800;color:#4A86F7}.sub{font-size:11px;margin-top:3px}.meta{font-size:9px;color:#CBD5E1;text-align:${isUrdu ? "left" : "right"}}
+      table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}thead{display:table-header-group}tr{break-inside:avoid}
+      th{background:#0B4E9B;color:#fff;padding:7px;border:1px solid #0B4E9B;text-align:${isUrdu ? "right" : "left"}}
+      td{border:1px solid #CBD5E1;padding:7px;overflow-wrap:anywhere}tbody tr:nth-child(odd) td{background:#F8FAFC}
+      .center{text-align:center!important}.amount{text-align:right!important}.empty{text-align:center;padding:26px;color:#64748B}
+    `,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────
