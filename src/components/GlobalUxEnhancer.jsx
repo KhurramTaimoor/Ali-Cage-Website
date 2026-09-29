@@ -130,6 +130,171 @@ export default function GlobalUxEnhancer() {
       }
     };
 
+    const enhanceTableActions = () => {
+      const actionHint = /view|details?|edit|delete|remove|print|invoice|return|approve|cancel|history|assign|ledger|open|update|pay|call|تفصیل|ترمیم|حذف|پرنٹ/i;
+
+      document.querySelectorAll(".camz-app main table tbody tr").forEach((row) => {
+        if (!(row instanceof HTMLTableRowElement)) return;
+        if (row.closest(".inputModalBox,.modal-box,.modal-content,.fullPageInputBox,[role='dialog']")) return;
+
+        const cells = Array.from(row.cells || []);
+        if (!cells.length) return;
+        const actionCells = cells.filter((cell) => {
+          const controls = Array.from(cell.querySelectorAll("button,a[href]"));
+          if (!controls.length) return false;
+          const labels = controls.map((control) => normalize(
+            control.getAttribute("aria-label") || control.getAttribute("title") || control.textContent
+          ));
+          return controls.length >= 2 || labels.some((label) => actionHint.test(label));
+        });
+        if (!actionCells.length) return;
+
+        actionCells.forEach((actionCell) => {
+          const controls = Array.from(actionCell.querySelectorAll("button,a[href]"));
+          if (!controls.length) return;
+          actionCell.classList.add("camz-row-actions-cell");
+          controls.forEach((control) => control.classList.add("camz-row-action-control"));
+
+          const parent = controls[0]?.parentElement;
+          if (parent && parent !== actionCell && controls.every((control) => control.parentElement === parent)) {
+            parent.classList.add("camz-row-actions-host");
+          }
+        });
+      });
+    };
+
+    const dateValue = (raw) => {
+      const text = normalize(raw).replace(/\s+/g, " ");
+      if (!text) return "";
+      const iso = text.match(/(20\d{2}|19\d{2})[-/.](\d{1,2})[-/.](\d{1,2})/);
+      if (iso) return `${iso[1]}-${String(iso[2]).padStart(2, "0")}-${String(iso[3]).padStart(2, "0")}`;
+      const dmy = text.match(/(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2}|19\d{2})/);
+      if (dmy) {
+        const a = Number(dmy[1]);
+        const b = Number(dmy[2]);
+        const day = a > 12 ? a : b > 12 ? b : a;
+        const month = a > 12 ? b : b > 12 ? a : b;
+        return `${dmy[3]}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+      return "";
+    };
+
+    const applyAutoPeriodFilter = (table) => {
+      const index = Number(table.dataset.periodDateColumn);
+      if (!Number.isInteger(index) || index < 0) return;
+      const from = table.dataset.periodFrom || "";
+      const to = table.dataset.periodTo || "";
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        const cell = row.cells?.[index];
+        if (!cell) return;
+        const value = dateValue(cell.textContent);
+        const visible = (!from || (value && value >= from)) && (!to || (value && value <= to));
+        row.style.display = visible ? "" : "none";
+      });
+    };
+
+    const enhanceDateTables = () => {
+      document.querySelectorAll(".camz-app main table").forEach((table) => {
+        if (!(table instanceof HTMLTableElement)) return;
+        if (table.closest(".inputModalBox,.modal-box,.modal-content,.fullPageInputBox,[role='dialog']")) return;
+
+        const main = table.closest("main");
+        if (!main) return;
+
+        // Pages with their own real From/To state should keep that logic; this is a fallback
+        // for transaction lists that only had search or no date filter at all.
+        const ownPeriod = main.querySelector(".camz-period-filter");
+        const visibleDateInputs = Array.from(main.querySelectorAll('input[type="date"]')).filter(
+          (input) => !input.closest(".inputModalBox,.modal-box,.modal-content,.fullPageInputBox,[role='dialog']")
+        );
+        if (ownPeriod || visibleDateInputs.length >= 2) {
+          if (table.dataset.periodEnhanced === "true") applyAutoPeriodFilter(table);
+          return;
+        }
+
+        const headers = Array.from(table.querySelectorAll("thead th"));
+        const dateIndex = headers.findIndex((header) => {
+          const label = normalize(header.textContent).toLowerCase();
+          return /(^|\s)(date|dated)(\s|$)|تاریخ/.test(label) && !/due|delivery|clearance/.test(label);
+        });
+        if (dateIndex < 0) return;
+
+        if (table.dataset.periodEnhanced === "true") {
+          applyAutoPeriodFilter(table);
+          return;
+        }
+
+        const wrap = table.parentElement;
+        const host = wrap?.parentElement || wrap;
+        if (!host || host.querySelector(':scope > [data-global-period-filter="true"]')) return;
+
+        table.dataset.periodEnhanced = "true";
+        table.dataset.periodDateColumn = String(dateIndex);
+        table.dataset.periodFrom = "";
+        table.dataset.periodTo = "";
+
+        const rtl = Boolean(table.closest('[dir="rtl"]'));
+        const toolbar = document.createElement("div");
+        toolbar.dataset.globalPeriodFilter = "true";
+        toolbar.className = "camz-auto-period-toolbar";
+        toolbar.dir = rtl ? "rtl" : "ltr";
+        toolbar.innerHTML = `
+          <button type="button" class="camz-period-button active" data-period-all>${rtl ? "سب" : "All"}</button>
+          <button type="button" class="camz-period-button" data-period-today>${rtl ? "آج" : "Today"}</button>
+          <div class="camz-period-filter">
+            <label><span>${rtl ? "شروع" : "From"}</span><input type="date" data-period-from /></label>
+            <span class="camz-period-separator">→</span>
+            <label><span>${rtl ? "اختتام" : "To"}</span><input type="date" data-period-to /></label>
+          </div>
+          <span class="camz-period-summary" data-period-summary style="display:none"></span>
+        `;
+
+        const allButton = toolbar.querySelector("[data-period-all]");
+        const todayButton = toolbar.querySelector("[data-period-today]");
+        const fromInput = toolbar.querySelector("[data-period-from]");
+        const toInput = toolbar.querySelector("[data-period-to]");
+        const summary = toolbar.querySelector("[data-period-summary]");
+
+        const refresh = () => {
+          table.dataset.periodFrom = fromInput.value || "";
+          table.dataset.periodTo = toInput.value || "";
+          if (table.dataset.periodFrom && table.dataset.periodTo && table.dataset.periodFrom > table.dataset.periodTo) {
+            toInput.value = table.dataset.periodFrom;
+            table.dataset.periodTo = table.dataset.periodFrom;
+          }
+          const isAll = !table.dataset.periodFrom && !table.dataset.periodTo;
+          const today = new Date().toISOString().slice(0, 10);
+          const isToday = table.dataset.periodFrom === today && table.dataset.periodTo === today;
+          allButton.classList.toggle("active", isAll);
+          todayButton.classList.toggle("active", isToday);
+          if (isAll) {
+            summary.style.display = "none";
+          } else {
+            summary.style.display = "inline-flex";
+            summary.textContent = `${rtl ? "مدت" : "Period"}: ${table.dataset.periodFrom || "…"} — ${table.dataset.periodTo || "…"}`;
+          }
+          applyAutoPeriodFilter(table);
+        };
+
+        allButton.addEventListener("click", () => {
+          fromInput.value = "";
+          toInput.value = "";
+          refresh();
+        });
+        todayButton.addEventListener("click", () => {
+          const today = new Date().toISOString().slice(0, 10);
+          fromInput.value = today;
+          toInput.value = today;
+          refresh();
+        });
+        fromInput.addEventListener("change", refresh);
+        toInput.addEventListener("change", refresh);
+
+        host.insertBefore(toolbar, wrap);
+        applyAutoPeriodFilter(table);
+      });
+    };
+
     const scan = () => {
       document.querySelectorAll("input").forEach(enhanceInput);
       document.querySelectorAll("select").forEach((select) => {
@@ -143,6 +308,8 @@ export default function GlobalUxEnhancer() {
           select.title = select.title || "Click to search this list";
         }
       });
+      enhanceTableActions();
+      enhanceDateTables();
     };
 
     const onPointerDown = (event) => {

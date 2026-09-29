@@ -57,6 +57,11 @@ const LANG = {
     newOrder: "New Order",
     refresh: "Refresh",
     search: "Search order, name, ship to, product...",
+    all: "All",
+    todayFilter: "Today",
+    fromDate: "From",
+    toDate: "To",
+    showingPeriod: "Showing Period",
     urdu: "اردو",
     english: "English",
     viewSummary: "View Summary",
@@ -167,6 +172,11 @@ const LANG = {
     newOrder: "نیا آرڈر",
     refresh: "ری فریش",
     search: "آرڈر، نام، شپ ٹو یا پروڈکٹ تلاش کریں...",
+    all: "سب",
+    todayFilter: "آج",
+    fromDate: "شروع",
+    toDate: "اختتام",
+    showingPeriod: "دکھائی جانے والی مدت",
     urdu: "اردو",
     english: "English",
     viewSummary: "سمری دیکھیں",
@@ -787,6 +797,8 @@ export default function SaleOrderPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [message, setMessage] = useState({
     type: "",
     text: "",
@@ -971,11 +983,14 @@ export default function SaleOrderPage() {
   const filteredOrders = useMemo(() => {
     const q = search.trim().toLowerCase();
 
-    if (!q) return orders;
-
     return orders.filter((order) => {
-      const items = normalizeItems(order);
+      const orderDate = String(order.order_date || order.date || "").slice(0, 10);
+      if (dateFrom && (!orderDate || orderDate < dateFrom)) return false;
+      if (dateTo && (!orderDate || orderDate > dateTo)) return false;
 
+      if (!q) return true;
+
+      const items = normalizeItems(order);
       const itemText = items
         .map((item) =>
           [
@@ -995,6 +1010,7 @@ export default function SaleOrderPage() {
         order.status,
         order.payment_status,
         order.payment_method,
+        orderDate,
         itemText,
       ]
         .join(" ")
@@ -1004,6 +1020,8 @@ export default function SaleOrderPage() {
   }, [
     orders,
     search,
+    dateFrom,
+    dateTo,
     productMap,
     categoryMap,
     typeMap,
@@ -2544,6 +2562,14 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.search}
           />
+          <button className={`filter ${!dateFrom && !dateTo ? "active" : ""}`} onClick={() => { setDateFrom(""); setDateTo(""); }}>{t.all}</button>
+          <button className={`filter ${dateFrom === today() && dateTo === today() ? "active" : ""}`} onClick={() => { const d = today(); setDateFrom(d); setDateTo(d); }}>{t.todayFilter}</button>
+          <div className="camz-period-filter" aria-label="Sale order period filter">
+            <label><span>{t.fromDate}</span><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
+            <span className="camz-period-separator">→</span>
+            <label><span>{t.toDate}</span><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
+          </div>
+          {(dateFrom || dateTo) && <span className="camz-period-summary">{t.showingPeriod}: {dateFrom || "…"} — {dateTo || "…"}</span>}
         </div>
 
         <div className="card">

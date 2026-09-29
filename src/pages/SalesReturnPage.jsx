@@ -24,7 +24,10 @@ const LANG = {
     searchPlaceholder: "Search return no, invoice, name, product, date or reason...",
     todayFilter: "Today",
     selectDate: "Select Date",
+    fromDate: "From",
+    toDate: "To",
     showingDate: "Showing Date",
+    showingPeriod: "Showing Period",
     all: "All",
     manualReturn: "Manual Sales Return",
     autoReturn: "Automatic Sales Return",
@@ -114,7 +117,10 @@ const LANG = {
     searchPlaceholder: "ریٹرن نمبر، انوائس، نام، پروڈکٹ، تاریخ یا وجہ تلاش کریں...",
     todayFilter: "آج",
     selectDate: "تاریخ منتخب کریں",
+    fromDate: "شروع",
+    toDate: "اختتام",
     showingDate: "دکھائی جانے والی تاریخ",
+    showingPeriod: "دکھائی جانے والی مدت",
     all: "سب",
     manualReturn: "مینوئل سیلز ریٹرن",
     autoReturn: "آٹومیٹک سیلز ریٹرن",
@@ -504,8 +510,8 @@ export default function SalesReturnPage() {
   const [invoiceItems, setInvoiceItems] = useState([]);
   const [search, setSearch] = useState("");
   const [invoiceSearch, setInvoiceSearch] = useState("");
-  const [selectedDate, setSelectedDate] = useState(today());
-  const [showAll, setShowAll] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [msg, setMsg] = useState({ type: "", text: "" });
   const [saving, setSaving] = useState(false);
 
@@ -595,9 +601,14 @@ export default function SalesReturnPage() {
 
   const filteredReturns = useMemo(() => {
     let list = returns;
-    if (!showAll) {
-      const dateValue = selectedDate || today();
-      list = list.filter((ret) => String(ret.return_date || ret.created_at || "").slice(0, 10) === dateValue);
+    if (dateFrom || dateTo) {
+      list = list.filter((ret) => {
+        const value = String(ret.return_date || ret.created_at || "").slice(0, 10);
+        if (!value) return false;
+        if (dateFrom && value < dateFrom) return false;
+        if (dateTo && value > dateTo) return false;
+        return true;
+      });
     }
     const q = search.toLowerCase().trim();
     if (!q) return list;
@@ -607,7 +618,7 @@ export default function SalesReturnPage() {
         .toLowerCase()
         .includes(q)
     );
-  }, [returns, search, selectedDate, showAll]);
+  }, [returns, search, dateFrom, dateTo]);
 
   const filteredInvoices = useMemo(() => {
     const q = invoiceSearch.toLowerCase().trim();
@@ -1048,15 +1059,16 @@ export default function SalesReturnPage() {
 
           <div className="toolbar">
             <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
-            <button className={`filter ${showAll ? "active" : ""}`} onClick={() => setShowAll(true)}>{t.all}</button>
-            <button className={`filter ${!showAll && selectedDate === today() ? "active" : ""}`} onClick={() => { setShowAll(false); setSelectedDate(today()); }}>{t.todayFilter}</button>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
-              <span>{t.selectDate}</span>
-              <DateTextInput value={selectedDate} onChange={(v) => { setShowAll(false); setSelectedDate(v || today()); }} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent", width: 100 }} />
-            </label>
-            {!showAll && (
-              <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#EFF6FF", color: "#285DB8", fontWeight: 900, border: "1px solid #DBEAFE", fontSize: 12 }}>
-                {t.showingDate}: {formatFullDate(selectedDate)}
+            <button className={`filter ${!dateFrom && !dateTo ? "active" : ""}`} onClick={() => { setDateFrom(""); setDateTo(""); }}>{t.all}</button>
+            <button className={`filter ${dateFrom === today() && dateTo === today() ? "active" : ""}`} onClick={() => { const d = today(); setDateFrom(d); setDateTo(d); }}>{t.todayFilter}</button>
+            <div className="camz-period-filter" aria-label="Sales return period filter">
+              <label><span>{t.fromDate}</span><DateTextInput value={dateFrom} onChange={(v) => setDateFrom(v)} /></label>
+              <span className="camz-period-separator">→</span>
+              <label><span>{t.toDate}</span><DateTextInput value={dateTo} onChange={(v) => setDateTo(v)} /></label>
+            </div>
+            {(dateFrom || dateTo) && (
+              <span className="camz-period-summary">
+                {t.showingPeriod}: {dateFrom ? formatFullDate(dateFrom) : "…"} — {dateTo ? formatFullDate(dateTo) : "…"}
               </span>
             )}
           </div>

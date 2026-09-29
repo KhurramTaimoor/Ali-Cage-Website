@@ -25,7 +25,10 @@ const LANG = {
     refresh: "Refresh",
     todayFilter: "Today",
     selectDate: "Select Date",
+    fromDate: "From",
+    toDate: "To",
     showingDate: "Showing Date",
+    showingPeriod: "Showing Period",
     toggleLang: "اردو",
     searchPlaceholder: "Search invoice no, name, product or date...",
     customerInvoiceSearch: "Customer Invoices",
@@ -120,7 +123,10 @@ const LANG = {
     refresh: "ری فریش",
     todayFilter: "آج",
     selectDate: "تاریخ منتخب کریں",
+    fromDate: "شروع",
+    toDate: "اختتام",
     showingDate: "دکھائی جانے والی تاریخ",
+    showingPeriod: "دکھائی جانے والی مدت",
     toggleLang: "English",
     searchPlaceholder: "انوائس نمبر، نام، پروڈکٹ یا تاریخ تلاش کریں...",
     customerInvoiceSearch: "کسٹمر انوائسز",
@@ -695,7 +701,8 @@ export default function SalesInvoicePage() {
   const [search, setSearch] = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
   const [bulkPrinting, setBulkPrinting] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(today());
+  const [dateFrom, setDateFrom] = useState(today());
+  const [dateTo, setDateTo] = useState(today());
   const [msg, setMsg] = useState({ type: "", text: "" });
   const [saving, setSaving] = useState(false);
 
@@ -808,11 +815,18 @@ export default function SalesInvoicePage() {
     const customerQ = customerFilter.toLowerCase().trim();
     let list = invoices;
 
+    if (dateFrom || dateTo) {
+      list = list.filter((inv) => {
+        const value = String(inv.invoice_date || "").slice(0, 10);
+        if (!value) return false;
+        if (dateFrom && value < dateFrom) return false;
+        if (dateTo && value > dateTo) return false;
+        return true;
+      });
+    }
+
     if (customerQ) {
-      list = invoices.filter((inv) => getInvoicePartyName(inv).toLowerCase().includes(customerQ));
-    } else {
-      const dateValue = selectedDate || today();
-      list = invoices.filter((inv) => String(inv.invoice_date || "").slice(0, 10) === dateValue);
+      list = list.filter((inv) => getInvoicePartyName(inv).toLowerCase().includes(customerQ));
     }
 
     const q = search.toLowerCase().trim();
@@ -824,7 +838,7 @@ export default function SalesInvoicePage() {
         .toLowerCase()
         .includes(q)
     );
-  }, [invoices, search, customerFilter, selectedDate, getInvoicePartyName]);
+  }, [invoices, search, customerFilter, dateFrom, dateTo, getInvoicePartyName]);
 
   const openAdd = async () => {
     setEditingId(null);
@@ -1274,14 +1288,18 @@ export default function SalesInvoicePage() {
           <input className="search" style={{ width: "min(360px,100%)" }} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder={t.customerInvoicePlaceholder} />
           <button className="btn btn-yellow" disabled={bulkPrinting || loadingInv || filtered.length === 0} onClick={handleBulkPrint}>{bulkPrinting ? t.bulkPrinting : `${t.bulkPrint} (${filtered.length})`}</button>
           {customerFilter.trim() && <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#dcfce7", color: "#166534", fontWeight: 900, border: "1px solid #bbf7d0", fontSize: 12 }}>{t.allCustomerInvoices}</span>}
-          <button className={`filter ${selectedDate === today() ? "active" : ""}`} onClick={() => setSelectedDate(today())}>{t.todayFilter}</button>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, background: "white", border: "1px solid #cbd5e1", borderRadius: 12, padding: "0 10px", height: 36, fontWeight: 850, color: "#475569", fontSize: 12 }}>
-            <span>{t.selectDate}</span>
-            <DateTextInput value={selectedDate} onChange={(v) => setSelectedDate(v || today())} style={{ border: "none", outline: "none", fontWeight: 850, color: "#0f172a", background: "transparent", width: 105 }} />
-          </label>
-          <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#EFF6FF", color: "#285DB8", fontWeight: 900, border: "1px solid #DBEAFE", fontSize: 12 }}>
-            {t.showingDate}: {formatFullDate(selectedDate, lang)}
-          </span>
+          <button className={`filter ${!dateFrom && !dateTo ? "active" : ""}`} onClick={() => { setDateFrom(""); setDateTo(""); }}>{t.all}</button>
+          <button className={`filter ${dateFrom === today() && dateTo === today() ? "active" : ""}`} onClick={() => { const d = today(); setDateFrom(d); setDateTo(d); }}>{t.todayFilter}</button>
+          <div className="camz-period-filter" aria-label="Invoice period filter">
+            <label><span>{t.fromDate}</span><DateTextInput value={dateFrom} onChange={(v) => setDateFrom(v)} /></label>
+            <span className="camz-period-separator">→</span>
+            <label><span>{t.toDate}</span><DateTextInput value={dateTo} onChange={(v) => setDateTo(v)} /></label>
+          </div>
+          {(dateFrom || dateTo) && (
+            <span className="camz-period-summary">
+              {t.showingPeriod}: {dateFrom ? formatFullDate(dateFrom, lang) : "…"} — {dateTo ? formatFullDate(dateTo, lang) : "…"}
+            </span>
+          )}
         </div>
 
         <div className="card table-wrap">
