@@ -105,8 +105,8 @@ input, select, textarea, button {
   --camz-navy-hover: #17344D;
   --camz-blue: #4A86F7;
   --camz-blue-dark: #3975E7;
-  --camz-canvas: #F7F9FC;
-  --camz-soft: #F8FAFD;
+  --camz-canvas: #F4F7FB;
+  --camz-soft: #F7F9FC;
   --camz-border: #E2E8F0;
   --camz-muted: #64748B;
 }
@@ -403,4 +403,106 @@ input, select, textarea, button {
 .camz-app main .bg-gradient-to-r .bg-white\/10 {
   background: #EFF6FF !important;
   color: #285DB8 !important;
+}
+
+
+/* PART 5 — exact Camz Cleaning admin palette normalization */
+.camz-app {
+  --camz-sidebar: #0C2134;
+  --camz-sidebar-hover: #17344D;
+  --camz-sidebar-text: #9CACBC;
+  --camz-sidebar-muted: #718296;
+  --camz-active: #F7F9FC;
+  --camz-heading: #13263A;
+  --camz-accent: #4A86F7;
+  --camz-page: #F4F7FB;
+  background: var(--camz-page) !important;
+}
+
+.camz-app main,
+.camz-app main > div,
+.camz-app main > div > div,
+.camz-app .min-h-screen {
+  --tw-bg-opacity: 1;
+}
+
+/* Page canvas/cards match Camz dashboard. */
+.camz-app main .bg-gray-50,
+.camz-app main .bg-slate-50,
+.camz-app main .bg-slate-100,
+.camz-app main .bg-gray-100 {
+  background-color: #F4F7FB !important;
+}
+
+.camz-app main .bg-white,
+.camz-app main section,
+.camz-app main article,
+.camz-app main .card,
+.camz-app main .panel,
+.camz-app main .box,
+.camz-app main .content-card,
+.camz-app main .summary-card,
+.camz-app main .table-container,
+.camz-app main .table-wrap,
+.camz-app main .form-box {
+  border-color: #E2E8F0 !important;
+}
+
+/* Old action colors are normalized to Camz blue. Success/status badges keep their own semantic colors. */
+.camz-app main button.bg-green-600:not([data-status]),
+.camz-app main button.bg-emerald-600:not([data-status]),
+.camz-app main button.bg-purple-600:not([data-status]),
+.camz-app main button.bg-violet-600:not([data-status]),
+.camz-app main button.bg-cyan-600:not([data-status]),
+.camz-app main button.bg-teal-600:not([data-status]),
+.camz-app main a.bg-green-600,
+.camz-app main a.bg-emerald-600,
+.camz-app main a.bg-purple-600,
+.camz-app main a.bg-violet-600,
+.camz-app main a.bg-cyan-600,
+.camz-app main a.bg-teal-600 {
+  background-color: #4A86F7 !important;
+  border-color: #4A86F7 !important;
+  color: #fff !important;
+}
+
+.camz-app main button.bg-green-600:not([data-status]):hover,
+.camz-app main button.bg-emerald-600:not([data-status]):hover,
+.camz-app main button.bg-purple-600:not([data-status]):hover,
+.camz-app main button.bg-violet-600:not([data-status]):hover,
+.camz-app main button.bg-cyan-600:not([data-status]):hover,
+.camz-app main button.bg-teal-600:not([data-status]):hover {
+  background-color: #3975E7 !important;
+}
+
+/* Legacy colored page title bars/cards become Camz white CRM surfaces. */
+.camz-app main [class*="from-indigo"],
+.camz-app main [class*="from-blue"],
+.camz-app main [class*="from-purple"],
+.camz-app main [class*="from-cyan"],
+.camz-app main [class*="from-teal"],
+.camz-app main [class*="from-emerald"] {
+  --tw-gradient-from: #fff !important;
+  --tw-gradient-to: #fff !important;
+  --tw-gradient-stops: #fff, #fff !important;
+}
+
+.camz-app main .text-gray-900,
+.camz-app main .text-slate-900,
+.camz-app main .text-slate-800 {
+  color: #13263A !important;
+}
+
+.camz-app main .border-gray-200,
+.camz-app main .border-slate-200,
+.camz-app main .border-gray-300,
+.camz-app main .border-slate-300 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Exact Camz table header surface. */
+.camz-app main table thead th,
+.camz-app main table thead td {
+  background: #F7F9FC !important;
+  color: #64748B !important;
 }

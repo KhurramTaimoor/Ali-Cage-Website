@@ -1,15 +1,10 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
-
+import React, { useState } from "react";
 import {
   Outlet,
   Link,
   useLocation,
   useNavigate,
 } from "react-router-dom";
-
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -19,237 +14,73 @@ import {
   Users,
   Factory,
   ShieldCheck,
-  ChevronDown,
   LogOut,
   Menu,
   Globe,
   BarChart3,
   X,
 } from "lucide-react";
-
 import { translations } from "../data/translations";
 
 const SALES_ITEMS = [
-  {
-    to: "/app/sales/customer",
-    key: "customer",
-    fallback: "Customer",
-  },
-  {
-    to: "/app/sales/customer-ledger",
-    key: "customerLedger",
-    fallback: "Customer Ledger",
-  },
-  {
-    to: "/app/sales/rate-list",
-    key: "rateList",
-    fallback: "Rate List",
-  },
-  {
-    to: "/app/sales/sale-order",
-    key: "saleOrder",
-    fallback: "Sale Order",
-  },
-  {
-    to: "/app/sales/invoice",
-    key: "salesInvoice",
-    fallback: "Sales Invoice",
-  },
-  {
-    to: "/app/sales/return",
-    key: "salesReturn",
-    fallback: "Sales Return",
-  },
-  {
-    divider: true,
-  },
-  {
-    to: "/app/sales/reports",
-    key: "salesReport",
-    fallback: "Sales Report",
-  },
+  { to: "/app/sales/customer", key: "customer", fallback: "Customer" },
+  { to: "/app/sales/customer-ledger", key: "customerLedger", fallback: "Customer Ledger" },
+  { to: "/app/sales/rate-list", key: "rateList", fallback: "Rate List" },
+  { to: "/app/sales/sale-order", key: "saleOrder", fallback: "Sale Order" },
+  { to: "/app/sales/invoice", key: "salesInvoice", fallback: "Sales Invoice" },
+  { to: "/app/sales/return", key: "salesReturn", fallback: "Sales Return" },
+  { divider: true },
+  { to: "/app/sales/reports", key: "salesReport", fallback: "Sales Report" },
 ];
 
 const PURCHASE_ITEMS = [
-  {
-    to: "/app/purchase/supplier",
-    key: "supplier",
-    fallback: "Supplier",
-  },
-  {
-    to: "/app/purchase/rate",
-    key: "purchaseRate",
-    fallback: "Purchase Rate",
-  },
-  {
-    to: "/app/purchase/invoice",
-    key: "purchaseInvoice",
-    fallback: "Purchase Invoice",
-  },
-  {
-    to: "/app/purchase/return",
-    key: "purchaseReturn",
-    fallback: "Purchase Return",
-  },
-  {
-    to: "/app/purchase/supplier-ledger",
-    key: "supplierLedger",
-    fallback: "Supplier Ledger",
-  },
-  {
-    divider: true,
-  },
-  {
-    to: "/app/purchase/reports",
-    key: "purchaseReport",
-    fallback: "Purchase Report",
-  },
+  { to: "/app/purchase/supplier", key: "supplier", fallback: "Supplier" },
+  { to: "/app/purchase/rate", key: "purchaseRate", fallback: "Purchase Rate" },
+  { to: "/app/purchase/invoice", key: "purchaseInvoice", fallback: "Purchase Invoice" },
+  { to: "/app/purchase/return", key: "purchaseReturn", fallback: "Purchase Return" },
+  { to: "/app/purchase/supplier-ledger", key: "supplierLedger", fallback: "Supplier Ledger" },
+  { divider: true },
+  { to: "/app/purchase/reports", key: "purchaseReport", fallback: "Purchase Report" },
 ];
 
 const INVENTORY_ITEMS = [
-  {
-    to: "/app/inventory/product-type",
-    key: "productType",
-    fallback: "Product Type",
-  },
-  {
-    to: "/app/inventory/category",
-    key: "category",
-    fallback: "Category",
-  },
-  {
-    to: "/app/inventory/product",
-    key: "product",
-    fallback: "Product",
-  },
-  {
-    to: "/app/inventory/unit",
-    key: "unit",
-    fallback: "Unit",
-  },
-  {
-    to: "/app/inventory/opening",
-    key: "openingStock",
-    fallback: "Opening Stock",
-  },
-  {
-    to: "/app/inventory/receive",
-    key: "stockReceive",
-    fallback: "Stock Receive",
-  },
-  {
-    to: "/app/inventory/issue",
-    key: "stockIssue",
-    fallback: "Stock Issue",
-  },
-  {
-    to: "/app/inventory/stock-demand",
-    key: "stockDemand",
-    fallback: "Stock Demand",
-  },
-  {
-    divider: true,
-  },
-  {
-    to: "/app/inventory/reports",
-    key: "inventoryReport",
-    fallback: "Inventory Report",
-  },
-  {
-    to: "/app/inventory/product-ledger",
-    key: "productLedger",
-    fallback: "Product Ledger",
-  },
+  { to: "/app/inventory/product-type", key: "productType", fallback: "Product Type" },
+  { to: "/app/inventory/category", key: "category", fallback: "Category" },
+  { to: "/app/inventory/product", key: "product", fallback: "Product" },
+  { to: "/app/inventory/unit", key: "unit", fallback: "Unit" },
+  { to: "/app/inventory/opening", key: "openingStock", fallback: "Opening Stock" },
+  { to: "/app/inventory/receive", key: "stockReceive", fallback: "Stock Receive" },
+  { to: "/app/inventory/issue", key: "stockIssue", fallback: "Stock Issue" },
+  { to: "/app/inventory/stock-demand", key: "stockDemand", fallback: "Stock Demand" },
+  { divider: true },
+  { to: "/app/inventory/reports", key: "inventoryReport", fallback: "Inventory Report" },
+  { to: "/app/inventory/product-ledger", key: "productLedger", fallback: "Product Ledger" },
 ];
 
 const ACCOUNT_ITEMS = [
-  {
-    to: "/app/accounts/profiles",
-    key: "accountProfiles",
-    fallback: "Profiles",
-  },
-  {
-    to: "/app/accounts/groups",
-    key: "accountGroups",
-    fallback: "Account Groups",
-  },
-  {
-    to: "/app/accounts/chart",
-    key: "chartOfAccounts",
-    fallback: "Chart of Accounts",
-  },
-  {
-    to: "/app/accounts/opening",
-    key: "openingBalance",
-    fallback: "Opening Balance",
-  },
-  {
-    to: "/app/accounts/journal",
-    key: "journalVoucher",
-    fallback: "Journal Voucher",
-  },
-  {
-    to: "/app/accounts/cashbook",
-    key: "cashBook",
-    fallback: "Cash Book",
-  },
-  {
-    to: "/app/accounts/cheques",
-    key: "chequeVouchers",
-    fallback: "Cheque Vouchers",
-  },
-  {
-    divider: true,
-  },
-  {
-    to: "/app/accounts/ledger-summary",
-    key: "ledgerSummary",
-    fallback: "Ledger Summary",
-  },
-  {
-    to: "/app/accounts/gl-report",
-    key: "glReport",
-    fallback: "GL Report",
-  },
-  {
-    to: "/app/accounts/cash-report",
-    key: "cashBookReport",
-    fallback: "Cash Book Report",
-  },
+  { to: "/app/accounts/profiles", key: "accountProfiles", fallback: "Profiles" },
+  { to: "/app/accounts/groups", key: "accountGroups", fallback: "Account Groups" },
+  { to: "/app/accounts/chart", key: "chartOfAccounts", fallback: "Chart of Accounts" },
+  { to: "/app/accounts/opening", key: "openingBalance", fallback: "Opening Balance" },
+  { to: "/app/accounts/journal", key: "journalVoucher", fallback: "Journal Voucher" },
+  { to: "/app/accounts/cashbook", key: "cashBook", fallback: "Cash Book" },
+  { to: "/app/accounts/cheques", key: "chequeVouchers", fallback: "Cheque Vouchers" },
+  { divider: true },
+  { to: "/app/accounts/ledger-summary", key: "ledgerSummary", fallback: "Ledger Summary" },
+  { to: "/app/accounts/gl-report", key: "glReport", fallback: "GL Report" },
+  { to: "/app/accounts/cash-report", key: "cashBookReport", fallback: "Cash Book Report" },
 ];
 
 const REPORT_ITEMS = [
-  {
-    to: "/app/reports/product-profit-loss",
-    key: "productProfitLoss",
-    fallback: "Product Profit / Loss",
-  },
+  { to: "/app/reports/product-profit-loss", key: "productProfitLoss", fallback: "Product Profit / Loss" },
 ];
 
 const HR_ITEMS = [
-  {
-    to: "/app/hr/employee",
-    key: "employee",
-    fallback: "Employee",
-  },
-  {
-    to: "/app/hr/rate",
-    key: "employeeRate",
-    fallback: "Employee Salary",
-  },
-  {
-    to: "/app/hr/contractor",
-    key: "contractorManagement",
-    fallback: "Contractor Management",
-  },
-  {
-    divider: true,
-  },
-  {
-    to: "/app/hr/reports",
-    key: "employeeloan",
-    fallback: "Employee Loan",
-  },
+  { to: "/app/hr/employee", key: "employee", fallback: "Employee" },
+  { to: "/app/hr/rate", key: "employeeRate", fallback: "Employee Salary" },
+  { to: "/app/hr/contractor", key: "contractorManagement", fallback: "Contractor Management" },
+  { divider: true },
+  { to: "/app/hr/reports", key: "employeeloan", fallback: "Employee Loan" },
 ];
 
 const ADMIN_ITEMS = [
@@ -258,71 +89,36 @@ const ADMIN_ITEMS = [
 ];
 
 const PRODUCTION_ITEMS = [
-  {
-    to: "/app/production/bom",
-    key: "bom",
-    fallback: "BOM",
-  },
-  {
-    to: "/app/production/assembly",
-    key: "assembly",
-    fallback: "Assembly",
-  },
-  {
-    to: "/app/production/invoice",
-    key: "prodInvoice",
-    fallback: "Production Invoice",
-  },
-  {
-    to: "/app/production/return-invoice",
-    key: "prodReturnInvoice",
-    fallback: "Production Return Invoice",
-  },
-  {
-    divider: true,
-  },
-  {
-    to: "/app/production/reports",
-    key: "prodReports",
-    fallback: "Production Reports",
-  },
+  { to: "/app/production/bom", key: "bom", fallback: "BOM" },
+  { to: "/app/production/assembly", key: "assembly", fallback: "Assembly" },
+  { to: "/app/production/invoice", key: "prodInvoice", fallback: "Production Invoice" },
+  { to: "/app/production/return-invoice", key: "prodReturnInvoice", fallback: "Production Return Invoice" },
+  { divider: true },
+  { to: "/app/production/reports", key: "prodReports", fallback: "Production Reports" },
 ];
 
 const DashboardLayout = () => {
-  const [sidebarOpen, setSidebarOpen] =
-    useState(true);
-
-  const [
-    mobileSidebarOpen,
-    setMobileSidebarOpen,
-  ] = useState(false);
-
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [lang, setLang] = useState("en");
-
   const navigate = useNavigate();
   const location = useLocation();
+
   const user = (() => {
-    try { return JSON.parse(localStorage.getItem("user") || "null") || {}; }
-    catch { return {}; }
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null") || {};
+    } catch {
+      return {};
+    }
   })();
+
   const userRole = String(user.role || "employee").toLowerCase();
   const isAdmin = userRole === "admin";
-
-  const t =
-    translations[lang] ||
-    translations.en ||
-    {};
-
+  const t = translations[lang] || translations.en || {};
   const isRTL = lang === "ur";
-
-  const text = (key, fallback) =>
-    t?.[key] || fallback;
+  const text = (key, fallback) => t?.[key] || fallback;
 
   const isActive = (path) =>
-    location.pathname === path ||
-    location.pathname.startsWith(
-      `${path}/`
-    );
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -330,495 +126,225 @@ const DashboardLayout = () => {
     navigate("/login");
   };
 
-  const handleMenuClick = () => {
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(true);
-      setMobileSidebarOpen(true);
-      return;
-    }
+  const closeMobileSidebar = () => setMobileSidebarOpen(false);
 
-    setSidebarOpen((previous) => !previous);
-  };
+  const renderGroup = (label, icon, items) => (
+    <NavGroup label={label} icon={icon}>
+      {items.map((item, index) => {
+        if (item.divider) {
+          return <div key={`divider-${label}-${index}`} className="my-2 border-t border-white/[0.06]" />;
+        }
 
-  const closeMobileSidebar = () => {
-    setMobileSidebarOpen(false);
-  };
-
-  const renderItems = (items) =>
-    items.map((item, index) => {
-      if (item.divider) {
         return (
-          <div
-            key={`divider-${index}`}
-            className="my-1 border-t border-slate-700 mx-4 opacity-50"
-          />
-        );
-      }
-
-      return (
-        <SidebarSubItem
-          key={item.to}
-          to={item.to}
-          label={text(
-            item.key,
-            item.fallback
-          )}
-          onNavigate={closeMobileSidebar}
-        />
-      );
-    });
-
-  return (
-    <div
-      className={`camz-app flex h-screen bg-[#F7F9FC] font-sans overflow-hidden ${
-        isRTL
-          ? "flex-row-reverse"
-          : "flex-row"
-      }`}
-      dir={isRTL ? "rtl" : "ltr"}
-    >
-      {mobileSidebarOpen && (
-        <div
-          onClick={closeMobileSidebar}
-          className="fixed inset-0 bg-slate-950/50 backdrop-blur-[1px] z-40 lg:hidden"
-        />
-      )}
-
-      <aside
-        className={`
-          fixed lg:relative inset-y-0 z-50 lg:z-30
-          ${isRTL ? "right-0" : "left-0"}
-          ${
-            mobileSidebarOpen
-              ? "translate-x-0"
-              : isRTL
-              ? "translate-x-full lg:translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
-          }
-          ${
-            sidebarOpen
-              ? "w-60"
-              : "w-60 lg:w-16"
-          }
-          bg-[#0C2134] text-[#9CACBC] flex flex-col
-          transition-all duration-300 shadow-xl shrink-0
-        `}
-      >
-        <div className="h-14 flex items-center justify-between border-b border-white/[0.07] shrink-0 px-3">
-          <div className="flex items-center min-w-0">
-            <div className="w-8 h-8 bg-[#4A86F7] text-white rounded-xl flex items-center justify-center font-bold mx-2 shadow-sm shrink-0">
-              C
-            </div>
-
-            {sidebarOpen && (
-              <span className="font-bold text-base tracking-wide text-white truncate">
-                Ali Cage
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={closeMobileSidebar}
-            className="lg:hidden w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center"
-            aria-label="Close sidebar"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto py-2 space-y-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-          <SidebarItem
-            icon={
-              <LayoutDashboard size={18} />
-            }
-            label={text(
-              "dashboard",
-              "Dashboard"
-            )}
-            to="/app/dashboard"
-            isOpen={sidebarOpen}
-            active={isActive(
-              "/app/dashboard"
-            )}
+          <SidebarNavLink
+            key={item.to}
+            to={item.to}
+            label={text(item.key, item.fallback)}
+            icon={icon}
+            active={isActive(item.to)}
             onNavigate={closeMobileSidebar}
           />
+        );
+      })}
+    </NavGroup>
+  );
 
-          <div
-            className={`pt-3 pb-1 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${
-              !sidebarOpen
-                ? "lg:text-center"
-                : ""
-            }`}
-          >
-            {sidebarOpen ? "Modules" : "M"}
+  const navigation = (
+    <>
+      <div
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pr-2"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "#4F6478 transparent",
+          scrollbarGutter: "stable",
+        }}
+      >
+        <NavGroup label="Workspace" icon={<LayoutDashboard size={17} />}>
+          <SidebarNavLink
+            to="/app/dashboard"
+            label={text("dashboard", "Dashboard")}
+            icon={<LayoutDashboard size={17} />}
+            active={isActive("/app/dashboard")}
+            onNavigate={closeMobileSidebar}
+          />
+        </NavGroup>
+
+        {renderGroup(text("sales", "Sales"), <ShoppingCart size={17} />, SALES_ITEMS)}
+        {renderGroup(text("purchase", "Purchase"), <Truck size={17} />, PURCHASE_ITEMS)}
+        {renderGroup(text("inventory", "Inventory"), <Package size={17} />, INVENTORY_ITEMS)}
+        {renderGroup(text("accounts", "Accounts"), <Calculator size={17} />, ACCOUNT_ITEMS)}
+        {renderGroup(text("reports", "Reports"), <BarChart3 size={17} />, REPORT_ITEMS)}
+        {renderGroup(text("hr", "HR"), <Users size={17} />, HR_ITEMS)}
+        {renderGroup(text("production", "Production"), <Factory size={17} />, PRODUCTION_ITEMS)}
+
+        {isAdmin && renderGroup(text("administration", "Administration"), <ShieldCheck size={17} />, ADMIN_ITEMS)}
+      </div>
+
+      <div className="mt-2 shrink-0 border-t border-white/[0.07] pt-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#30485F] bg-[#142B40] px-3 text-[13px] font-bold text-white transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300"
+        >
+          <LogOut size={17} />
+          {text("logout", "Sign out")}
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="camz-app min-h-screen bg-[#F4F7FB]" dir={isRTL ? "rtl" : "ltr"}>
+      {/* MOBILE HEADER — same Camz shell */}
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-white/10 bg-[#0C2134] px-4 lg:hidden">
+        <Link to="/app/dashboard" className="flex items-center gap-2.5 text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#4A86F7] text-sm font-extrabold text-white shadow-sm">
+            C
           </div>
+          <div>
+            <div className="text-[13px] font-extrabold leading-none">Ali Cage</div>
+            <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#8FA1B3]">ERP</div>
+          </div>
+        </Link>
 
-          <SidebarGroup
-            icon={
-              <ShoppingCart size={18} />
-            }
-            label={text("sales", "Sales")}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive("/app/sales")}
-          >
-            {renderItems(SALES_ITEMS)}
-          </SidebarGroup>
+        <button
+          type="button"
+          aria-label="Open menu"
+          onClick={() => setMobileSidebarOpen(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-white"
+        >
+          <Menu size={19} />
+        </button>
+      </header>
 
-          <SidebarGroup
-            icon={<Truck size={18} />}
-            label={text(
-              "purchase",
-              "Purchase"
-            )}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive(
-              "/app/purchase"
-            )}
-          >
-            {renderItems(PURCHASE_ITEMS)}
-          </SidebarGroup>
+      {/* DESKTOP SIDEBAR — exact Camz dimensions/colors */}
+      <aside
+        className={`fixed inset-y-0 z-50 hidden w-[236px] flex-col border-white/[0.08] bg-[#0C2134] px-4 py-4 lg:flex ${
+          isRTL ? "right-0 border-l" : "left-0 border-r"
+        }`}
+      >
+        <Link
+          to="/app/dashboard"
+          className="mb-4 flex h-[58px] shrink-0 items-center gap-3 border-b border-white/[0.07] pb-3"
+        >
+          <div className="flex h-[43px] w-[43px] items-center justify-center rounded-xl bg-[#4A86F7] text-lg font-extrabold text-white shadow-sm">
+            C
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-extrabold text-white">Ali Cage</div>
+            <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-[#718296]">Business ERP</div>
+          </div>
+        </Link>
 
-          <SidebarGroup
-            icon={<Package size={18} />}
-            label={text(
-              "inventory",
-              "Inventory"
-            )}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive(
-              "/app/inventory"
-            )}
-          >
-            {renderItems(INVENTORY_ITEMS)}
-          </SidebarGroup>
-
-          <SidebarGroup
-            icon={
-              <Calculator size={18} />
-            }
-            label={text(
-              "accounts",
-              "Accounts"
-            )}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive(
-              "/app/accounts"
-            )}
-          >
-            {renderItems(ACCOUNT_ITEMS)}
-          </SidebarGroup>
-
-          <SidebarGroup
-            icon={<BarChart3 size={18} />}
-            label={text(
-              "reports",
-              "Reports"
-            )}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive(
-              "/app/reports"
-            )}
-          >
-            {renderItems(REPORT_ITEMS)}
-          </SidebarGroup>
-
-          <SidebarGroup
-            icon={<Users size={18} />}
-            label={text("hr", "HR")}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive("/app/hr")}
-          >
-            {renderItems(HR_ITEMS)}
-          </SidebarGroup>
-
-          <SidebarGroup
-            icon={<Factory size={18} />}
-            label={text(
-              "production",
-              "Production"
-            )}
-            isOpen={sidebarOpen}
-            isRTL={isRTL}
-            active={isActive(
-              "/app/production"
-            )}
-          >
-            {renderItems(PRODUCTION_ITEMS)}
-          </SidebarGroup>
-
-          {isAdmin && (
-            <SidebarGroup
-              icon={<ShieldCheck size={18} />}
-              label={text("administration", "Administration")}
-              isOpen={sidebarOpen}
-              isRTL={isRTL}
-              active={isActive("/app/admin") || isActive("/app/permissions")}
-            >
-              {renderItems(ADMIN_ITEMS)}
-            </SidebarGroup>
-          )}
-        </nav>
-
-        <div className="p-3 border-t border-white/[0.07] shrink-0">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex h-10 items-center text-[#9CACBC] hover:text-white transition w-full hover:bg-[#17344D] px-3 rounded-xl group"
-          >
-            <LogOut
-              size={18}
-              className="group-hover:text-red-400 transition-colors"
-            />
-
-            {sidebarOpen && (
-              <span className="mx-3 text-xs font-medium uppercase tracking-wide">
-                {text(
-                  "logout",
-                  "Logout"
-                )}
-              </span>
-            )}
-          </button>
-        </div>
+        {navigation}
       </aside>
 
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] z-10 shrink-0">
+      {/* MOBILE DRAWER — same Camz colors */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            onClick={handleMenuClick}
-            className="text-slate-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-slate-100"
-            aria-label="Toggle sidebar"
-          >
-            <Menu size={22} />
-          </button>
+            aria-label="Close menu"
+            onClick={closeMobileSidebar}
+            className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]"
+          />
 
-          <div className="flex items-center gap-2 sm:gap-6">
+          <aside
+            className={`relative flex h-full w-[255px] max-w-[82vw] flex-col border-white/10 bg-[#0C2134] px-4 py-4 text-white shadow-2xl ${
+              isRTL ? "mr-auto border-l" : "ml-0 border-r"
+            }`}
+          >
+            <div className="mb-4 flex h-[54px] shrink-0 items-center justify-between border-b border-white/[0.07] pb-3">
+              <Link to="/app/dashboard" onClick={closeMobileSidebar} className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4A86F7] text-base font-extrabold text-white">C</div>
+                <div>
+                  <div className="text-[14px] font-extrabold text-white">Ali Cage</div>
+                  <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#718296]">Business ERP</div>
+                </div>
+              </Link>
+
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={closeMobileSidebar}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.07] text-white transition hover:bg-white/10"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            {navigation}
+          </aside>
+        </div>
+      )}
+
+      <div className={`min-w-0 ${isRTL ? "lg:mr-[236px]" : "lg:ml-[236px]"}`}>
+        {/* DESKTOP HEADER — same Camz shell, Ali controls retained */}
+        <header className="sticky top-0 z-30 hidden h-[68px] items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm lg:flex">
+          <div>
+            <h1 className="text-[22px] font-bold leading-[1.1] text-[#13263A]">Ali Cage ERP</h1>
+            <p className="mt-1 text-[11px] leading-[1.4] text-slate-500">Manage sales, accounts, inventory and operations.</p>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() =>
-                setLang(
-                  lang === "en"
-                    ? "ur"
-                    : "en"
-                )
-              }
-              className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition text-xs font-bold"
+              onClick={() => setLang(lang === "en" ? "ur" : "en")}
+              className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#4A86F7]"
             >
-              <Globe size={14} />
-              {lang === "en"
-                ? "اردو"
-                : "EN"}
+              <Globe size={15} />
+              {lang === "en" ? "اردو" : "EN"}
             </button>
 
-            <div className="hidden sm:block h-6 w-px bg-slate-200" />
-
-            <div className="flex items-center gap-3">
-              <div
-                className={`hidden sm:block ${
-                  isRTL
-                    ? "text-left"
-                    : "text-right"
-                }`}
-              >
-                <div className="text-xs font-bold text-slate-700">
-                  {text(
-                    "welcome",
-                    "Welcome"
-                  )}{" "}
-                  {user.name || user.username || "User"}
-                </div>
-
-                <div className="text-[10px] text-slate-400 uppercase tracking-wide">
-                  {userRole || "employee"}
-                </div>
-              </div>
-
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 text-sm">
-                {String(user.name || user.username || "U").charAt(0).toUpperCase()}
+            <div className="flex h-9 items-center gap-2 rounded-lg bg-blue-50 px-3 text-[#4A86F7]">
+              <ShieldCheck size={16} />
+              <div className={isRTL ? "text-left" : "text-right"}>
+                <div className="text-[10px] font-extrabold leading-none text-[#13263A]">{user.name || user.username || "User"}</div>
+                <div className="mt-1 text-[8px] font-bold uppercase tracking-wider text-slate-400">{userRole}</div>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-[#F7F9FC] p-3 sm:p-4 lg:p-5">
-          <div className="min-w-0 w-full">
-            <Outlet
-              context={{
-                lang,
-                t,
-                isRTL,
-              }}
-            />
-          </div>
+        <main className="min-h-[calc(100vh-68px)] min-w-0 overflow-x-hidden bg-[#F4F7FB] p-3 sm:p-4 lg:p-5">
+          <Outlet context={{ lang, t, isRTL }} />
         </main>
       </div>
     </div>
   );
 };
 
-const SidebarItem = ({
-  icon,
-  label,
-  to,
-  isOpen,
-  active,
-  onNavigate,
-}) => (
+const NavGroup = ({ label, children }) => (
+  <div className="mb-5">
+    <p className="mb-2 px-3 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#718296]">{label}</p>
+    <nav className="space-y-1">{children}</nav>
+  </div>
+);
+
+const SidebarNavLink = ({ to, label, icon, active, onNavigate }) => (
   <Link
     to={to}
     onClick={onNavigate}
-    className={`relative flex h-10 items-center px-3 mx-2 rounded-xl transition-all duration-200 group mb-1 ${
+    className={[
+      "group relative flex h-10 items-center gap-3 overflow-hidden rounded-xl px-3",
+      "text-[12.5px] font-semibold transition-all duration-200",
       active
-        ? "bg-[#F7F9FC] text-[#10243A] shadow-sm before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full before:bg-[#4A86F7]"
-        : "hover:bg-[#17344D] text-[#9CACBC] hover:text-white"
-    }`}
+        ? "bg-[#F7F9FC] text-[#10243A] shadow-sm"
+        : "text-[#9CACBC] hover:bg-[#17344D] hover:text-white",
+    ].join(" ")}
   >
-    <div className="shrink-0">
+    {active && <span className="absolute inset-y-0 left-0 w-1 rounded-r-full bg-[#4A86F7]" />}
+    <span
+      className={
+        active
+          ? "shrink-0 text-[#4A86F7]"
+          : "shrink-0 text-[#8294A6] transition group-hover:text-white"
+      }
+    >
       {icon}
-    </div>
-
-    {isOpen && (
-      <span className="mx-3 text-xs font-medium whitespace-nowrap">
-        {label}
-      </span>
-    )}
+    </span>
+    <span className="truncate">{label}</span>
   </Link>
 );
-
-const SidebarGroup = ({
-  icon,
-  label,
-  children,
-  isOpen,
-  isRTL,
-  active = false,
-}) => {
-  const [expanded, setExpanded] =
-    useState(active);
-
-  useEffect(() => {
-    if (active) {
-      setExpanded(true);
-    }
-  }, [active]);
-
-  if (!isOpen) {
-    return (
-      <div className="mx-2 mb-0.5">
-        <button
-          type="button"
-          title={label}
-          className={`w-full flex items-center justify-center px-3 py-2 rounded-md ${
-            active
-              ? "bg-[#F7F9FC] text-[#10243A]"
-              : "text-[#9CACBC] hover:bg-[#17344D] hover:text-white"
-          }`}
-        >
-          {icon}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-2 mb-0.5">
-      <button
-        type="button"
-        onClick={() =>
-          setExpanded(
-            (previous) => !previous
-          )
-        }
-        className={`w-full flex items-center justify-between px-4 py-2 rounded-md transition-colors ${
-          expanded || active
-            ? "bg-[#17344D] text-white"
-            : "hover:bg-[#17344D] text-[#9CACBC] hover:text-white"
-        }`}
-      >
-        <div
-          className={`flex items-center ${
-            isRTL
-              ? "flex-row-reverse"
-              : ""
-          }`}
-        >
-          <div className="shrink-0">
-            {icon}
-          </div>
-
-          <span className="mx-3 text-xs font-medium whitespace-nowrap">
-            {label}
-          </span>
-        </div>
-
-        <div
-          className={`transition-transform duration-200 ${
-            expanded
-              ? "rotate-180"
-              : ""
-          }`}
-        >
-          <ChevronDown size={14} />
-        </div>
-      </button>
-
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          expanded
-            ? "max-h-[920px] opacity-100 mt-1"
-            : "max-h-0 opacity-0"
-        }`}
-      >
-        <div
-          className={`bg-[#071A2B]/40 rounded-xl py-1 border-[#30485F] space-y-0.5 ${
-            isRTL
-              ? "mr-4 border-r"
-              : "ml-4 border-l"
-          }`}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SidebarSubItem = ({
-  to,
-  label,
-  onNavigate,
-}) => {
-  const location = useLocation();
-
-  const active =
-    location.pathname === to ||
-    location.pathname.startsWith(
-      `${to}/`
-    );
-
-  return (
-    <Link
-      to={to}
-      onClick={onNavigate}
-      className={`block px-4 py-1.5 text-[11px] transition-colors relative group rounded-r-md ${
-        active
-          ? "bg-blue-50 text-[#10243A] border-l-2 border-[#4A86F7]"
-          : "text-[#9CACBC] hover:text-white hover:bg-white/5"
-      }`}
-    >
-      <span className="group-hover:translate-x-1 transition-transform inline-block">
-        {label}
-      </span>
-    </Link>
-  );
-};
 
 export default DashboardLayout;
