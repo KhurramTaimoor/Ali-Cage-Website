@@ -86,6 +86,7 @@ const HR_ITEMS = [
 
 const ADMIN_ITEMS = [
   { to: "/app/admin/transactions", key: "transactionHistory", fallback: "Transaction History" },
+  { to: "/app/admin/change-password", key: "changePassword", fallback: "Change Password" },
   { to: "/app/permissions", key: "permissions", fallback: "User Permissions" },
 ];
 

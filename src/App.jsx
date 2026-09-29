@@ -72,6 +72,7 @@ import ProductionReturnInvoicePage from "./pages/ProductionReturnInvoicePage";
 import ProductionReportsPage from "./pages/ProductionReportsPage";
 
 import PermissionsPage from "./pages/PermissionsPage";
+import AdminChangePasswordPage from "./pages/AdminChangePasswordPage";
 
 function App() {
   return (
@@ -405,6 +406,11 @@ function App() {
               <Route
                 path="admin/transactions"
                 element={<TransactionHistoryPage />}
+              />
+
+              <Route
+                path="admin/change-password"
+                element={<AdminChangePasswordPage />}
               />
 
               <Route

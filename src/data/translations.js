@@ -43,6 +43,7 @@ export const translations = {
     // ACCOUNTS KEYS
     accountProfiles: "Profiles",
     transactionHistory: "Transaction History",
+    changePassword: "Change Password",
     administration: "Administration",
     chartGroups: "Chart Groups",
     chartAccount: "Chart of Account",
@@ -125,6 +126,7 @@ export const translations = {
     // ACCOUNTS KEYS
     accountProfiles: "پروفائلز",
     transactionHistory: "ٹرانزیکشن ہسٹری",
+    changePassword: "ایڈمن پاس ورڈ تبدیل کریں",
     administration: "انتظامیہ",
     chartGroups: "چارٹ گروپس",
     chartAccount: "چارٹ آف اکاؤنٹ",
