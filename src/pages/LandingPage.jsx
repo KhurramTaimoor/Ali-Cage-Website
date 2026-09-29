@@ -49,14 +49,14 @@ const LandingPage = () => {
   return (
     <div
       className={`antialiased transition-all duration-300 ${
-        darkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'
+        darkMode ? 'bg-[#071A2B] text-white' : 'bg-white text-slate-900'
       }`}
     >
       {/* NAVBAR */}
       <nav
         className={`fixed w-full z-50 transition-all duration-300 border-b ${
           darkMode
-            ? 'bg-slate-950/95 border-slate-800 backdrop-blur-md'
+            ? 'bg-[#071A2B]/95 border-slate-800 backdrop-blur-md'
             : isScrolled
             ? 'bg-white/95 shadow-md backdrop-blur-md border-blue-100'
             : 'bg-white/80 border-blue-100 backdrop-blur-md'
@@ -69,7 +69,7 @@ const LandingPage = () => {
               className="flex items-center cursor-pointer"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-500 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-500/20">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#4A86F7] to-[#3975E7] rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-500/20">
                 <Bird size={20} />
               </div>
               <div className="flex flex-col">
@@ -93,7 +93,7 @@ const LandingPage = () => {
                 className={`text-sm font-semibold transition ${
                   darkMode
                     ? 'text-slate-300 hover:text-blue-400'
-                    : 'text-slate-600 hover:text-blue-700'
+                    : 'text-slate-600 hover:text-[#285DB8]'
                 }`}
               >
                 Modules
@@ -103,7 +103,7 @@ const LandingPage = () => {
                 className={`text-sm font-semibold transition ${
                   darkMode
                     ? 'text-slate-300 hover:text-blue-400'
-                    : 'text-slate-600 hover:text-blue-700'
+                    : 'text-slate-600 hover:text-[#285DB8]'
                 }`}
               >
                 Reports
@@ -113,7 +113,7 @@ const LandingPage = () => {
                 className={`text-sm font-semibold transition ${
                   darkMode
                     ? 'text-slate-300 hover:text-blue-400'
-                    : 'text-slate-600 hover:text-blue-700'
+                    : 'text-slate-600 hover:text-[#285DB8]'
                 }`}
               >
                 Inventory View
@@ -131,8 +131,8 @@ const LandingPage = () => {
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg border transition ${
                   darkMode
-                    ? 'bg-slate-900 border-slate-700 text-yellow-300'
-                    : 'bg-blue-50 border-blue-100 text-blue-700'
+                    ? 'bg-[#0C2134] border-slate-700 text-yellow-300'
+                    : 'bg-blue-50 border-blue-100 text-[#285DB8]'
                 }`}
               >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -143,7 +143,7 @@ const LandingPage = () => {
                 className={`px-6 py-2.5 rounded-lg font-medium transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm flex items-center gap-2 ${
                   darkMode
                     ? 'bg-white text-slate-900 hover:bg-slate-200'
-                    : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    : 'bg-[#0C2134] hover:bg-[#17344D] text-white'
                 }`}
               >
                 <LogIn size={16} className={darkMode ? 'text-slate-500' : 'text-slate-400'} />
@@ -157,8 +157,8 @@ const LandingPage = () => {
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg border transition ${
                   darkMode
-                    ? 'bg-slate-900 border-slate-700 text-yellow-300'
-                    : 'bg-blue-50 border-blue-100 text-blue-700'
+                    ? 'bg-[#0C2134] border-slate-700 text-yellow-300'
+                    : 'bg-blue-50 border-blue-100 text-[#285DB8]'
                 }`}
               >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -180,13 +180,13 @@ const LandingPage = () => {
       <header
         className={`relative pt-32 pb-24 lg:pt-44 lg:pb-32 overflow-hidden min-h-[95vh] flex items-center transition-all duration-300 ${
           darkMode
-            ? 'bg-slate-950'
+            ? 'bg-[#071A2B]'
             : 'bg-gradient-to-br from-white via-blue-50 to-sky-100'
         }`}
       >
         <div
           className={`absolute top-0 right-0 w-[800px] h-[800px] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 ${
-            darkMode ? 'bg-blue-600/10' : 'bg-blue-300/30'
+            darkMode ? 'bg-[#4A86F7]/10' : 'bg-blue-300/30'
           }`}
         ></div>
         <div
@@ -203,7 +203,7 @@ const LandingPage = () => {
                 className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold uppercase tracking-wider mb-8 backdrop-blur-sm ${
                   darkMode
                     ? 'bg-slate-800/60 border-slate-700 text-blue-300'
-                    : 'bg-white/80 border-blue-100 text-blue-700 shadow-sm'
+                    : 'bg-white/80 border-blue-100 text-[#285DB8] shadow-sm'
                 }`}
               >
                 <ShieldCheck size={14} /> Built for Cage Inventory & Operations
@@ -219,7 +219,7 @@ const LandingPage = () => {
                   className={`text-transparent bg-clip-text bg-gradient-to-r ${
                     darkMode
                       ? 'from-blue-400 via-blue-200 to-white'
-                      : 'from-blue-600 via-sky-500 to-blue-400'
+                      : 'from-[#4A86F7] via-sky-500 to-blue-400'
                   }`}
                 >
                   Inventory Management.
@@ -238,7 +238,7 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-5">
                 <Link
                   to="/register"
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-4 px-8 rounded-lg shadow-[0_0_20px_rgba(37,99,235,0.3)] transition transform hover:-translate-y-1 flex items-center justify-center gap-3 border border-blue-500"
+                  className="bg-[#4A86F7] hover:bg-blue-500 text-white font-semibold py-4 px-8 rounded-lg shadow-[0_0_20px_rgba(37,99,235,0.3)] transition transform hover:-translate-y-1 flex items-center justify-center gap-3 border border-[#4A86F7]"
                 >
                   Access Dashboard <ArrowRight size={18} />
                 </Link>
@@ -294,7 +294,7 @@ const LandingPage = () => {
                 <div
                   className={`rounded-[18px] overflow-hidden border ${
                     darkMode
-                      ? 'bg-slate-900/90 border-slate-700/50'
+                      ? 'bg-[#0C2134]/90 border-slate-700/50'
                       : 'bg-white border-blue-100'
                   }`}
                 >
@@ -408,7 +408,7 @@ const LandingPage = () => {
 
                     <div
                       className={`col-span-2 p-5 ${
-                        darkMode ? 'bg-slate-950/60' : 'bg-sky-50/80'
+                        darkMode ? 'bg-[#071A2B]/60' : 'bg-sky-50/80'
                       }`}
                     >
                       <div className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -426,7 +426,7 @@ const LandingPage = () => {
                             key={index}
                             className={`rounded-lg border p-3 ${
                               darkMode
-                                ? 'border-slate-800 bg-slate-900/70'
+                                ? 'border-slate-800 bg-[#0C2134]/70'
                                 : 'border-blue-100 bg-white'
                             }`}
                           >
@@ -476,7 +476,7 @@ const LandingPage = () => {
                               darkMode ? 'bg-slate-700/30' : 'bg-blue-100'
                             }`}
                           ></div>
-                          <div className="w-full bg-blue-600 rounded-t h-[82%] shadow-[0_0_15px_rgba(37,99,235,0.5)]"></div>
+                          <div className="w-full bg-[#4A86F7] rounded-t h-[82%] shadow-[0_0_15px_rgba(37,99,235,0.5)]"></div>
                           <div
                             className={`w-full rounded-t h-[60%] ${
                               darkMode ? 'bg-slate-700/30' : 'bg-blue-100'
@@ -496,7 +496,7 @@ const LandingPage = () => {
 
               <div
                 className={`absolute -bottom-6 -right-6 z-30 p-4 rounded-lg shadow-xl border-l-4 border-green-500 flex items-center gap-4 animate-bounce ${
-                  darkMode ? 'bg-slate-900' : 'bg-white'
+                  darkMode ? 'bg-[#0C2134]' : 'bg-white'
                 }`}
                 style={{ animationDuration: '3s' }}
               >
@@ -518,11 +518,11 @@ const LandingPage = () => {
       </header>
 
       {/* FEATURES */}
-      <section className={`py-24 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`} id="features">
+      <section className={`py-24 ${darkMode ? 'bg-[#0C2134]' : 'bg-slate-50'}`} id="features">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16">
             <div data-aos="fade-right">
-              <h2 className="text-blue-600 font-bold tracking-wide uppercase text-sm mb-2">
+              <h2 className="text-[#4A86F7] font-bold tracking-wide uppercase text-sm mb-2">
                 Core Modules
               </h2>
               <h3 className={`text-3xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -566,7 +566,7 @@ const LandingPage = () => {
                 data-aos="fade-up"
                 data-aos-delay={index * 100}
               >
-                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white mb-6 relative z-10 shadow-lg shadow-blue-500/30">
+                <div className="w-12 h-12 bg-[#4A86F7] rounded-lg flex items-center justify-center text-white mb-6 relative z-10 shadow-lg shadow-blue-500/30">
                   {item.icon}
                 </div>
                 <h4 className={`text-xl font-bold mb-3 relative z-10 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -585,13 +585,13 @@ const LandingPage = () => {
       <section
         id="analytics"
         className={`py-24 overflow-hidden border-t ${
-          darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-blue-100'
+          darkMode ? 'bg-[#071A2B] border-slate-800' : 'bg-white border-blue-100'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="lg:w-1/2" data-aos="fade-right">
-              <div className="w-12 h-1 bg-blue-600 mb-6"></div>
+              <div className="w-12 h-1 bg-[#4A86F7] mb-6"></div>
               <h3 className={`text-3xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 Smart Inventory Analytics
               </h3>
@@ -613,7 +613,7 @@ const LandingPage = () => {
                       darkMode ? 'text-slate-200' : 'text-slate-700'
                     }`}
                   >
-                    <CircleCheck size={20} className="text-blue-600 mr-3" /> {item}
+                    <CircleCheck size={20} className="text-[#4A86F7] mr-3" /> {item}
                   </li>
                 ))}
               </ul>
@@ -622,13 +622,13 @@ const LandingPage = () => {
             <div className="lg:w-1/2 relative" data-aos="fade-left">
               <div
                 className={`absolute -inset-4 rounded-3xl transform -rotate-2 ${
-                  darkMode ? 'bg-slate-900' : 'bg-gradient-to-r from-slate-100 to-blue-50'
+                  darkMode ? 'bg-[#0C2134]' : 'bg-gradient-to-r from-slate-100 to-blue-50'
                 }`}
               ></div>
 
               <div
                 className={`relative border rounded-2xl shadow-xl p-8 ${
-                  darkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-blue-100'
+                  darkMode ? 'bg-[#0C2134] border-slate-700' : 'bg-white border-blue-100'
                 }`}
               >
                 <div className="flex items-center justify-between mb-8">
@@ -638,7 +638,7 @@ const LandingPage = () => {
                     </h4>
                     <p className="text-xs text-slate-400">Jan 01 - Jan 31, 2026</p>
                   </div>
-                  <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded text-xs font-bold flex items-center gap-2">
+                  <div className="bg-blue-50 text-[#4A86F7] px-3 py-1 rounded text-xs font-bold flex items-center gap-2">
                     <BarChart3 size={14} /> Live View
                   </div>
                 </div>
@@ -690,7 +690,7 @@ const LandingPage = () => {
                     <span className="text-xs text-slate-400">W2</span>
                   </div>
                   <div className="w-full flex flex-col items-center gap-2 group">
-                    <div className="w-full bg-blue-600 rounded-t-sm h-40 shadow-lg shadow-blue-500/40 relative">
+                    <div className="w-full bg-[#4A86F7] rounded-t-sm h-40 shadow-lg shadow-blue-500/40 relative">
                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded">
                         346 Units
                       </div>
@@ -717,7 +717,7 @@ const LandingPage = () => {
       {/* EXTRA STRIP */}
       <section
         className={`py-20 ${
-          darkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'
+          darkMode ? 'bg-[#071A2B] text-white' : 'bg-white text-slate-900'
         } border-t ${darkMode ? 'border-slate-800' : 'border-blue-100'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -748,7 +748,7 @@ const LandingPage = () => {
                 key={index}
                 className={`rounded-2xl p-6 backdrop-blur-sm border ${
                   darkMode
-                    ? 'bg-slate-900 border-slate-800'
+                    ? 'bg-[#0C2134] border-slate-800'
                     : 'bg-slate-50 border-blue-100'
                 }`}
                 data-aos="fade-up"
@@ -757,8 +757,8 @@ const LandingPage = () => {
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
                     darkMode
-                      ? 'bg-blue-600/20 border border-blue-500/20 text-blue-300'
-                      : 'bg-blue-50 border border-blue-100 text-blue-600'
+                      ? 'bg-[#4A86F7]/20 border border-[#4A86F7]/20 text-blue-300'
+                      : 'bg-blue-50 border border-blue-100 text-[#4A86F7]'
                   }`}
                 >
                   {item.icon}
@@ -777,7 +777,7 @@ const LandingPage = () => {
       <footer
         className={`py-10 border-t ${
           darkMode
-            ? 'bg-slate-900 text-slate-400 border-slate-800'
+            ? 'bg-[#0C2134] text-slate-400 border-slate-800'
             : 'bg-white text-slate-500 border-blue-100'
         }`}
       >

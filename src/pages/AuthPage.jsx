@@ -81,7 +81,7 @@ const AuthPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
             <Link to="/" className="flex items-center cursor-pointer">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-500 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-500/20">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#4A86F7] to-[#3975E7] rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-500/20">
                 <Box size={20} />
               </div>
               <div className="flex flex-col">
@@ -103,12 +103,12 @@ const AuthPage = () => {
       </nav>
 
       <main className="flex-grow hero-gradient pt-32 pb-20 flex items-center justify-center px-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-slate-900/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/3"></div>
 
         <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row z-10">
-          <div className="hidden md:flex w-5/12 relative items-center justify-center overflow-hidden bg-red-950 transition-all duration-500">
-            <div className="absolute inset-0 bg-gradient-to-br z-10 from-red-900/80 to-black"></div>
+          <div className="hidden md:flex w-5/12 relative items-center justify-center overflow-hidden bg-[#0C2134] transition-all duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br z-10 from-[#0C2134]/90 to-[#071A2B]"></div>
 
             <img
               src={cageImage}
@@ -122,7 +122,7 @@ const AuthPage = () => {
                 Authorized Users Only
               </p>
 
-              <div className="inline-flex items-center px-4 py-2 border border-red-500/50 rounded-lg bg-red-900/30 backdrop-blur-sm text-sm text-red-200">
+              <div className="inline-flex items-center px-4 py-2 border border-blue-400/30 rounded-lg bg-blue-500/10 backdrop-blur-sm text-sm text-blue-100">
                 <ShieldAlert size={14} className="mr-2" /> Secure Access
               </div>
             </div>
@@ -130,7 +130,7 @@ const AuthPage = () => {
 
           <div className="w-full md:w-7/12 p-8 md:p-12 bg-white">
             <div className="mb-10 border-b border-gray-100 pb-4">
-              <div className="pb-3 text-sm font-bold text-red-600 border-b-2 border-red-600 inline-flex items-center gap-2">
+              <div className="pb-3 text-sm font-bold text-[#4A86F7] border-b-2 border-[#4A86F7] inline-flex items-center gap-2">
                 <ShieldAlert size={14} /> User Login
               </div>
             </div>
@@ -159,7 +159,7 @@ const AuthPage = () => {
                   <input
                     type="text"
                     value={adminData.identifier}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition bg-slate-50 focus:bg-white text-sm"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#4A86F7] focus:ring-2 focus:ring-blue-100 outline-none transition bg-slate-50 focus:bg-white text-sm"
                     placeholder="Email ya username"
                     onChange={(e) =>
                       setAdminData({ ...adminData, identifier: e.target.value })
@@ -179,7 +179,7 @@ const AuthPage = () => {
                   <input
                     type="password"
                     value={adminData.password}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition bg-slate-50 focus:bg-white text-sm"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-[#4A86F7] focus:ring-2 focus:ring-blue-100 outline-none transition bg-slate-50 focus:bg-white text-sm"
                     placeholder="Enter password"
                     onChange={(e) =>
                       setAdminData({ ...adminData, password: e.target.value })
@@ -191,7 +191,7 @@ const AuthPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg shadow-red-500/30 transition flex items-center justify-center disabled:opacity-70"
+                className="w-full bg-[#4A86F7] hover:bg-[#3975E7] text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-500/20 transition flex items-center justify-center disabled:opacity-70"
               >
                 {isLoading ? (
                   <Loader2 className="animate-spin mr-2" size={18} />

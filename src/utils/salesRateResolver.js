@@ -20,13 +20,17 @@ const assignedIds = (record) => {
 
 export function resolveSalesRate(
   rates,
-  { customerId, productId, categoryId, productTypeId, unitId, rateMode = "retail" } = {}
+  { customerId, productId, categoryId, productTypeId, unitId, rateMode = "retail", listName = "" } = {}
 ) {
   const customerKey = String(customerId ?? "");
+  const requestedList = String(listName || "").trim();
 
   const candidates = (Array.isArray(rates) ? rates : [])
     .filter((r) => same(r.product_id, productId))
     .filter((r) => {
+      if (requestedList) {
+        return String(r.list_name || "Default Rate List").trim() === requestedList;
+      }
       const directCustomer = r.customer_id ? same(r.customer_id, customerId) : false;
       const listAssignments = assignedIds(r);
       const listAssignedToCustomer = customerKey && listAssignments.includes(customerKey);
@@ -67,7 +71,8 @@ export function resolveSalesRate(
       const assigned =
         (record.customer_id && same(record.customer_id, customerId)) ||
         assignedIds(record).includes(customerKey);
-      if (assigned) score += 8;
+      if (requestedList && String(record.list_name || "Default Rate List").trim() === requestedList) score += 20;
+      else if (assigned) score += 8;
 
       if (score > bestScore) {
         bestScore = score;

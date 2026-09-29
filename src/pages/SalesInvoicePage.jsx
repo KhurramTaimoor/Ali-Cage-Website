@@ -52,6 +52,9 @@ const LANG = {
     dueDate: "Due Date",
     viewDetails: "View Details",
     shipTo: "Ship To",
+    rateList: "Rate List",
+    rateListAuto: "Auto / Customer Assigned",
+    rateListHint: "Leave Auto to use the customer's assigned list. Select any list here to override rates for this invoice, including General/other accounts.",
     products: "Products",
     addRow: "+ Add Row",
     productType: "Product Type",
@@ -144,6 +147,9 @@ const LANG = {
     dueDate: "ادائیگی کی تاریخ",
     viewDetails: "تفصیل دیکھیں",
     shipTo: "شپ ٹو",
+    rateList: "ریٹ لسٹ",
+    rateListAuto: "آٹو / کسٹمر اسائن شدہ",
+    rateListHint: "آٹو پر کسٹمر کی اسائن شدہ لسٹ استعمال ہوگی۔ اس انوائس کے لیے کسی بھی ریٹ لسٹ کو منتخب کر کے ریٹس اوور رائیڈ کر سکتے ہیں، جنرل یا دوسرے اکاؤنٹس پر بھی۔",
     products: "پروڈکٹس",
     addRow: "+ لائن شامل کریں",
     productType: "پروڈکٹ ٹائپ",
@@ -244,6 +250,7 @@ const emptyForm = () => ({
   invoice_date: today(),
   due_date: "",
   shipment_to: "",
+  rate_list_name: "",
   previous_balance: "0",
   delivery_charges: "0",
   discount: "0",
@@ -725,6 +732,7 @@ export default function SalesInvoicePage() {
   const unitMap = useMemo(() => makeMap(units, getUnitName), [units]);
   const typeMap = useMemo(() => makeMap(productTypes, getTypeName), [productTypes]);
   const defaultFmsTypeId = useMemo(() => getDefaultFmsTypeId(productTypes), [productTypes]);
+  const rateListNames = useMemo(() => [...new Set(salesRates.map((r) => String(r.list_name || "Default Rate List").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [salesRates]);
 
   const partyOptions = useMemo(() => {
     if (form.party_type === "employee") return employees.map((x) => makePartyOption(x, getEmployeeName));
@@ -850,6 +858,7 @@ export default function SalesInvoicePage() {
         invoice_date: inv.invoice_date || today(),
         due_date: inv.due_date || "",
         shipment_to: inv.shipment_to || "",
+        rate_list_name: inv.rate_list_name || "",
         previous_balance: String(inv.previous_balance || 0),
         delivery_charges: String(inv.delivery_charges ?? inv.deliveryCharges ?? 0),
         discount: String(inv.discount || 0),
@@ -886,9 +895,10 @@ export default function SalesInvoicePage() {
       productTypeId: row.product_type_id || getProductTypeId(prod || {}),
       unitId: row.unit_id || getProductUnitId(prod || {}),
       rateMode: "retail",
+      listName: form.rate_list_name || "",
     });
     return listed?.rate || getProductPieceRate(prod || {}) || 0;
-  }, [salesRates, form.party_type, form.party_id]);
+  }, [salesRates, form.party_type, form.party_id, form.rate_list_name]);
 
   const calcRow = useCallback(
     (row) => {
@@ -981,6 +991,7 @@ export default function SalesInvoicePage() {
           productTypeId: row.product_type_id || getProductTypeId(prod || {}),
           unitId: row.unit_id || getProductUnitId(prod || {}),
           rateMode: "retail",
+          listName: form.rate_list_name || "",
         });
         if (!listed?.rate) return row;
         const next = { ...row, rate: String(listed.rate) };
@@ -988,6 +999,26 @@ export default function SalesInvoicePage() {
         return { ...next, amount: String((qty * listed.rate).toFixed(2)) };
       }));
     }
+  };
+
+  const handleRateListChange = (value) => {
+    setForm((prev) => ({ ...prev, rate_list_name: value }));
+    setItems((prev) => prev.map((row) => {
+      if (!row.product_id) return row;
+      const prod = products.find((p) => sameId(getProductId(p), row.product_id));
+      const listed = resolveSalesRate(salesRates, {
+        customerId: form.party_type === "customer" ? form.party_id : null,
+        productId: row.product_id,
+        categoryId: row.category_id || getProductCatId(prod || {}),
+        productTypeId: row.product_type_id || getProductTypeId(prod || {}),
+        unitId: row.unit_id || getProductUnitId(prod || {}),
+        rateMode: "retail",
+        listName: value || "",
+      });
+      const nextRate = listed?.rate || getProductPieceRate(prod || {}) || 0;
+      const qty = toNum(row.qty || row.pieces_qty);
+      return { ...row, rate: String(nextRate), amount: String((qty * nextRate).toFixed(2)) };
+    }));
   };
 
   const preparePayload = () => {
@@ -1053,6 +1084,7 @@ export default function SalesInvoicePage() {
       invoice_date: form.invoice_date,
       due_date: form.due_date || null,
       shipment_to: form.shipment_to || "",
+      rate_list_name: form.rate_list_name || null,
       previous_balance: previous,
       delivery_charges: delivery,
       discount,
@@ -1337,6 +1369,7 @@ export default function SalesInvoicePage() {
                 <div className="invoice-detail-box"><small>{t.dateFull}</small><b>{formatFullDate(viewInvoice.invoice_date, lang)}</b></div>
                 <div className="invoice-detail-box"><small>{t.dueDate}</small><b>{viewInvoice.due_date ? formatFullDate(viewInvoice.due_date, lang) : "—"}</b></div>
                 <div className="invoice-detail-box"><small>{t.shipTo}</small><b>{viewInvoice.shipment_to || "—"}</b></div>
+                <div className="invoice-detail-box"><small>{t.rateList}</small><b>{viewInvoice.rate_list_name || t.rateListAuto}</b></div>
                 <div className="invoice-detail-box"><small>{t.invoiceTotal}</small><b>{money(viewInvoice.invoice_total)}</b></div>
                 <div className="invoice-detail-box"><small>{t.previousBalance}</small><b>{money(viewInvoice.previous_balance)}</b></div>
                 <div className="invoice-detail-box"><small>{t.grandTotal}</small><b>{money(viewInvoice.grand_total)}</b></div>
@@ -1380,6 +1413,14 @@ export default function SalesInvoicePage() {
                       <option value="">{mastersLoading ? t.loading : t.selectName}</option>
                       {partyOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
+                  </div>
+                  <div>
+                    <label className="basicLabel">{t.rateList}</label>
+                    <select className="basicSelect" value={form.rate_list_name || ""} onChange={(e) => handleRateListChange(e.target.value)} title={t.rateListHint}>
+                      <option value="">{t.rateListAuto}</option>
+                      {rateListNames.map((name) => <option key={name} value={name}>{name}</option>)}
+                    </select>
+                    <div style={{ marginTop: 4, fontSize: 9, lineHeight: 1.35, color: "#94a3b8", fontWeight: 600 }}>{t.rateListHint}</div>
                   </div>
                   <div>
                     <label className="basicLabel">{t.reference}</label>
@@ -1458,6 +1499,7 @@ export default function SalesInvoicePage() {
                                 productTypeId: row.product_type_id || getProductTypeId(prod || {}),
                                 unitId: row.unit_id || getProductUnitId(prod || {}),
                                 rateMode: "retail",
+                                listName: form.rate_list_name || "",
                               });
                               return listed?.single_rate > 0 ? (
                                 <div style={{ marginTop: 3, fontSize: 10, fontWeight: 800, color: "#475569" }}>

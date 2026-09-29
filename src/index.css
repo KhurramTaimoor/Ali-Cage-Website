@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Poppins', 'Plus Jakarta Sans', sans-serif;
     @apply text-slate-800 bg-white overflow-x-hidden;
   }
 }
@@ -11,8 +11,8 @@
 /* Custom Animations & Effects */
 @layer utilities {
   .hero-gradient {
-    background: #0f172a;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    background: #0C2134;
+    background: linear-gradient(135deg, #0C2134 0%, #17344D 100%);
   }
 
   .glass {
@@ -91,4 +91,316 @@ input, select, textarea, button {
   aside, header, nav, .no-print, button.no-print {
     display: none !important;
   }
+}
+
+
+/* ========================================================================
+   CAMZ CLEANING ERP DESIGN LANGUAGE
+   Scoped to protected application pages through .camz-app.
+   Keeps every module visually consistent without changing business logic.
+   ======================================================================== */
+:root {
+  --camz-navy: #0C2134;
+  --camz-navy-2: #13263A;
+  --camz-navy-hover: #17344D;
+  --camz-blue: #4A86F7;
+  --camz-blue-dark: #3975E7;
+  --camz-canvas: #F7F9FC;
+  --camz-soft: #F8FAFD;
+  --camz-border: #E2E8F0;
+  --camz-muted: #64748B;
+}
+
+.camz-app,
+.camz-app * {
+  box-sizing: border-box;
+}
+
+.camz-app {
+  background: var(--camz-canvas);
+  color: var(--camz-navy-2);
+  font-family: 'Poppins', 'Plus Jakarta Sans', sans-serif;
+}
+
+.camz-app main,
+.camz-app main > div,
+.camz-app main > div > div.min-h-screen {
+  background-color: var(--camz-canvas) !important;
+}
+
+/* Standard page headers / cards */
+.camz-app main section,
+.camz-app main article,
+.camz-app main .card,
+.camz-app main .summary-card,
+.camz-app main .form-box,
+.camz-app main .paymentPanel,
+.camz-app main .table-container,
+.camz-app main .table-wrap,
+.camz-app main .list-container,
+.camz-app main .content-card,
+.camz-app main .panel,
+.camz-app main .box {
+  border-color: var(--camz-border) !important;
+}
+
+.camz-app main .shadow,
+.camz-app main .shadow-sm,
+.camz-app main .shadow-md,
+.camz-app main .shadow-lg {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .055) !important;
+}
+
+.camz-app main h1,
+.camz-app main h2,
+.camz-app main h3,
+.camz-app main h4 {
+  color: var(--camz-navy-2);
+  letter-spacing: -0.015em;
+}
+
+.camz-app main h1 { font-size: 22px !important; line-height: 1.2 !important; font-weight: 700 !important; }
+.camz-app main h2 { font-size: 17px !important; line-height: 1.3 !important; font-weight: 700 !important; }
+.camz-app main h3 { font-size: 14px !important; line-height: 1.35 !important; font-weight: 700 !important; }
+
+/* Camz controls */
+.camz-app main input:not([type='checkbox']):not([type='radio']),
+.camz-app main select,
+.camz-app main textarea,
+.camz-app main .input,
+.camz-app main .basicInput,
+.camz-app main .basicSelect,
+.camz-app main .productInput {
+  border: 1px solid var(--camz-border) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #334155 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.camz-app main input:not([type='checkbox']):not([type='radio']),
+.camz-app main select,
+.camz-app main .input,
+.camz-app main .basicInput,
+.camz-app main .basicSelect {
+  min-height: 40px;
+}
+
+.camz-app main .productInput {
+  min-height: 34px;
+  height: 34px;
+  font-size: 11px;
+}
+
+.camz-app main textarea { min-height: 82px; }
+
+.camz-app main input:focus,
+.camz-app main select:focus,
+.camz-app main textarea:focus,
+.camz-app main .basicInput:focus,
+.camz-app main .basicSelect:focus,
+.camz-app main .productInput:focus {
+  border-color: var(--camz-blue) !important;
+  box-shadow: 0 0 0 4px rgba(74, 134, 247, .09) !important;
+}
+
+.camz-app main label,
+.camz-app main .label,
+.camz-app main .basicLabel {
+  color: #64748B !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+/* Normalise old indigo/blue themes into Camz blue. */
+.camz-app .bg-indigo-600,
+.camz-app .bg-blue-600,
+.camz-app .btn-primary,
+.camz-app main .basicBtn:not(.basicBtnRed),
+.camz-app main .same-btn:not(.danger),
+.camz-app main .primary-btn {
+  background-color: var(--camz-blue) !important;
+  border-color: var(--camz-blue) !important;
+  color: #fff !important;
+}
+
+.camz-app .hover\:bg-indigo-700:hover,
+.camz-app .hover\:bg-blue-700:hover,
+.camz-app main .btn-primary:hover,
+.camz-app main .basicBtn:not(.basicBtnRed):hover,
+.camz-app main .primary-btn:hover {
+  background-color: var(--camz-blue-dark) !important;
+}
+
+.camz-app .text-indigo-600,
+.camz-app .text-indigo-700,
+.camz-app .text-blue-600,
+.camz-app .text-blue-700 {
+  color: var(--camz-blue) !important;
+}
+
+.camz-app .bg-indigo-50,
+.camz-app .bg-blue-50 {
+  background-color: #EFF6FF !important;
+}
+
+.camz-app .border-indigo-200,
+.camz-app .border-blue-200 {
+  border-color: #DBEAFE !important;
+}
+
+/* Camz button shape. Destructive/red buttons keep their own semantic color. */
+.camz-app main button,
+.camz-app main a[role='button'],
+.camz-app main .btn,
+.camz-app main .btn-soft,
+.camz-app main .same-btn,
+.camz-app main .basicBtn {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  transition: all .18s ease !important;
+}
+
+.camz-app main .btn-soft,
+.camz-app main button.bg-white,
+.camz-app main button.bg-slate-50,
+.camz-app main .secondary-btn {
+  border-color: var(--camz-border) !important;
+  background: #fff !important;
+  color: #475569 !important;
+}
+
+.camz-app main .btn-soft:hover,
+.camz-app main button.bg-white:hover,
+.camz-app main .secondary-btn:hover {
+  border-color: rgba(74, 134, 247, .35) !important;
+  background: #EFF6FF !important;
+  color: #285DB8 !important;
+}
+
+/* Tables: same compact CRM table language across all modules. */
+.camz-app main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.camz-app main thead,
+.camz-app main thead tr,
+.camz-app main thead th {
+  background: var(--camz-soft) !important;
+  color: #64748B !important;
+}
+
+.camz-app main th {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  border-color: var(--camz-border) !important;
+}
+
+.camz-app main td {
+  color: #334155;
+  border-color: #EEF2F7 !important;
+}
+
+.camz-app main tbody tr:hover td {
+  background: #F8FBFF !important;
+}
+
+/* Full-page legacy invoice/form modals now read like Camz CRM cards. */
+.camz-app main .page-wrap,
+.camz-app main .form-page-wrap {
+  background: var(--camz-canvas) !important;
+}
+
+.camz-app main .inputModalBox,
+.camz-app main .fullPageInputBox,
+.camz-app main .modal-box,
+.camz-app main .modal-content {
+  border: 1px solid var(--camz-border) !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, .11) !important;
+  overflow: hidden;
+}
+
+.camz-app main .inputModalTitle,
+.camz-app main .modal-header,
+.camz-app main .sectionHead {
+  background: #fff !important;
+  color: var(--camz-navy-2) !important;
+  border-color: #EEF2F7 !important;
+}
+
+.camz-app main .inputModalTitle {
+  min-height: 52px;
+  border-bottom: 1px solid #EEF2F7 !important;
+}
+
+.camz-app main .sectionHead {
+  border: 1px solid var(--camz-border) !important;
+  border-bottom: 0 !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 10px 12px !important;
+}
+
+.camz-app main .paymentPanel {
+  border: 1px solid var(--camz-border) !important;
+  border-radius: 0 0 12px 12px !important;
+  background: #fff !important;
+}
+
+/* Badges and focus accents */
+.camz-app main .focus\:ring-indigo-200:focus,
+.camz-app main .focus\:ring-blue-200:focus,
+.camz-app main .focus\:ring-blue-300:focus {
+  --tw-ring-color: rgba(74, 134, 247, .15) !important;
+}
+
+/* Mobile consistency: compact cards, controls and popups. */
+@media (max-width: 767px) {
+  .camz-app main { padding: 10px !important; }
+  .camz-app main h1 { font-size: 20px !important; }
+  .camz-app main h2 { font-size: 16px !important; }
+  .camz-app main .rounded-2xl { border-radius: 14px !important; }
+  .camz-app main .rounded-xl { border-radius: 12px !important; }
+  .camz-app main section,
+  .camz-app main article { box-shadow: 0 1px 2px rgba(15,23,42,.04) !important; }
+  .camz-app main input:not([type='checkbox']):not([type='radio']),
+  .camz-app main select,
+  .camz-app main textarea { font-size: 16px !important; }
+  .camz-app main .productInput { font-size: 12px !important; }
+  .camz-app main .fixed.inset-0 { padding: 8px !important; }
+}
+
+@media print {
+  .camz-app main table thead,
+  .camz-app main table thead tr,
+  .camz-app main table thead th { background: #F8FAFD !important; color: #334155 !important; }
+}
+
+/* Legacy CRUD headers are converted from dark gradients to Camz CRM headers. */
+.camz-app main .bg-gradient-to-r {
+  background-image: none !important;
+  background-color: #fff !important;
+  border-bottom: 1px solid #EEF2F7 !important;
+  color: var(--camz-navy-2) !important;
+}
+.camz-app main .bg-gradient-to-r h1,
+.camz-app main .bg-gradient-to-r h2,
+.camz-app main .bg-gradient-to-r h3,
+.camz-app main .bg-gradient-to-r .text-white {
+  color: var(--camz-navy-2) !important;
+}
+.camz-app main .bg-gradient-to-r .text-slate-400,
+.camz-app main .bg-gradient-to-r .text-slate-300 {
+  color: #64748B !important;
+}
+.camz-app main .bg-gradient-to-r .bg-white\/10 {
+  background: #EFF6FF !important;
+  color: #285DB8 !important;
 }

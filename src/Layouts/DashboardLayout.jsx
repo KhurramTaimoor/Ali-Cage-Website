@@ -370,7 +370,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={`flex h-screen bg-slate-50 font-sans overflow-hidden ${
+      className={`camz-app flex h-screen bg-[#F7F9FC] font-sans overflow-hidden ${
         isRTL
           ? "flex-row-reverse"
           : "flex-row"
@@ -400,13 +400,13 @@ const DashboardLayout = () => {
               ? "w-60"
               : "w-60 lg:w-16"
           }
-          bg-slate-900 text-slate-300 flex flex-col
+          bg-[#0C2134] text-[#9CACBC] flex flex-col
           transition-all duration-300 shadow-xl shrink-0
         `}
       >
-        <div className="h-14 flex items-center justify-between border-b border-slate-800 shrink-0 px-3">
+        <div className="h-14 flex items-center justify-between border-b border-white/[0.07] shrink-0 px-3">
           <div className="flex items-center min-w-0">
-            <div className="w-7 h-7 bg-blue-600 text-white rounded flex items-center justify-center font-bold mx-2 shadow-sm shrink-0">
+            <div className="w-8 h-8 bg-[#4A86F7] text-white rounded-xl flex items-center justify-center font-bold mx-2 shadow-sm shrink-0">
               C
             </div>
 
@@ -566,11 +566,11 @@ const DashboardLayout = () => {
           )}
         </nav>
 
-        <div className="p-3 border-t border-slate-800 shrink-0">
+        <div className="p-3 border-t border-white/[0.07] shrink-0">
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center text-slate-400 hover:text-white transition w-full hover:bg-slate-800 p-2 rounded-md group"
+            className="flex h-10 items-center text-[#9CACBC] hover:text-white transition w-full hover:bg-[#17344D] px-3 rounded-xl group"
           >
             <LogOut
               size={18}
@@ -590,7 +590,7 @@ const DashboardLayout = () => {
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 shadow-sm z-10 shrink-0">
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] z-10 shrink-0">
           <button
             type="button"
             onClick={handleMenuClick}
@@ -648,7 +648,7 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-[#f1f5f9] p-3 sm:p-4 lg:p-6">
+        <main className="flex-1 min-w-0 overflow-x-auto overflow-y-auto bg-[#F7F9FC] p-3 sm:p-4 lg:p-5">
           <div className="min-w-0 w-full">
             <Outlet
               context={{
@@ -675,10 +675,10 @@ const SidebarItem = ({
   <Link
     to={to}
     onClick={onNavigate}
-    className={`flex items-center px-4 py-2 mx-2 rounded-md transition-all duration-200 group mb-0.5 ${
+    className={`relative flex h-10 items-center px-3 mx-2 rounded-xl transition-all duration-200 group mb-1 ${
       active
-        ? "bg-blue-600 text-white shadow-md"
-        : "hover:bg-slate-800 text-slate-400 hover:text-white"
+        ? "bg-[#F7F9FC] text-[#10243A] shadow-sm before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full before:bg-[#4A86F7]"
+        : "hover:bg-[#17344D] text-[#9CACBC] hover:text-white"
     }`}
   >
     <div className="shrink-0">
@@ -718,8 +718,8 @@ const SidebarGroup = ({
           title={label}
           className={`w-full flex items-center justify-center px-3 py-2 rounded-md ${
             active
-              ? "bg-blue-600 text-white"
-              : "text-slate-400 hover:bg-slate-800 hover:text-white"
+              ? "bg-[#F7F9FC] text-[#10243A]"
+              : "text-[#9CACBC] hover:bg-[#17344D] hover:text-white"
           }`}
         >
           {icon}
@@ -739,8 +739,8 @@ const SidebarGroup = ({
         }
         className={`w-full flex items-center justify-between px-4 py-2 rounded-md transition-colors ${
           expanded || active
-            ? "bg-slate-800 text-white"
-            : "hover:bg-slate-800 text-slate-400 hover:text-white"
+            ? "bg-[#17344D] text-white"
+            : "hover:bg-[#17344D] text-[#9CACBC] hover:text-white"
         }`}
       >
         <div
@@ -778,7 +778,7 @@ const SidebarGroup = ({
         }`}
       >
         <div
-          className={`bg-slate-950/30 rounded-md py-1 border-slate-700 space-y-0.5 ${
+          className={`bg-[#071A2B]/40 rounded-xl py-1 border-[#30485F] space-y-0.5 ${
             isRTL
               ? "mr-4 border-r"
               : "ml-4 border-l"
@@ -810,8 +810,8 @@ const SidebarSubItem = ({
       onClick={onNavigate}
       className={`block px-4 py-1.5 text-[11px] transition-colors relative group rounded-r-md ${
         active
-          ? "bg-blue-600/20 text-white border-l-2 border-blue-500"
-          : "text-slate-400 hover:text-white hover:bg-white/5"
+          ? "bg-blue-50 text-[#10243A] border-l-2 border-[#4A86F7]"
+          : "text-[#9CACBC] hover:text-white hover:bg-white/5"
       }`}
     >
       <span className="group-hover:translate-x-1 transition-transform inline-block">
