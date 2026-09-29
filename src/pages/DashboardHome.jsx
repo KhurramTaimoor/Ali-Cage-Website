@@ -102,12 +102,6 @@ const LANG = {
     remaining: "Remaining",
     cleared: "Cleared",
     partial: "Partially Paid",
-    calendarTitle: "Business Calendar",
-    calendarSubtitle: "Sales, invoice due dates, deliveries and payment clearances",
-    upcomingPayments: "Upcoming Payments",
-    noUpcoming: "No upcoming payments found",
-    saleDue: "Invoice Due",
-    deliveryDue: "Delivery",
   },
 
   ur: {
@@ -168,12 +162,6 @@ const LANG = {
     remaining: "بقایا",
     cleared: "کلیئر",
     partial: "جزوی ادائیگی",
-    calendarTitle: "کاروباری کیلنڈر",
-    calendarSubtitle: "سیلز، انوائس ڈیٹ، ڈیلیوری اور ادائیگی کی تاریخیں",
-    upcomingPayments: "آنے والی ادائیگیاں",
-    noUpcoming: "کوئی آنے والی ادائیگی موجود نہیں",
-    saleDue: "انوائس ادائیگی",
-    deliveryDue: "ڈیلیوری",
   },
 };
 
@@ -673,15 +661,6 @@ const DashboardHome = () => {
           />
         </div>
 
-        <DashboardCalendar
-          salesInvoices={salesInvoices}
-          purchaseInvoices={purchaseInvoices}
-          saleOrders={saleOrders}
-          chequeVouchers={chequeVouchers}
-          t={t}
-          isUrdu={isUrdu}
-        />
-
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-5">
           <div className="px-6 py-5 border-b border-sky-100 flex items-center justify-between gap-3 flex-wrap">
             <div>
@@ -849,88 +828,6 @@ const DashboardHome = () => {
         </div>
       </div>
     </div>
-  );
-};
-
-const DashboardCalendar = ({ salesInvoices, purchaseInvoices, saleOrders, chequeVouchers, t, isUrdu }) => {
-  const [cursor, setCursor] = useState(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
-
-  const toKey = (value) => {
-    if (!value) return "";
-    const d = new Date(String(value).slice(0, 10) + "T00:00:00");
-    if (Number.isNaN(d.getTime())) return "";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  };
-
-  const events = useMemo(() => {
-    const list = [];
-    (salesInvoices || []).forEach((invoice) => {
-      if (invoice.invoice_date) list.push({ date: toKey(invoice.invoice_date), kind: "sale", label: invoice.invoice_no || `Sale #${invoice.id}`, amount: getFirstAmount(invoice, ["grand_total", "invoice_total", "total_amount"]) });
-      if (invoice.due_date) list.push({ date: toKey(invoice.due_date), kind: "due", label: `${t.saleDue}: ${invoice.invoice_no || invoice.id}`, amount: getFirstAmount(invoice, ["grand_total", "invoice_total", "total_amount"]) });
-    });
-    (purchaseInvoices || []).forEach((invoice) => {
-      if (invoice.invoice_date) list.push({ date: toKey(invoice.invoice_date), kind: "purchase", label: invoice.invoice_no || `Purchase #${invoice.id}`, amount: getFirstAmount(invoice, ["grand_total", "invoice_total", "total_amount"]) });
-    });
-    (saleOrders || []).forEach((order) => {
-      const d = order.delivery_date || order.due_date;
-      if (d) list.push({ date: toKey(d), kind: "delivery", label: `${t.deliveryDue}: ${order.order_no || order.id}`, amount: getFirstAmount(order, ["grand_total", "total_amount", "remaining_balance"]) });
-    });
-    (chequeVouchers || []).forEach((voucher) => {
-      if (voucher.clearance_date) list.push({ date: toKey(voucher.clearance_date), kind: "payment", label: voucher.voucher_no || `Cheque #${voucher.id}`, amount: Number(voucher.remaining_amount || voucher.amount || 0), status: voucher.status });
-    });
-    return list.filter((event) => event.date);
-  }, [salesInvoices, purchaseInvoices, saleOrders, chequeVouchers, t]);
-
-  const days = useMemo(() => {
-    const year = cursor.getFullYear();
-    const month = cursor.getMonth();
-    const first = new Date(year, month, 1);
-    const start = new Date(year, month, 1 - first.getDay());
-    return Array.from({ length: 42 }, (_, index) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + index);
-      return d;
-    });
-  }, [cursor]);
-
-  const upcoming = useMemo(() => {
-    const todayKey = toKey(new Date().toISOString().slice(0, 10));
-    return events
-      .filter((event) => ["due", "payment"].includes(event.kind) && event.date >= todayKey && String(event.status || "").toLowerCase() !== "cleared")
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 8);
-  }, [events]);
-
-  const monthTitle = cursor.toLocaleDateString(isUrdu ? "ur-PK" : "en-US", { month: "long", year: "numeric" });
-  const week = isUrdu ? ["اتوار", "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const kindClass = (kind) => kind === "due" ? "bg-amber-50 text-amber-700 border-amber-100" : kind === "payment" ? "bg-rose-50 text-rose-700 border-rose-100" : kind === "delivery" ? "bg-violet-50 text-violet-700 border-violet-100" : kind === "purchase" ? "bg-cyan-50 text-cyan-700 border-cyan-100" : "bg-blue-50 text-blue-700 border-blue-100";
-
-  return (
-    <section className="mb-5 grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(300px,0.8fr)]">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5">
-          <div><h2 className="font-bold tracking-tight text-[#13263A]">{t.calendarTitle}</h2><p className="mt-0.5 text-xs text-slate-500">{t.calendarSubtitle}</p></div>
-          <div className="flex items-center gap-2"><button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth()-1, 1))} className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-slate-50">‹</button><span className="min-w-[130px] text-center text-xs font-extrabold text-[#13263A]">{monthTitle}</span><button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth()+1, 1))} className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-slate-50">›</button></div>
-        </div>
-        <div className="overflow-x-auto">
-          <div className="min-w-[660px] p-2.5">
-            <div className="grid grid-cols-7 gap-1">{week.map((day) => <div key={day} className="px-2 py-1.5 text-center text-[9px] font-extrabold uppercase text-slate-400">{day}</div>)}</div>
-            <div className="grid grid-cols-7 gap-1">{days.map((day) => { const key = toKey(day.toISOString().slice(0,10)); const dayEvents = events.filter((event) => event.date === key); const current = day.getMonth() === cursor.getMonth(); return <div key={key} className={`min-h-[78px] rounded-lg border p-1.5 ${current ? "border-slate-200 bg-white" : "border-slate-100 bg-slate-50/70"}`}><div className={`mb-1 text-[10px] font-bold ${current ? "text-slate-700" : "text-slate-300"}`}>{day.getDate()}</div><div className="space-y-1">{dayEvents.slice(0,2).map((event, idx) => <div key={`${event.kind}-${idx}`} className={`truncate rounded-md border px-1.5 py-0.5 text-[8px] font-bold ${kindClass(event.kind)}`} title={`${event.label} ${event.amount ? formatCurrency(event.amount) : ""}`}>{event.label}</div>)}{dayEvents.length > 2 && <div className="px-1 text-[8px] font-bold text-slate-400">+{dayEvents.length-2} more</div>}</div></div>; })}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="mb-3 flex items-center justify-between"><div><h2 className="font-bold text-[#13263A]">{t.upcomingPayments}</h2><p className="mt-0.5 text-xs text-slate-500">{t.chequeSubtitle}</p></div><i className="bi bi-calendar2-check text-lg text-[#4A86F7]"></i></div>
-        <div className="space-y-2">{upcoming.length === 0 ? <div className="rounded-lg bg-slate-50 px-3 py-8 text-center text-xs text-slate-400">{t.noUpcoming}</div> : upcoming.map((event, idx) => <div key={`${event.date}-${idx}`} className="rounded-lg border border-slate-200 p-3"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-xs font-extrabold text-[#13263A]">{event.label}</p><p className="mt-1 text-[11px] font-bold text-slate-400">{formatDate(event.date)}</p></div>{event.amount > 0 && <b className="text-xs font-extrabold text-rose-700">{formatCurrency(event.amount)}</b>}</div></div>)}</div>
-      </div>
-    </section>
   );
 };
 

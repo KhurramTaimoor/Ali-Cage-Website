@@ -44,7 +44,7 @@ const LANG = {
     totalDelivery: "Delivery Charges",
     customerType: "Customer Type",
     name: "Name",
-    reference: "Reference",
+    reference: "Description",
     address: "Address",
     invoiceNo: "Invoice No",
     date: "Date",
@@ -53,7 +53,7 @@ const LANG = {
     viewDetails: "View Details",
     shipTo: "Ship To",
     rateList: "Rate List",
-    rateListAuto: "Auto / Customer Assigned",
+    rateListAuto: "Auto / Customer",
     rateListHint: "Leave Auto to use the customer's assigned list. Select any list here to override rates for this invoice, including General/other accounts.",
     products: "Products",
     addRow: "+ Add Row",
@@ -139,7 +139,7 @@ const LANG = {
     totalDelivery: "ڈیلیوری چارجز",
     customerType: "کسٹمر ٹائپ",
     name: "نام",
-    reference: "ریفرنس",
+    reference: "تفصیل",
     address: "ایڈریس",
     invoiceNo: "انوائس نمبر",
     date: "تاریخ",
@@ -148,7 +148,7 @@ const LANG = {
     viewDetails: "تفصیل دیکھیں",
     shipTo: "شپ ٹو",
     rateList: "ریٹ لسٹ",
-    rateListAuto: "آٹو / کسٹمر اسائن شدہ",
+    rateListAuto: "آٹو / کسٹمر",
     rateListHint: "آٹو پر کسٹمر کی اسائن شدہ لسٹ استعمال ہوگی۔ اس انوائس کے لیے کسی بھی ریٹ لسٹ کو منتخب کر کے ریٹس اوور رائیڈ کر سکتے ہیں، جنرل یا دوسرے اکاؤنٹس پر بھی۔",
     products: "پروڈکٹس",
     addRow: "+ لائن شامل کریں",
@@ -1228,6 +1228,8 @@ export default function SalesInvoicePage() {
         .invoice-mobile-list{display:none}.invoice-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.invoice-detail-box{border:1px solid #e2e8f0;border-radius:12px;background:white;padding:10px}.invoice-detail-box small{display:block;color:#64748b;font-size:10px;font-weight:800;text-transform:uppercase;margin-bottom:4px}.invoice-detail-box b{display:block;color:#13263a;font-size:13px}.invoice-detail-items{margin-top:12px;overflow:auto;border:1px solid #e2e8f0;border-radius:12px;background:white}.invoice-detail-items table{width:100%;min-width:720px;border-collapse:collapse}.invoice-detail-items th{background:#13263a;color:#fff;padding:9px;font-size:10px;text-transform:uppercase}.invoice-detail-items td{padding:9px;border-bottom:1px solid #eef2f7;font-size:12px}
 @media(max-width:1250px){.formTopLine{grid-template-columns:repeat(3,minmax(0,1fr))!important}.formTopLine>div:nth-child(6){grid-column:1/-1}.date-box{grid-template-columns:125px minmax(0,1fr)!important}.inputModalBox{width:100%!important}.finalTotalBar{grid-template-columns:repeat(3,1fr)!important}}
         @media(max-width:780px){.table-wrap table.list{display:none}.invoice-mobile-list{display:grid;gap:10px;padding:10px}.invoice-detail-grid{grid-template-columns:1fr 1fr}.formTopLine{grid-template-columns:1fr!important}.formTopLine>div:nth-child(7){grid-column:1}.date-box{grid-template-columns:1fr!important}.date-preview{min-width:0}.finalTotalBar{grid-template-columns:1fr!important}.basicProductTable{min-width:980px!important}.inputModalBody{padding:10px!important}}@media(max-width:520px){.invoice-detail-grid{grid-template-columns:1fr}.invoice-page{padding:10px}.top-card{padding:15px}.toolbar{gap:7px}}
+        .invoiceHeaderGrid{display:grid;grid-template-columns:145px minmax(210px,1.25fr) minmax(160px,.9fr) minmax(180px,1fr) 185px;gap:10px;align-items:end;margin-bottom:10px}.invoiceHeaderGrid>div{min-width:0}.invoiceHeaderGrid .basicInput,.invoiceHeaderGrid .basicSelect{height:38px}.invoiceHeaderGrid .basicLabel{min-height:16px;display:flex;align-items:flex-end;margin-bottom:5px}.invoiceHeaderGrid>div:nth-child(6),.invoiceHeaderGrid>div:nth-child(7){max-width:185px}.invoiceHeaderGrid>div:nth-child(8){grid-column:3/6}.invoiceHeaderGrid>div:nth-child(8) .basicInput{width:100%}@media(max-width:1100px){.invoiceHeaderGrid{grid-template-columns:140px minmax(190px,1.2fr) minmax(145px,.85fr) minmax(165px,1fr) 170px}.invoiceHeaderGrid>div:nth-child(8){grid-column:3/6}}@media(max-width:920px){.invoiceHeaderGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.invoiceHeaderGrid>div:nth-child(6),.invoiceHeaderGrid>div:nth-child(7){max-width:none}.invoiceHeaderGrid>div:nth-child(8){grid-column:1/-1}}@media(max-width:640px){.invoiceHeaderGrid{grid-template-columns:1fr}.invoiceHeaderGrid>div:nth-child(8){grid-column:1}.invoiceHeaderGrid .basicInput,.invoiceHeaderGrid .basicSelect{height:40px}}
+
 
       `}</style>
 
@@ -1399,7 +1401,7 @@ export default function SalesInvoicePage() {
 
             <div className="inputModalBody">
               <div className="form-box">
-                <div className="formTopLine">
+                <div className="invoiceHeaderGrid">
                   <div>
                     <label className="basicLabel">{t.customerType}</label>
                     <select className="basicSelect" value={form.party_type} onChange={(e) => handlePartyTypeChange(e.target.value)}>
@@ -1420,7 +1422,6 @@ export default function SalesInvoicePage() {
                       <option value="">{t.rateListAuto}</option>
                       {rateListNames.map((name) => <option key={name} value={name}>{name}</option>)}
                     </select>
-                    <div style={{ marginTop: 4, fontSize: 9, lineHeight: 1.35, color: "#94a3b8", fontWeight: 600 }}>{t.rateListHint}</div>
                   </div>
                   <div>
                     <label className="basicLabel">{t.reference}</label>
@@ -1432,10 +1433,7 @@ export default function SalesInvoicePage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.dateFull}</label>
-                    <div className="date-box">
-                      <DateTextInput className="basicInput" value={form.invoice_date} onChange={(v) => setForm((f) => ({ ...f, invoice_date: v }))} />
-                      <div className="date-preview">{formatFullDate(form.invoice_date, lang)}</div>
-                    </div>
+                    <DateTextInput className="basicInput" value={form.invoice_date} onChange={(v) => setForm((f) => ({ ...f, invoice_date: v }))} />
                   </div>
                   <div>
                     <label className="basicLabel">{t.dueDate}</label>
