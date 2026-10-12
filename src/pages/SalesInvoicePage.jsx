@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Eye, Pencil, Printer, Trash2 } from "lucide-react";
 import { resolveSalesRate } from "../utils/salesRateResolver";
@@ -12,6 +12,8 @@ const SUPPLIERS_API = `${API_ROOT}/api/suppliers`;
 const GENERAL_LEDGERS_API = `${API_ROOT}/api/general-ledgers`;
 const CATEGORIES_API = `${API_ROOT}/api/categories`;
 const PRODUCTS_API = `${API_ROOT}/api/products`;
+const CUSTOMER_LEDGER_API = `${API_ROOT}/api/ledger/customer`;
+const LEDGER_SUMMARY_API = `${API_ROOT}/api/ledger-summary`;
 const UNITS_API = `${API_ROOT}/api/units`;
 const RATES_API = `${API_ROOT}/api/rates`;
 
@@ -81,6 +83,9 @@ const LANG = {
     previousBalance: "Previous Balance",
     deliveryCharges: "Delivery Charges",
     discount: "Discount",
+    discountFlat: "Flat",
+    discountPercent: "Percentage",
+    balanceLoadError: "Could not refresh remaining balance. Please check the ledger.",
     grandTotal: "Grand Total",
     save: "Save",
     update: "Update",
@@ -179,6 +184,9 @@ const LANG = {
     previousBalance: "سابقہ بیلنس",
     deliveryCharges: "ڈیلیوری چارجز",
     discount: "ڈسکاؤنٹ",
+    discountFlat: "فلیٹ",
+    discountPercent: "فیصد",
+    balanceLoadError: "بقایا بیلنس لوڈ نہیں ہو سکا۔ لیجر چیک کریں۔",
     grandTotal: "کل رقم",
     save: "محفوظ کریں",
     update: "اپڈیٹ",
@@ -261,6 +269,7 @@ const emptyForm = () => ({
   previous_balance: "0",
   delivery_charges: "0",
   discount: "0",
+  discount_type: "flat",
 });
 
 const getList = (d) => {
@@ -275,6 +284,12 @@ const getList = (d) => {
 const toNum = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+};
+
+const calculateDiscountAmount = (subtotal, value, mode) => {
+  const entered = Math.max(0, toNum(value));
+  const amount = mode === "percent" ? (Math.max(0, toNum(subtotal)) * Math.min(entered, 100)) / 100 : entered;
+  return Math.round(amount * 100) / 100;
 };
 
 const money = (v) =>
@@ -320,13 +335,14 @@ const getLedgerName = (o) => pickText(o, ["ledger_name", "ledger_name_en", "acco
 
 const getPreviousBalance = (row) => {
   if (!row) return 0;
+  // Remaining/closing balance comes from posted transactions. Opening balance
+  // is a starting entry, and must not override the current outstanding amount.
   const keys = [
+    "remaining_balance", "remainingBalance", "due_balance", "dueBalance",
+    "closing_balance", "closingBalance", "current_balance", "currentBalance",
+    "ledger_balance", "ledgerBalance", "account_balance", "accountBalance",
     "previous_balance", "previousBalance", "prev_balance", "prevBalance",
-    "opening_balance", "openingBalance", "balance", "current_balance",
-    "currentBalance", "closing_balance", "closingBalance", "ledger_balance",
-    "ledgerBalance", "account_balance", "accountBalance", "old_balance",
-    "oldBalance", "remaining_balance", "remainingBalance", "due_balance",
-    "dueBalance", "payable", "receivable",
+    "balance", "payable", "receivable",
   ];
   for (const key of keys) {
     if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return toNum(row[key]);
@@ -345,6 +361,14 @@ const makePartyOption = (row, nameGetter) => ({
 const getCategoryName = (o) => pickText(o, ["category_name", "category_name_en", "CategoryName", "name", "name_en", "title"]);
 const getProductName = (o) => pickText(o, ["product_name", "product_name_en", "ProductName", "item_name", "ItemName", "name", "name_en", "title"]);
 const getUnitName = (o) => pickText(o, ["unit_name", "unit_name_en", "UnitName", "name", "name_en", "symbol", "title"]);
+const getProductTypeLabel = (product, typeMap) => {
+  const keys = ["product_type_en", "product_type_name", "type_name", "product_type", "typeName"];
+  for (const key of keys) {
+    const value = product?.[key];
+    if (value != null && String(value).trim()) return String(value).trim();
+  }
+  return typeMap[String(getProductTypeId(product))] || "";
+};
 const getProductDesc = (o) => pickText(o, ["product_description", "ProductDescription", "description", "Description", "details", "remarks"]);
 
 const getCategoryId = (o) =>
@@ -594,7 +618,7 @@ body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jame
       <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
       <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
       <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
-      <div class="box"><small>${t.discount}</small><b>${money(discount)}</b></div>
+      <div class="box"><small>${t.discount}${invoice.discount_type === "percent" ? ` (${money(invoice.discount_value)}%)` : ""}</small><b>${money(discount)}</b></div>
       <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
     </div>
   </div>
@@ -647,7 +671,7 @@ function makeInvoiceSheet(invoice, maps, t, isUrdu) {
         <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
         <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
         <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
-        <div class="box"><small>${t.discount}</small><b>${money(discount)}</b></div>
+        <div class="box"><small>${t.discount}${invoice.discount_type === "percent" ? ` (${money(invoice.discount_value)}%)` : ""}</small><b>${money(discount)}</b></div>
         <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
       </div>
     </div>
@@ -705,6 +729,8 @@ export default function SalesInvoicePage() {
   const [dateTo, setDateTo] = useState(today());
   const [msg, setMsg] = useState({ type: "", text: "" });
   const [saving, setSaving] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const partyBalanceRequestId = useRef(0);
 
   const mastersLoading = cuLoading || emLoading || suLoading || glLoading || catLoading || prodLoading || unLoading;
 
@@ -793,7 +819,8 @@ export default function SalesInvoicePage() {
 
   const invTotal = useMemo(() => items.reduce((sum, row) => sum + toNum(row.amount), 0), [items]);
   const totalQty = useMemo(() => items.reduce((sum, row) => sum + toNum(row.qty || row.pieces_qty || row.carton_qty), 0), [items]);
-  const grandTotal = invTotal + toNum(form.previous_balance) + toNum(form.delivery_charges) - toNum(form.discount);
+  const discountAmount = calculateDiscountAmount(invTotal, form.discount, form.discount_type);
+  const grandTotal = invTotal + toNum(form.previous_balance) + toNum(form.delivery_charges) - discountAmount;
 
   const summary = useMemo(() => {
     return invoices.reduce(
@@ -841,6 +868,8 @@ export default function SalesInvoicePage() {
   }, [invoices, search, customerFilter, dateFrom, dateTo, getInvoicePartyName]);
 
   const openAdd = async () => {
+    partyBalanceRequestId.current += 1;
+    setBalanceLoading(false);
     setEditingId(null);
     setItems(defaultInvoiceItems(5));
     setForm({ ...emptyForm(), invoice_no: genInvoiceNo(invoices) });
@@ -858,6 +887,8 @@ export default function SalesInvoicePage() {
   };
 
   const openEdit = async (id) => {
+    partyBalanceRequestId.current += 1;
+    setBalanceLoading(false);
     try {
       const res = await axios.get(`${API_BASE}/${id}`);
       const inv = res.data?.data || res.data;
@@ -876,7 +907,8 @@ export default function SalesInvoicePage() {
         rate_list_name: inv.rate_list_name || "",
         previous_balance: String(inv.previous_balance || 0),
         delivery_charges: String(inv.delivery_charges ?? inv.deliveryCharges ?? 0),
-        discount: String(inv.discount || 0),
+        discount: String(inv.discount_value ?? inv.discount ?? 0),
+        discount_type: inv.discount_type === "percent" ? "percent" : "flat",
       });
       setItems(
         Array.isArray(inv.items) && inv.items.length
@@ -983,18 +1015,57 @@ export default function SalesInvoicePage() {
   const removeRow = (index) => setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== index)));
 
   const handlePartyTypeChange = (value) => {
+    partyBalanceRequestId.current += 1;
+    setBalanceLoading(false);
     setForm((prev) => ({ ...prev, party_type: value, party_id: "", customer_id: "", previous_balance: "0" }));
   };
 
-  const handlePartyChange = (value) => {
+  const handlePartyChange = async (value) => {
     const selected = partyOptions.find((x) => String(x.id) === String(value));
     const isCustomer = form.party_type === "customer";
+    const selectedPartyType = form.party_type;
+    const requestId = ++partyBalanceRequestId.current;
+    setBalanceLoading(Boolean(value));
     setForm((prev) => ({
       ...prev,
       party_id: value,
       customer_id: prev.party_type === "customer" ? value : "",
       previous_balance: value ? String(selected?.previous_balance ?? 0) : "0",
     }));
+
+    // Always fetch the posted/remaining ledger balance, not master opening balance.
+    // For an invoice being edited, its saved balance snapshot is kept by openEdit.
+    if (value) {
+      try {
+        let balance;
+        if (isCustomer) {
+          const res = await axios.get(`${CUSTOMER_LEDGER_API}/${encodeURIComponent(value)}/details`);
+          balance = res.data?.data?.summary?.closing_balance;
+        } else if (selectedPartyType === "supplier" && selected) {
+          // Supplier master already exposes its calculated closing balance.
+          balance = selected.previous_balance;
+        } else {
+          const res = await axios.get(LEDGER_SUMMARY_API, {
+            params: { type: selectedPartyType === "general_ledger" ? "general" : selectedPartyType },
+          });
+          const match = (res.data?.rows || []).find((entry) =>
+            String(entry.entity_id) === String(value)
+          );
+          if (!match) throw new Error("Ledger account not found");
+          balance = match.closing_balance;
+        }
+        if (balance == null || !Number.isFinite(Number(balance))) throw new Error("Invalid ledger balance");
+        if (partyBalanceRequestId.current === requestId) {
+          setForm((current) => current.party_id === value && current.party_type === selectedPartyType
+            ? { ...current, previous_balance: String(balance) }
+            : current);
+        }
+      } catch {
+        if (partyBalanceRequestId.current === requestId) toast("error", t.balanceLoadError);
+      } finally {
+        if (partyBalanceRequestId.current === requestId) setBalanceLoading(false);
+      }
+    }
     if (isCustomer) {
       setItems((prev) => prev.map((row) => {
         if (!row.product_id) return row;
@@ -1077,12 +1148,15 @@ export default function SalesInvoicePage() {
       .filter((row) => row.product_id && row.qty > 0);
 
     if (!validItems.length) throw new Error(t.requiredItem);
+    if (Number(form.discount) < 0 || (form.discount_type === "percent" && toNum(form.discount) > 100)) {
+      throw new Error(form.discount_type === "percent" ? "Percentage discount must be between 0 and 100." : "Discount cannot be negative.");
+    }
 
     const partyId = Number(form.party_id);
     const total = validItems.reduce((sum, row) => sum + toNum(row.amount), 0);
     const delivery = toNum(form.delivery_charges);
     const previous = toNum(form.previous_balance);
-    const discount = toNum(form.discount);
+    const discount = calculateDiscountAmount(total, form.discount, form.discount_type);
     const partyName = partyOptions.find((p) => String(p.id) === String(form.party_id))?.name || "";
 
     return {
@@ -1103,6 +1177,8 @@ export default function SalesInvoicePage() {
       previous_balance: previous,
       delivery_charges: delivery,
       discount,
+      discount_type: form.discount_type === "percent" ? "percent" : "flat",
+      discount_value: Math.max(0, toNum(form.discount)),
       invoice_total: total,
       grand_total: total + previous + delivery - discount,
       items: validItems,
@@ -1110,6 +1186,7 @@ export default function SalesInvoicePage() {
   };
 
   const handleSave = async () => {
+    if (balanceLoading) return;
     let payload;
     try {
       payload = preparePayload();
@@ -1503,7 +1580,9 @@ export default function SalesInvoicePage() {
                                 });
                                 const list = selectedCategory && matchedProducts.length === 0 ? products : matchedProducts;
                                 return list.map((p) => (
-                                  <option key={getProductId(p)} value={getProductId(p)}>{getProductName(p)}</option>
+                                  <option key={getProductId(p)} value={getProductId(p)}>
+                                    {getProductName(p)}{getProductTypeLabel(p, typeMap) ? ` — ${getProductTypeLabel(p, typeMap)}` : ""}
+                                  </option>
                                 ));
                               })()}
                             </select>
@@ -1566,7 +1645,7 @@ export default function SalesInvoicePage() {
                     <input readOnly className="basicInput" value={money(totalQty)} />
                   </div>
                   <div>
-                    <label className="basicLabel">{t.previousBalance}</label>
+                    <label className="basicLabel">{t.previousBalance}{balanceLoading ? ` (${t.loading})` : ""}</label>
                     <input type="number" className="basicInput" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} />
                   </div>
                   <div>
@@ -1575,7 +1654,29 @@ export default function SalesInvoicePage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.discount}</label>
-                    <input type="number" className="basicInput" value={form.discount} onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))} />
+                    <div style={{ display: "flex", alignItems: "stretch", gap: 6, minWidth: 0 }}>
+                      <select
+                        className="basicSelect"
+                        aria-label={t.discount}
+                        data-no-search="true"
+                        style={{ width: 104, minWidth: 88, flexShrink: 0 }}
+                        value={form.discount_type}
+                        onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))}
+                      >
+                        <option value="flat">{t.discountFlat}</option>
+                        <option value="percent">% ({t.discountPercent})</option>
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        max={form.discount_type === "percent" ? "100" : undefined}
+                        step="0.01"
+                        className="basicInput"
+                        style={{ minWidth: 0, flex: 1 }}
+                        value={form.discount}
+                        onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1584,14 +1685,14 @@ export default function SalesInvoicePage() {
                   <div className="totalBox"><label>{t.invoiceTotal}</label><b>{money(invTotal)}</b></div>
                   <div className="totalBox"><label>{t.previousBalance}</label><b>{money(form.previous_balance)}</b></div>
                   <div className="totalBox"><label>{t.deliveryCharges}</label><b>{money(form.delivery_charges)}</b></div>
-                  <div className="totalBox"><label>{t.discount}</label><b>{money(form.discount)}</b></div>
+                  <div className="totalBox"><label>{t.discount}{form.discount_type === "percent" ? ` (${money(form.discount)}%)` : ""}</label><b>{money(discountAmount)}</b></div>
                   <div className="totalBox grandBox"><label>{t.grandTotal}</label><b>{money(grandTotal)}</b></div>
                 </div>
               </div>
 
               <div className="modalFooterBasic">
                 <button className="basicBtn" type="button" onClick={() => setShowForm(false)}>{t.cancel}</button>
-                <button className="basicBtn basicBtnGreen" type="button" disabled={saving} onClick={handleSave}>{saving ? t.saving : editingId ? t.update : t.save}</button>
+                <button className="basicBtn basicBtnGreen" type="button" disabled={saving || balanceLoading} onClick={handleSave}>{saving ? t.saving : balanceLoading ? t.loading : editingId ? t.update : t.save}</button>
               </div>
             </div>
           </div>
