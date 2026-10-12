@@ -1597,7 +1597,7 @@ export default function SalesInvoicePage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.rateList}</label>
-                    <select data-searchable="true" className="basicSelect" value={form.rate_list_name || ""} onChange={(e) => handleRateListChange(e.target.value)} title={t.rateListHint}>
+                    <select data-searchable="true" data-no-hint="true" className="basicSelect" value={form.rate_list_name || ""} onChange={(e) => handleRateListChange(e.target.value)}>
                       <option value="">{t.rateListAuto}</option>
                       {rateListNames.map((name) => <option key={name} value={name}>{name}</option>)}
                     </select>
