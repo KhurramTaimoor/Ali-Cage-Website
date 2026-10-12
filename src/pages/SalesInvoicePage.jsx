@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+\import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Eye, Pencil, Printer, Trash2 } from "lucide-react";
 import { resolveSalesRate } from "../utils/salesRateResolver";
@@ -70,6 +70,7 @@ const LANG = {
     unit: "Unit",
     saleType: "Sale Type",
     single: "Single",
+    multiple: "Multiple",
     carton: "Carton",
     pieces: "Pieces",
     cartonQty: "Carton Qty",
@@ -171,6 +172,7 @@ const LANG = {
     unit: "یونٹ",
     saleType: "قسم",
     single: "سنگل",
+    multiple: "ملٹی پل",
     carton: "کارٹن",
     pieces: "پیسز",
     cartonQty: "کارٹن مقدار",
@@ -244,7 +246,8 @@ const emptyItem = () => ({
   product_description: "",
   product_type_id: "",
   unit_id: "",
-  sale_type: "single",
+  sale_type: "multiple",
+  rate_manual: false,
   carton_qty: "",
   pieces_qty: "",
   qty: "",
@@ -415,6 +418,20 @@ const getProductPieceRate = (p) =>
   p?.retail_price ??
   p?.RetailPrice ??
   0;
+
+// Rate List may provide different prices for a single piece and a multiple sale.
+// Product master values are fallback when no matching rate-list record exists.
+const getProductModeRate = (product, saleType) => {
+  const keys = saleType === "single"
+    ? ["single_rate", "singleRate", "piece_rate", "pieceRate", "retail_rate", "retailRate"]
+    : ["retail_rate", "retailRate", "wholesale_rate", "wholesaleRate", "multiple_rate", "multipleRate"];
+  for (const key of keys) {
+    if (Number.isFinite(Number(product?.[key])) && Number(product[key]) > 0) return Number(product[key]);
+  }
+  return Number(getProductPieceRate(product)) || 0;
+};
+
+const roundPreviousBalance = (value) => String(Math.round(toNum(value)));
 
 const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
 const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
@@ -820,7 +837,7 @@ export default function SalesInvoicePage() {
   const invTotal = useMemo(() => items.reduce((sum, row) => sum + toNum(row.amount), 0), [items]);
   const totalQty = useMemo(() => items.reduce((sum, row) => sum + toNum(row.qty || row.pieces_qty || row.carton_qty), 0), [items]);
   const discountAmount = calculateDiscountAmount(invTotal, form.discount, form.discount_type);
-  const grandTotal = invTotal + toNum(form.previous_balance) + toNum(form.delivery_charges) - discountAmount;
+  const grandTotal = invTotal + Math.round(toNum(form.previous_balance)) + toNum(form.delivery_charges) - discountAmount;
 
   const summary = useMemo(() => {
     return invoices.reduce(
@@ -905,7 +922,7 @@ export default function SalesInvoicePage() {
         due_date: inv.due_date || "",
         shipment_to: inv.shipment_to || "",
         rate_list_name: inv.rate_list_name || "",
-        previous_balance: String(inv.previous_balance || 0),
+        previous_balance: roundPreviousBalance(inv.previous_balance),
         delivery_charges: String(inv.delivery_charges ?? inv.deliveryCharges ?? 0),
         discount: String(inv.discount_value ?? inv.discount ?? 0),
         discount_type: inv.discount_type === "percent" ? "percent" : "flat",
@@ -919,6 +936,7 @@ export default function SalesInvoicePage() {
               product_type_id: String(row.product_type_id ?? row.productTypeId ?? row.type_id ?? row.typeId ?? ""),
               unit_id: String(row.unit_id ?? row.unit?.id ?? ""),
               sale_type: String(row.sale_type || "single"),
+              rate_manual: true, // A saved invoice keeps its historical rate until mode/product changes.
               carton_qty: String(row.carton_qty || ""),
               pieces_qty: String(row.pieces_qty || ""),
               qty: String(row.qty || row.quantity || ""),
@@ -934,29 +952,43 @@ export default function SalesInvoicePage() {
     }
   };
 
-  const rateForRow = useCallback((row, prod, customerId = form.party_type === "customer" ? form.party_id : null) => {
+  const rateForRow = useCallback((row, prod, customerId = form.party_type === "customer" ? form.party_id : null, listName = form.rate_list_name || "") => {
+    const mode = row.sale_type === "single" ? "single" : "retail";
     const listed = resolveSalesRate(salesRates, {
       customerId,
       productId: row.product_id || getProductId(prod || {}),
       categoryId: row.category_id || getProductCatId(prod || {}),
       productTypeId: row.product_type_id || getProductTypeId(prod || {}),
       unitId: row.unit_id || getProductUnitId(prod || {}),
-      rateMode: "retail",
-      listName: form.rate_list_name || "",
+      rateMode: mode,
+      listName,
     });
-    return listed?.rate || getProductPieceRate(prod || {}) || 0;
+    return listed?.rate || getProductModeRate(prod || {}, row.sale_type) || 0;
   }, [salesRates, form.party_type, form.party_id, form.rate_list_name]);
+
+  // Refresh auto-filled rates if the rate list loads after a product was chosen.
+  // Never overwrite a rate typed by the user or saved on an older invoice.
+  useEffect(() => {
+    if (!salesRates.length || !products.length) return;
+    setItems((prev) => prev.map((row) => {
+      if (!row.product_id || row.rate_manual) return row;
+      const product = products.find((p) => sameId(getProductId(p), row.product_id));
+      const nextRate = rateForRow(row, product);
+      if (String(row.rate) === String(nextRate)) return row;
+      return { ...row, rate: String(nextRate), amount: String((toNum(row.qty) * nextRate).toFixed(2)) };
+    }));
+  }, [salesRates, products, rateForRow]);
 
   const calcRow = useCallback(
     (row) => {
       const prod = products.find((p) => sameId(getProductId(p), row.product_id));
       const qty = toNum(row.qty);
-      const rate = toNum(row.rate || rateForRow(row, prod));
+      const rate = row.rate === "" || row.rate == null ? toNum(rateForRow(row, prod)) : toNum(row.rate);
       return {
         qty: String(qty || ""),
         pieces_qty: String(qty || ""),
         amount: String((qty * rate).toFixed(2)),
-        rate: String(rate || 0),
+        rate: String(rate),
         pieces_per_carton: "0",
       };
     },
@@ -964,51 +996,39 @@ export default function SalesInvoicePage() {
   );
 
   const handleItemChange = (index, field, value) => {
-    setItems((prev) =>
-      prev.map((row, i) => {
-        if (i !== index) return row;
-        let next = { ...row, [field]: value };
+    setItems((prev) => prev.map((row, i) => {
+      if (i !== index) return row;
+      const next = { ...row, [field]: value };
 
-        if (["category_id", "product_type_id", "unit_id"].includes(field) && next.product_id) {
-          const prod = products.find((p) => sameId(getProductId(p), next.product_id));
-          const listedRate = rateForRow(next, prod);
-          if (listedRate) next.rate = String(listedRate);
+      if (field === "product_id") {
+        const prod = products.find((p) => sameId(getProductId(p), value));
+        if (prod) {
+          next.category_id = String(getProductCatId(prod) || next.category_id || "");
+          next.unit_id = String(getProductUnitId(prod) || "");
+          next.product_type_id = String(getProductTypeId(prod) || next.product_type_id || defaultFmsTypeId || "");
         }
+        next.product_description = "";
+        next.rate_manual = false;
+        next.rate = String(rateForRow(next, prod) || 0);
+        next.carton_qty = "";
+        next.pieces_qty = "";
+        next.pieces_per_carton = "0";
+        next.qty = "";
+      }
 
-        if (field === "product_id") {
-          const prod = products.find((p) => sameId(getProductId(p), value));
-          if (prod) {
-            next.category_id = String(getProductCatId(prod) || next.category_id || "");
-            next.unit_id = String(getProductUnitId(prod) || "");
-            // Description is intentionally manual on invoices.
-            next.product_description = next.product_description || "";
-            next.product_type_id = String(getProductTypeId(prod) || next.product_type_id || defaultFmsTypeId || "");
-            next.rate = String(rateForRow(next, prod) || 0);
-            next.sale_type = "single";
-            next.carton_qty = "";
-            next.pieces_qty = "";
-            next.pieces_per_carton = "0";
-            next.qty = "";
-          }
-        }
+      // BOTH modes auto-fill their matching rate (Single -> single_rate,
+      // Multiple -> retail_rate); the numeric input remains editable.
+      if (field === "sale_type" || (["category_id", "product_type_id", "unit_id"].includes(field) && next.product_id)) {
+        const prod = products.find((p) => sameId(getProductId(p), next.product_id));
+        next.rate_manual = false;
+        next.rate = String(rateForRow(next, prod) || 0);
+      }
+      if (field === "rate") next.rate_manual = true;
+      if (field === "product_description") return next;
 
-        if (field === "sale_type") {
-          next.carton_qty = "";
-          next.pieces_qty = "";
-          next.qty = "";
-        }
-
-        if (field === "product_description") return next;
-
-        const calculated = calcRow(next);
-        next.qty = calculated.qty;
-        next.pieces_qty = calculated.pieces_qty;
-        next.amount = calculated.amount;
-        next.rate = calculated.rate;
-        next.pieces_per_carton = calculated.pieces_per_carton;
-        return next;
-      })
-    );
+      const calculated = calcRow(next);
+      return { ...next, ...calculated };
+    }));
   };
 
   const addRow = () => setItems((prev) => [...prev, emptyItem()]);
@@ -1030,7 +1050,7 @@ export default function SalesInvoicePage() {
       ...prev,
       party_id: value,
       customer_id: prev.party_type === "customer" ? value : "",
-      previous_balance: value ? String(selected?.previous_balance ?? 0) : "0",
+      previous_balance: value ? roundPreviousBalance(selected?.previous_balance) : "0",
     }));
 
     // Always fetch the posted/remaining ledger balance, not master opening balance.
@@ -1057,7 +1077,7 @@ export default function SalesInvoicePage() {
         if (balance == null || !Number.isFinite(Number(balance))) throw new Error("Invalid ledger balance");
         if (partyBalanceRequestId.current === requestId) {
           setForm((current) => current.party_id === value && current.party_type === selectedPartyType
-            ? { ...current, previous_balance: String(balance) }
+            ? { ...current, previous_balance: roundPreviousBalance(balance) }
             : current);
         }
       } catch {
@@ -1068,21 +1088,10 @@ export default function SalesInvoicePage() {
     }
     if (isCustomer) {
       setItems((prev) => prev.map((row) => {
-        if (!row.product_id) return row;
+        if (!row.product_id || row.rate_manual) return row;
         const prod = products.find((p) => sameId(getProductId(p), row.product_id));
-        const listed = resolveSalesRate(salesRates, {
-          customerId: value,
-          productId: row.product_id,
-          categoryId: row.category_id || getProductCatId(prod || {}),
-          productTypeId: row.product_type_id || getProductTypeId(prod || {}),
-          unitId: row.unit_id || getProductUnitId(prod || {}),
-          rateMode: "retail",
-          listName: form.rate_list_name || "",
-        });
-        if (!listed?.rate) return row;
-        const next = { ...row, rate: String(listed.rate) };
-        const qty = toNum(next.qty || next.pieces_qty);
-        return { ...next, amount: String((qty * listed.rate).toFixed(2)) };
+        const nextRate = rateForRow(row, prod, value);
+        return { ...row, rate: String(nextRate), amount: String((toNum(row.qty) * nextRate).toFixed(2)) };
       }));
     }
   };
@@ -1090,20 +1099,10 @@ export default function SalesInvoicePage() {
   const handleRateListChange = (value) => {
     setForm((prev) => ({ ...prev, rate_list_name: value }));
     setItems((prev) => prev.map((row) => {
-      if (!row.product_id) return row;
+      if (!row.product_id || row.rate_manual) return row;
       const prod = products.find((p) => sameId(getProductId(p), row.product_id));
-      const listed = resolveSalesRate(salesRates, {
-        customerId: form.party_type === "customer" ? form.party_id : null,
-        productId: row.product_id,
-        categoryId: row.category_id || getProductCatId(prod || {}),
-        productTypeId: row.product_type_id || getProductTypeId(prod || {}),
-        unitId: row.unit_id || getProductUnitId(prod || {}),
-        rateMode: "retail",
-        listName: value || "",
-      });
-      const nextRate = listed?.rate || getProductPieceRate(prod || {}) || 0;
-      const qty = toNum(row.qty || row.pieces_qty);
-      return { ...row, rate: String(nextRate), amount: String((qty * nextRate).toFixed(2)) };
+      const nextRate = rateForRow(row, prod, form.party_type === "customer" ? form.party_id : null, value);
+      return { ...row, rate: String(nextRate), amount: String((toNum(row.qty) * nextRate).toFixed(2)) };
     }));
   };
 
@@ -1120,7 +1119,7 @@ export default function SalesInvoicePage() {
           category_id: row.category_id || getProductCatId(prod || {}),
           unit_id: row.unit_id || getProductUnitId(prod || {}),
           product_type_id: row.product_type_id || getProductTypeId(prod || {}) || defaultFmsTypeId,
-          rate: row.rate || getProductPieceRate(prod || {}),
+          rate: row.rate === "" || row.rate == null ? getProductModeRate(prod || {}, row.sale_type) : row.rate,
           pieces_per_carton: 0,
         };
         const calculated = calcRow(enriched);
@@ -1135,13 +1134,13 @@ export default function SalesInvoicePage() {
           product_description: String(enriched.product_description || "").trim(),
           description: String(enriched.product_description || "").trim(),
           unit_id: Number(enriched.unit_id) || null,
-          sale_type: "single",
+          sale_type: enriched.sale_type === "single" ? "single" : "multiple",
           carton_qty: 0,
           pieces_qty: qty,
           qty,
           quantity: qty,
           pieces_per_carton: 0,
-          rate: toNum(calculated.rate || enriched.rate),
+          rate: toNum(calculated.rate),
           amount,
         };
       })
@@ -1155,7 +1154,7 @@ export default function SalesInvoicePage() {
     const partyId = Number(form.party_id);
     const total = validItems.reduce((sum, row) => sum + toNum(row.amount), 0);
     const delivery = toNum(form.delivery_charges);
-    const previous = toNum(form.previous_balance);
+    const previous = Math.round(toNum(form.previous_balance));
     const discount = calculateDiscountAmount(total, form.discount, form.discount_type);
     const partyName = partyOptions.find((p) => String(p.id) === String(form.party_id))?.name || "";
 
@@ -1552,6 +1551,7 @@ export default function SalesInvoicePage() {
                     <tr>
                       <th style={{ width: 35 }}>#</th>
                       <th style={{ width: 175 }}>{t.product}</th>
+                      <th style={{ width: 104 }}>{t.saleType}</th>
                       <th>{t.desc}</th>
                       <th style={{ width: 130 }}>{t.productType}</th>
                       <th style={{ width: 145 }}>{t.category}</th>
@@ -1586,23 +1586,12 @@ export default function SalesInvoicePage() {
                                 ));
                               })()}
                             </select>
-                            {row.product_id && (() => {
-                              const prod = products.find((p) => sameId(getProductId(p), row.product_id));
-                              const listed = resolveSalesRate(salesRates, {
-                                customerId: form.party_type === "customer" ? form.party_id : null,
-                                productId: row.product_id,
-                                categoryId: row.category_id || getProductCatId(prod || {}),
-                                productTypeId: row.product_type_id || getProductTypeId(prod || {}),
-                                unitId: row.unit_id || getProductUnitId(prod || {}),
-                                rateMode: "retail",
-                                listName: form.rate_list_name || "",
-                              });
-                              return listed?.single_rate > 0 ? (
-                                <div style={{ marginTop: 3, fontSize: 10, fontWeight: 800, color: "#475569" }}>
-                                  (Single Rate Pcs/Kgs @{money(listed.single_rate)})
-                                </div>
-                              ) : null;
-                            })()}
+                          </td>
+                          <td>
+                            <select data-no-search="true" className="productInput" value={row.sale_type === "single" ? "single" : "multiple"} onChange={(e) => handleItemChange(idx, "sale_type", e.target.value)}>
+                              <option value="multiple">{t.multiple}</option>
+                              <option value="single">{t.single}</option>
+                            </select>
                           </td>
                           <td>
                             <input className="productInput" value={row.product_description} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} />
@@ -1646,7 +1635,7 @@ export default function SalesInvoicePage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.previousBalance}{balanceLoading ? ` (${t.loading})` : ""}</label>
-                    <input type="number" className="basicInput" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} />
+                    <input type="number" className="basicInput" step="1" value={form.previous_balance} onChange={(e) => setForm((f) => ({ ...f, previous_balance: e.target.value }))} onBlur={(e) => setForm((f) => ({ ...f, previous_balance: roundPreviousBalance(e.target.value) }))} />
                   </div>
                   <div>
                     <label className="basicLabel">{t.deliveryCharges}</label>
@@ -1685,7 +1674,7 @@ export default function SalesInvoicePage() {
                 <div className="finalTotalBar">
                   <div className="totalBox"><label>{t.totalQty}</label><b>{money(totalQty)}</b></div>
                   <div className="totalBox"><label>{t.invoiceTotal}</label><b>{money(invTotal)}</b></div>
-                  <div className="totalBox"><label>{t.previousBalance}</label><b>{money(form.previous_balance)}</b></div>
+                  <div className="totalBox"><label>{t.previousBalance}</label><b>{money(Math.round(toNum(form.previous_balance)))}</b></div>
                   <div className="totalBox"><label>{t.deliveryCharges}</label><b>{money(form.delivery_charges)}</b></div>
                   <div className="totalBox"><label>{t.discount}{form.discount_type === "percent" ? ` (${money(form.discount)}%)` : ""}</label><b>{money(discountAmount)}</b></div>
                   <div className="totalBox grandBox"><label>{t.grandTotal}</label><b>{money(grandTotal)}</b></div>
