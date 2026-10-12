@@ -512,6 +512,17 @@ const getCatalogRate = (rates, row, prod, customerId, listName) => {
   return bestRate;
 };
 
+// Keep Single/Multiple inside the PRODUCT dropdown, not as a separate column.
+// The combined value exists only in the UI: invoice APIs still get a numeric
+// product_id and an independent sale_type (so existing records remain valid).
+const makeInvoiceProductChoice = (id, mode) => id ? `${id}::${mode === "single" ? "single" : "multiple"}` : "";
+const parseInvoiceProductChoice = (choice) => {
+  const match = String(choice || "").match(/^(\d+)::(single|multiple)$/);
+  return match
+    ? { product_id: match[1], sale_type: match[2] }
+    : { product_id: String(choice || ""), sale_type: "multiple" };
+};
+
 const roundPreviousBalance = (value) => String(Math.round(toNum(value)));
 
 const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
@@ -1082,9 +1093,10 @@ export default function SalesInvoicePage() {
   const handleItemChange = (index, field, value) => {
     setItems((prev) => prev.map((row, i) => {
       if (i !== index) return row;
-      const next = { ...row, [field]: value };
+      const selection = field === "product_choice" ? parseInvoiceProductChoice(value) : null;
+      const next = selection ? { ...row, ...selection } : { ...row, [field]: value };
 
-      if (field === "product_id") {
+      if (field === "product_id" || field === "product_choice") {
         const prod = products.find((p) => sameId(getProductId(p), value));
         if (prod) {
           next.category_id = String(getProductCatId(prod) || next.category_id || "");
@@ -1634,8 +1646,7 @@ export default function SalesInvoicePage() {
                   <thead>
                     <tr>
                       <th style={{ width: 35 }}>#</th>
-                      <th style={{ width: 175 }}>{t.product}</th>
-                      <th style={{ width: 104 }}>{t.saleType}</th>
+                      <th style={{ width: 260 }}>{t.product}</th>
                       <th>{t.desc}</th>
                       <th style={{ width: 130 }}>{t.productType}</th>
                       <th style={{ width: 145 }}>{t.category}</th>
@@ -1652,29 +1663,31 @@ export default function SalesInvoicePage() {
                         <tr key={idx}>
                           <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
                           <td>
-                            <select data-searchable="true" className="productInput" value={row.product_id} onChange={(e) => handleItemChange(idx, "product_id", e.target.value)}>
+                            <select
+                              data-searchable="true"
+                              className="productInput"
+                              value={makeInvoiceProductChoice(row.product_id, row.sale_type)}
+                              onChange={(e) => handleItemChange(idx, "product_choice", e.target.value)}
+                            >
                               <option value="">{t.select}</option>
                               {(() => {
                                 const selectedCategory = String(row.category_id || "");
                                 const matchedProducts = products.filter((p) => {
                                   const productCatId = getProductCatId(p);
-                                  if (!selectedCategory) return true;
-                                  if (!productCatId) return true;
-                                  return sameId(productCatId, selectedCategory);
+                                  return !selectedCategory || !productCatId || sameId(productCatId, selectedCategory);
                                 });
-                                const list = selectedCategory && matchedProducts.length === 0 ? products : matchedProducts;
-                                return list.map((p) => (
-                                  <option key={getProductId(p)} value={getProductId(p)}>
-                                    {getProductName(p)}{getProductTypeLabel(p, typeMap) ? ` — ${getProductTypeLabel(p, typeMap)}` : ""}
-                                  </option>
-                                ));
+                                const list = selectedCategory && !matchedProducts.length ? products : matchedProducts;
+                                return list.flatMap((p) => {
+                                  const id = getProductId(p);
+                                  if (!id) return [];
+                                  const typeName = getProductTypeLabel(p, typeMap);
+                                  const label = `${getProductName(p)}${typeName ? ` — ${typeName}` : ""}`;
+                                  return [
+                                    <option key={`${id}-multiple`} value={makeInvoiceProductChoice(id, "multiple")}>{label} — {t.multiple}</option>,
+                                    <option key={`${id}-single`} value={makeInvoiceProductChoice(id, "single")}>{label} — {t.single}</option>,
+                                  ];
+                                });
                               })()}
-                            </select>
-                          </td>
-                          <td>
-                            <select data-no-search="true" className="productInput" value={row.sale_type === "single" ? "single" : "multiple"} onChange={(e) => handleItemChange(idx, "sale_type", e.target.value)}>
-                              <option value="multiple">{t.multiple}</option>
-                              <option value="single">{t.single}</option>
                             </select>
                           </td>
                           <td>
