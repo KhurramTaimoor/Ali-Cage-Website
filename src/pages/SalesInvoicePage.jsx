@@ -1655,27 +1655,29 @@ export default function SalesInvoicePage() {
                   <div>
                     <label className="basicLabel">{t.discount}</label>
                     <div style={{ display: "flex", alignItems: "stretch", gap: 6, minWidth: 0 }}>
-                      <select
-                        className="basicSelect"
-                        aria-label={t.discount}
-                        data-no-search="true"
-                        style={{ width: 104, minWidth: 88, flexShrink: 0 }}
-                        value={form.discount_type}
-                        onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))}
-                      >
-                        <option value="flat">{t.discountFlat}</option>
-                        <option value="percent">% ({t.discountPercent})</option>
-                      </select>
                       <input
                         type="number"
                         min="0"
                         max={form.discount_type === "percent" ? "100" : undefined}
                         step="0.01"
                         className="basicInput"
-                        style={{ minWidth: 0, flex: 1 }}
+                        aria-label={t.discount}
+                        placeholder="0"
+                        style={{ flex: "1 1 50%", width: 0, minWidth: 56 }}
                         value={form.discount}
                         onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
                       />
+                      <select
+                        className="basicSelect"
+                        aria-label={t.discountFlat + " / " + t.discountPercent}
+                        data-no-search="true"
+                        style={{ flex: "0 1 50%", width: 0, minWidth: 90 }}
+                        value={form.discount_type}
+                        onChange={(e) => setForm((f) => ({ ...f, discount_type: e.target.value }))}
+                      >
+                        <option value="flat">{t.discountFlat}</option>
+                        <option value="percent">{t.discountPercent} (%)</option>
+                      </select>
                     </div>
                   </div>
                 </div>
