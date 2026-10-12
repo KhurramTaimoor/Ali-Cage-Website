@@ -1696,7 +1696,9 @@ export default function SalesInvoicePage() {
                                   const id = getProductId(p);
                                   const typeName = getProductTypeLabel(p, typeMap);
                                   const label = `${getProductName(p)}${typeName ? ` — ${typeName}` : ""}`;
-                                  return <option key={id} value={makeInvoiceProductChoice(id)}>{label}</option>;
+                                  const saleMode = getProductSaleMode(p);
+                                  const saleModeLabel = saleMode === "single" ? t.single : t.multiple;
+                                  return <option key={id} value={makeInvoiceProductChoice(id)}>{label} — {saleModeLabel}</option>;
                                 });
                               })()}
                             </select>
