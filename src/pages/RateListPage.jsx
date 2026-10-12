@@ -44,8 +44,7 @@ const copy = {
     unit: "Unit",
     single: "Single",
     retail: "Retail",
-    wholesale: "Wholesale",
-    distributor: "Distributor",
+    evaluation: "Evaluation",
     selected: "Selected",
     allProductsHint: "All products are shown in this single form. Set the required prices and save once.",
     assignedHint: "Search customers by name/phone and assign this as their default rate list. Reassigning a customer moves the default from the previous list; Sales Invoice can still override it when needed.",
@@ -89,8 +88,7 @@ const copy = {
     unit: "یونٹ",
     single: "سنگل",
     retail: "ریٹیل",
-    wholesale: "ہول سیل",
-    distributor: "ڈسٹری بیوٹر",
+    evaluation: "ایویلیوایشن",
     selected: "منتخب",
     allProductsHint: "تمام پروڈکٹس اسی ایک فارم میں ہیں۔ ریٹس درج کریں اور ایک دفعہ محفوظ کریں۔",
     assignedHint: "نام یا فون سے کسٹمر تلاش کر کے اسے ڈیفالٹ ریٹ لسٹ اسائن کریں۔ دوبارہ اسائن کرنے پر پرانی ڈیفالٹ لسٹ بدل جائے گی؛ ضرورت پر سیلز انوائس میں ریٹ لسٹ اوور رائیڈ بھی ہو سکتی ہے۔",
@@ -388,7 +386,6 @@ export default function RateListPage() {
             <td class="num amount">${escapeHtml(money(opt.single_rate))}</td>
             <td class="num amount">${escapeHtml(money(opt.retail_rate))}</td>
             <td class="num amount">${escapeHtml(money(opt.wholesale_rate))}</td>
-            <td class="num amount">${escapeHtml(money(opt.distributor_rate))}</td>
           </tr>`;
         })
         .join("");
@@ -409,9 +406,9 @@ export default function RateListPage() {
           <table>
             <thead><tr>
               <th>#</th><th>${escapeHtml(t.product)}</th><th>${escapeHtml(t.category)}</th><th>${escapeHtml(t.type)}</th><th>${escapeHtml(t.unit)}</th>
-              <th>${escapeHtml(t.single)}</th><th>${escapeHtml(t.retail)}</th><th>${escapeHtml(t.wholesale)}</th><th>${escapeHtml(t.distributor)}</th>
+              <th>${escapeHtml(t.single)}</th><th>${escapeHtml(t.retail)}</th><th>${escapeHtml(t.evaluation)}</th>
             </tr></thead>
-            <tbody>${rowsHtml || `<tr><td colspan="9" class="empty">${escapeHtml(t.noProducts)}</td></tr>`}</tbody>
+            <tbody>${rowsHtml || `<tr><td colspan="8" class="empty">${escapeHtml(t.noProducts)}</td></tr>`}</tbody>
           </table>
         </main>`;
 
@@ -428,7 +425,7 @@ export default function RateListPage() {
           th{background:#0B4E9B;color:#fff;border:1px solid #0B4E9B;padding:7px 5px;text-align:${isUrdu ? "right" : "left"}}
           td{border:1px solid #CBD5E1;padding:6px 5px;overflow-wrap:anywhere}tbody tr:nth-child(odd) td{background:#F8FAFC}
           th:nth-child(1),td:nth-child(1){width:4%}th:nth-child(2),td:nth-child(2){width:23%}th:nth-child(3),td:nth-child(3){width:13%}th:nth-child(4),td:nth-child(4){width:12%}th:nth-child(5),td:nth-child(5){width:8%}
-          th:nth-child(n+6),td:nth-child(n+6){width:10%}.center{text-align:center!important}.amount{text-align:right!important}.empty{text-align:center;padding:24px;color:#64748B}
+          th:nth-child(n+6),td:nth-child(n+6){width:13.33%}.center{text-align:center!important}.amount{text-align:right!important}.empty{text-align:center;padding:24px;color:#64748B}
         `,
       });
     } catch (err) {
@@ -512,11 +509,11 @@ export default function RateListPage() {
 
             <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="max-h-[62vh] overflow-auto">
-                <table className="w-full min-w-[1050px] text-xs">
-                  <thead className="sticky top-0 z-10 bg-[#13263A] text-[10px] font-extrabold uppercase tracking-wide text-white/80"><tr><th className="px-3 py-3 text-left">#</th><th className="px-3 py-3 text-left">{t.product}</th><th className="px-3 py-3 text-left">{t.category}</th><th className="px-3 py-3 text-left">{t.type}</th><th className="px-3 py-3 text-left">{t.unit}</th><th className="px-2 py-3">{t.single}</th><th className="px-2 py-3">{t.retail}</th><th className="px-2 py-3">{t.wholesale}</th><th className="px-2 py-3">{t.distributor}</th></tr></thead>
+                <table className="w-full min-w-[920px] text-xs">
+                  <thead className="sticky top-0 z-10 bg-[#13263A] text-[10px] font-extrabold uppercase tracking-wide text-white/80"><tr><th className="px-3 py-3 text-left">#</th><th className="px-3 py-3 text-left">{t.product}</th><th className="px-3 py-3 text-left">{t.category}</th><th className="px-3 py-3 text-left">{t.type}</th><th className="px-3 py-3 text-left">{t.unit}</th><th className="px-2 py-3">{t.single}</th><th className="px-2 py-3">{t.retail}</th><th className="px-2 py-3">{t.evaluation}</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
-                    {visibleRows.length === 0 ? <tr><td colSpan="9" className="px-4 py-10 text-center text-slate-400">{t.noProducts}</td></tr> : visibleRows.map((row, index) => (
-                      <tr key={row.product_id} className="hover:bg-blue-50/30"><td className="px-3 py-2 font-mono text-slate-400">{index+1}</td><td className="px-3 py-2 font-extrabold text-[#13263A]">{row.product_name}</td><td className="px-3 py-2 text-slate-500">{row.category_name}</td><td className="px-3 py-2 text-slate-500">{row.type_name}</td><td className="px-3 py-2 text-slate-500">{row.unit_name}</td>{["single_rate","retail_rate","wholesale_rate","distributor_rate"].map((field) => <td key={field} className="px-2 py-2"><input type="number" min="0" step="0.01" value={row[field]} onChange={(e) => changeRate(row.product_id, field, e.target.value)} className="h-9 w-24 rounded-lg border border-slate-200 px-2 text-right font-mono font-bold outline-none focus:border-[#4A86F7]" placeholder="0"/></td>)}</tr>
+                    {visibleRows.length === 0 ? <tr><td colSpan="8" className="px-4 py-10 text-center text-slate-400">{t.noProducts}</td></tr> : visibleRows.map((row, index) => (
+                      <tr key={row.product_id} className="hover:bg-blue-50/30"><td className="px-3 py-2 font-mono text-slate-400">{index+1}</td><td className="px-3 py-2 font-extrabold text-[#13263A]">{row.product_name}</td><td className="px-3 py-2 text-slate-500">{row.category_name}</td><td className="px-3 py-2 text-slate-500">{row.type_name}</td><td className="px-3 py-2 text-slate-500">{row.unit_name}</td>{["single_rate","retail_rate","wholesale_rate"].map((field) => <td key={field} className="px-2 py-2"><input type="number" min="0" step="0.01" value={row[field]} onChange={(e) => changeRate(row.product_id, field, e.target.value)} className="h-9 w-24 rounded-lg border border-slate-200 px-2 text-right font-mono font-bold outline-none focus:border-[#4A86F7]" placeholder="0"/></td>)}</tr>
                     ))}
                   </tbody>
                 </table>
@@ -544,7 +541,7 @@ export default function RateListPage() {
           <div className="p-3 sm:p-5">{detailLoading && !detailList ? <div className="py-16 text-center text-sm text-slate-400">{t.loading}</div> : detailList && <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><InfoCard icon={<BadgeDollarSign size={17}/>} label={t.listName} value={detailList.list_name}/><InfoCard icon={<ListChecks size={17}/>} label={t.products} value={detailList.product_count}/><InfoCard icon={<Users size={17}/>} label={t.customers} value={(detailList.assigned_customer_ids || []).length}/></div>
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4"><h3 className="text-xs font-extrabold uppercase text-slate-500">{t.assignedCustomers}</h3><div className="mt-2 flex flex-wrap gap-1.5">{(detailList.assigned_customers || []).length ? detailList.assigned_customers.map((c) => <span key={c.customer_id} className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{c.customer_name}</span>) : <span className="text-xs text-slate-400">{t.global}</span>}</div></div>
-            <div className="mt-3 max-h-[58vh] overflow-auto rounded-xl border border-slate-200 bg-white"><table className="w-full min-w-[950px] text-xs"><thead className="sticky top-0 bg-[#13263A] text-[10px] uppercase text-white/80"><tr><th className="px-3 py-3 text-left">#</th><th className="px-3 py-3 text-left">{t.product}</th><th className="px-3 py-3 text-left">{t.category}</th><th className="px-3 py-3 text-left">{t.type}</th><th className="px-3 py-3 text-left">{t.unit}</th><th className="px-3 py-3 text-right">{t.single}</th><th className="px-3 py-3 text-right">{t.retail}</th><th className="px-3 py-3 text-right">{t.wholesale}</th><th className="px-3 py-3 text-right">{t.distributor}</th></tr></thead><tbody className="divide-y divide-slate-100">{(detailList.items || []).map((item, index) => { const p = products.find((x) => String(x.id) === String(item.product_id)) || {}; const opt = firstOption(item); return <tr key={item.id || item.product_id}><td className="px-3 py-2 text-slate-400">{index+1}</td><td className="px-3 py-2 font-bold text-[#13263A]">{productName(p)}</td><td className="px-3 py-2 text-slate-500">{categoryName(p)}</td><td className="px-3 py-2 text-slate-500">{typeName(p)}</td><td className="px-3 py-2 text-slate-500">{unitName(p)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.single_rate)}</td><td className="px-3 py-2 text-right font-mono font-bold text-emerald-700">{money(opt.retail_rate)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.wholesale_rate)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.distributor_rate)}</td></tr>; })}</tbody></table></div>
+            <div className="mt-3 max-h-[58vh] overflow-auto rounded-xl border border-slate-200 bg-white"><table className="w-full min-w-[840px] text-xs"><thead className="sticky top-0 bg-[#13263A] text-[10px] uppercase text-white/80"><tr><th className="px-3 py-3 text-left">#</th><th className="px-3 py-3 text-left">{t.product}</th><th className="px-3 py-3 text-left">{t.category}</th><th className="px-3 py-3 text-left">{t.type}</th><th className="px-3 py-3 text-left">{t.unit}</th><th className="px-3 py-3 text-right">{t.single}</th><th className="px-3 py-3 text-right">{t.retail}</th><th className="px-3 py-3 text-right">{t.evaluation}</th></tr></thead><tbody className="divide-y divide-slate-100">{(detailList.items || []).map((item, index) => { const p = products.find((x) => String(x.id) === String(item.product_id)) || {}; const opt = firstOption(item); return <tr key={item.id || item.product_id}><td className="px-3 py-2 text-slate-400">{index+1}</td><td className="px-3 py-2 font-bold text-[#13263A]">{productName(p)}</td><td className="px-3 py-2 text-slate-500">{categoryName(p)}</td><td className="px-3 py-2 text-slate-500">{typeName(p)}</td><td className="px-3 py-2 text-slate-500">{unitName(p)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.single_rate)}</td><td className="px-3 py-2 text-right font-mono font-bold text-emerald-700">{money(opt.retail_rate)}</td><td className="px-3 py-2 text-right font-mono">{money(opt.wholesale_rate)}</td></tr>; })}</tbody></table></div>
           </>}</div>
         </Modal>
       )}
