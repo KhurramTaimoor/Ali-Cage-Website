@@ -1,4 +1,4 @@
-\import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Eye, Pencil, Printer, Trash2 } from "lucide-react";
 import { resolveSalesRate } from "../utils/salesRateResolver";
@@ -429,6 +429,87 @@ const getProductModeRate = (product, saleType) => {
     if (Number.isFinite(Number(product?.[key])) && Number(product[key]) > 0) return Number(product[key]);
   }
   return Number(getProductPieceRate(product)) || 0;
+};
+
+// The /api/rates endpoint stores customer/list prices inside price_options,
+// not as single_rate/retail_rate columns on the products API response.
+// Prefer the customer's assigned list; never borrow another customer's prices.
+const getCatalogModeRate = (option, saleType) => {
+  const keys = saleType === "single"
+    ? ["single_rate", "singleRate", "piece_rate", "pieceRate"]
+    : ["retail_rate", "retailRate", "multiple_rate", "multipleRate", "wholesale_rate", "wholesaleRate", "distributor_rate", "distributorRate"];
+  for (const key of keys) {
+    const value = Number(option?.[key]);
+    if (Number.isFinite(value) && value > 0) return value;
+  }
+  return 0;
+};
+
+const getCatalogRate = (rates, row, prod, customerId, listName) => {
+  const productId = row.product_id || getProductId(prod || {});
+  if (!productId) return 0;
+  const customerKey = String(customerId ?? "");
+  const desiredList = String(listName || "").trim();
+  const sameList = (rate, name) => String(rate.list_name || "Default Rate List").trim() === name;
+  const customerAssigned = (rate) =>
+    (customerKey && String(rate.customer_id || "") === customerKey) ||
+    (customerKey && Array.isArray(rate.assigned_customer_ids) && rate.assigned_customer_ids.some((id) => String(id) === customerKey)) ||
+    (customerKey && Array.isArray(rate.assigned_customers) && rate.assigned_customers.some((c) => String(c.customer_id ?? c.id) === customerKey));
+  const isGlobal = (rate) =>
+    !rate.customer_id &&
+    (!Array.isArray(rate.assigned_customer_ids) || rate.assigned_customer_ids.length === 0) &&
+    (!Array.isArray(rate.assigned_customers) || rate.assigned_customers.length === 0);
+
+  const productRates = (Array.isArray(rates) ? rates : []).filter((rate) => sameId(rate.product_id, productId));
+  let eligible;
+  if (desiredList) {
+    eligible = productRates.filter((rate) => sameList(rate, desiredList));
+  } else {
+    const assigned = productRates.filter(customerAssigned);
+    const global = productRates.filter(isGlobal);
+    if (assigned.length) {
+      eligible = assigned;
+    } else {
+      const defaults = global.filter((rate) => sameList(rate, "Default Rate List"));
+      const globalNames = new Set(global.map((rate) => String(rate.list_name || "Default Rate List")));
+      eligible = defaults.length ? defaults : globalNames.size === 1 ? global : [];
+    }
+  }
+
+  const expectedCategory = row.category_id || getProductCatId(prod || {});
+  const expectedType = row.product_type_id || getProductTypeId(prod || {});
+  const expectedUnit = row.unit_id || getProductUnitId(prod || {});
+  let bestRate = 0;
+  let bestScore = -Infinity;
+
+  for (const record of eligible) {
+    let options = record.price_options;
+    if (typeof options === "string") {
+      try { options = JSON.parse(options); } catch { options = []; }
+    }
+    if (!Array.isArray(options) || !options.length) options = [record];
+
+    for (const option of options) {
+      const rate = getCatalogModeRate(option, row.sale_type);
+      if (rate <= 0) continue;
+      // Exact product is authoritative. Dimension mismatches get lower priority
+      // instead of incorrectly discarding a configured rate altogether.
+      let score = 0;
+      for (const [a, b, weight] of [
+        [option.category_id, expectedCategory, 4],
+        [option.product_type_id, expectedType, 4],
+        [option.unit_id, expectedUnit, 2],
+      ]) {
+        if (a && b) score += sameId(a, b) ? weight : -weight;
+      }
+      if (customerAssigned(record)) score += 30;
+      if (score > bestScore) {
+        bestScore = score;
+        bestRate = rate;
+      }
+    }
+  }
+  return bestRate;
 };
 
 const roundPreviousBalance = (value) => String(Math.round(toNum(value)));
@@ -963,7 +1044,10 @@ export default function SalesInvoicePage() {
       rateMode: mode,
       listName,
     });
-    return listed?.rate || getProductModeRate(prod || {}, row.sale_type) || 0;
+    // Try a product-ID match from the rate-list catalog if strict option
+    // matching fails (for example, a stale category/type/unit ID).
+    const catalogRate = getCatalogRate(salesRates, row, prod, customerId, listName);
+    return catalogRate || listed?.rate || getProductModeRate(prod || {}, row.sale_type) || 0;
   }, [salesRates, form.party_type, form.party_id, form.rate_list_name]);
 
   // Refresh auto-filled rates if the rate list loads after a product was chosen.
@@ -1616,7 +1700,7 @@ export default function SalesInvoicePage() {
                             </select>
                           </td>
                           <td><input type="number" min="0" className="productInput" style={{ textAlign: "right" }} value={row.qty} onChange={(e) => handleItemChange(idx, "qty", e.target.value)} /></td>
-                          <td><input type="number" min="0" step="0.01" className="productInput" style={{ textAlign: "right" }} value={row.rate} onChange={(e) => handleItemChange(idx, "rate", e.target.value)} /></td>
+                          <td><input type="number" min="0" step="0.01" className="productInput" style={{ textAlign: "right" }} title={row.product_id && !toNum(row.rate) ? "No price found for this product/mode in the selected Rate List. Set a rate in Rate List or enter one manually." : ""} value={row.rate} onChange={(e) => handleItemChange(idx, "rate", e.target.value)} /></td>
                           <td><input readOnly className="productInput" style={{ textAlign: "right", background: "#f8fafc", fontWeight: 900 }} value={money(row.amount)} /></td>
                           <td style={{ textAlign: "center" }}><button type="button" className="basicBtn basicBtnRed" style={{ width: 22, padding: 0 }} onClick={() => removeRow(idx)}>×</button></td>
                         </tr>
