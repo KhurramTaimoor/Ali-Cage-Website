@@ -305,7 +305,9 @@ export default function GlobalUxEnhancer() {
           (select.dataset.searchable === "true" || select.options.length >= LONG_SELECT_MIN_OPTIONS)
         ) {
           select.dataset.searchEnhanced = "true";
-          select.title = select.title || "Click to search this list";
+          if (select.dataset.noHint !== "true") {
+            select.title = select.title || "Click to search this list";
+          }
         }
       });
       enhanceTableActions();
@@ -381,6 +383,7 @@ export default function GlobalUxEnhancer() {
     <div
       ref={pickerRef}
       data-global-select-picker="true"
+      translate="no"
       dir={picker.dir}
       style={{
         position: "fixed",
@@ -415,6 +418,19 @@ export default function GlobalUxEnhancer() {
           </span>
           <input
             ref={searchRef}
+            data-no-autocomplete="true"
+            data-gramm="false"
+            data-gramm_editor="false"
+            data-lt-active="false"
+            data-ms-editor="false"
+            data-form-type="other"
+            translate="no"
+            name="erp-select-filter"
+            type="search"
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="none"
+            inputMode="search"
             value={term}
             onChange={(event) => setTerm(event.target.value)}
             onKeyDown={(event) => {
@@ -425,7 +441,7 @@ export default function GlobalUxEnhancer() {
               }
             }}
             placeholder="Search..."
-            autoComplete="off"
+            autoComplete="new-password"
             style={{
               width: "100%",
               height: 40,
