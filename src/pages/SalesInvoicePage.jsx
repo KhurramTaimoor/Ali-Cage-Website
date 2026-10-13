@@ -857,12 +857,12 @@ function getClassicPrintCss(isUrdu) {
     .classic-sheet{padding:0 0 18px}
     .classic-frame{position:relative;background:#fff;border:3px solid #1f2937;min-height:100%;padding:18px 18px 16px;overflow:hidden}
     .ribbon{position:absolute;top:18px;${isUrdu ? 'left' : 'right'}:-56px;width:210px;text-align:center;background:#2d8cff;color:#fff;padding:8px 0;font-size:16px;font-weight:800;transform:rotate(${isUrdu ? '-45deg' : '45deg'});letter-spacing:.7px}
-    .brand-row{display:grid;grid-template-columns:220px 1fr 120px;align-items:center;gap:10px;margin-bottom:14px}
+    .brand-row{direction:ltr;display:grid;grid-template-columns:220px 1fr 120px;align-items:center;gap:10px;margin-bottom:14px}
     .brand-left img{width:190px;max-width:100%;height:auto;display:block}
     .brand-center{text-align:center;font-size:54px;line-height:1;font-weight:900;letter-spacing:1px;color:#0f172a}
     .brand-center::first-letter{color:#000}
     .brand-center .accent{color:#2d8cff}
-    .doc-head{display:grid;grid-template-columns:1fr 1.2fr 220px;gap:10px;align-items:start;margin:8px 0 18px}
+    .doc-head{direction:rtl;display:grid;grid-template-columns:1.1fr 1.2fr .8fr;gap:10px;align-items:start;margin:8px 0 18px}
     .doc-center{text-align:center;font-size:${isUrdu ? '21px' : '18px'};font-weight:600;line-height:${isUrdu ? '1.8' : '1.5'}}
     .doc-title{font-size:${isUrdu ? '28px' : '24px'};font-weight:900;margin-bottom:6px}
     .doc-title span{font-weight:800}
@@ -888,6 +888,8 @@ function getClassicPrintCss(isUrdu) {
     .summary-box strong{font-size:${isUrdu ? '20px' : '16px'};font-weight:900}
     .summary-box.grand{background:#e0f2fe}
     .page-break{page-break-after:always}
+    @media(max-width:890px){.brand-row{grid-template-columns:155px 1fr 45px}.brand-left img{width:150px}.brand-center{font-size:clamp(25px,4.5vw,45px)}.doc-head{grid-template-columns:1fr 1fr .35fr}.doc-center{font-size:16px}.doc-title{font-size:21px}.info-block{font-size:15px}.classic-table th,.classic-table td{padding:7px 5px;font-size:13px}.summary-strip{gap:5px}.summary-box{padding:7px;min-height:56px}.summary-box span{font-size:11px}.summary-box strong{font-size:14px}}
+    @media(max-width:560px){.brand-row{grid-template-columns:110px 1fr 0}.brand-left img{width:105px}.brand-center{font-size:clamp(20px,5.2vw,30px)}.doc-head{grid-template-columns:1fr 1fr;gap:8px}.doc-left{display:none}.doc-title{font-size:17px}.doc-center,.info-block{font-size:13px}.classic-frame{padding:11px 8px}.ribbon{font-size:10px;width:130px;top:15px;right:-44px}.classic-table th,.classic-table td{font-size:11px;padding:5px 3px}.classic-table .col-detail{width:39%}.classic-table .col-serial{width:6%}.classic-table .col-unit{width:15%}.classic-table .col-qty,.classic-table .col-rate,.classic-table .col-amount{width:13.3%}.summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-box.grand{grid-column:span 2}}
     @media print{body{background:#fff}.print-page{padding:0}.classic-sheet{padding:0}.classic-frame{border-width:2px;min-height:auto}.page-break{page-break-after:always}}
   `;
 }
@@ -929,6 +931,20 @@ function printBulkInvoices(invoices, maps, t, isUrdu) {
   w.document.open();
   w.document.write(html);
   w.document.close();
+}
+
+function buildInvoicePreviewHtml(invoice, maps, t) {
+  // Render the exact same bill-book template used by Print, without opening the print dialog.
+  return `<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" />
+<style>${getClassicPrintCss(true)}</style>
+</head>
+<body><div class="print-page">${makeClassicInvoiceSheet(invoice, maps, t, true)}</div></body>
+</html>`;
 }
 
 export default function SalesInvoicePage() {
@@ -1494,7 +1510,7 @@ export default function SalesInvoicePage() {
       }));
 
       const partyName = getInvoicePartyName(inv);
-      printInvoice({ ...inv, party_name: inv.party_name || partyName, items: normItems }, { cat: categoryMap, prod: productMap, unit: unitMap }, t, isUrdu);
+      printInvoice({ ...inv, party_name: inv.party_name || partyName, items: normItems }, { cat: categoryMap, prod: productMap, unit: unitMap }, t, true);
     } catch {
       toast("error", t.printError);
     }
@@ -1539,7 +1555,7 @@ export default function SalesInvoicePage() {
           return normalizeInvoiceForPrint(res.data?.data || res.data);
         })
       );
-      printBulkInvoices(detailed, { cat: categoryMap, prod: productMap, unit: unitMap }, t, isUrdu);
+      printBulkInvoices(detailed, { cat: categoryMap, prod: productMap, unit: unitMap }, t, true);
     } catch {
       toast("error", t.printError);
     } finally {
@@ -1626,6 +1642,22 @@ export default function SalesInvoicePage() {
         @media(max-width:1050px){.invoice-details-page .invoice-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.invoice-financial-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
         @media(max-width:720px){.invoice-details-header{padding:18px}.invoice-details-body{padding:14px}.invoice-details-page .invoice-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-financial-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-financial-grand{grid-column:1/-1}.invoice-details-page .invoice-detail-items table{min-width:630px}}
         @media(max-width:480px){.invoice-details-page .invoice-detail-grid{grid-template-columns:1fr}.invoice-detail-actions{align-items:stretch;flex-direction:column}.invoice-detail-action-right{width:100%}.invoice-detail-actions .invoice-detail-action-back{width:100%}.invoice-detail-action-right .btn{flex:1}.invoice-details-header-actions{width:100%}.invoice-details-back{width:100%;justify-content:center}}
+
+        /* Bill book details: View Details now uses the SAME invoice layout as Print. */
+        .invoice-bill-details-page{max-width:1220px;}
+        .invoice-bill-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 17px;background:#fff;border:1px solid #d9e3f0;border-radius:12px 12px 0 0;box-shadow:0 7px 24px rgba(20,43,82,.05)}
+        .invoice-bill-back{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#edf5ff;color:#215397;border:1px solid #c9def6;font-weight:900;font-size:12px;padding:10px 14px;border-radius:9px;cursor:pointer;white-space:nowrap}
+        .invoice-bill-back:hover{background:#dbeafe}
+        .invoice-bill-toolbar-title{flex:1;min-width:160px;display:flex;align-items:flex-start;flex-direction:column;gap:4px;color:#153251;line-height:1.4}
+        .invoice-bill-toolbar-title strong{font-size:16px}
+        .invoice-bill-toolbar-title span{font-size:12px;color:#64748b}
+        .invoice-bill-toolbar-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+        .invoice-bill-print{background:#1e63b3;border-color:#1e63b3;color:white}
+        .invoice-bill-print:hover{background:#144e94;color:white}
+        .invoice-bill-paper{background:#e9eef5;padding:14px 18px 20px;border-left:1px solid #d9e3f0;border-right:1px solid #d9e3f0;overflow-x:auto}
+        .invoice-bill-frame{display:block;width:100%;min-width:0;height:680px;background:#fff;border:0;box-shadow:0 8px 24px rgba(15,23,42,.11)}
+        .invoice-bill-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 17px;border:1px solid #d9e3f0;border-radius:0 0 12px 12px;background:#fff}
+        @media(max-width:650px){.invoice-bill-toolbar{padding:12px}.invoice-bill-toolbar-title{order:-1;flex:1 1 100%}.invoice-bill-paper{padding:6px}.invoice-bill-toolbar-actions .btn{flex:1}.invoice-bill-bottom .btn{font-size:11px}}
 
 
       `}</style>
@@ -1759,76 +1791,63 @@ export default function SalesInvoicePage() {
       )}
 
       {viewInvoice && !showForm && (
-        <div className="page-wrap invoice-details-page form-page-wrap">
-          <section className="invoice-details-shell">
-            <header className="invoice-details-header">
-              <div className="invoice-details-heading">
-                <span className="invoice-details-overline">{t.title}</span>
-                <h1>{t.viewDetails} <span>· {viewInvoice.invoice_no}</span></h1>
-                <p>{getInvoicePartyName(viewInvoice)}</p>
-              </div>
-              <div className="invoice-details-header-actions">
-                <button type="button" className="invoice-details-back" onClick={backToList}>
-                  <span aria-hidden="true">{isUrdu ? "→" : "←"}</span> {t.backToList}
-                </button>
-              </div>
-            </header>
-
-            <div className="invoice-details-body">
-              <div className="invoice-detail-grid">
-                <div className="invoice-detail-box"><small>{t.invoiceNo}</small><b>{viewInvoice.invoice_no}</b></div>
-                <div className="invoice-detail-box"><small>{t.name}</small><b>{getInvoicePartyName(viewInvoice)}</b></div>
-                <div className="invoice-detail-box"><small>{t.dateFull}</small><b>{formatFullDate(viewInvoice.invoice_date, lang)}</b></div>
-                <div className="invoice-detail-box"><small>{t.dueDate}</small><b>{viewInvoice.due_date ? formatFullDate(viewInvoice.due_date, lang) : "—"}</b></div>
-                <div className="invoice-detail-box"><small>{t.shipTo}</small><b>{viewInvoice.shipment_to || "—"}</b></div>
-                <div className="invoice-detail-box"><small>{t.rateList}</small><b>{viewInvoice.rate_list_name || t.rateListAuto}</b></div>
-                {viewInvoice.reference_no && <div className="invoice-detail-box"><small>{t.reference}</small><b>{viewInvoice.reference_no}</b></div>}
-              </div>
-
-              <div className="invoice-financial-grid">
-                <div className="invoice-financial-card"><small>{t.invoiceTotal}</small><b>{money(viewInvoice.invoice_total)}</b></div>
-                <div className="invoice-financial-card"><small>{t.previousBalance}</small><b>{money(Math.round(toNum(viewInvoice.previous_balance)))}</b></div>
-                <div className="invoice-financial-card"><small>{t.deliveryCharges}</small><b>{money(viewInvoice.delivery_charges)}</b></div>
-                <div className="invoice-financial-card"><small>{t.discount}{viewInvoice.discount_type === "percent" ? ` (${money(viewInvoice.discount_value)}%)` : ""}</small><b>{money(viewInvoice.discount)}</b></div>
-                <div className="invoice-financial-card invoice-financial-grand"><small>{t.grandTotal}</small><b>{money(viewInvoice.grand_total)}</b></div>
-              </div>
-
-              <div className="invoice-details-section-title">
-                <div><span className="invoice-details-section-dot" />{t.invoiceItems}</div>
-                <span className="invoice-details-count">{(viewInvoice.items || []).length} {t.products}</span>
-              </div>
-              <div className="invoice-detail-items">
-                <table>
-                  <thead><tr><th>#</th><th>{t.product}</th><th>{t.desc}</th><th>{t.qty}</th><th>{t.rate}</th><th>{t.amount}</th></tr></thead>
-                  <tbody>
-                    {(viewInvoice.items || []).map((item, i) => (
-                      <tr key={item.id || i}>
-                        <td className="invoice-detail-sr">{i + 1}</td>
-                        <td className="invoice-detail-product">
-                          {item.product_name || productMap[String(item.product_id)] || `#${item.product_id}`}
-                          {item.sale_type && <span className="invoice-detail-mode">{item.sale_type === "single" ? t.single : t.multiple}</span>}
-                        </td>
-                        <td>{item.product_description || item.description || "—"}</td>
-                        <td className="invoice-detail-number">{money(item.qty ?? item.quantity)}</td>
-                        <td className="invoice-detail-number">{money(item.rate)}</td>
-                        <td className="invoice-detail-number invoice-detail-amount">{money(item.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="invoice-detail-actions">
-                <button type="button" className="btn invoice-detail-action-back" onClick={backToList}>
-                  {isUrdu ? "→" : "←"} {t.backToList}
-                </button>
-                <div className="invoice-detail-action-right">
-                  <button type="button" className="btn invoice-detail-action-edit" onClick={() => openEdit(viewInvoice.id)}><Pencil size={15} /> {t.edit}</button>
-                  <button type="button" className="btn invoice-detail-action-print" onClick={() => handlePrint(viewInvoice.id)}><Printer size={15} /> {t.print}</button>
-                </div>
-              </div>
+        <div className="page-wrap invoice-bill-details-page form-page-wrap">
+          <div className="invoice-bill-toolbar">
+            <button type="button" className="invoice-bill-back" onClick={backToList}>
+              <span aria-hidden="true">←</span> {t.backToList}
+            </button>
+            <div className="invoice-bill-toolbar-title">
+              <strong>{t.viewDetails} · {viewInvoice.invoice_no}</strong>
+              <span>{getInvoicePartyName(viewInvoice)}</span>
             </div>
-          </section>
+            <div className="invoice-bill-toolbar-actions">
+              <button type="button" className="btn invoice-detail-action-edit" onClick={() => openEdit(viewInvoice.id)}>
+                <Pencil size={15} /> {t.edit}
+              </button>
+              <button type="button" className="btn invoice-bill-print" onClick={() => handlePrint(viewInvoice.id)}>
+                <Printer size={15} /> {t.print}
+              </button>
+            </div>
+          </div>
+
+          <div className="invoice-bill-paper" dir="ltr">
+            <iframe
+              title={`Invoice ${viewInvoice.invoice_no} - bill book preview`}
+              className="invoice-bill-frame"
+              srcDoc={buildInvoicePreviewHtml(
+                { ...viewInvoice, party_name: getInvoicePartyName(viewInvoice) },
+                { cat: categoryMap, prod: productMap, unit: unitMap },
+                t
+              )}
+              onLoad={(event) => {
+                const frame = event.currentTarget;
+                const document = frame.contentDocument;
+                if (!document) return;
+                const fitPreviewHeight = () => {
+                  const height = Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0);
+                  frame.style.height = `${Math.max(560, height + 8)}px`;
+                };
+                fitPreviewHeight();
+                if (document.fonts?.ready) {
+                  document.fonts.ready.then(fitPreviewHeight).catch(() => {});
+                }
+              }}
+            />
+          </div>
+
+          <div className="invoice-bill-bottom">
+            <button type="button" className="btn invoice-detail-action-back" onClick={backToList}>
+              ← {t.backToList}
+            </button>
+            <div className="invoice-bill-toolbar-actions">
+              <button type="button" className="btn invoice-detail-action-edit" onClick={() => openEdit(viewInvoice.id)}>
+                <Pencil size={15} /> {t.edit}
+              </button>
+              <button type="button" className="btn invoice-bill-print" onClick={() => handlePrint(viewInvoice.id)}>
+                <Printer size={15} /> {t.print}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
