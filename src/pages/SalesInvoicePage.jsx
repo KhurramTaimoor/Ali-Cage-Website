@@ -682,62 +682,227 @@ function badgeStyle(tone) {
   };
 }
 
-function printInvoice(invoice, maps, t, isUrdu) {
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getPrintLogoDataUri() {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="320" height="170" viewBox="0 0 320 170">
+      <rect width="320" height="170" fill="white"/>
+      <g transform="translate(16,12)">
+        <path d="M41 70c10-29 33-48 64-54 20-3 41 0 57 7l8 23c-16-12-41-21-65-18-21 3-40 14-53 31-2 4-7 5-11 2-4-2-4-7 0-11z" fill="#1e73d8"/>
+        <path d="M51 83c18 28 45 47 78 53 19 4 40 2 59-5l-7-20c-17 9-38 12-57 8-25-5-48-19-65-40-3-4-8-4-12-1-4 3-3 8 1 11z" fill="#4aa3ff"/>
+        <path d="M72 57c17-9 37-12 56-9 27 4 50 18 69 39-22-10-44-16-67-13-20 2-38 10-55 24 3-16 1-28-3-41z" fill="#0f5fb8" opacity="0.92"/>
+      </g>
+      <text x="24" y="144" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#1e73d8">ALI BIRD CAGE</text>
+    </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function getPrintLabels(isUrdu, t) {
+  if (!isUrdu) {
+    return {
+      brand: 'ALI BIRD CAGE',
+      ribbon: 'BILL BOOK',
+      invoiceTitle: t.title || 'Sales Invoice',
+      date: t.date || 'Date',
+      reference: t.reference || 'Reference',
+      number: 'No.',
+      customer: 'Customer',
+      receivedBy: 'Received By',
+      address: 'Address',
+      detail: 'Detail',
+      unit: t.unit || 'Unit',
+      qty: t.qty || 'Qty',
+      rate: t.rate || 'Rate',
+      amount: t.amount || 'Amount',
+      invoiceTotal: t.invoiceTotal || 'Invoice Total',
+      previousBalance: t.previousBalance || 'Previous Balance',
+      deliveryCharges: t.deliveryCharges || 'Delivery Charges',
+      discount: t.discount || 'Discount',
+      grandTotal: t.grandTotal || 'Grand Total',
+      customerCopy: 'Customer Copy',
+    };
+  }
+  return {
+    brand: 'ALI BIRD CAGE',
+    ribbon: 'BILL BOOK',
+    invoiceTitle: 'سیلز انوائس',
+    date: 'تاریخ',
+    reference: 'ریفرنس',
+    number: 'نمبر',
+    customer: 'کسٹمر',
+    receivedBy: 'وصول کنندہ',
+    address: 'ایڈریس',
+    detail: 'تفصیل',
+    unit: 'یونٹ',
+    qty: 'تعداد',
+    rate: 'ریٹ',
+    amount: 'روپے',
+    invoiceTotal: 'انوائس ٹوٹل',
+    previousBalance: 'پچھلا بقایا',
+    deliveryCharges: 'ڈیلیوری چارجز',
+    discount: 'ڈسکاؤنٹ',
+    grandTotal: 'گرانڈ ٹوٹل',
+    customerCopy: 'کسٹمر کاپی',
+  };
+}
+
+function buildPrintRows(invoice, maps, isUrdu) {
+  const items = Array.isArray(invoice.items) ? invoice.items : [];
+  return items.map((row, idx) => {
+    const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || '-';
+    const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || '';
+    const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || '-';
+    const qty = money(row.qty || row.pieces_qty || row.carton_qty);
+    const rate = money(row.rate);
+    const amount = money(row.amount);
+    const detail = [product, category].filter(Boolean).join(isUrdu ? ' — ' : ' - ');
+    return `<tr>
+      <td class="col-serial center">${idx + 1}</td>
+      <td class="col-detail">${escapeHtml(detail)}</td>
+      <td class="col-unit center">${escapeHtml(unit)}</td>
+      <td class="col-qty num">${qty}</td>
+      <td class="col-rate num">${rate}</td>
+      <td class="col-amount num strong">${amount}</td>
+    </tr>`;
+  }).join('');
+}
+
+function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = false } = {}) {
+  const labels = getPrintLabels(isUrdu, t);
+  const logoUrl = getPrintLogoDataUri();
+  const itemsRows = buildPrintRows(invoice, maps, isUrdu);
   const items = Array.isArray(invoice.items) ? invoice.items : [];
   const invTotal = toNum(invoice.invoice_total) || items.reduce((s, r) => s + toNum(r.amount), 0);
   const prev = toNum(invoice.previous_balance);
   const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
   const discount = toNum(invoice.discount);
   const grand = toNum(invoice.grand_total) || invTotal + prev + delivery - discount;
+  const reference = invoice.reference_no || '-';
+  const partyName = invoice.party_name || invoice.customer_name || '-';
+  const shipTo = invoice.shipment_to || '-';
+  const address = invoice.address || '-';
+  const fullDate = invoice.invoice_date || '-';
+  const noteTag = isUrdu ? labels.customerCopy : labels.customerCopy;
 
-  const rows = items
-    .map((row, idx) => {
-      const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || "-";
-      const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || "-";
-      const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || "-";
-      return `<tr>
-        <td class="center">${idx + 1}</td>
-        <td>${product}<div class="desc">${row.product_description || row.description || ""}</div></td>
-        <td>${category}</td>
-        <td class="center">${unit}</td>
-        <td class="num">${money(row.qty || row.pieces_qty || row.carton_qty)}</td>
-        <td class="num">${money(row.rate)}</td>
-        <td class="num strong">${money(row.amount)}</td>
-      </tr>`;
-    })
-    .join("");
+  return `
+  <section class="classic-sheet${showPageBreak ? ' page-break' : ''}">
+    <div class="classic-frame">
+      <div class="ribbon">${escapeHtml(labels.ribbon)}</div>
+      <div class="brand-row">
+        <div class="brand-left">
+          <img src="${logoUrl}" alt="${escapeHtml(labels.brand)}" />
+        </div>
+        <div class="brand-center">ALI <span class="accent">BIRD</span> CAGE</div>
+        <div class="brand-right"></div>
+      </div>
 
+      <div class="doc-head">
+        <div class="doc-right info-block">
+          <div><span>${escapeHtml(labels.customer)}:</span> ${escapeHtml(partyName)}</div>
+          <div><span>${escapeHtml(labels.receivedBy)}:</span> ${escapeHtml(shipTo)}</div>
+          <div><span>${escapeHtml(labels.address)}:</span> ${escapeHtml(address)}</div>
+        </div>
+
+        <div class="doc-center">
+          <div class="doc-title">${escapeHtml(labels.invoiceTitle)}: <span>${escapeHtml(invoice.invoice_no || '-')}</span></div>
+          <div>${escapeHtml(labels.date)}: ${escapeHtml(fullDate)}</div>
+          <div>${escapeHtml(labels.reference)}: ${escapeHtml(reference)}</div>
+          <div>${escapeHtml(labels.number)}: ${escapeHtml(invoice.id || '')}</div>
+        </div>
+
+        <div class="doc-left copy-badge">${escapeHtml(noteTag)}</div>
+      </div>
+
+      <table class="classic-table">
+        <thead>
+          <tr>
+            <th class="col-serial">#</th>
+            <th class="col-detail">${escapeHtml(labels.detail)}</th>
+            <th class="col-unit">${escapeHtml(labels.unit)}</th>
+            <th class="col-qty">${escapeHtml(labels.qty)}</th>
+            <th class="col-rate">${escapeHtml(labels.rate)}</th>
+            <th class="col-amount">${escapeHtml(labels.amount)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsRows || `<tr><td colspan="6" class="empty-row">-</td></tr>`}
+        </tbody>
+      </table>
+
+      <div class="summary-strip">
+        <div class="summary-box"><span>${escapeHtml(labels.invoiceTotal)}</span><strong>${money(invTotal)}</strong></div>
+        <div class="summary-box"><span>${escapeHtml(labels.previousBalance)}</span><strong>${money(prev)}</strong></div>
+        <div class="summary-box"><span>${escapeHtml(labels.deliveryCharges)}</span><strong>${money(delivery)}</strong></div>
+        <div class="summary-box"><span>${escapeHtml(labels.discount)}${invoice.discount_type === 'percent' ? ` (${money(invoice.discount_value)}%)` : ''}</span><strong>${money(discount)}</strong></div>
+        <div class="summary-box grand"><span>${escapeHtml(labels.grandTotal)}</span><strong>${money(grand)}</strong></div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function getClassicPrintCss(isUrdu) {
+  return `
+    body{margin:0;background:#eef2f7;color:#111827;font-family:${isUrdu ? '"Noto Nastaliq Urdu","Noto Naskh Arabic","Jameel Noori Nastaleeq","Segoe UI",Arial,sans-serif' : 'Arial,"Segoe UI",sans-serif'};direction:${isUrdu ? 'rtl' : 'ltr'};}
+    *{box-sizing:border-box}
+    .print-page{padding:16px}
+    .classic-sheet{padding:0 0 18px}
+    .classic-frame{position:relative;background:#fff;border:3px solid #1f2937;min-height:100%;padding:18px 18px 16px;overflow:hidden}
+    .ribbon{position:absolute;top:18px;${isUrdu ? 'left' : 'right'}:-56px;width:210px;text-align:center;background:#2d8cff;color:#fff;padding:8px 0;font-size:16px;font-weight:800;transform:rotate(${isUrdu ? '-45deg' : '45deg'});letter-spacing:.7px}
+    .brand-row{display:grid;grid-template-columns:220px 1fr 120px;align-items:center;gap:10px;margin-bottom:14px}
+    .brand-left img{width:190px;max-width:100%;height:auto;display:block}
+    .brand-center{text-align:center;font-size:54px;line-height:1;font-weight:900;letter-spacing:1px;color:#0f172a}
+    .brand-center::first-letter{color:#000}
+    .brand-center .accent{color:#2d8cff}
+    .doc-head{display:grid;grid-template-columns:1fr 1.2fr 220px;gap:10px;align-items:start;margin:8px 0 18px}
+    .doc-center{text-align:center;font-size:${isUrdu ? '21px' : '18px'};font-weight:600;line-height:${isUrdu ? '1.8' : '1.5'}}
+    .doc-title{font-size:${isUrdu ? '28px' : '24px'};font-weight:900;margin-bottom:6px}
+    .doc-title span{font-weight:800}
+    .info-block{font-size:${isUrdu ? '21px' : '16px'};line-height:${isUrdu ? '1.9' : '1.7'};padding-top:8px}
+    .info-block span{font-weight:800}
+    .copy-badge{display:flex;align-items:flex-start;justify-content:${isUrdu ? 'flex-start' : 'flex-end'};font-size:18px;font-weight:800;color:#2563eb;padding-top:8px}
+    .classic-table{width:100%;border-collapse:collapse;table-layout:fixed}
+    .classic-table th,.classic-table td{border:2px solid #374151;padding:9px 8px;font-size:${isUrdu ? '16px' : '13px'};vertical-align:top}
+    .classic-table thead th{background:#f8fafc;font-weight:900}
+    .classic-table .col-serial{width:5%;text-align:center}
+    .classic-table .col-detail{width:43%}
+    .classic-table .col-unit{width:13%;text-align:center}
+    .classic-table .col-qty{width:13%;text-align:center}
+    .classic-table .col-rate{width:13%;text-align:center}
+    .classic-table .col-amount{width:13%;text-align:center}
+    .center{text-align:center}
+    .num{text-align:${isUrdu ? 'left' : 'right'};font-family:"Segoe UI",Tahoma,Arial,sans-serif;font-weight:600}
+    .strong{font-weight:900}
+    .empty-row{text-align:center;padding:18px 0;font-weight:700}
+    .summary-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
+    .summary-box{border:2px solid #374151;padding:10px 12px;min-height:66px;display:flex;flex-direction:column;justify-content:center;background:#fbfdff}
+    .summary-box span{font-size:${isUrdu ? '15px' : '12px'};font-weight:800;color:#334155;margin-bottom:5px}
+    .summary-box strong{font-size:${isUrdu ? '20px' : '16px'};font-weight:900}
+    .summary-box.grand{background:#e0f2fe}
+    .page-break{page-break-after:always}
+    @media print{body{background:#fff}.print-page{padding:0}.classic-sheet{padding:0}.classic-frame{border-width:2px;min-height:auto}.page-break{page-break-after:always}}
+  `;
+}
+
+function printInvoice(invoice, maps, t, isUrdu) {
   const html = `<!doctype html>
-<html dir="${isUrdu ? "rtl" : "ltr"}">
+<html dir="${isUrdu ? 'rtl' : 'ltr'}">
 <head>
 <meta charset="UTF-8"/>
-<title>${invoice.invoice_no || "Sales Invoice"}</title>
-<style>
-body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};direction:${isUrdu ? "rtl" : "ltr"};line-height:${isUrdu ? "1.9" : "1.4"};margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.desc{font-size:10px;color:#64748b;margin-top:4px}.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}}
-</style>
+<title>${escapeHtml(invoice.invoice_no || 'Sales Invoice')}</title>
+<style>${getClassicPrintCss(isUrdu)}</style>
 </head>
-<body><div class="page"><div class="sheet">
-  <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.invoiceNo}: <b>${invoice.invoice_no || "-"}</b><br/>${t.date}: ${invoice.invoice_date || "-"}</div></div>
-  <div class="body">
-    <div class="grid">
-      <div class="box"><small>${t.invoiceNo}</small><b>${invoice.invoice_no || "-"}</b></div>
-      <div class="box"><small>${t.reference}</small><b>${invoice.reference_no || "-"}</b></div>
-      <div class="box"><small>${t.name}</small><b>${invoice.party_name || invoice.customer_name || "-"}</b></div>
-      <div class="box"><small>${t.dateFull}</small><b>${formatFullDate(invoice.invoice_date, isUrdu ? "ur" : "en")}</b></div>
-      <div class="box"><small>${t.shipTo}</small><b>${invoice.shipment_to || "-"}</b></div>
-    </div>
-    <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="totals">
-      <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
-      <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
-      <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
-      <div class="box"><small>${t.discount}${invoice.discount_type === "percent" ? ` (${money(invoice.discount_value)}%)` : ""}</small><b>${money(discount)}</b></div>
-      <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
-    </div>
-  </div>
-</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+<body><div class="print-page">${makeClassicInvoiceSheet(invoice, maps, t, isUrdu)}</div><script>window.onload=()=>setTimeout(()=>window.print(),350)</script></body></html>`;
 
-  const w = window.open("", "_blank", "width=1200,height=800");
+  const w = window.open('', '_blank', 'width=1280,height=900');
   if (!w) return;
   w.document.open();
   w.document.write(html);
@@ -745,66 +910,21 @@ body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jame
 }
 
 function makeInvoiceSheet(invoice, maps, t, isUrdu) {
-  const items = Array.isArray(invoice.items) ? invoice.items : [];
-  const invTotal = toNum(invoice.invoice_total) || items.reduce((s, r) => s + toNum(r.amount), 0);
-  const prev = toNum(invoice.previous_balance);
-  const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
-  const discount = toNum(invoice.discount);
-  const grand = toNum(invoice.grand_total) || invTotal + prev + delivery - discount;
-
-  const rows = items
-    .map((row, idx) => {
-      const product = row.product_name || maps.prod[String(row.product_id)] || row.product_id || "-";
-      const category = row.category_name || maps.cat[String(row.category_id)] || row.category_id || "-";
-      const unit = row.unit_name || maps.unit[String(row.unit_id)] || row.unit_id || "-";
-      return `<tr>
-        <td class="center">${idx + 1}</td>
-        <td>${product}<div class="desc">${row.product_description || row.description || ""}</div></td>
-        <td>${category}</td>
-        <td class="center">${unit}</td>
-        <td class="num">${money(row.qty || row.pieces_qty || row.carton_qty)}</td>
-        <td class="num">${money(row.rate)}</td>
-        <td class="num strong">${money(row.amount)}</td>
-      </tr>`;
-    })
-    .join("");
-
-  return `<div class="sheet">
-    <div class="head"><div><h1>Ali Cages</h1><div>${t.title}</div></div><div>${t.invoiceNo}: <b>${invoice.invoice_no || "-"}</b><br/>${t.date}: ${invoice.invoice_date || "-"}</div></div>
-    <div class="body">
-      <div class="grid">
-        <div class="box"><small>${t.invoiceNo}</small><b>${invoice.invoice_no || "-"}</b></div>
-        <div class="box"><small>${t.reference}</small><b>${invoice.reference_no || "-"}</b></div>
-        <div class="box"><small>${t.name}</small><b>${invoice.party_name || invoice.customer_name || "-"}</b></div>
-        <div class="box"><small>${t.dateFull}</small><b>${formatFullDate(invoice.invoice_date, isUrdu ? "ur" : "en")}</b></div>
-        <div class="box"><small>${t.shipTo}</small><b>${invoice.shipment_to || "-"}</b></div>
-      </div>
-      <table><thead><tr><th>#</th><th>${t.product}</th><th>${t.category}</th><th>${t.unit}</th><th>${t.qty}</th><th>${t.rate}</th><th>${t.amount}</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="totals">
-        <div class="box"><small>${t.invoiceTotal}</small><b>${money(invTotal)}</b></div>
-        <div class="box"><small>${t.previousBalance}</small><b>${money(prev)}</b></div>
-        <div class="box"><small>${t.deliveryCharges}</small><b>${money(delivery)}</b></div>
-        <div class="box"><small>${t.discount}${invoice.discount_type === "percent" ? ` (${money(invoice.discount_value)}%)` : ""}</small><b>${money(discount)}</b></div>
-        <div class="box"><small>${t.grandTotal}</small><b>${money(grand)}</b></div>
-      </div>
-    </div>
-  </div>`;
+  return makeClassicInvoiceSheet(invoice, maps, t, isUrdu);
 }
 
 function printBulkInvoices(invoices, maps, t, isUrdu) {
-  const sheets = invoices.map((invoice) => makeInvoiceSheet(invoice, maps, t, isUrdu)).join("<div class='page-break'></div>");
+  const sheets = invoices.map((invoice, idx) => makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak: idx !== invoices.length - 1 })).join('');
   const html = `<!doctype html>
-<html dir="${isUrdu ? "rtl" : "ltr"}">
+<html dir="${isUrdu ? 'rtl' : 'ltr'}">
 <head>
 <meta charset="UTF-8"/>
-<title>${t.bulkPrint}</title>
-<style>
-body{font-family:${isUrdu ? "\"Noto Nastaliq Urdu\",\"Noto Naskh Arabic\",\"Jameel Noori Nastaleeq\",\"Segoe UI\",Arial,sans-serif" : "Arial,\"Segoe UI\",sans-serif"};direction:${isUrdu ? "rtl" : "ltr"};line-height:${isUrdu ? "1.9" : "1.4"};margin:0;background:#f8fafc;color:#111827}.page{padding:22px}.sheet{background:#fff;border:1px solid #d1d5db;border-radius:18px;overflow:hidden;margin-bottom:18px}.head{background:#111827;color:#fff;padding:18px 22px;display:flex;justify-content:space-between}.head h1{margin:0;font-size:24px}.body{padding:16px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.box{border:1px solid #d1d5db;border-radius:10px;padding:9px}.box small{display:block;color:#64748b;margin-bottom:5px;font-size:11px}.box b{font-size:14px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;color:#111827}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px}.center{text-align:center}.num{text-align:right;font-family:monospace}.strong{font-weight:900}.desc{font-size:10px;color:#64748b;margin-top:4px}.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}.page-break{page-break-after:always}@media print{body{background:white}.page{padding:0}.sheet{border:none;border-radius:0}.page-break{page-break-after:always}}
-</style>
+<title>${escapeHtml(t.bulkPrint || 'Bulk Print')}</title>
+<style>${getClassicPrintCss(isUrdu)}</style>
 </head>
-<body><div class="page">${sheets}</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+<body><div class="print-page">${sheets}</div><script>window.onload=()=>setTimeout(()=>window.print(),350)</script></body></html>`;
 
-  const w = window.open("", "_blank", "width=1200,height=800");
+  const w = window.open('', '_blank', 'width=1280,height=900');
   if (!w) return;
   w.document.open();
   w.document.write(html);
