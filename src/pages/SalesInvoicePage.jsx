@@ -305,6 +305,13 @@ const money = (v) =>
     maximumFractionDigits: 2,
   });
 
+// Invoice bill balances are shown in whole rupees; stored calculations remain unchanged.
+const moneyWhole = (v) =>
+  Math.round(toNum(v)).toLocaleString("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
 const getRecordId = (o) =>
   o?.id ??
   o?.value ??
@@ -840,10 +847,10 @@ function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = fal
 
       <div class="summary-strip">
         <div class="summary-box"><span>${escapeHtml(labels.invoiceTotal)}</span><strong>${money(invTotal)}</strong></div>
-        <div class="summary-box"><span>${escapeHtml(labels.previousBalance)}</span><strong>${money(prev)}</strong></div>
+        <div class="summary-box"><span>${escapeHtml(labels.previousBalance)}</span><strong>${moneyWhole(prev)}</strong></div>
         <div class="summary-box"><span>${escapeHtml(labels.deliveryCharges)}</span><strong>${money(delivery)}</strong></div>
         <div class="summary-box"><span>${escapeHtml(labels.discount)}${invoice.discount_type === 'percent' ? ` (${money(invoice.discount_value)}%)` : ''}</span><strong>${money(discount)}</strong></div>
-        <div class="summary-box grand"><span>${escapeHtml(labels.grandTotal)}</span><strong>${money(grand)}</strong></div>
+        <div class="summary-box grand"><span>${escapeHtml(labels.grandTotal)}</span><strong>${moneyWhole(grand)}</strong></div>
       </div>
     </div>
   </section>`;
