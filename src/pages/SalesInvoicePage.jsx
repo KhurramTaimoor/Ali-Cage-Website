@@ -57,6 +57,8 @@ const LANG = {
     dateFull: "Date",
     dueDate: "Due Date",
     viewDetails: "View Details",
+    backToList: "Back to List",
+    invoiceItems: "Invoice Products",
     shipTo: "Ship To",
     rateList: "Rate List",
     rateListAuto: "Auto / Customer",
@@ -159,6 +161,8 @@ const LANG = {
     dateFull: "تاریخ",
     dueDate: "ادائیگی کی تاریخ",
     viewDetails: "تفصیل دیکھیں",
+    backToList: "فہرست پر واپس",
+    invoiceItems: "انوائس پروڈکٹس",
     shipTo: "شپ ٹو",
     rateList: "ریٹ لسٹ",
     rateListAuto: "آٹو / کسٹمر",
@@ -512,26 +516,20 @@ const getCatalogRate = (rates, row, prod, customerId, listName) => {
   return bestRate;
 };
 
-// Show each product only once in the Product dropdown. The selected product's
-// own sale unit decides whether the invoice row uses single or multiple rates.
-const makeInvoiceProductChoice = (id) => id ? String(id) : "";
+// Keep Single/Multiple inside the PRODUCT dropdown, not as a separate column.
+// The combined value exists only in the UI: invoice APIs still get a numeric
+// product_id and an independent sale_type (so existing records remain valid).
+const makeInvoiceProductChoice = (id, mode) => id ? `${id}::${mode === "single" ? "single" : "multiple"}` : "";
 const parseInvoiceProductChoice = (choice) => {
-  return { product_id: String(choice || "") };
+  const match = String(choice || "").match(/^(\d+)::(single|multiple)$/);
+  return match
+    ? { product_id: match[1], sale_type: match[2] }
+    : { product_id: String(choice || ""), sale_type: "multiple" };
 };
 
 const roundPreviousBalance = (value) => String(Math.round(toNum(value)));
 
-const getProductSaleUnit = (p) => String(
-  p?.sale_type ||
-  p?.saleType ||
-  p?.SaleType ||
-  p?.sale_unit ||
-  p?.saleUnit ||
-  p?.SaleUnit ||
-  "single"
-).toLowerCase();
-const getProductSaleMode = (p) =>
-  /multiple|carton|pack|box|wholesale/.test(getProductSaleUnit(p)) ? "multiple" : "single";
+const getProductSaleUnit = (p) => String(p?.sale_unit || p?.saleUnit || p?.SaleUnit || "single").toLowerCase();
 const getProductPcsCtn = (p) => Number(p?.pieces_per_carton ?? p?.piecesPerCarton ?? p?.PiecesPerCarton ?? 0);
 const getProductTypeId = (p) =>
   p?.product_type_id ??
@@ -982,7 +980,31 @@ export default function SalesInvoicePage() {
     );
   }, [invoices, search, customerFilter, dateFrom, dateTo, getInvoicePartyName]);
 
+  const backToList = () => {
+    setViewInvoice(null);
+    setShowForm(false);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const openDetails = async (invoice) => {
+    setShowForm(false);
+    setViewInvoice(invoice);
+    window.scrollTo({ top: 0, behavior: "auto" });
+    try {
+      const res = await axios.get(`${API_BASE}/${invoice.id}`);
+      const fullInvoice = res.data?.data || res.data?.invoice || res.data;
+      setViewInvoice((current) =>
+        String(current?.id) === String(invoice.id)
+          ? { ...current, ...fullInvoice }
+          : current
+      );
+    } catch {
+      // List data remains visible if a details refresh fails.
+    }
+  };
+
   const openAdd = async () => {
+    setViewInvoice(null);
     partyBalanceRequestId.current += 1;
     setBalanceLoading(false);
     setEditingId(null);
@@ -1044,6 +1066,7 @@ export default function SalesInvoicePage() {
             }))
           : defaultInvoiceItems(5)
       );
+      setViewInvoice(null);
       setShowForm(true);
     } catch {
       toast("error", t.editError);
@@ -1103,10 +1126,8 @@ export default function SalesInvoicePage() {
       const next = selection ? { ...row, ...selection } : { ...row, [field]: value };
 
       if (field === "product_id" || field === "product_choice") {
-        const selectedProductId = selection?.product_id ?? value;
-        const prod = products.find((p) => sameId(getProductId(p), selectedProductId));
+        const prod = products.find((p) => sameId(getProductId(p), value));
         if (prod) {
-          next.sale_type = getProductSaleMode(prod);
           next.category_id = String(getProductCatId(prod) || next.category_id || "");
           next.unit_id = String(getProductUnitId(prod) || "");
           next.product_type_id = String(getProductTypeId(prod) || next.product_type_id || defaultFmsTypeId || "");
@@ -1426,11 +1447,72 @@ export default function SalesInvoicePage() {
         .invoiceHeaderGrid{display:grid;grid-template-columns:145px minmax(210px,1.25fr) minmax(160px,.9fr) minmax(180px,1fr) 185px;gap:10px;align-items:end;margin-bottom:10px}.invoiceHeaderGrid>div{min-width:0}.invoiceHeaderGrid .basicInput,.invoiceHeaderGrid .basicSelect{height:38px}.invoiceHeaderGrid .basicLabel{min-height:16px;display:flex;align-items:flex-end;margin-bottom:5px}.invoiceHeaderGrid>div:nth-child(6),.invoiceHeaderGrid>div:nth-child(7){max-width:185px}.invoiceHeaderGrid>div:nth-child(8){grid-column:3/6}.invoiceHeaderGrid>div:nth-child(8) .basicInput{width:100%}@media(max-width:1100px){.invoiceHeaderGrid{grid-template-columns:140px minmax(190px,1.2fr) minmax(145px,.85fr) minmax(165px,1fr) 170px}.invoiceHeaderGrid>div:nth-child(8){grid-column:3/6}}@media(max-width:920px){.invoiceHeaderGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.invoiceHeaderGrid>div:nth-child(6),.invoiceHeaderGrid>div:nth-child(7){max-width:none}.invoiceHeaderGrid>div:nth-child(8){grid-column:1/-1}}@media(max-width:640px){.invoiceHeaderGrid{grid-template-columns:1fr}.invoiceHeaderGrid>div:nth-child(8){grid-column:1}.invoiceHeaderGrid .basicInput,.invoiceHeaderGrid .basicSelect{height:40px}}
 
 
+        /* Standalone multicolor Invoice Details page. The list and form do not render behind it. */
+        .invoice-details-page{max-width:1220px}
+        .invoice-details-shell{min-height:calc(100vh - 36px);background:#fff;border:1px solid #dbe4f0;border-radius:18px;overflow:hidden;box-shadow:0 16px 45px rgba(17,37,76,.07);animation:fadeSlide .22s ease-out both}
+        .invoice-details-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 26px;color:#fff;background:linear-gradient(113deg,#173c79 0%,#315db3 42%,#5d54a5 72%,#087e91 100%);border-bottom:4px solid #48c6c4}
+        .invoice-details-overline{display:block;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#cce9ff;margin-bottom:6px}
+        .invoice-details-heading{min-width:0}
+        .invoice-details-heading h1{margin:0;font-size:clamp(18px,2vw,25px);line-height:1.4;font-weight:950;overflow-wrap:anywhere;color:#fff}
+        .invoice-details-heading h1 span{color:#bff6ed}
+        .invoice-details-heading p{margin:6px 0 0;color:#e4edff;font-size:12px;font-weight:750;overflow-wrap:anywhere}
+        .invoice-details-header-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+        .invoice-details-back{border:1px solid rgba(255,255,255,.58);color:#173c79;background:white;padding:10px 15px;min-height:38px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+        .invoice-details-back:hover{background:#e9fbff}
+        .invoice-details-body{padding:20px 22px 24px;background:linear-gradient(180deg,#f8fbff 0%,#fff 52%)}
+        .invoice-details-page .invoice-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+        .invoice-details-page .invoice-detail-box{min-height:76px;background:#fff;border:1px solid #dee6f3;border-top:3px solid #3b82f6;border-radius:12px;padding:12px 13px;box-shadow:0 2px 10px rgba(30,64,125,.035);min-width:0}
+        .invoice-details-page .invoice-detail-box:nth-child(6n + 2){border-top-color:#8b5cf6;background:#fbfaff}
+        .invoice-details-page .invoice-detail-box:nth-child(6n + 3){border-top-color:#12a994;background:#f4fffc}
+        .invoice-details-page .invoice-detail-box:nth-child(6n + 4){border-top-color:#e9a23b;background:#fffcf6}
+        .invoice-details-page .invoice-detail-box:nth-child(6n + 5){border-top-color:#ec6993;background:#fff8fb}
+        .invoice-details-page .invoice-detail-box:nth-child(6n + 6){border-top-color:#1489c6;background:#f6fcff}
+        .invoice-details-page .invoice-detail-box small{display:block;font-size:10px;letter-spacing:.3px;font-weight:900;text-transform:uppercase;color:#64748b;margin:0 0 7px}
+        .invoice-details-page .invoice-detail-box b{display:block;font-size:13px;font-weight:900;color:#142d4c;line-height:1.6;overflow-wrap:anywhere}
+        .invoice-financial-grid{margin-top:15px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+        .invoice-financial-card{min-width:0;min-height:86px;display:flex;flex-direction:column;justify-content:center;padding:12px 13px;background:#eff6ff;border:1px solid #cfe1fc;border-radius:12px}
+        .invoice-financial-card:nth-child(2){background:#f4f0ff;border-color:#dcd3fe}
+        .invoice-financial-card:nth-child(3){background:#effdf9;border-color:#bcefe2}
+        .invoice-financial-card:nth-child(4){background:#fff7ed;border-color:#f9ddba}
+        .invoice-financial-card small{display:block;color:#47617e;font-size:10px;text-transform:uppercase;font-weight:900;margin-bottom:8px;letter-spacing:.15px}
+        .invoice-financial-card b{display:block;font-size:17px;font-weight:950;font-family:monospace;color:#153c8f;overflow-wrap:anywhere}
+        .invoice-financial-card:nth-child(2) b{color:#6d3fc1}
+        .invoice-financial-card:nth-child(3) b{color:#0e8273}
+        .invoice-financial-card:nth-child(4) b{color:#ba6223}
+        .invoice-financial-card.invoice-financial-grand{background:linear-gradient(125deg,#16396d,#244f95);border-color:#244f95}
+        .invoice-financial-grand small{color:#c8e8ff}.invoice-financial-grand b{color:white;font-size:21px}
+        .invoice-details-section-title{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:23px 0 10px;font-weight:950;font-size:15px;color:#123054}
+        .invoice-details-section-title>div{display:flex;align-items:center;gap:9px}
+        .invoice-details-section-dot{display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#4875e4,#14b8a6)}
+        .invoice-details-count{padding:5px 10px;background:#e9f3ff;color:#2855a0;border-radius:999px;font-size:11px}
+        .invoice-details-page .invoice-detail-items{margin-top:0;background:#fff;border:1px solid #dbe5f1;border-radius:13px;overflow-x:auto}
+        .invoice-details-page .invoice-detail-items table{width:100%;min-width:690px;border-collapse:collapse}
+        .invoice-details-page .invoice-detail-items th{text-align:start;background:#e8f1ff;color:#264879;font-size:10px;text-transform:uppercase;padding:13px 12px;white-space:nowrap;border-bottom:2px solid #bdd2f5}
+        .invoice-details-page .invoice-detail-items td{font-size:12px;padding:12px;border-bottom:1px solid #eaf0f8;color:#28415e;vertical-align:middle}
+        .invoice-details-page .invoice-detail-items tbody tr:nth-child(even){background:#f6faff}
+        .invoice-details-page .invoice-detail-items tbody tr:hover{background:#eef8ff}
+        .invoice-details-page .invoice-detail-items tbody tr:last-child td{border-bottom:0}
+        .invoice-detail-sr{font-weight:950;color:#547db6!important;width:42px}
+        .invoice-detail-product{font-weight:900;color:#183f70!important;line-height:1.7}
+        .invoice-detail-mode{display:inline-block;margin-inline-start:7px;padding:1px 7px;background:#e7f7f4;border:1px solid #b7e3d8;border-radius:6px;color:#13776b;font-size:9px;font-weight:900;white-space:nowrap}
+        .invoice-details-page .invoice-detail-items td.invoice-detail-number{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+        .invoice-details-page .invoice-detail-items td.invoice-detail-amount{font-weight:950;color:#2259a3;background:rgba(59,130,246,.045)}
+        .invoice-detail-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid #e6edf5}
+        .invoice-detail-action-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .invoice-detail-actions .btn{min-height:38px;padding:9px 16px;font-size:12px}
+        .invoice-detail-actions .invoice-detail-action-back{border-color:#c9d7ed;background:#f3f7ff;color:#24549b}
+        .invoice-detail-actions .invoice-detail-action-edit{border-color:#c1e4db;background:#edfdf7;color:#08765f}
+        .invoice-detail-actions .invoice-detail-action-print{border-color:#d9d0fa;background:#f5f2ff;color:#6948b6}
+        @media(max-width:1050px){.invoice-details-page .invoice-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.invoice-financial-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media(max-width:720px){.invoice-details-header{padding:18px}.invoice-details-body{padding:14px}.invoice-details-page .invoice-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-financial-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-financial-grand{grid-column:1/-1}.invoice-details-page .invoice-detail-items table{min-width:630px}}
+        @media(max-width:480px){.invoice-details-page .invoice-detail-grid{grid-template-columns:1fr}.invoice-detail-actions{align-items:stretch;flex-direction:column}.invoice-detail-action-right{width:100%}.invoice-detail-actions .invoice-detail-action-back{width:100%}.invoice-detail-action-right .btn{flex:1}.invoice-details-header-actions{width:100%}.invoice-details-back{width:100%;justify-content:center}}
+
+
       `}</style>
 
       {msg.text && <div className="toast" style={{ background: msg.type === "error" ? "#dc2626" : "#16a34a" }}>{msg.text}</div>}
 
-      {!showForm && (
+      {!showForm && !viewInvoice && (
         <div className="page-wrap">
         <div className="top-card">
           <div>
@@ -1505,7 +1587,7 @@ export default function SalesInvoicePage() {
               ) : filtered.map((inv, idx) => (
                 <tr
                   key={inv.id || idx}
-                  onClick={() => setViewInvoice(inv)}
+                  onClick={() => openDetails(inv)}
                   title="View invoice details"
                   style={{ cursor: "pointer" }}
                 >
@@ -1519,7 +1601,7 @@ export default function SalesInvoicePage() {
                   <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 900, color: "#1d4ed8" }}>{money(inv.grand_total)}</td>
                   <td className="invoice-action-cell" style={{ textAlign: "center" }}>
                     <div className="invoice-action-group">
-                      <button className="invoice-icon-btn primary" title={t.viewDetails} aria-label={t.viewDetails} onClick={(e) => { e.stopPropagation(); setViewInvoice(inv); }}><Eye size={14} /></button>
+                      <button className="invoice-icon-btn primary" title={t.viewDetails} aria-label={t.viewDetails} onClick={(e) => { e.stopPropagation(); openDetails(inv); }}><Eye size={14} /></button>
                       <button className="invoice-icon-btn" title={t.edit} aria-label={t.edit} onClick={(e) => { e.stopPropagation(); openEdit(inv.id); }}><Pencil size={14} /></button>
                       <button className="invoice-icon-btn" title={t.print} aria-label={t.print} onClick={(e) => { e.stopPropagation(); handlePrint(inv.id); }}><Printer size={14} /></button>
                       <button className="invoice-icon-btn danger" title={t.delete} aria-label={t.delete} onClick={(e) => { e.stopPropagation(); handleDelete(inv.id); }}><Trash2 size={14} /></button>
@@ -1548,7 +1630,7 @@ export default function SalesInvoicePage() {
                     {inv.due_date && <div style={{fontSize:10,color:"#b45309",fontWeight:800,marginTop:3}}>{t.dueDate}: {formatFullDate(inv.due_date, lang)}</div>}
                   </div>
                 </div>
-                <button className="btn btn-primary" style={{width:"100%",marginTop:12,height:38}} onClick={() => setViewInvoice(inv)}>{t.viewDetails}</button>
+                <button className="btn btn-primary" style={{width:"100%",marginTop:12,height:38}} onClick={() => openDetails(inv)}>{t.viewDetails}</button>
               </article>
             ))}
           </div>
@@ -1556,14 +1638,23 @@ export default function SalesInvoicePage() {
         </div>
       )}
 
-      {viewInvoice && (
-        <div className="modal-bg" onClick={() => setViewInvoice(null)}>
-          <div className="inputModalBox" style={{maxWidth:920}} onClick={(e) => e.stopPropagation()}>
-            <div className="inputModalTitle">
-              <span>{t.viewDetails} · {viewInvoice.invoice_no}</span>
-              <button className="closeBtn" onClick={() => setViewInvoice(null)}>×</button>
-            </div>
-            <div className="inputModalBody">
+      {viewInvoice && !showForm && (
+        <div className="page-wrap invoice-details-page form-page-wrap">
+          <section className="invoice-details-shell">
+            <header className="invoice-details-header">
+              <div className="invoice-details-heading">
+                <span className="invoice-details-overline">{t.title}</span>
+                <h1>{t.viewDetails} <span>· {viewInvoice.invoice_no}</span></h1>
+                <p>{getInvoicePartyName(viewInvoice)}</p>
+              </div>
+              <div className="invoice-details-header-actions">
+                <button type="button" className="invoice-details-back" onClick={backToList}>
+                  <span aria-hidden="true">{isUrdu ? "→" : "←"}</span> {t.backToList}
+                </button>
+              </div>
+            </header>
+
+            <div className="invoice-details-body">
               <div className="invoice-detail-grid">
                 <div className="invoice-detail-box"><small>{t.invoiceNo}</small><b>{viewInvoice.invoice_no}</b></div>
                 <div className="invoice-detail-box"><small>{t.name}</small><b>{getInvoicePartyName(viewInvoice)}</b></div>
@@ -1571,22 +1662,53 @@ export default function SalesInvoicePage() {
                 <div className="invoice-detail-box"><small>{t.dueDate}</small><b>{viewInvoice.due_date ? formatFullDate(viewInvoice.due_date, lang) : "—"}</b></div>
                 <div className="invoice-detail-box"><small>{t.shipTo}</small><b>{viewInvoice.shipment_to || "—"}</b></div>
                 <div className="invoice-detail-box"><small>{t.rateList}</small><b>{viewInvoice.rate_list_name || t.rateListAuto}</b></div>
-                <div className="invoice-detail-box"><small>{t.invoiceTotal}</small><b>{money(viewInvoice.invoice_total)}</b></div>
-                <div className="invoice-detail-box"><small>{t.previousBalance}</small><b>{money(viewInvoice.previous_balance)}</b></div>
-                <div className="invoice-detail-box"><small>{t.grandTotal}</small><b>{money(viewInvoice.grand_total)}</b></div>
+                {viewInvoice.reference_no && <div className="invoice-detail-box"><small>{t.reference}</small><b>{viewInvoice.reference_no}</b></div>}
+              </div>
+
+              <div className="invoice-financial-grid">
+                <div className="invoice-financial-card"><small>{t.invoiceTotal}</small><b>{money(viewInvoice.invoice_total)}</b></div>
+                <div className="invoice-financial-card"><small>{t.previousBalance}</small><b>{money(Math.round(toNum(viewInvoice.previous_balance)))}</b></div>
+                <div className="invoice-financial-card"><small>{t.deliveryCharges}</small><b>{money(viewInvoice.delivery_charges)}</b></div>
+                <div className="invoice-financial-card"><small>{t.discount}{viewInvoice.discount_type === "percent" ? ` (${money(viewInvoice.discount_value)}%)` : ""}</small><b>{money(viewInvoice.discount)}</b></div>
+                <div className="invoice-financial-card invoice-financial-grand"><small>{t.grandTotal}</small><b>{money(viewInvoice.grand_total)}</b></div>
+              </div>
+
+              <div className="invoice-details-section-title">
+                <div><span className="invoice-details-section-dot" />{t.invoiceItems}</div>
+                <span className="invoice-details-count">{(viewInvoice.items || []).length} {t.products}</span>
               </div>
               <div className="invoice-detail-items">
-                <table><thead><tr><th>#</th><th>{t.product}</th><th>{t.desc}</th><th>{t.qty}</th><th>{t.rate}</th><th>{t.amount}</th></tr></thead><tbody>
-                  {(viewInvoice.items || []).map((item, i) => <tr key={item.id || i}><td>{i+1}</td><td>{item.product_name || productMap[String(item.product_id)] || `#${item.product_id}`}</td><td>{item.product_description || item.description || "—"}</td><td style={{textAlign:"right"}}>{money(item.qty || item.quantity)}</td><td style={{textAlign:"right"}}>{money(item.rate)}</td><td style={{textAlign:"right",fontWeight:900}}>{money(item.amount)}</td></tr>)}
-                </tbody></table>
+                <table>
+                  <thead><tr><th>#</th><th>{t.product}</th><th>{t.desc}</th><th>{t.qty}</th><th>{t.rate}</th><th>{t.amount}</th></tr></thead>
+                  <tbody>
+                    {(viewInvoice.items || []).map((item, i) => (
+                      <tr key={item.id || i}>
+                        <td className="invoice-detail-sr">{i + 1}</td>
+                        <td className="invoice-detail-product">
+                          {item.product_name || productMap[String(item.product_id)] || `#${item.product_id}`}
+                          {item.sale_type && <span className="invoice-detail-mode">{item.sale_type === "single" ? t.single : t.multiple}</span>}
+                        </td>
+                        <td>{item.product_description || item.description || "—"}</td>
+                        <td className="invoice-detail-number">{money(item.qty ?? item.quantity)}</td>
+                        <td className="invoice-detail-number">{money(item.rate)}</td>
+                        <td className="invoice-detail-number invoice-detail-amount">{money(item.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:12,flexWrap:"wrap"}}>
-                <button className="btn btn-soft" onClick={() => { setViewInvoice(null); openEdit(viewInvoice.id); }}>{t.edit}</button>
-                <button className="btn btn-soft" onClick={() => handlePrint(viewInvoice.id)}>{t.print}</button>
-                <button className="btn btn-primary" onClick={() => setViewInvoice(null)}>{t.close}</button>
+
+              <div className="invoice-detail-actions">
+                <button type="button" className="btn invoice-detail-action-back" onClick={backToList}>
+                  {isUrdu ? "→" : "←"} {t.backToList}
+                </button>
+                <div className="invoice-detail-action-right">
+                  <button type="button" className="btn invoice-detail-action-edit" onClick={() => openEdit(viewInvoice.id)}><Pencil size={15} /> {t.edit}</button>
+                  <button type="button" className="btn invoice-detail-action-print" onClick={() => handlePrint(viewInvoice.id)}><Printer size={15} /> {t.print}</button>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       )}
 
@@ -1674,7 +1796,7 @@ export default function SalesInvoicePage() {
                             <select
                               data-searchable="true"
                               className="productInput"
-                              value={makeInvoiceProductChoice(row.product_id)}
+                              value={makeInvoiceProductChoice(row.product_id, row.sale_type)}
                               onChange={(e) => handleItemChange(idx, "product_choice", e.target.value)}
                             >
                               <option value="">{t.select}</option>
@@ -1685,20 +1807,15 @@ export default function SalesInvoicePage() {
                                   return !selectedCategory || !productCatId || sameId(productCatId, selectedCategory);
                                 });
                                 const list = selectedCategory && !matchedProducts.length ? products : matchedProducts;
-                                const uniqueProducts = Array.from(
-                                  new Map(
-                                    list
-                                      .filter((p) => getProductId(p))
-                                      .map((p) => [String(getProductId(p)), p])
-                                  ).values()
-                                );
-                                return uniqueProducts.map((p) => {
+                                return list.flatMap((p) => {
                                   const id = getProductId(p);
+                                  if (!id) return [];
                                   const typeName = getProductTypeLabel(p, typeMap);
                                   const label = `${getProductName(p)}${typeName ? ` — ${typeName}` : ""}`;
-                                  const saleMode = getProductSaleMode(p);
-                                  const saleModeLabel = saleMode === "single" ? t.single : t.multiple;
-                                  return <option key={id} value={makeInvoiceProductChoice(id)}>{label} — {saleModeLabel}</option>;
+                                  return [
+                                    <option key={`${id}-multiple`} value={makeInvoiceProductChoice(id, "multiple")}>{label} — {t.multiple}</option>,
+                                    <option key={`${id}-single`} value={makeInvoiceProductChoice(id, "single")}>{label} — {t.single}</option>,
+                                  ];
                                 });
                               })()}
                             </select>
