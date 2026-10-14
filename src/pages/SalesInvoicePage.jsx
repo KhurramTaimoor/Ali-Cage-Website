@@ -745,10 +745,23 @@ function buildPrintRows(invoice, maps) {
       (row.sale_type === "single" ? "Single" : row.sale_type === "multiple" ? "Multiple" : "-")
     ).trim() || "-";
     const unit = row.unit_name || maps.unit?.[String(row.unit_id)] || row.unit_id || "-";
+    // Prefer the description saved with this invoice (historical snapshot).
+    // Fall back to the product catalogue for older invoices without one.
+    const description = String(
+      row.product_description || row.description || getProductDesc(prod) || ""
+    ).trim();
+    const showDescription = description && description !== String(product).trim();
+    // Keep the rate saved on the invoice; identify Single Rate rows so that
+    // two entries for the same product are visibly distinguishable.
+    const isSingleRate = String(row.sale_type || "").toLowerCase() === "single";
     const qty = money(row.qty ?? row.quantity ?? row.pieces_qty ?? row.carton_qty ?? 0);
     return `<tr>
       <td class="col-serial center">${idx + 1}</td>
-      <td class="col-detail">${escapeHtml(product)}</td>
+      <td class="col-detail">
+        <div class="product-print-name">${escapeHtml(product)}</div>
+        ${showDescription ? `<div class="product-print-description">${escapeHtml(description)}</div>` : ""}
+        ${isSingleRate ? '<div class="product-print-rate-type">سنگل ریٹ</div>' : ""}
+      </td>
       <td class="col-type center">${escapeHtml(type)}</td>
       <td class="col-qty num">${qty}</td>
       <td class="col-unit center">${escapeHtml(unit)}</td>
@@ -777,8 +790,6 @@ function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = fal
     [labels.reference, invoice.reference_no],
     [labels.dueDate, invoice.due_date ? String(invoice.due_date).slice(0, 10) : ""],
     [labels.shipTo, invoice.shipment_to],
-    [labels.rateList, invoice.rate_list_name || (isUrdu ? "آٹو / کسٹمر" : "Auto / Customer")],
-    [labels.address, invoice.address],
   ];
   const infoHtml = infoCards.map(([label, value]) => `
     <div class="invoice-info-box">
@@ -833,7 +844,7 @@ function getClassicPrintCss(isUrdu) {
     .brand-center{text-align:center;white-space:nowrap;font:900 clamp(30px,4.7vw,52px)/1.14 Georgia,Arial,sans-serif;letter-spacing:.4px;color:#101b31}
     .brand-center .accent{color:#2577bf}
     .invoice-copy-label{text-align:${isUrdu ? 'right' : 'left'};font-size:15px;color:#1972bd;font-weight:800;margin:3px 2px 9px}
-    .invoice-info-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:18px}
+    .invoice-info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px}
     .invoice-info-box{min-width:0;border:1px solid #b9c6d6;border-radius:5px;min-height:58px;padding:7px 10px;background:#fbfcff;display:flex;flex-direction:column;justify-content:center;gap:2px}
     .invoice-info-box span{font-size:${isUrdu ? '13px' : '11px'};font-weight:800;color:#496177}
     .invoice-info-box strong{font-size:${isUrdu ? '15px' : '13px'};font-weight:800;overflow-wrap:anywhere;color:#142b44}
@@ -842,6 +853,9 @@ function getClassicPrintCss(isUrdu) {
     .classic-table th{font-weight:900;background:#f4f7fa;text-align:center}
     .classic-table .col-serial{width:8%;text-align:center}
     .classic-table .col-detail{width:33%;text-align:${isUrdu ? 'right' : 'left'};overflow-wrap:anywhere}
+    .product-print-name{font-weight:800}
+    .product-print-description{font-size:12px;color:#334155;font-weight:500;margin-top:4px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+    .product-print-rate-type{display:inline-block;font:700 11px Arial,"Segoe UI",sans-serif;color:#1d4ed8;border:1px solid #bfdbfe;background:#eff6ff;border-radius:3px;padding:1px 5px;margin-top:4px}
     .classic-table .col-type{width:11%;text-align:center}
     .classic-table .col-qty{width:11%;text-align:center}
     .classic-table .col-unit{width:12%;text-align:center}
@@ -858,10 +872,10 @@ function getClassicPrintCss(isUrdu) {
     .balance-text{font-size:${isUrdu ? '21px' : '17px'};font-weight:900;color:#bf2626;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
     .balance-text b{font:900 22px Arial,"Segoe UI",sans-serif;color:#bf2626}
     .page-break{break-after:page;page-break-after:always}
-    @media(max-width:920px){.brand-row{grid-template-columns:150px 1fr 20px}.brand-left img{width:140px}.brand-center{font-size:clamp(26px,4.2vw,44px)}.invoice-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:560px){.print-page{padding:6px}.classic-frame{padding:11px 6px}.brand-row{grid-template-columns:85px 1fr 0}.brand-left img{width:80px}.brand-center{font-size:clamp(15px,4.4vw,26px)}.ribbon{width:128px;left:-36px;top:10px;font-size:9px}.invoice-info-box{padding:6px;min-height:50px}.invoice-info-box strong{font-size:12px}.classic-table th,.classic-table td{font-size:10px;padding:4px 2px}.summary-box{min-height:55px;padding:4px}.summary-box strong{font-size:12px}.balance-footer{gap:6px}.balance-text{font-size:13px}.balance-text b{font-size:14px}}
+    @media(max-width:920px){.brand-row{grid-template-columns:150px 1fr 20px}.brand-left img{width:140px}.brand-center{font-size:clamp(26px,4.2vw,44px)}}
+    @media(max-width:560px){.print-page{padding:6px}.classic-frame{padding:11px 6px}.brand-row{grid-template-columns:85px 1fr 0}.brand-left img{width:80px}.brand-center{font-size:clamp(15px,4.4vw,26px)}.ribbon{width:128px;left:-36px;top:10px;font-size:9px}.invoice-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-info-box{padding:6px;min-height:50px}.invoice-info-box strong{font-size:12px}.classic-table th,.classic-table td{font-size:10px;padding:4px 2px}.product-print-description{font-size:10px}.product-print-rate-type{font-size:9px}.summary-box{min-height:55px;padding:4px}.summary-box strong{font-size:12px}.balance-footer{gap:6px}.balance-text{font-size:13px}.balance-text b{font-size:14px}}
     @page{size:A4 portrait;margin:10mm}
-    @media print{body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.print-page{padding:0}.classic-sheet{padding:0}.classic-frame{border:2px solid #27374c;break-inside:auto}.brand-row,.invoice-info-grid,.summary-strip,.balance-footer{break-inside:avoid}.classic-table tr{break-inside:avoid}.page-break{page-break-after:always}}
+    @media print{body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.print-page{padding:0}.classic-sheet{padding:0}.classic-frame{border:2px solid #27374c;break-inside:auto}.invoice-info-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.brand-row,.invoice-info-grid,.summary-strip,.balance-footer{break-inside:avoid}.classic-table tr{break-inside:avoid}.page-break{page-break-after:always}}
   `;
 }
 
