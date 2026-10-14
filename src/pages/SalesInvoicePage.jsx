@@ -708,10 +708,10 @@ function getPrintLogoDataUri() {
 function getPrintLabels(isUrdu, t) {
   return isUrdu ? {
     brand: "ALI BIRD CAGE", ribbon: "BILL BOOK",
-    invoiceTitle: "سیلز انوائس", invoiceNo: "انوائس نمبر",
-    date: "تاریخ", dueDate: "واجب الادا تاریخ", reference: "ریفرنس",
-    customer: "کسٹمر", shipTo: "شپ ٹو", rateList: "ریٹ لسٹ",
-    address: "ایڈریس", detail: "تفصیل", type: "ٹائپ",
+    invoiceTitle: "انوائس بل", invoiceNo: "انوائس نمبر",
+    date: "تاریخ", dueDate: "واجب الادا تاریخ", reference: "تفصیل",
+    customer: "کسٹمر", shipTo: "وصول کنندہ", rateList: "ریٹ لسٹ",
+    address: "ایڈریس", product: "پروڈکٹ", detail: "تفصیل", type: "ٹائپ",
     unit: "یونٹ", qty: "تعداد", serial: "نمبر شمار",
     rate: "ریٹ", amount: "روپے", invoiceTotal: "انوائس ٹوٹل",
     invoiceNet: "خالص انوائس", previousBalance: "سابقہ بقایا رقم",
@@ -719,10 +719,10 @@ function getPrintLabels(isUrdu, t) {
     grandTotal: "بقایا کھاتہ رقم", customerCopy: "کسٹمر کاپی",
   } : {
     brand: "ALI BIRD CAGE", ribbon: "BILL BOOK",
-    invoiceTitle: t.title || "Sales Invoice", invoiceNo: t.invoiceNo || "Invoice No",
+    invoiceTitle: "Invoice Bill", invoiceNo: t.invoiceNo || "Invoice No",
     date: t.date || "Date", dueDate: t.dueDate || "Due Date",
-    reference: "Reference", customer: "Customer", shipTo: "Ship To",
-    rateList: "Rate List", address: "Address", detail: "Details",
+    reference: "Description", customer: "Customer", shipTo: "Received By",
+    rateList: "Rate List", address: "Address", product: "Product", detail: "Description",
     type: "Type", unit: "Unit", qty: "Quantity", serial: "Sr No.",
     rate: "Rate", amount: "Amount", invoiceTotal: "Invoice Total",
     invoiceNet: "Net Invoice", previousBalance: "Previous Balance",
@@ -731,9 +731,21 @@ function getPrintLabels(isUrdu, t) {
   };
 }
 
+// Format the invoice date without timezone conversion (DD-MM-YY).
+function formatBillDate(value) {
+  if (!value) return "";
+  const date = value instanceof Date
+    ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`
+    : String(value).trim();
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}-${match[2]}-${match[1].slice(-2)}` : date;
+}
+
 // Only print the product name inside Details. The category/type belongs in the
 // Type column; concatenating it to the product name caused duplicate Urdu text.
-function buildPrintRows(invoice, maps) {
+// The bill prints the description entered in the Sales Invoice row.
+// A blank description stays blank; no catalogue ID (#17/#50) fallback.
+function buildPrintRows(invoice, maps, isUrdu = true) {
   const items = Array.isArray(invoice.items) ? invoice.items : [];
   return items.map((row, idx) => {
     const prod = maps.productRecords?.[String(row.product_id)] || {};
@@ -745,27 +757,24 @@ function buildPrintRows(invoice, maps) {
       (row.sale_type === "single" ? "Single" : row.sale_type === "multiple" ? "Multiple" : "-")
     ).trim() || "-";
     const unit = row.unit_name || maps.unit?.[String(row.unit_id)] || row.unit_id || "-";
-    // Prefer the description saved with this invoice (historical snapshot).
-    // Fall back to the product catalogue for older invoices without one.
-    const description = String(
-      row.product_description || row.description || getProductDesc(prod) || ""
-    ).trim();
-    const showDescription = description && description !== String(product).trim();
-    // Keep the rate saved on the invoice; identify Single Rate rows so that
-    // two entries for the same product are visibly distinguishable.
-    const isSingleRate = String(row.sale_type || "").toLowerCase() === "single";
+    const savedDescription = String(row.product_description ?? row.description ?? "").trim();
+    const description = savedDescription === String(product).trim() || /^#\d+$/.test(savedDescription)
+      ? "" : savedDescription;
+    const isSingle = String(row.sale_type || "").toLowerCase() === "single";
+    // Never print an empty Single Rate label. Only show actual invoice rate > 0.
+    const singleRateAmount = isSingle && toNum(row.rate) > 0 ? toNum(row.rate) : 0;
     const qty = money(row.qty ?? row.quantity ?? row.pieces_qty ?? row.carton_qty ?? 0);
     return `<tr>
       <td class="col-serial center">${idx + 1}</td>
-      <td class="col-detail">
-        <div class="product-print-name">${escapeHtml(product)}</div>
-        ${showDescription ? `<div class="product-print-description">${escapeHtml(description)}</div>` : ""}
-        ${isSingleRate ? '<div class="product-print-rate-type">سنگل ریٹ</div>' : ""}
-      </td>
+      <td class="col-product"><div class="product-print-name">${escapeHtml(product)}</div></td>
+      <td class="col-detail"><div class="product-print-description">${escapeHtml(description)}</div></td>
       <td class="col-type center">${escapeHtml(type)}</td>
       <td class="col-qty num">${qty}</td>
       <td class="col-unit center">${escapeHtml(unit)}</td>
-      <td class="col-rate num">${moneyWhole(row.rate)}</td>
+      <td class="col-rate num">
+        ${moneyWhole(row.rate)}
+        ${singleRateAmount ? `<div class="product-print-rate-type">${isUrdu ? "سنگل ریٹ" : "Single Rate"}: <b dir="ltr">${moneyWhole(singleRateAmount)}</b></div>` : ""}
+      </td>
       <td class="col-amount num strong">${moneyWhole(row.amount)}</td>
     </tr>`;
   }).join("");
@@ -774,7 +783,7 @@ function buildPrintRows(invoice, maps) {
 function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = false } = {}) {
   const labels = getPrintLabels(isUrdu, t);
   const items = Array.isArray(invoice.items) ? invoice.items : [];
-  const itemsRows = buildPrintRows(invoice, maps);
+  const itemsRows = buildPrintRows(invoice, maps, isUrdu);
   const invoiceTotal = toNum(invoice.invoice_total) || items.reduce((sum, row) => sum + toNum(row.amount), 0);
   const previousBalance = toNum(invoice.previous_balance);
   const delivery = toNum(invoice.delivery_charges ?? invoice.deliveryCharges);
@@ -786,9 +795,9 @@ function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = fal
   const infoCards = [
     [labels.invoiceNo, invoice.invoice_no],
     [labels.customer, invoice.party_name || invoice.customer_name],
-    [labels.date, invoice.invoice_date ? String(invoice.invoice_date).slice(0, 10) : ""],
+    [labels.date, formatBillDate(invoice.invoice_date)],
     [labels.reference, invoice.reference_no],
-    [labels.dueDate, invoice.due_date ? String(invoice.due_date).slice(0, 10) : ""],
+    [labels.dueDate, formatBillDate(invoice.due_date)],
     [labels.shipTo, invoice.shipment_to],
   ];
   const infoHtml = infoCards.map(([label, value]) => `
@@ -800,7 +809,10 @@ function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = fal
       <div class="ribbon">${escapeHtml(labels.ribbon)}</div>
       <div class="brand-row">
         <div class="brand-left"><img src="${getPrintLogoDataUri()}" alt="${escapeHtml(labels.brand)}" /></div>
-        <div class="brand-center" dir="ltr">ALI <span class="accent">BIRD</span> CAGE</div>
+        <div class="brand-title-stack">
+          <div class="brand-center" dir="ltr">ALI <span class="accent">BIRD</span> CAGE</div>
+          <div class="invoice-bill-heading" dir="${isUrdu ? "rtl" : "ltr"}">${escapeHtml(labels.invoiceTitle)}</div>
+        </div>
         <div></div>
       </div>
       <div class="invoice-copy-label">${escapeHtml(labels.customerCopy)}</div>
@@ -808,6 +820,7 @@ function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = fal
       <table class="classic-table" dir="${isUrdu ? 'rtl' : 'ltr'}">
         <thead><tr>
           <th class="col-serial">${escapeHtml(labels.serial)}</th>
+          <th class="col-product">${escapeHtml(labels.product)}</th>
           <th class="col-detail">${escapeHtml(labels.detail)}</th>
           <th class="col-type">${escapeHtml(labels.type)}</th>
           <th class="col-qty">${escapeHtml(labels.qty)}</th>
@@ -815,7 +828,7 @@ function makeClassicInvoiceSheet(invoice, maps, t, isUrdu, { showPageBreak = fal
           <th class="col-rate">${escapeHtml(labels.rate)}</th>
           <th class="col-amount">${escapeHtml(labels.amount)}</th>
         </tr></thead>
-        <tbody>${itemsRows || '<tr><td colspan="7" class="empty-row">—</td></tr>'}</tbody>
+        <tbody>${itemsRows || '<tr><td colspan="8" class="empty-row">—</td></tr>'}</tbody>
       </table>
       <div class="summary-strip" dir="${isUrdu ? 'rtl' : 'ltr'}">
         <div class="summary-box"><span>${escapeHtml(labels.invoiceTotal)}</span><strong>${moneyWhole(invoiceTotal)}</strong></div>
@@ -841,31 +854,35 @@ function getClassicPrintCss(isUrdu) {
     .ribbon{position:absolute;top:16px;left:-52px;z-index:1;transform:rotate(-45deg);width:196px;text-align:center;background:#267fc8;color:#fff;padding:5px 0;font:700 14px Arial,sans-serif;letter-spacing:.6px}
     .brand-row{direction:ltr;display:grid;grid-template-columns:190px 1fr 75px;align-items:center;gap:8px;margin-bottom:6px}
     .brand-left img{display:block;width:175px;max-width:100%;height:auto}
-    .brand-center{text-align:center;white-space:nowrap;font:900 clamp(30px,4.7vw,52px)/1.14 Georgia,Arial,sans-serif;letter-spacing:.4px;color:#101b31}
+    .brand-title-stack{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0}
+    .brand-center{text-align:center;white-space:nowrap;font:900 clamp(30px,4.4vw,49px)/1.14 Georgia,Arial,sans-serif;letter-spacing:.4px;color:#101b31}
+    .invoice-bill-heading{color:#192f48;font-weight:900;font-size:${isUrdu ? "30px" : "23px"};line-height:1.55;text-align:center}
     .brand-center .accent{color:#2577bf}
     .invoice-copy-label{text-align:${isUrdu ? 'right' : 'left'};font-size:15px;color:#1972bd;font-weight:800;margin:3px 2px 9px}
     .invoice-info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px}
-    .invoice-info-box{min-width:0;border:1px solid #b9c6d6;border-radius:5px;min-height:58px;padding:7px 10px;background:#fbfcff;display:flex;flex-direction:column;justify-content:center;gap:2px}
+    .invoice-info-box{min-width:0;border:1px solid #b9c6d6;border-radius:7px;min-height:62px;padding:9px 11px;background:#fbfcff;display:flex;flex-direction:column;justify-content:center;gap:3px;break-inside:avoid;box-shadow:0 1px 0 rgba(38,79,125,.06)}
     .invoice-info-box span{font-size:${isUrdu ? '13px' : '11px'};font-weight:800;color:#496177}
     .invoice-info-box strong{font-size:${isUrdu ? '15px' : '13px'};font-weight:800;overflow-wrap:anywhere;color:#142b44}
     .classic-table{width:100%;border-collapse:collapse;table-layout:fixed;direction:${isUrdu ? 'rtl' : 'ltr'}}
-    .classic-table th,.classic-table td{border:1.6px solid #344255;padding:8px 6px;vertical-align:middle;font-size:${isUrdu ? '15px' : '13px'}}
-    .classic-table th{font-weight:900;background:#f4f7fa;text-align:center}
-    .classic-table .col-serial{width:8%;text-align:center}
-    .classic-table .col-detail{width:33%;text-align:${isUrdu ? 'right' : 'left'};overflow-wrap:anywhere}
+    .classic-table th,.classic-table td{border:1.6px solid #344255;padding:9px 6px;vertical-align:middle;font-size:${isUrdu ? '14px' : '12px'}}
+    .classic-table th{font-weight:900;background:#edf4fb;text-align:center}
+    .classic-table .col-serial{width:7%;text-align:center}
+    .classic-table .col-product{width:23%;text-align:${isUrdu ? 'right' : 'left'};overflow-wrap:anywhere}
+    .classic-table .col-detail{width:18%;text-align:${isUrdu ? 'right' : 'left'};overflow-wrap:anywhere}
     .product-print-name{font-weight:800}
-    .product-print-description{font-size:12px;color:#334155;font-weight:500;margin-top:4px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
-    .product-print-rate-type{display:inline-block;font:700 11px Arial,"Segoe UI",sans-serif;color:#1d4ed8;border:1px solid #bfdbfe;background:#eff6ff;border-radius:3px;padding:1px 5px;margin-top:4px}
-    .classic-table .col-type{width:11%;text-align:center}
-    .classic-table .col-qty{width:11%;text-align:center}
-    .classic-table .col-unit{width:12%;text-align:center}
-    .classic-table .col-rate{width:12%;text-align:center}
-    .classic-table .col-amount{width:13%;text-align:center}
+    .product-print-description{font-size:12px;color:#334155;font-weight:500;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;min-height:1em}
+    .product-print-rate-type{display:block;font-size:11px;font-weight:800;line-height:1.6;color:#1d4ed8;border-top:1px solid #bfdbfe;margin-top:5px;padding-top:4px;white-space:normal}
+    .product-print-rate-type b{font-family:Arial,"Segoe UI",sans-serif;font-weight:900;white-space:nowrap}
+    .classic-table .col-type{width:10%;text-align:center}
+    .classic-table .col-qty{width:10%;text-align:center}
+    .classic-table .col-unit{width:9%;text-align:center}
+    .classic-table .col-rate{width:11%;text-align:center}
+    .classic-table .col-amount{width:12%;text-align:center}
     .num{text-align:center!important;direction:ltr;font-family:Arial,"Segoe UI",sans-serif;font-weight:600;font-variant-numeric:tabular-nums}
     .strong{font-weight:900}
     .empty-row{text-align:center;padding:18px}
     .summary-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:14px}
-    .summary-box{border:1.6px solid #344255;background:#fcfdff;min-height:62px;padding:7px 9px;display:flex;flex-direction:column;gap:5px;justify-content:center}
+    .summary-box{border:1.6px solid #344255;background:#fcfdff;min-height:62px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;justify-content:center}
     .summary-box span{font-size:${isUrdu ? '13px' : '11px'};font-weight:800;color:#44586c}
     .summary-box strong{font-size:17px;font-family:Arial,"Segoe UI",sans-serif;direction:ltr;text-align:${isUrdu ? 'right' : 'left'}}
     .balance-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:17px}
@@ -873,7 +890,7 @@ function getClassicPrintCss(isUrdu) {
     .balance-text b{font:900 22px Arial,"Segoe UI",sans-serif;color:#bf2626}
     .page-break{break-after:page;page-break-after:always}
     @media(max-width:920px){.brand-row{grid-template-columns:150px 1fr 20px}.brand-left img{width:140px}.brand-center{font-size:clamp(26px,4.2vw,44px)}}
-    @media(max-width:560px){.print-page{padding:6px}.classic-frame{padding:11px 6px}.brand-row{grid-template-columns:85px 1fr 0}.brand-left img{width:80px}.brand-center{font-size:clamp(15px,4.4vw,26px)}.ribbon{width:128px;left:-36px;top:10px;font-size:9px}.invoice-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-info-box{padding:6px;min-height:50px}.invoice-info-box strong{font-size:12px}.classic-table th,.classic-table td{font-size:10px;padding:4px 2px}.product-print-description{font-size:10px}.product-print-rate-type{font-size:9px}.summary-box{min-height:55px;padding:4px}.summary-box strong{font-size:12px}.balance-footer{gap:6px}.balance-text{font-size:13px}.balance-text b{font-size:14px}}
+    @media(max-width:560px){.print-page{padding:6px}.classic-frame{padding:11px 6px}.brand-row{grid-template-columns:85px 1fr 0}.brand-left img{width:80px}.brand-center{font-size:clamp(15px,4.4vw,26px)}.invoice-bill-heading{font-size:17px}.ribbon{width:128px;left:-36px;top:10px;font-size:9px}.invoice-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.invoice-info-box{padding:6px;min-height:50px}.invoice-info-box strong{font-size:12px}.classic-table th,.classic-table td{font-size:10px;padding:4px 2px}.product-print-description{font-size:10px}.product-print-rate-type{font-size:9px}.summary-box{min-height:55px;padding:4px}.summary-box strong{font-size:12px}.balance-footer{gap:6px}.balance-text{font-size:13px}.balance-text b{font-size:14px}}
     @page{size:A4 portrait;margin:10mm}
     @media print{body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.print-page{padding:0}.classic-sheet{padding:0}.classic-frame{border:2px solid #27374c;break-inside:auto}.invoice-info-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.brand-row,.invoice-info-grid,.summary-strip,.balance-footer{break-inside:avoid}.classic-table tr{break-inside:avoid}.page-break{page-break-after:always}}
   `;
