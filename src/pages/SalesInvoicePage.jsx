@@ -523,6 +523,25 @@ const getCatalogRate = (rates, row, prod, customerId, listName) => {
   return bestRate;
 };
 
+// Product caption used in the Invoice form. Match the screenshot's
+// "Single Rate Pcs/Kgs @750" caption, but never label a retail price as Single.
+const getAvailableSingleRate = (rates, row, product, customerId, listName) => {
+  if (!product || !row?.product_id) return 0;
+  const rateFromList = getCatalogRate(
+    rates,
+    { ...row, sale_type: "single" },
+    product,
+    customerId,
+    listName
+  );
+  if (rateFromList > 0) return rateFromList;
+  for (const key of ["single_rate", "singleRate", "piece_rate", "pieceRate"]) {
+    const price = Number(product[key]);
+    if (Number.isFinite(price) && price > 0) return price;
+  }
+  return 0;
+};
+
 // Keep Single/Multiple inside the PRODUCT dropdown, not as a separate column.
 // The combined value exists only in the UI: invoice APIs still get a numeric
 // product_id and an independent sale_type (so existing records remain valid).
@@ -766,15 +785,15 @@ function buildPrintRows(invoice, maps, isUrdu = true) {
     const qty = money(row.qty ?? row.quantity ?? row.pieces_qty ?? row.carton_qty ?? 0);
     return `<tr>
       <td class="col-serial center">${idx + 1}</td>
-      <td class="col-product"><div class="product-print-name">${escapeHtml(product)}</div></td>
+      <td class="col-product">
+        <div class="product-print-name">${escapeHtml(product)}</div>
+        ${singleRateAmount > 0 ? `<div class="product-print-rate-type" dir="ltr">(Single Rate Pcs/Kgs @${moneyWhole(singleRateAmount)})</div>` : ""}
+      </td>
       <td class="col-detail"><div class="product-print-description">${escapeHtml(description)}</div></td>
       <td class="col-type center">${escapeHtml(type)}</td>
       <td class="col-qty num">${qty}</td>
       <td class="col-unit center">${escapeHtml(unit)}</td>
-      <td class="col-rate num">
-        ${moneyWhole(row.rate)}
-        ${singleRateAmount ? `<div class="product-print-rate-type">${isUrdu ? "سنگل ریٹ" : "Single Rate"}: <b dir="ltr">${moneyWhole(singleRateAmount)}</b></div>` : ""}
-      </td>
+      <td class="col-rate num">${moneyWhole(row.rate)}</td>
       <td class="col-amount num strong">${moneyWhole(row.amount)}</td>
     </tr>`;
   }).join("");
@@ -871,7 +890,7 @@ function getClassicPrintCss(isUrdu) {
     .classic-table .col-detail{width:18%;text-align:${isUrdu ? 'right' : 'left'};overflow-wrap:anywhere}
     .product-print-name{font-weight:800}
     .product-print-description{font-size:12px;color:#334155;font-weight:500;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;min-height:1em}
-    .product-print-rate-type{display:block;font-size:11px;font-weight:800;line-height:1.6;color:#1d4ed8;border-top:1px solid #bfdbfe;margin-top:5px;padding-top:4px;white-space:normal}
+    .product-print-rate-type{display:block;font-size:11px;font-weight:800;line-height:1.6;color:#475569;margin-top:5px;padding-top:3px;white-space:normal;overflow-wrap:anywhere}
     .product-print-rate-type b{font-family:Arial,"Segoe UI",sans-serif;font-weight:900;white-space:nowrap}
     .classic-table .col-type{width:10%;text-align:center}
     .classic-table .col-qty{width:10%;text-align:center}
@@ -1265,7 +1284,7 @@ export default function SalesInvoicePage() {
       const next = selection ? { ...row, ...selection } : { ...row, [field]: value };
 
       if (field === "product_id" || field === "product_choice") {
-        const prod = products.find((p) => sameId(getProductId(p), value));
+        const prod = products.find((p) => sameId(getProductId(p), next.product_id));
         if (prod) {
           next.category_id = String(getProductCatId(prod) || next.category_id || "");
           next.unit_id = String(getProductUnitId(prod) || "");
@@ -1931,6 +1950,14 @@ export default function SalesInvoicePage() {
                   </thead>
                   <tbody>
                     {items.map((row, idx) => {
+                      const selectedProduct = productRecordMap[String(row.product_id || "")];
+                      const configuredSingleRate = getAvailableSingleRate(
+                        salesRates,
+                        row,
+                        selectedProduct,
+                        form.party_type === "customer" ? form.party_id : null,
+                        form.rate_list_name || ""
+                      );
                       return (
                         <tr key={idx}>
                           <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
@@ -1961,6 +1988,15 @@ export default function SalesInvoicePage() {
                                 });
                               })()}
                             </select>
+                            {configuredSingleRate > 0 && (
+                              <div
+                                className="invoice-single-rate-caption"
+                                style={{ fontSize: 11, fontWeight: 800, color: "#475569", marginTop: 6, lineHeight: 1.4, whiteSpace: "nowrap" }}
+                                dir="ltr"
+                              >
+                                (Single Rate Pcs/Kgs @{moneyWhole(configuredSingleRate)})
+                              </div>
+                            )}
                           </td>
                           <td>
                             <input className="productInput" value={row.product_description} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} />
