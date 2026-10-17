@@ -7,16 +7,12 @@ import React, {
 } from "react";
 import axios from "axios";
 import {
-  groupCashBookVoucherItems,
   openCashBookPrintWindow,
-  downloadCashBookSinglePdf,
   downloadCashBookAccountZip,
 } from "../utils/cashBookVoucherPrint";
 import {
   Edit3,
-  Download,
   FileArchive,
-  FileDown,
   Languages,
   Plus,
   Printer,
@@ -93,10 +89,7 @@ const LANG = {
     cancel: "Cancel",
     edit: "Edit",
     print: "Print Voucher",
-    singlePrint: "Single Print",
     bulkPrint: "Bulk Print",
-    downloadPdf: "Download PDF",
-    accountToPrint: "Select Account to Print",
     printAll: "Download All Account Slips",
     printing: "Preparing PDFs...",
     accountCopy: "Account Copy",
@@ -150,10 +143,7 @@ const LANG = {
     cancel: "منسوخ",
     edit: "ترمیم",
     print: "واؤچر پرنٹ",
-    singlePrint: "سنگل پرنٹ",
     bulkPrint: "بلک پرنٹ",
-    downloadPdf: "پی ڈی ایف ڈاؤن لوڈ",
-    accountToPrint: "پرنٹ کے لیے اکاؤنٹ منتخب کریں",
     printAll: "تمام اکاؤنٹ سلپس ڈاؤن لوڈ",
     printing: "پی ڈی ایف تیار ہو رہی ہیں...",
     accountCopy: "اکاؤنٹ کاپی",
@@ -348,10 +338,7 @@ export default function CashBookPage() {
   const [records, setRecords] =
     useState([]);
 
-  const [singlePrintVoucher, setSinglePrintVoucher] = useState(null);
-  const [singlePrintAccountKey, setSinglePrintAccountKey] = useState("");
   const [printBusyId, setPrintBusyId] = useState(null);
-  const [singlePdfBusy, setSinglePdfBusy] = useState(false);
 
   const [search, setSearch] =
     useState("");
@@ -1130,45 +1117,6 @@ export default function CashBookPage() {
     }
   };
 
-  const openSinglePrint = async (id) => {
-    try {
-      const record = await fetchVoucherForPrinting(id);
-      const groups = groupCashBookVoucherItems(record);
-      if (!groups.length) throw new Error("No account entries to print.");
-      setSinglePrintVoucher(record);
-      setSinglePrintAccountKey(groups[0].key);
-    } catch (error) {
-      toast("error", getError(error));
-    }
-  };
-
-  const singlePrintGroups = singlePrintVoucher
-    ? groupCashBookVoucherItems(singlePrintVoucher) : [];
-  const singleSelectedGroup = singlePrintGroups.find((group) =>
-    group.key === singlePrintAccountKey
-  ) || singlePrintGroups[0] || null;
-
-  const handleSinglePrint = () => {
-    if (!singlePrintVoucher || !singleSelectedGroup) return;
-    try {
-      openCashBookPrintWindow(singlePrintVoucher, singleSelectedGroup, isUrdu);
-    } catch (error) {
-      toast("error", getError(error));
-    }
-  };
-
-  const handleSingleDownload = async () => {
-    if (!singlePrintVoucher || !singleSelectedGroup) return;
-    setSinglePdfBusy(true);
-    try {
-      await downloadCashBookSinglePdf(singlePrintVoucher, singleSelectedGroup, isUrdu);
-    } catch (error) {
-      toast("error", getError(error));
-    } finally {
-      setSinglePdfBusy(false);
-    }
-  };
-
   // Each distinct account gets a separate named PDF inside one ZIP.
   const handleBulkPrint = async (id) => {
     if (printBusyId !== null) return;
@@ -1189,48 +1137,6 @@ export default function CashBookPage() {
       dir={dir}
       className="invoice-page"
     >
-      {singlePrintVoucher && (
-        <div
-          role="presentation"
-          onClick={() => !singlePdfBusy && setSinglePrintVoucher(null)}
-          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.62)", zIndex: 6000,
-            display: "flex", alignItems: "center", justifyContent: "center", padding: 15 }}
-        >
-          <div role="dialog" aria-modal="true" aria-label={t.accountToPrint}
-            onClick={(event) => event.stopPropagation()}
-            style={{ width: "min(520px,100%)", background: "#fff", borderRadius: 18,
-              padding: 24, boxShadow: "0 30px 70px rgba(0,0,0,.24)", border: "1px solid #dbeafe" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 18 }}>
-              <div>
-                <strong style={{ fontSize: 20, color: "#0f172a" }}>{t.singlePrint}</strong>
-                <div style={{ color: "#64748b", fontSize: 12, marginTop: 5 }}>{singlePrintVoucher.voucher_no}</div>
-              </div>
-              <button className="btn btn-soft" type="button" disabled={singlePdfBusy}
-                onClick={() => setSinglePrintVoucher(null)} aria-label={t.cancel}><X size={17} /></button>
-            </div>
-            <label htmlFor="cashbook-single-account" style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>
-              {t.accountToPrint}
-            </label>
-            <select id="cashbook-single-account" value={singlePrintAccountKey}
-              onChange={(event) => setSinglePrintAccountKey(event.target.value)}
-              style={{ display: "block", width: "100%", padding: 12, borderRadius: 9,
-                border: "1px solid #cbd5e1", marginTop: 8, marginBottom: 18, background: "white" }}>
-              {singlePrintGroups.map((group) => (
-                <option value={group.key} key={group.key}>{group.name} — {ACCOUNT_TYPES.find((item) => item.value === group.accountType)?.[lang] || group.accountType}</option>
-              ))}
-            </select>
-            <div style={{ display: "flex", gap: 9, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <button className="btn btn-soft" type="button" disabled={singlePdfBusy} onClick={handleSinglePrint}>
-                <Printer size={15} /> {t.print}
-              </button>
-              <button className="btn btn-primary" type="button" disabled={singlePdfBusy}
-                onClick={handleSingleDownload} style={{ background: "#2563eb", color: "white", borderColor: "#2563eb" }}>
-                <Download size={15} /> {singlePdfBusy ? t.printing : t.downloadPdf}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <link
         href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
         rel="stylesheet"
@@ -1526,6 +1432,36 @@ export default function CashBookPage() {
         table.list tr:hover td {
           background: #f8fafc;
         }
+
+        .cashbook-voucher-number { white-space: nowrap; }
+        .invoice-page table.list .cashbook-bulk-download {
+          display: inline-flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          position: static !important;
+          transform: none !important;
+          align-items: center;
+          justify-content: center;
+          width: max-content;
+          max-width: 100%;
+          gap: 5px;
+          margin-top: 8px;
+          padding: 7px 10px;
+          border: 1px solid #1d4ed8;
+          border-radius: 7px;
+          color: #fff;
+          background: #1857ac;
+          font-family: Arial, sans-serif;
+          font-size: 11px;
+          font-weight: 800;
+          line-height: 1.2;
+          cursor: pointer;
+          box-shadow: none;
+          white-space: nowrap;
+        }
+        .invoice-page table.list .cashbook-bulk-download:hover { background: #134687; }
+        .invoice-page table.list .cashbook-bulk-download:disabled { opacity: .55 !important; cursor: wait; }
+
 
         .toast {
           position: fixed;
@@ -2303,16 +2239,26 @@ export default function CashBookPage() {
 
                         <td
                           style={{
-                            fontFamily:
-                              "monospace",
-
-                            fontWeight:
-                              900,
+                            fontFamily: "monospace",
+                            fontWeight: 900,
                           }}
                         >
-                          {
-                            record.voucher_no
-                          }
+                          <div className="cashbook-voucher-number">{record.voucher_no}</div>
+                          <button
+                            type="button"
+                            className="cashbook-bulk-download"
+                            title={t.printAll}
+                            aria-label={`${t.bulkPrint} — ${record.voucher_no}`}
+                            disabled={printBusyId !== null}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              handleBulkPrint(record.id);
+                            }}
+                          >
+                            <FileArchive size={14} />
+                            {printBusyId === record.id ? t.printing : t.bulkPrint}
+                          </button>
                         </td>
 
                         <td
@@ -2442,31 +2388,6 @@ export default function CashBookPage() {
                               />
 
                               {t.print}
-                            </button>
-
-                            <button
-                              className="btn btn-soft"
-                              style={{ padding: "6px 10px" }}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openSinglePrint(record.id);
-                              }}
-                              title={t.accountToPrint}
-                            >
-                              <FileDown size={14} /> {t.singlePrint}
-                            </button>
-
-                            <button
-                              className="btn btn-soft"
-                              style={{ padding: "6px 10px", borderColor: "#93c5fd", color: "#1d4ed8" }}
-                              disabled={printBusyId !== null}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleBulkPrint(record.id);
-                              }}
-                              title={t.printAll}
-                            >
-                              <FileArchive size={14} /> {printBusyId === record.id ? t.printing : t.bulkPrint}
                             </button>
 
                             <button
@@ -2994,10 +2915,6 @@ export default function CashBookPage() {
                     <button className="basicBtn" type="button" disabled={saving}
                       onClick={() => printVoucher(editingId)}>
                       <Printer size={15} /> {t.print}
-                    </button>
-                    <button className="basicBtn" type="button" disabled={saving}
-                      onClick={() => openSinglePrint(editingId)}>
-                      <FileDown size={15} /> {t.singlePrint}
                     </button>
                     <button className="basicBtn" type="button" disabled={saving || printBusyId !== null}
                       onClick={() => handleBulkPrint(editingId)}>
