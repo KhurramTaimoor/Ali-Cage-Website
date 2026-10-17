@@ -3,35 +3,34 @@ import axios from "axios";
 import { ArrowLeft, Edit3, FolderTree, Plus, Printer, Save, Search, Trash2, X } from "lucide-react";
 
 const API_ROOT = `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "")}/api`;
-const TYPES = ["Asset", "Liability", "Equity", "Income", "Expense", "Other"];
-const emptyCategory = { group_name: "", parent_group: "", type: "Asset" };
+const emptyCategory = { group_name: "", parent_group: "" };
 
 const LANG = {
   en: {
     title: "Chart of Accounts", subtitle: "Create categories to organize General Accounts",
-    add: "New Category", back: "Back to List", name: "Category Name", type: "Account Type",
-    parent: "Parent Category (Optional)", noParent: "No Parent", accounts: "Linked Accounts",
+    add: "New Category", back: "Back to List", name: "Category Name",
+    parent: "Parent Category (Optional)", noParent: "No Parent",
     actions: "Actions", search: "Search categories...", save: "Save Category", update: "Update Category",
     cancel: "Cancel", edit: "Edit", remove: "Delete", loading: "Loading categories...",
     empty: "No categories yet. Create one to organize General Accounts.",
     deleteConfirm: "Delete this category? Categories with linked accounts cannot be deleted.",
-    print: "Print List", general: "General Accounts", required: "Category name and account type are required.",
+    print: "Print List", general: "General Accounts", required: "Category name is required.",
     newTitle: "New Chart Category", editTitle: "Edit Chart Category", total: "Total Categories", toggle: "اردو",
     saved: "Category saved successfully.", deleted: "Category deleted successfully.",
-    allTypes: "All Types", choose: "Select a category type", noRecords: "No matching categories.",
+    noRecords: "No matching categories.",
   },
   ur: {
     title: "چارٹ آف اکاؤنٹس", subtitle: "جنرل اکاؤنٹس منظم کرنے کے لیے کیٹیگریز بنائیں",
-    add: "نئی کیٹیگری", back: "فہرست پر واپس", name: "کیٹیگری نام", type: "اکاؤنٹ ٹائپ",
-    parent: "والدین کیٹیگری (اختیاری)", noParent: "کوئی نہیں", accounts: "منسلک اکاؤنٹس",
+    add: "نئی کیٹیگری", back: "فہرست پر واپس", name: "کیٹیگری کا نام",
+    parent: "والدین کیٹیگری (اختیاری)", noParent: "کوئی نہیں",
     actions: "عمل", search: "کیٹیگری تلاش کریں...", save: "کیٹیگری محفوظ کریں", update: "کیٹیگری اپڈیٹ کریں",
     cancel: "منسوخ", edit: "ترمیم", remove: "حذف", loading: "کیٹیگریز لوڈ ہو رہی ہیں...",
     empty: "ابھی کوئی کیٹیگری نہیں۔ جنرل اکاؤنٹس کے لیے کیٹیگری بنائیں۔",
     deleteConfirm: "کیا یہ کیٹیگری حذف کرنی ہے؟ منسلک اکاؤنٹس والی کیٹیگری حذف نہیں ہو سکتی۔",
-    print: "فہرست پرنٹ کریں", general: "جنرل اکاؤنٹس", required: "کیٹیگری نام اور اکاؤنٹ ٹائپ ضروری ہیں۔",
+    print: "فہرست پرنٹ کریں", general: "جنرل اکاؤنٹس", required: "کیٹیگری کا نام ضروری ہے۔",
     newTitle: "نئی چارٹ کیٹیگری", editTitle: "چارٹ کیٹیگری میں ترمیم", total: "کل کیٹیگریز", toggle: "English",
     saved: "کیٹیگری محفوظ ہو گئی۔", deleted: "کیٹیگری حذف ہو گئی۔",
-    allTypes: "تمام اقسام", choose: "اکاؤنٹ ٹائپ منتخب کریں", noRecords: "کوئی ریکارڈ نہیں ملا۔",
+    noRecords: "کوئی ریکارڈ نہیں ملا۔",
   }
 };
 
@@ -47,7 +46,6 @@ export default function ChartOfAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyCategory);
@@ -66,16 +64,12 @@ export default function ChartOfAccountsPage() {
   }, []);
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
-  const options = useMemo(() => Array.from(new Set([
-    ...TYPES,
-    ...categories.map(row => row.type).filter(Boolean)
-  ])), [categories]);
-
   const filtered = useMemo(() => categories.filter(row => {
     const q = search.trim().toLowerCase();
-    if (typeFilter && row.type !== typeFilter) return false;
-    return !q || [row.group_name, row.parent_group, row.type, row.id].some(value => String(value || "").toLowerCase().includes(q));
-  }), [categories, search, typeFilter]);
+    return !q || [row.group_name, row.parent_group, row.id].some(
+      value => String(value || "").toLowerCase().includes(q)
+    );
+  }), [categories, search]);
 
   function addCategory() {
     setEditingId(null);
@@ -85,7 +79,7 @@ export default function ChartOfAccountsPage() {
   }
   function editCategory(item) {
     setEditingId(item.id);
-    setForm({ group_name: item.group_name || "", parent_group: item.parent_group || "", type: item.type || "Asset" });
+    setForm({ group_name: item.group_name || "", parent_group: item.parent_group || "" });
     setNotice(null);
     setShowForm(true);
   }
@@ -97,13 +91,13 @@ export default function ChartOfAccountsPage() {
   }
   async function save(event) {
     event.preventDefault();
-    if (!form.group_name.trim() || !form.type) {
+    if (!form.group_name.trim()) {
       setNotice({ kind: "error", text: t.required });
       return;
     }
     setSaving(true);
     try {
-      const payload = { group_name: form.group_name.trim(), parent_group: form.parent_group, type: form.type };
+      const payload = { group_name: form.group_name.trim(), parent_group: form.parent_group };
       if (editingId) await axios.put(`${API_ROOT}/account-groups/${editingId}`, payload);
       else await axios.post(`${API_ROOT}/account-groups`, payload);
       setNotice({ kind: "success", text: t.saved });
@@ -162,12 +156,7 @@ export default function ChartOfAccountsPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="block"><span className="mb-1.5 block text-xs font-bold text-slate-600">{t.name} *</span>
                   <input required autoFocus maxLength={180} className={inputStyle} value={form.group_name} onChange={e => setForm({...form,group_name:e.target.value})} placeholder={isUrdu ? "مثلاً اثاثے" : "e.g. Bank Accounts"} /></label>
-                <label className="block"><span className="mb-1.5 block text-xs font-bold text-slate-600">{t.type} *</span>
-                  <select required className={inputStyle} value={form.type} onChange={e => setForm({...form,type:e.target.value})}>
-                    <option value="" disabled>{t.choose}</option>
-                    {options.map(type => <option key={type} value={type}>{type}</option>)}
-                  </select></label>
-                <label className="block sm:col-span-2"><span className="mb-1.5 block text-xs font-bold text-slate-600">{t.parent}</span>
+                <label className="block"><span className="mb-1.5 block text-xs font-bold text-slate-600">{t.parent}</span>
                   <select className={inputStyle} value={form.parent_group} onChange={e => setForm({...form,parent_group:e.target.value})}>
                     <option value="">{t.noParent}</option>
                     {categories.filter(row => row.id !== editingId).map(row => <option value={row.group_name} key={row.id}>{row.group_name}</option>)}
@@ -184,7 +173,6 @@ export default function ChartOfAccountsPage() {
             <section className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm print:hidden">
               <div className="flex flex-wrap gap-2">
                 <div className="relative"><Search size={15} className={`absolute top-3 text-slate-400 ${isUrdu ? "right-3" : "left-3"}`}/><input className={`${inputStyle} w-[260px] max-w-full ${isUrdu ? "pr-9" : "pl-9"}`} placeholder={t.search} value={search} onChange={e => setSearch(e.target.value)}/></div>
-                <select className={`${inputStyle} w-[150px]`} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}><option value="">{t.allTypes}</option>{options.map(type => <option key={type}>{type}</option>)}</select>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700">{t.total}: {categories.length}</span>
@@ -193,24 +181,24 @@ export default function ChartOfAccountsPage() {
             </section>
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[650px] text-sm">
+                <table className="w-full min-w-[480px] text-sm">
                   <thead className="bg-slate-900 text-xs font-bold uppercase text-white">
-                    <tr><th className="px-4 py-3 text-center">#</th><th className="px-4 py-3 text-start">{t.name}</th><th className="px-4 py-3 text-start">{t.type}</th><th className="px-4 py-3 text-start">{t.parent}</th><th className="px-4 py-3 text-center">{t.accounts}</th><th className="px-4 py-3 text-center print:hidden">{t.actions}</th></tr>
+                    <tr><th className="px-4 py-3 text-center">#</th><th className="px-4 py-3 text-start">{t.name}</th><th className="px-4 py-3 text-start">{t.parent}</th><th className="px-4 py-3 text-center print:hidden">{t.actions}</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {loading ? <tr><td colSpan={6} className="p-8 text-center text-slate-400">{t.loading}</td></tr> : filtered.length ? filtered.map((row,i) => (
+                    {loading ? <tr><td colSpan={4} className="p-8 text-center text-slate-400">{t.loading}</td></tr> : filtered.length ? filtered.map((row,i) => (
                       <tr key={row.id} className="hover:bg-indigo-50/40">
                         <td className="px-4 py-3 text-center text-slate-500">{i+1}</td>
                         <td className="px-4 py-3 font-bold text-slate-900">{row.group_name}</td>
-                        <td className="px-4 py-3"><span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{row.type}</span></td>
+                        
                         <td className="px-4 py-3 text-slate-600">{row.parent_group || "—"}</td>
-                        <td className="px-4 py-3 text-center font-bold text-slate-700">{row.accounts_count ?? 0}</td>
+                        
                         <td className="px-4 py-3 text-center print:hidden"><div className="flex justify-center gap-2">
                           <button type="button" onClick={() => editCategory(row)} title={t.edit} aria-label={t.edit} className="rounded-lg bg-indigo-50 p-2 text-indigo-600 hover:bg-indigo-100"><Edit3 size={15}/></button>
                           <button type="button" onClick={() => removeCategory(row)} title={t.remove} aria-label={t.remove} className="rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100"><Trash2 size={15}/></button>
                         </div></td>
                       </tr>
-                    )) : <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-400">{categories.length ? t.noRecords : t.empty}</td></tr>}
+                    )) : <tr><td colSpan={4} className="px-4 py-12 text-center text-slate-400">{categories.length ? t.noRecords : t.empty}</td></tr>}
                   </tbody>
                 </table>
               </div>
