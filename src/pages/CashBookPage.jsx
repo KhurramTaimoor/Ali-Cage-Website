@@ -739,32 +739,10 @@ export default function CashBookPage() {
           "account_type"
         ) {
           next.account_id = "";
-          next.description = "";
+          // Manually entered description ko type change par bhi preserve karein.
         }
 
-        if (
-          field ===
-          "account_id"
-        ) {
-          const selected =
-            optionsFor(
-              row.account_type
-            ).find(
-              (item) =>
-                String(item.id) ===
-                String(value)
-            );
-
-          if (
-            selected &&
-            !row.description.trim()
-          ) {
-            next.description =
-              getAccountName(
-                selected
-              );
-          }
-        }
+        // Description manually likhi jayegi; account select karne par auto-fill nahi hogi.
 
         if (
           field === "receive" &&
@@ -1073,11 +1051,7 @@ export default function CashBookPage() {
                         account.id
                       ),
 
-                    description:
-                      row.description ||
-                      getAccountName(
-                        account
-                      ),
+                    description: row.description,
                   }
                 : row
             )
