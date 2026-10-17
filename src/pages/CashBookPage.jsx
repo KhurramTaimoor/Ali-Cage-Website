@@ -7,7 +7,16 @@ import React, {
 } from "react";
 import axios from "axios";
 import {
+  groupCashBookVoucherItems,
+  openCashBookPrintWindow,
+  downloadCashBookSinglePdf,
+  downloadCashBookAccountZip,
+} from "../utils/cashBookVoucherPrint";
+import {
   Edit3,
+  Download,
+  FileArchive,
+  FileDown,
   Languages,
   Plus,
   Printer,
@@ -83,7 +92,14 @@ const LANG = {
     saving: "Saving...",
     cancel: "Cancel",
     edit: "Edit",
-    print: "Print",
+    print: "Print Voucher",
+    singlePrint: "Single Print",
+    bulkPrint: "Bulk Print",
+    downloadPdf: "Download PDF",
+    accountToPrint: "Select Account to Print",
+    printAll: "Download All Account Slips",
+    printing: "Preparing PDFs...",
+    accountCopy: "Account Copy",
     delete: "Delete",
     actions: "Actions",
     loading: "Loading...",
@@ -133,7 +149,14 @@ const LANG = {
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
     edit: "ترمیم",
-    print: "پرنٹ",
+    print: "واؤچر پرنٹ",
+    singlePrint: "سنگل پرنٹ",
+    bulkPrint: "بلک پرنٹ",
+    downloadPdf: "پی ڈی ایف ڈاؤن لوڈ",
+    accountToPrint: "پرنٹ کے لیے اکاؤنٹ منتخب کریں",
+    printAll: "تمام اکاؤنٹ سلپس ڈاؤن لوڈ",
+    printing: "پی ڈی ایف تیار ہو رہی ہیں...",
+    accountCopy: "اکاؤنٹ کاپی",
     delete: "حذف",
     actions: "اقدامات",
     loading: "لوڈ ہو رہا ہے...",
@@ -324,6 +347,11 @@ export default function CashBookPage() {
 
   const [records, setRecords] =
     useState([]);
+
+  const [singlePrintVoucher, setSinglePrintVoucher] = useState(null);
+  const [singlePrintAccountKey, setSinglePrintAccountKey] = useState("");
+  const [printBusyId, setPrintBusyId] = useState(null);
+  const [singlePdfBusy, setSinglePdfBusy] = useState(false);
 
   const [search, setSearch] =
     useState("");
@@ -1076,235 +1104,133 @@ export default function CashBookPage() {
       }
     };
 
-  const printVoucher =
-    async (id) => {
-      try {
-        const response =
-          await axios.get(
-            `${API_BASE}/vouchers/${id}`
-          );
+  const fetchVoucherForPrinting = async (id) => {
+    const response = await axios.get(`${API_BASE}/vouchers/${id}`);
+    const record = response.data?.data || response.data?.voucher || response.data;
+    if (!record || !Array.isArray(record.items)) {
+      throw new Error("Voucher details are unavailable.");
+    }
+    return record;
+  };
 
-        const record =
-          response.data?.data ||
-          response.data?.voucher ||
-          response.data;
+  // Existing full voucher print option, now with Sales Invoice-style branding.
+  const printVoucher = async (id) => {
+    // Open from the click event, before awaiting the API, to avoid popup blockers.
+    const popup = window.open("", "_blank", "width=1100,height=900");
+    if (!popup) {
+      toast("error", "Please allow pop-ups for printing.");
+      return;
+    }
+    try {
+      const record = await fetchVoucherForPrinting(id);
+      openCashBookPrintWindow(record, null, isUrdu, popup);
+    } catch (error) {
+      popup.close();
+      toast("error", getError(error));
+    }
+  };
 
-        const rowsHtml =
-          (
-            record.items || []
-          )
-            .map(
-              (
-                item,
-                index
-              ) => `
-                <tr>
-                  <td>
-                    ${index + 1}
-                  </td>
+  const openSinglePrint = async (id) => {
+    try {
+      const record = await fetchVoucherForPrinting(id);
+      const groups = groupCashBookVoucherItems(record);
+      if (!groups.length) throw new Error("No account entries to print.");
+      setSinglePrintVoucher(record);
+      setSinglePrintAccountKey(groups[0].key);
+    } catch (error) {
+      toast("error", getError(error));
+    }
+  };
 
-                  <td>
-                    ${
-                      item.account_type_label ||
-                      item.account_type
-                    }
-                  </td>
+  const singlePrintGroups = singlePrintVoucher
+    ? groupCashBookVoucherItems(singlePrintVoucher) : [];
+  const singleSelectedGroup = singlePrintGroups.find((group) =>
+    group.key === singlePrintAccountKey
+  ) || singlePrintGroups[0] || null;
 
-                  <td>
-                    ${
-                      item.account_name ||
-                      "-"
-                    }
-                  </td>
+  const handleSinglePrint = () => {
+    if (!singlePrintVoucher || !singleSelectedGroup) return;
+    try {
+      openCashBookPrintWindow(singlePrintVoucher, singleSelectedGroup, isUrdu);
+    } catch (error) {
+      toast("error", getError(error));
+    }
+  };
 
-                  <td>
-                    ${
-                      item.description ||
-                      "-"
-                    }
-                  </td>
+  const handleSingleDownload = async () => {
+    if (!singlePrintVoucher || !singleSelectedGroup) return;
+    setSinglePdfBusy(true);
+    try {
+      await downloadCashBookSinglePdf(singlePrintVoucher, singleSelectedGroup, isUrdu);
+    } catch (error) {
+      toast("error", getError(error));
+    } finally {
+      setSinglePdfBusy(false);
+    }
+  };
 
-                  <td>
-                    ${
-                      toNum(
-                        item.receive
-                      ) > 0
-                        ? money(
-                            item.receive
-                          )
-                        : "-"
-                    }
-                  </td>
-
-                  <td>
-                    ${
-                      toNum(
-                        item.paid
-                      ) > 0
-                        ? money(
-                            item.paid
-                          )
-                        : "-"
-                    }
-                  </td>
-                </tr>
-              `
-            )
-            .join("");
-
-        const popup =
-          window.open(
-            "",
-            "_blank",
-            "width=1100,height=800"
-          );
-
-        if (!popup) {
-          throw new Error(
-            "Please allow pop-ups for printing."
-          );
-        }
-
-        popup.document.write(`
-          <!doctype html>
-
-          <html>
-            <head>
-              <title>
-                ${record.voucher_no}
-              </title>
-
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  padding: 28px;
-                  color: #172033;
-                }
-
-                h1 {
-                  text-align: center;
-                }
-
-                .meta {
-                  display: flex;
-                  justify-content: space-between;
-                  margin: 24px 0;
-                }
-
-                table {
-                  width: 100%;
-                  border-collapse: collapse;
-                }
-
-                th,
-                td {
-                  border: 1px solid #d5dae3;
-                  padding: 10px;
-                  text-align: left;
-                }
-
-                th {
-                  background: #111827;
-                  color: white;
-                }
-
-                .totals {
-                  display: flex;
-                  justify-content: flex-end;
-                  gap: 30px;
-                  margin-top: 18px;
-                  font-weight: bold;
-                }
-              </style>
-            </head>
-
-            <body>
-              <h1>
-                Cash Book Voucher
-              </h1>
-
-              <div class="meta">
-                <strong>
-                  Voucher No:
-                  ${record.voucher_no}
-                </strong>
-
-                <strong>
-                  Date:
-                  ${formatDate(
-                    record.voucher_date
-                  )}
-                </strong>
-              </div>
-
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>
-                      Account Type
-                    </th>
-                    <th>
-                      Account
-                    </th>
-                    <th>
-                      Description
-                    </th>
-                    <th>
-                      Receive
-                    </th>
-                    <th>
-                      Paid
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  ${rowsHtml}
-                </tbody>
-              </table>
-
-              <div class="totals">
-                <span>
-                  Total Receive:
-                  Rs ${money(
-                    record.total_receive
-                  )}
-                </span>
-
-                <span>
-                  Total Paid:
-                  Rs ${money(
-                    record.total_paid
-                  )}
-                </span>
-              </div>
-
-              <script>
-                window.onload = () =>
-                  setTimeout(
-                    () => window.print(),
-                    300
-                  );
-              </script>
-            </body>
-          </html>
-        `);
-
-        popup.document.close();
-      } catch (error) {
-        toast(
-          "error",
-          getError(error)
-        );
-      }
-    };
+  // Each distinct account gets a separate named PDF inside one ZIP.
+  const handleBulkPrint = async (id) => {
+    if (printBusyId !== null) return;
+    setPrintBusyId(id);
+    try {
+      const record = await fetchVoucherForPrinting(id);
+      const count = await downloadCashBookAccountZip(record, isUrdu);
+      toast("success", `${count} account slips downloaded in ZIP.`);
+    } catch (error) {
+      toast("error", getError(error));
+    } finally {
+      setPrintBusyId(null);
+    }
+  };
 
   return (
     <div
       dir={dir}
       className="invoice-page"
     >
+      {singlePrintVoucher && (
+        <div
+          role="presentation"
+          onClick={() => !singlePdfBusy && setSinglePrintVoucher(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.62)", zIndex: 6000,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 15 }}
+        >
+          <div role="dialog" aria-modal="true" aria-label={t.accountToPrint}
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: "min(520px,100%)", background: "#fff", borderRadius: 18,
+              padding: 24, boxShadow: "0 30px 70px rgba(0,0,0,.24)", border: "1px solid #dbeafe" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 18 }}>
+              <div>
+                <strong style={{ fontSize: 20, color: "#0f172a" }}>{t.singlePrint}</strong>
+                <div style={{ color: "#64748b", fontSize: 12, marginTop: 5 }}>{singlePrintVoucher.voucher_no}</div>
+              </div>
+              <button className="btn btn-soft" type="button" disabled={singlePdfBusy}
+                onClick={() => setSinglePrintVoucher(null)} aria-label={t.cancel}><X size={17} /></button>
+            </div>
+            <label htmlFor="cashbook-single-account" style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>
+              {t.accountToPrint}
+            </label>
+            <select id="cashbook-single-account" value={singlePrintAccountKey}
+              onChange={(event) => setSinglePrintAccountKey(event.target.value)}
+              style={{ display: "block", width: "100%", padding: 12, borderRadius: 9,
+                border: "1px solid #cbd5e1", marginTop: 8, marginBottom: 18, background: "white" }}>
+              {singlePrintGroups.map((group) => (
+                <option value={group.key} key={group.key}>{group.name} — {ACCOUNT_TYPES.find((item) => item.value === group.accountType)?.[lang] || group.accountType}</option>
+              ))}
+            </select>
+            <div style={{ display: "flex", gap: 9, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <button className="btn btn-soft" type="button" disabled={singlePdfBusy} onClick={handleSinglePrint}>
+                <Printer size={15} /> {t.print}
+              </button>
+              <button className="btn btn-primary" type="button" disabled={singlePdfBusy}
+                onClick={handleSingleDownload} style={{ background: "#2563eb", color: "white", borderColor: "#2563eb" }}>
+                <Download size={15} /> {singlePdfBusy ? t.printing : t.downloadPdf}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <link
         href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap"
         rel="stylesheet"
@@ -2520,6 +2446,31 @@ export default function CashBookPage() {
 
                             <button
                               className="btn btn-soft"
+                              style={{ padding: "6px 10px" }}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openSinglePrint(record.id);
+                              }}
+                              title={t.accountToPrint}
+                            >
+                              <FileDown size={14} /> {t.singlePrint}
+                            </button>
+
+                            <button
+                              className="btn btn-soft"
+                              style={{ padding: "6px 10px", borderColor: "#93c5fd", color: "#1d4ed8" }}
+                              disabled={printBusyId !== null}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleBulkPrint(record.id);
+                              }}
+                              title={t.printAll}
+                            >
+                              <FileArchive size={14} /> {printBusyId === record.id ? t.printing : t.bulkPrint}
+                            </button>
+
+                            <button
+                              className="btn btn-soft"
                               style={{
                                 padding:
                                   "6px 10px",
@@ -3038,6 +2989,22 @@ export default function CashBookPage() {
               </div>
 
               <div className="modalFooterBasic">
+                {editingId && (
+                  <>
+                    <button className="basicBtn" type="button" disabled={saving}
+                      onClick={() => printVoucher(editingId)}>
+                      <Printer size={15} /> {t.print}
+                    </button>
+                    <button className="basicBtn" type="button" disabled={saving}
+                      onClick={() => openSinglePrint(editingId)}>
+                      <FileDown size={15} /> {t.singlePrint}
+                    </button>
+                    <button className="basicBtn" type="button" disabled={saving || printBusyId !== null}
+                      onClick={() => handleBulkPrint(editingId)}>
+                      <FileArchive size={15} /> {printBusyId === editingId ? t.printing : t.bulkPrint}
+                    </button>
+                  </>
+                )}
                 <button
                   className="basicBtn"
                   type="button"
