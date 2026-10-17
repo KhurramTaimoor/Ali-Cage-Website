@@ -16,7 +16,7 @@ const LANG = {
     remarks: "Remarks",
     balanceSide: "Balance Type",
     autoCode: "Leave blank to auto-generate",
-    subtitle: "Manage chart of accounts, opening balances and account transactions",
+    subtitle: "Manage General Accounts, closing balances and ledgers",
     addBtn: "New Account",
     searchPlaceholder: "Search by code, account title or group...",
     accountCode: "Account Code",
@@ -24,7 +24,8 @@ const LANG = {
     group: "Chart of Accounts",
     selectGroup: "-- Select Category --",
     openingBalance: "Opening Balance",
-    currentBalance: "Current Balance",
+    currentBalance: "Closing Balance",
+    ledger: "Ledger",
     save: "Save",
     saving: "Saving...",
     cancel: "Cancel",
@@ -45,7 +46,7 @@ const LANG = {
     loadError: "Unable to load account data.",
     transactionLoadError: "Unable to load ledger transactions.",
     transactions: "Transactions",
-    transactionDetails: "Account Transactions",
+    transactionDetails: "Account Ledger",
     transactionId: "Transaction ID",
     date: "Date",
     dueDate: "Due Date",
@@ -56,7 +57,7 @@ const LANG = {
     amount: "Amount",
     balance: "Balance",
     status: "Status",
-    noTransactions: "No transactions found for this account.",
+    noTransactions: "No ledger entries found for this account.",
     totalTransactions: "Total Transactions",
     totalDebit: "Total Debit",
     totalCredit: "Total Credit",
@@ -73,7 +74,7 @@ const LANG = {
     remarks: "تفصیل",
     balanceSide: "بیلنس کی قسم",
     autoCode: "خودکار کوڈ کے لیے خالی چھوڑیں",
-    subtitle: "چارٹ آف اکاؤنٹس، ابتدائی بیلنس اور اکاؤنٹ ٹرانزیکشنز کا انتظام کریں",
+    subtitle: "جنرل اکاؤنٹس، کلوزنگ بیلنس اور لیجرز کا انتظام کریں",
     addBtn: "نیا اکاؤنٹ",
     searchPlaceholder: "کوڈ، اکاؤنٹ ٹائٹل یا گروپ سے تلاش کریں...",
     accountCode: "اکاؤنٹ کوڈ",
@@ -81,7 +82,8 @@ const LANG = {
     group: "چارٹ آف اکاؤنٹس",
     selectGroup: "-- کیٹیگری منتخب کریں --",
     openingBalance: "ابتدائی بیلنس",
-    currentBalance: "موجودہ بیلنس",
+    currentBalance: "اختتامی بیلنس",
+    ledger: "لیجر",
     save: "محفوظ کریں",
     saving: "محفوظ ہو رہا ہے...",
     cancel: "منسوخ",
@@ -102,7 +104,7 @@ const LANG = {
     loadError: "اکاؤنٹس کا ڈیٹا لوڈ نہیں ہو سکا۔",
     transactionLoadError: "لیجر ٹرانزیکشنز لوڈ نہیں ہو سکیں۔",
     transactions: "ٹرانزیکشنز",
-    transactionDetails: "اکاؤنٹ ٹرانزیکشنز",
+    transactionDetails: "اکاؤنٹ لیجر",
     transactionId: "ٹرانزیکشن آئی ڈی",
     date: "تاریخ",
     dueDate: "آخری تاریخ",
@@ -113,7 +115,7 @@ const LANG = {
     amount: "رقم",
     balance: "بیلنس",
     status: "حالت",
-    noTransactions: "اس اکاؤنٹ کی کوئی ٹرانزیکشن نہیں ملی۔",
+    noTransactions: "اس اکاؤنٹ میں ابھی کوئی لیجر انٹری نہیں۔",
     totalTransactions: "کل ٹرانزیکشنز",
     totalDebit: "کل ڈیبٹ",
     totalCredit: "کل کریڈٹ",
@@ -280,9 +282,10 @@ function transactionBelongsToAccount(transaction, account) {
   const txAccountCode = String(transaction?.account_code ?? "").trim().toLowerCase();
   const txAccountTitle = String(transaction?.account_title ?? "").trim().toLowerCase();
 
-  if (accountId && txAccountId && accountId === txAccountId) return true;
-  if (accountCode && txAccountCode && accountCode === txAccountCode) return true;
-  if (accountTitle && txAccountTitle && accountTitle === txAccountTitle) return true;
+  // Prefer stable IDs; do not mix entries from similarly named accounts.
+  if (accountId && txAccountId) return accountId === txAccountId;
+  if (accountCode && txAccountCode) return accountCode === txAccountCode;
+  if (accountTitle && txAccountTitle) return accountTitle === txAccountTitle;
 
   return false;
 }
@@ -553,15 +556,23 @@ export default function AccountGroupsPage() {
     setSelectedAccount(null);
   };
 
+  // Per-account ledger entries with a running Dr/Cr balance.
   const selectedTransactions = useMemo(() => {
     if (!selectedAccount) return [];
 
-    return ledgerRows.filter((transaction) =>
-      transactionBelongsToAccount(
-        transaction,
-        selectedAccount
-      )
-    );
+    const accountRows = ledgerRows
+      .filter((transaction) => transactionBelongsToAccount(transaction, selectedAccount))
+      .slice()
+      .sort((a, b) =>
+        String(a.date || "").localeCompare(String(b.date || "")) ||
+        String(a.transaction_id || "").localeCompare(String(b.transaction_id || ""))
+      );
+
+    let running = numberValue(selectedAccount.opening_balance);
+    return accountRows.map((transaction) => {
+      running += numberValue(transaction.debit) - numberValue(transaction.credit);
+      return { ...transaction, balance: running };
+    });
   }, [ledgerRows, selectedAccount]);
 
   const transactionSummary = useMemo(() => {
@@ -590,14 +601,8 @@ export default function AccountGroupsPage() {
             <td>${record.account_title || "-"}</td>
             <td>${record.group_name || "-"}</td>
             <td style="text-align:right">${formatBalance(
-              record.opening_balance
-            )}</td>
-            <td style="text-align:right">${formatBalance(
               getCurrentBalance(record)
             )}</td>
-            <td style="text-align:center">${
-              getAccountTransactions(record).length
-            }</td>
           </tr>
         `
       )
@@ -662,15 +667,13 @@ export default function AccountGroupsPage() {
                 <th>${t.accountCode}</th>
                 <th>${t.accountTitle}</th>
                 <th>${t.group}</th>
-                <th>${t.openingBalance}</th>
                 <th>${t.currentBalance}</th>
-                <th>${t.transactions}</th>
               </tr>
             </thead>
             <tbody>
               ${
                 rowsHtml ||
-                `<tr><td colspan="7" style="text-align:center">${t.noRecords}</td></tr>`
+                `<tr><td colspan="5" style="text-align:center">${t.noRecords}</td></tr>`
               }
             </tbody>
           </table>
@@ -847,14 +850,12 @@ export default function AccountGroupsPage() {
         <section className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:block">
           <table className="w-full table-fixed text-xs">
             <colgroup>
-              <col style={{ width: "5%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "22%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "28%" }} />
+              <col style={{ width: "20%" }} />
               <col style={{ width: "16%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "9%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "15%" }} />
             </colgroup>
 
             <thead className="bg-slate-900 text-white">
@@ -876,15 +877,7 @@ export default function AccountGroupsPage() {
                 </th>
 
                 <th className="px-2 py-2.5 text-right text-[9px] font-black uppercase">
-                  {t.openingBalance}
-                </th>
-
-                <th className="px-2 py-2.5 text-right text-[9px] font-black uppercase">
                   {t.currentBalance}
-                </th>
-
-                <th className="px-2 py-2.5 text-center text-[9px] font-black uppercase">
-                  {t.transactions}
                 </th>
 
                 <th className="px-2 py-2.5 text-center text-[9px] font-black uppercase">
@@ -897,7 +890,7 @@ export default function AccountGroupsPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={6}
                     className="px-4 py-10 text-center text-slate-400"
                   >
                     <i className="bi bi-arrow-repeat animate-spin" />{" "}
@@ -907,7 +900,7 @@ export default function AccountGroupsPage() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={6}
                     className="px-4 py-10 text-center text-slate-400"
                   >
                     {t.noRecords}
@@ -915,9 +908,6 @@ export default function AccountGroupsPage() {
                 </tr>
               ) : (
                 filtered.map((record, index) => {
-                  const transactionCount =
-                    getAccountTransactions(record).length;
-
                   return (
                     <tr
                       key={record.id}
@@ -951,33 +941,23 @@ export default function AccountGroupsPage() {
                         </span>
                       </td>
 
-                      <td className="px-2 py-2.5 text-right font-mono text-[10px] font-black text-slate-700">
-                        {formatBalance(
-                          record.opening_balance
-                        )}
-                      </td>
-
                       <td className="px-2 py-2.5 text-right font-mono text-[10px] font-black text-indigo-700">
                         {formatBalance(
                           getCurrentBalance(record)
                         )}
                       </td>
 
-                      <td className="px-2 py-2.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openTransactions(record)
-                          }
-                          className="inline-flex min-w-[78px] items-center justify-center gap-1 rounded-lg bg-indigo-600 px-2 py-1.5 text-[9px] font-extrabold text-white transition hover:bg-indigo-700"
-                        >
-                          <i className="bi bi-receipt" />
-                          {transactionCount}
-                        </button>
-                      </td>
-
                       <td className="px-2 py-2.5">
                         <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openTransactions(record)}
+                            className="inline-flex h-7 items-center justify-center gap-1 rounded-lg bg-indigo-600 px-2 text-[10px] font-extrabold text-white transition hover:bg-indigo-700"
+                            title={t.transactionDetails}
+                            aria-label={`${t.ledger}: ${record.account_title}`}
+                          >
+                            <i className="bi bi-journal-text" /> {t.ledger}
+                          </button>
                           <button
                             type="button"
                             onClick={() => openEdit(record)}
@@ -1019,9 +999,6 @@ export default function AccountGroupsPage() {
             </div>
           ) : (
             filtered.map((record, index) => {
-              const transactionCount =
-                getAccountTransactions(record).length;
-
               return (
                 <article
                   key={record.id}
@@ -1055,19 +1032,12 @@ export default function AccountGroupsPage() {
                       }
                       className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-indigo-600 px-2.5 text-[9px] font-extrabold text-white"
                     >
-                      <i className="bi bi-receipt" />
-                      {transactionCount}
+                      <i className="bi bi-journal-text" />
+                      {t.ledger}
                     </button>
                   </div>
 
-                  <div className="mt-2 grid grid-cols-2 gap-1.5">
-                    <BalanceCard
-                      label={t.openingBalance}
-                      value={formatBalance(
-                        record.opening_balance
-                      )}
-                    />
-
+                  <div className="mt-2 grid grid-cols-1 gap-1.5">
                     <BalanceCard
                       label={t.currentBalance}
                       value={formatBalance(
@@ -1262,7 +1232,7 @@ export default function AccountGroupsPage() {
         </div>
       )}
 
-      {/* TRANSACTIONS MODAL */}
+      {/* ACCOUNT LEDGER MODAL */}
       {showTransactions && selectedAccount && (
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm"
