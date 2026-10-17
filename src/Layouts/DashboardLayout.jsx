@@ -60,7 +60,7 @@ const INVENTORY_ITEMS = [
 
 const ACCOUNT_ITEMS = [
   { to: "/app/accounts/profiles", key: "accountProfiles", fallback: "Profiles" },
-  { to: "/app/accounts/groups", key: "accountGroups", fallback: "Account Groups" },
+  { to: "/app/accounts/groups", key: "accountGroups", fallback: "General Accounts" },
   { to: "/app/accounts/chart", key: "chartOfAccounts", fallback: "Chart of Accounts" },
   { to: "/app/accounts/opening", key: "openingBalance", fallback: "Opening Balance" },
   { to: "/app/accounts/journal", key: "journalVoucher", fallback: "Journal Voucher" },
