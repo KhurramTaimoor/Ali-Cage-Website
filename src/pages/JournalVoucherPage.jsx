@@ -24,10 +24,11 @@ const LANG = {
     search: "Search voucher, account or note...", noRows: "No vouchers found for this period.",
     selectType: "Select Account Type", selectAccount: "Select Account Name", total: "Total",
     balanced: "Balanced", notBalanced: "Debit and Credit must be equal and greater than zero.",
-    formError: "Enter a voucher no, date and at least two complete, balanced lines.",
+    formError: "Enter a date and at least two complete, balanced lines.",
     deleteConfirm: "Delete this voucher?", loading: "Loading vouchers...", language: "اردو",
     vouchers: "Vouchers", totalDebit: "Total Debit", totalCredit: "Total Credit", reportTitle: "Date-wise JV Report",
     applyHint: "Select the date range to view its Journal Voucher report.", empty: "No account names available for this type.",
+    autoNo: "Auto-generated on save",
   },
   ur: {
     title: "جرنل واؤچر", subtitle: "اکاؤنٹ کے مطابق ڈبل انٹری اور تاریخ وار رپورٹ",
@@ -39,10 +40,11 @@ const LANG = {
     search: "واؤچر، اکاؤنٹ یا نوٹ تلاش کریں...", noRows: "اس تاریخ میں کوئی واؤچر نہیں ملا۔",
     selectType: "اکاؤنٹ ٹائپ منتخب کریں", selectAccount: "اکاؤنٹ منتخب کریں", total: "کل",
     balanced: "برابر", notBalanced: "ڈیبٹ اور کریڈٹ برابر اور صفر سے زیادہ ہونے چاہئیں۔",
-    formError: "واؤچر نمبر، تاریخ اور کم از کم دو مکمل، برابر لائنیں درج کریں۔",
+    formError: "تاریخ اور کم از کم دو مکمل، برابر لائنیں درج کریں۔",
     deleteConfirm: "کیا یہ واؤچر حذف کرنا ہے؟", loading: "واؤچر لوڈ ہو رہے ہیں...", language: "English",
     vouchers: "واؤچرز", totalDebit: "کل ڈیبٹ", totalCredit: "کل کریڈٹ", reportTitle: "تاریخ وار جرنل واؤچر رپورٹ",
     applyHint: "تاریخ منتخب کرکے جرنل واؤچر رپورٹ دیکھیں۔", empty: "اس ٹائپ میں کوئی اکاؤنٹ نہیں۔",
+    autoNo: "محفوظ کرنے پر نمبر خود بنے گا",
   },
 };
 
@@ -60,6 +62,7 @@ export default function JournalVoucherPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [numberLoading, setNumberLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async (filterDates = appliedDates) => {
@@ -135,7 +138,20 @@ export default function JournalVoucherPage() {
     }) }));
   };
 
-  const openNew = () => { setForm(emptyForm()); setEditingId(null); setMessage(""); setShowForm(true); };
+  const openNew = async () => {
+    setForm(emptyForm());
+    setEditingId(null);
+    setMessage("");
+    setShowForm(true);
+    setNumberLoading(true);
+    try {
+      const result = await axios.get(`${API_BASE}/journal-vouchers/next-number`);
+      // A preview is informative only; the server assigns the final number on Save.
+      setForm(prev => prev.voucher_no ? prev : { ...prev, voucher_no: result.data?.voucher_no || "" });
+    } catch (_error) {
+      // Saving works even if a next-number preview cannot be loaded.
+    } finally { setNumberLoading(false); }
+  };
   const openEdit = (voucher) => {
     const lines = (voucher.lines || []).map((line) => ({
       account_type: normalizeType(line.account_type), account_id: String(line.account_id || ""),
@@ -158,7 +174,7 @@ export default function JournalVoucherPage() {
       const credit = Number(line.credit || 0);
       return Number.isFinite(debit) && Number.isFinite(credit) && debit >= 0 && credit >= 0 && (debit > 0) !== (credit > 0);
     });
-    if (!form.voucher_no.trim() || !form.voucher_date || !balanced || !validLines) {
+    if (!form.voucher_date || !balanced || !validLines) {
       setMessage(t.formError);
       return;
     }
@@ -166,6 +182,7 @@ export default function JournalVoucherPage() {
       setSaving(true);
       setMessage("");
       const payload = { ...form, lines: filled.map(line => ({ ...line, debit: Number(line.debit || 0), credit: Number(line.credit || 0) })) };
+      if (!editingId) delete payload.voucher_no; // server is the authority for JV numbering
       if (editingId) await axios.put(`${API_BASE}/journal-vouchers/${editingId}`, payload);
       else await axios.post(`${API_BASE}/journal-vouchers`, payload);
       setShowForm(false);
@@ -260,7 +277,7 @@ export default function JournalVoucherPage() {
         </div>
         <form onSubmit={save} className="p-4 sm:p-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-            <div><label className="text-xs font-bold block mb-1">{t.voucher}</label><input required value={form.voucher_no} onChange={e => setForm(f => ({ ...f, voucher_no: e.target.value }))} className="w-full border rounded-lg px-3 py-2.5" placeholder="JV-001" /></div>
+            <div><label className="text-xs font-bold block mb-1">{t.voucher}</label><input readOnly value={form.voucher_no || (numberLoading ? "..." : t.autoNo)} className="w-full border rounded-lg px-3 py-2.5 bg-slate-50 text-slate-700 cursor-default" />{!editingId && <small className="text-slate-500">{t.autoNo}</small>}</div>
             <div><label className="text-xs font-bold block mb-1">{t.date}</label><input required type="date" value={form.voucher_date} onChange={e => setForm(f => ({ ...f, voucher_date: e.target.value }))} className="w-full border rounded-lg px-3 py-2.5" /></div>
             <div><label className="text-xs font-bold block mb-1">{t.note}</label><input value={form.narration} onChange={e => setForm(f => ({ ...f, narration: e.target.value }))} className="w-full border rounded-lg px-3 py-2.5" /></div>
           </div>
@@ -273,7 +290,7 @@ export default function JournalVoucherPage() {
           </tr></thead><tbody>
             {form.lines.map((line, index) => <tr key={index} className="border-t"><td className="p-2 text-center text-slate-400">{index + 1}</td>
               <td className="p-2"><select value={line.account_type} onChange={e => updateLine(index, "account_type", e.target.value)} className="w-full border rounded px-2 py-2.5"><option value="">{t.selectType}</option>{types.map(type => <option key={type} value={type}>{typeLabel(type)}</option>)}</select></td>
-              <td className="p-2"><select disabled={!line.account_type} value={line.account_id} onChange={e => updateLine(index, "account_id", e.target.value)} className="w-full border rounded px-2 py-2.5 disabled:bg-slate-50"><option value="">{t.selectAccount}</option>{(accountGroups[line.account_type] || []).map(a => <option key={`${a.account_type}-${a.id}`} value={a.id}>{a.account_title}{a.account_code ? ` — ${a.account_code}` : ""}</option>)}</select>{line.account_type && !(accountGroups[line.account_type] || []).length && <small className="text-amber-700">{t.empty}</small>}</td>
+              <td className="p-2"><select disabled={!line.account_type} value={line.account_id} onChange={e => updateLine(index, "account_id", e.target.value)} className="w-full border rounded px-2 py-2.5 disabled:bg-slate-50"><option value="">{t.selectAccount}</option>{(accountGroups[line.account_type] || []).map(a => <option key={`${a.account_type}-${a.id}`} value={a.id}>{a.account_title}</option>)}</select>{line.account_type && !(accountGroups[line.account_type] || []).length && <small className="text-amber-700">{t.empty}</small>}</td>
               <td className="p-2"><input value={line.description} onChange={e => updateLine(index, "description", e.target.value)} className="w-full border rounded px-2 py-2.5" /></td>
               <td className="p-2"><input type="number" min="0" step="0.01" value={line.debit} onChange={e => updateLine(index, "debit", e.target.value)} className="w-full border rounded px-2 py-2.5 text-right" /></td>
               <td className="p-2"><input type="number" min="0" step="0.01" value={line.credit} onChange={e => updateLine(index, "credit", e.target.value)} className="w-full border rounded px-2 py-2.5 text-right" /></td>
