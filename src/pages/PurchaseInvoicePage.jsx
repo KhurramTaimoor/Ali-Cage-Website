@@ -524,8 +524,8 @@ const installPurchaseInvoiceApiAdapter = () => {
     // SalesInvoicePage uses /api/rates for automatic pricing. On the purchase
     // screen that same hook must resolve the selected supplier's purchase list.
     if (/\/api\/rates(?:\?|$)/.test(originalUrl)) {
-      config.url = `${API_ROOT}/api/purchase-rates/flat`;
-      config.__purchaseRateAlias = true;
+      config.url = `${API_ROOT}/api/scoped-rate-lists?scope=supplier`;
+      config.__supplierScopedRates = true;
       return config;
     }
 
@@ -617,6 +617,25 @@ const installPurchaseInvoiceApiAdapter = () => {
       if (response?.config?.__purchaseSupplierAlias) {
         response.data = normalizeSupplierPayload(response.data);
         cache.suppliers = getList(response.data);
+      }
+      if (response?.config?.__supplierScopedRates) {
+        const lists = getList(response.data);
+        response.data = lists.flatMap((list) => (list.items || []).map(item => ({
+          product_id: item.product_id,
+          list_name: list.list_name,
+          customer_id: null,
+          assigned_customer_ids: list.assigned_ids || [],
+          assigned_customers: (list.assigned || []).map(a => ({ customer_id: a.id, customer_name: a.name })),
+          price_options: [{
+            category_id: item.category_id,
+            product_type_id: item.product_type_id,
+            unit_id: item.unit_id,
+            // Supplier uses Rate + Evaluation; never Single.
+            single_rate: 0,
+            retail_rate: item.retail_rate || 0,
+            wholesale_rate: item.wholesale_rate || 0
+          }]
+        })));
       }
 
       if (originalUrl.includes("/api/sales-invoices")) {
