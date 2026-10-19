@@ -623,7 +623,7 @@ const installPurchaseInvoiceApiAdapter = () => {
         response.data = lists.flatMap((list) => (list.items || []).map(item => ({
           product_id: item.product_id,
           list_name: list.list_name,
-          customer_id: null,
+          customer_id: (list.assigned_ids || []).length ? null : -1,
           assigned_customer_ids: list.assigned_ids || [],
           assigned_customers: (list.assigned || []).map(a => ({ customer_id: a.id, customer_name: a.name })),
           price_options: [{
