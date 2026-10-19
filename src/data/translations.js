@@ -20,6 +20,7 @@ export const translations = {
     salesInvoice: "Sales Invoice",
     salesReturn: "Sales Return",
     salesReport: "Sales Report",
+    valuationReport: "Valuation Report",
     
     // PURCHASE KEYS
     supplier: "Supplier",
@@ -106,6 +107,7 @@ export const translations = {
     salesInvoice: "سیلز انوائس",
     salesReturn: "سیلز واپسی",
     salesReport: "سیلز رپورٹ",
+    valuationReport: "ویلیوایشن رپورٹ",
 
     // PURCHASE KEYS
     supplier: "سپلائر",
