@@ -27,13 +27,13 @@ const LANG = {
   en: {
     accounts: "Accounts",
     title: "Cheque Vouchers",
-    subtitle: "Manage issued cheques, clearance dates and payment progress.",
+    subtitle: "Receive and issue cheques, track partial clearing and Cash Book entries.",
     toggleLang: "اردو",
     refresh: "Refresh",
     newVoucher: "New Voucher",
     vouchers: "Vouchers",
-    issuedTotal: "Issued Total",
-    paidCleared: "Paid / Cleared",
+    issuedTotal: "Cheque Total",
+    paidCleared: "Cleared Amount",
     remaining: "Remaining",
     all: "All",
     cleared: "Cleared",
@@ -43,8 +43,8 @@ const LANG = {
     issueDate: "Issue Date",
     clearanceDate: "Clearance Date",
     chequeAmount: "Cheque Amount",
-    paidRemaining: "Paid / Remaining",
-    paidShort: "Paid",
+    paidRemaining: "Cleared / Remaining",
+    paidShort: "Cleared",
     remShort: "Rem",
     status: "Status",
     actions: "Actions",
@@ -62,10 +62,17 @@ const LANG = {
     voucherPlaceholder: "CHQ-00001",
     payee: "Payee / Party Name",
     payeePlaceholder: "Enter payee name",
+    chequeDirection: "Cheque Action",
+    receiveCheque: "Receive Cheque",
+    issueCheque: "Pay / Issue Cheque",
+    accountType: "Account Type",
+    customer: "Customer", supplier: "Supplier", employee: "Employee", general_ledger: "General Account",
+    accountName: "Account Name",
+    cashbookHelp: "Each cleared amount appears as a separate dated Cash Book voucher. Ledger: received cheque = Credit; issued cheque = Debit.",
     ledgerAccount: "Ledger Account",
     ledgerHint: "The amount is deducted from this ledger on the issuance date",
     selectLedger: "Select ledger account",
-    issuanceDate: "Issuance Date",
+    issuanceDate: "Cheque Date",
     chequeTotal: "Cheque Total",
     notes: "Notes",
     notesPlaceholder: "Optional voucher notes",
@@ -105,13 +112,13 @@ const LANG = {
   ur: {
     accounts: "اکاؤنٹس",
     title: "چیک واؤچرز",
-    subtitle: "جاری شدہ چیکس، کلیئرنس کی تاریخ اور ادائیگی کی پیش رفت سنبھالیں۔",
+    subtitle: "وصول شدہ اور جاری چیک، جزوی کلیئرنس اور کیش بک ریکارڈ سنبھالیں۔",
     toggleLang: "English",
     refresh: "ری فریش",
     newVoucher: "نیا واؤچر",
     vouchers: "واؤچرز",
-    issuedTotal: "کل جاری رقم",
-    paidCleared: "ادا / کلیئر",
+    issuedTotal: "چیک کی کل رقم",
+    paidCleared: "کلیئر رقم",
     remaining: "باقی رقم",
     all: "سب",
     cleared: "کلیئر",
@@ -121,8 +128,8 @@ const LANG = {
     issueDate: "اجراء کی تاریخ",
     clearanceDate: "کلیئرنس کی تاریخ",
     chequeAmount: "چیک کی رقم",
-    paidRemaining: "ادا / باقی",
-    paidShort: "ادا",
+    paidRemaining: "کلیئر / باقی",
+    paidShort: "کلیئر",
     remShort: "باقی",
     status: "حالت",
     actions: "ایکشنز",
@@ -140,10 +147,17 @@ const LANG = {
     voucherPlaceholder: "CHQ-00001",
     payee: "پارٹی / وصول کنندہ",
     payeePlaceholder: "پارٹی کا نام درج کریں",
+    chequeDirection: "چیک کی قسم",
+    receiveCheque: "چیک وصول کریں",
+    issueCheque: "چیک جاری / ادا کریں",
+    accountType: "اکاؤنٹ ٹائپ",
+    customer: "کسٹمر", supplier: "سپلائر", employee: "ملازم", general_ledger: "جنرل اکاؤنٹ",
+    accountName: "اکاؤنٹ کا نام",
+    cashbookHelp: "ہر کلیئر ہونے والی رقم تاریخ کے ساتھ کیش بک میں الگ درج ہوگی؛ چیک وصول = کریڈٹ، چیک جاری = ڈیبٹ۔",
     ledgerAccount: "لیجر اکاؤنٹ",
     ledgerHint: "اجراء کی تاریخ پر رقم اسی لیجر سے منہا ہوگی",
     selectLedger: "لیجر اکاؤنٹ منتخب کریں",
-    issuanceDate: "اجراء کی تاریخ",
+    issuanceDate: "چیک کی تاریخ",
     chequeTotal: "چیک کی کل رقم",
     notes: "نوٹس",
     notesPlaceholder: "اختیاری واؤچر نوٹس",
@@ -201,6 +215,8 @@ const emptyForm = () => ({
   voucher_no: "",
   payee_name: "",
   account_id: "",
+  account_type: "customer",
+  cheque_direction: "issue",
   issuance_date: today(),
   clearance_date: "",
   total_amount: "",
@@ -294,7 +310,7 @@ export default function ChequeVoucherPage() {
     setFallbackLang(nextLanguage);
   };
   const [records, setRecords] = useState([]);
-  const [accounts, setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState({ customer: [], supplier: [], employee: [], general_ledger: [] });
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -330,8 +346,8 @@ export default function ChequeVoucherPage() {
 
   const loadAccounts = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE}/chart-of-accounts`);
-      setAccounts(normalizeArray(response.data));
+      const response = await axios.get(`${API_BASE}/cheque-vouchers/lookups`);
+      setAccounts(response.data?.data || { customer: [], supplier: [], employee: [], general_ledger: [] });
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
@@ -400,6 +416,8 @@ export default function ChequeVoucherPage() {
       setForm({
         voucher_no: voucher.voucher_no || "",
         payee_name: voucher.payee_name || "",
+        account_type: voucher.account_type || "general_ledger",
+        cheque_direction: voucher.cheque_direction || "issue",
         account_id: String(voucher.account_id || ""),
         issuance_date: voucher.issuance_date || today(),
         clearance_date: voucher.clearance_date || "",
@@ -436,7 +454,12 @@ export default function ChequeVoucherPage() {
   };
 
   const updateForm = (key, value) =>
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setForm((previous) => ({ ...previous, [key]: value,
+      ...(key === "account_type" ? { account_id: "", payee_name: "" } : {}),
+      ...(key === "account_id" ? {
+        payee_name: (accounts[previous.account_type] || []).find(a => String(a.id) === String(value))?.name || "",
+      } : {}),
+    }));
 
   const updatePayment = (localId, key, value) => {
     setForm((previous) => ({
@@ -713,6 +736,9 @@ export default function ChequeVoucherPage() {
                           <div className="font-extrabold text-slate-900">
                             {record.voucher_no}
                           </div>
+                          <span className={`text-[10px] font-bold ${record.cheque_direction === "receive" ? "text-emerald-700" : "text-amber-700"}`}>
+                            {record.cheque_direction === "receive" ? t.receiveCheque : t.issueCheque} · {t[record.account_type] || record.account_type}
+                          </span>
                           <div className="max-w-[210px] truncate text-[10px] text-slate-500">
                             {record.payee_name || "—"}
                           </div>
@@ -798,34 +824,29 @@ export default function ChequeVoucherPage() {
                 />
               </Field>
 
-              <Field label={t.payee} required>
-                <input
-                  value={form.payee_name}
-                  onChange={(event) => updateForm("payee_name", event.target.value)}
-                  className="input min-w-0"
-                  placeholder={t.payeePlaceholder}
-                />
-              </Field>
-
-              <Field
-                label={t.ledgerAccount}
-                required
-                hint={t.ledgerHint}
-              >
-                <select
-                  value={form.account_id}
-                  onChange={(event) => updateForm("account_id", event.target.value)}
-                  className="input min-w-0 truncate"
-                >
-                  <option value="">{t.selectLedger}</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {[account.account_code, account.account_title]
-                        .filter(Boolean)
-                        .join(" - ")}
-                    </option>
-                  ))}
+              <Field label={t.chequeDirection} required>
+                <select value={form.cheque_direction}
+                  onChange={e => updateForm("cheque_direction",e.target.value)} className="input min-w-0">
+                  <option value="receive">{t.receiveCheque}</option>
+                  <option value="issue">{t.issueCheque}</option>
                 </select>
+              </Field>
+              <Field label={t.accountType} required>
+                <select value={form.account_type} onChange={e => updateForm("account_type",e.target.value)} className="input min-w-0">
+                  {["customer", "supplier", "employee", "general_ledger"].map(type =>
+                    <option key={type} value={type}>{t[type]}</option>)}
+                </select>
+              </Field>
+              <Field label={t.accountName} required>
+                <select value={form.account_id} onChange={e => updateForm("account_id",e.target.value)} className="input min-w-0 truncate">
+                  <option value="">{t.selectLedger}</option>
+                  {(accounts[form.account_type] || []).map(account =>
+                    <option key={account.id} value={account.id}>{account.name}</option>)}
+                </select>
+              </Field>
+              <Field label={t.payee}>
+                <input value={form.payee_name} onChange={e => updateForm("payee_name",e.target.value)}
+                  className="input min-w-0" placeholder={t.payeePlaceholder}/>
               </Field>
 
               <Field label={t.issuanceDate} required>
@@ -873,6 +894,7 @@ export default function ChequeVoucherPage() {
               </div>
             </section>
 
+            <p className="rounded-lg bg-sky-50 border border-sky-100 px-3 py-2 text-xs text-sky-800">{t.cashbookHelp}</p>
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-slate-50 px-3 py-2">
                 <div>
@@ -1165,11 +1187,11 @@ const VoucherDetails = ({ voucher, t }) => {
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Detail label={t.voucherNo} value={voucher.voucher_no} />
         <Detail label={t.payee} value={voucher.payee_name} />
+        <Detail label={t.chequeDirection} value={voucher.cheque_direction === "receive" ? t.receiveCheque : t.issueCheque} />
+        <Detail label={t.accountType} value={t[voucher.account_type] || voucher.account_type} />
         <Detail
           label={t.ledgerAccount}
-          value={[voucher.account_code, voucher.account_title]
-            .filter(Boolean)
-            .join(" - ")}
+          value={voucher.account_title || voucher.payee_name}
         />
         <Detail label={t.status} value={status.label} />
         <Detail label={t.issuanceDate} value={formatDate(voucher.issuance_date)} />
@@ -1210,6 +1232,7 @@ const VoucherDetails = ({ voucher, t }) => {
                     </td>
                     <td className="px-3 py-2 text-slate-700">
                       {row.details || "—"}
+                      {row.cash_book_voucher_no && <div className="text-[10px] text-sky-700 font-semibold">Cash Book: {row.cash_book_voucher_no}</div>}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-[11px] font-bold text-slate-900">
                       {money(row.amount)}
