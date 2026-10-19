@@ -45,6 +45,7 @@ import PurchaseRatePage from "./pages/PurchaseRatePage";
 import PurchaseInvoicePage from "./pages/PurchaseInvoicePage";
 import PurchaseReturnPage from "./pages/PurchaseReturnPage";
 import PurchaseReportPage from "./pages/PurchaseReportPage";
+import ValuationReportPage from "./pages/ValuationReportPage";
 import SupplierLedgerPage from "./pages/SupplierLedgerPage";
 
 import AccountGroupsPage from "./pages/AccountGroupsPage";
@@ -188,6 +189,7 @@ function App() {
               path="sales/reports"
               element={<SalesReportPage />}
             />
+            <Route path="sales/valuation-report" element={<ValuationReportPage />} />
 
             {/* Purchase */}
             <Route
