@@ -1,3 +1,4 @@
+import ScopedRateListsPanel from "./ScopedRateListsPanel";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { escapeHtml, openUnicodePrint, printableText } from "../utils/unicodePrint";
 import {
@@ -170,6 +171,10 @@ function Modal({ title, children, onClose, wide = false }) {
 
 export default function RateListPage() {
   const [lang, setLang] = useState("en");
+  const [scope, setScope] = useState("customer");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [printCustomerId, setPrintCustomerId] = useState("");
   const t = copy[lang];
   const isUrdu = lang === "ur";
   const [lists, setLists] = useState([]);
@@ -232,9 +237,12 @@ export default function RateListPage() {
 
   const visibleRows = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => `${r.product_name} ${r.category_name} ${r.type_name} ${r.unit_name}`.toLowerCase().includes(q));
-  }, [rows, productSearch]);
+    return rows.filter((r) =>
+      (!q || `${r.product_name} ${r.category_name} ${r.type_name} ${r.unit_name}`.toLowerCase().includes(q)) &&
+      (!categoryFilter || r.category_name === categoryFilter) &&
+      (!typeFilter || r.type_name === typeFilter)
+    );
+  }, [rows, productSearch, categoryFilter, typeFilter]);
 
   const visibleCustomers = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
@@ -369,11 +377,20 @@ export default function RateListPage() {
     try {
       const response = await api(`/api/rates/lists/${encodeURIComponent(summary.list_name)}`);
       const detail = response.data || response;
-      const assigned = (detail.assigned_customers || [])
-        .map((x) => x.customer_name || x.customer_name_en || "")
-        .filter(Boolean);
+      const chosenCustomer = printCustomerId ? customers.find(c => String(c.id) === String(printCustomerId)) : null;
+      if (chosenCustomer && !(detail.assigned_customer_ids || []).map(Number).includes(Number(chosenCustomer.id))) {
+        return notify("Selected customer is not assigned to this rate list.");
+      }
+      const assigned = chosenCustomer
+        ? [customerName(chosenCustomer)]
+        : (detail.assigned_customers || []).map((x) => x.customer_name || x.customer_name_en || "").filter(Boolean);
 
       const rowsHtml = (detail.items || [])
+        .filter(item => {
+          const p = products.find(x => String(x.id) === String(item.product_id)) || {};
+          return (!categoryFilter || categoryName(p) === categoryFilter) &&
+            (!typeFilter || typeName(p) === typeFilter);
+        })
         .map((item, index) => {
           const p = products.find((x) => String(x.id) === String(item.product_id)) || {};
           const opt = firstOption(item);
@@ -433,6 +450,10 @@ export default function RateListPage() {
     }
   };
 
+  if (scope !== "customer") {
+    return <ScopedRateListsPanel scope={scope} products={products} onScopeChange={setScope} />;
+  }
+
   return (
     <div dir={isUrdu ? "rtl" : "ltr"} className="min-h-screen bg-[#F4F7FB] px-3 py-4 text-slate-900 sm:px-5 lg:px-6">
       {toast && <div className="fixed bottom-5 right-5 z-[140] rounded-xl bg-[#13263A] px-4 py-3 text-sm font-bold text-white shadow-xl">{toast}</div>}
@@ -452,6 +473,14 @@ export default function RateListPage() {
           </div>
         </section>
 
+        <nav className="mt-3 flex flex-wrap gap-2 rounded-xl border bg-white p-3">
+          {["customer", "supplier", "production"].map(item =>
+            <button key={item} onClick={() => setScope(item)}
+              className={`rounded-lg px-5 py-2 text-xs font-bold capitalize ${scope === item ? "bg-[#13263A] text-white" : "border bg-white text-slate-700"}`}>
+              {item === "customer" ? "Customer Rate Lists" : item === "supplier" ? "Supplier Rate Lists" : "Production Rate Lists"}
+            </button>
+          )}
+        </nav>
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-blue-50 p-2 text-blue-600"><ListChecks size={18}/></span><div><p className="text-xs text-slate-500">{t.title}</p><b className="text-xl text-[#13263A]">{lists.length}</b></div></div></div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-emerald-50 p-2 text-emerald-600"><BadgeDollarSign size={18}/></span><div><p className="text-xs text-slate-500">{t.products}</p><b className="text-xl text-[#13263A]">{products.length}</b></div></div></div>
@@ -467,6 +496,26 @@ export default function RateListPage() {
             <p className="text-xs font-semibold text-slate-400">{filteredLists.length} {t.title}</p>
           </div>
 
+          <div className="grid gap-2 border-b border-slate-100 px-4 pb-4 sm:grid-cols-3">
+            <label className="text-xs font-bold text-slate-600">Product Type
+              <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="mt-1 h-10 w-full rounded-lg border px-2 text-sm">
+                <option value="">All Product Types</option>
+                {[...new Set(products.map(typeName).filter(x => x !== "—"))].sort().map(x => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-600">Category
+              <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="mt-1 h-10 w-full rounded-lg border px-2 text-sm">
+                <option value="">All Categories</option>
+                {[...new Set(products.map(categoryName).filter(x => x !== "—"))].sort().map(x => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-600">Print by Customer Name
+              <select value={printCustomerId} onChange={e => setPrintCustomerId(e.target.value)} className="mt-1 h-10 w-full rounded-lg border px-2 text-sm">
+                <option value="">All Assigned Customers</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{customerName(c)}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[980px] text-sm">
               <thead className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
@@ -504,6 +553,18 @@ export default function RateListPage() {
             <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(240px,360px)_1fr]">
               <div><label className="mb-1.5 block text-[11px] font-extrabold uppercase text-slate-500">{t.listName}</label><input value={listName} onChange={(e) => setListName(e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[#4A86F7]" placeholder="e.g. Dealer A / Retail 2026" /></div>
               <div><label className="mb-1.5 block text-[11px] font-extrabold uppercase text-slate-500">{t.productSearch}</label><div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-[#4A86F7] focus:bg-white" placeholder={t.productSearch}/></div></div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:col-span-2">
+                <label className="text-xs font-bold text-slate-600">Product Type
+                  <select className="mt-1 h-10 w-full rounded-lg border px-2" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}>
+                    <option value="">All Product Types</option>{[...new Set(products.map(typeName).filter(x=>x!=="—"))].sort().map(x=><option key={x} value={x}>{x}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-bold text-slate-600">Category
+                  <select className="mt-1 h-10 w-full rounded-lg border px-2" value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}>
+                    <option value="">All Categories</option>{[...new Set(products.map(categoryName).filter(x=>x!=="—"))].sort().map(x=><option key={x} value={x}>{x}</option>)}
+                  </select>
+                </label>
+              </div>
               <p className="lg:col-span-2 text-xs text-slate-500">{t.allProductsHint}</p>
             </div>
 
