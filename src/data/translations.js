@@ -59,7 +59,7 @@ export const translations = {
     departments: "Departments",
     employee: "Employee",
     employeeSettings: "Employee Settings",
-    employeeRate: "Employee Rate",
+    employeeRate: "Payroll",
     hrReports: "HR Reports",
     employeeLedger: "Employee Ledger",
 
