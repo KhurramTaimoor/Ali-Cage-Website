@@ -32,6 +32,7 @@ const SALES_ITEMS = [
   { to: "/app/sales/return", key: "salesReturn", fallback: "Sales Return" },
   { divider: true },
   { to: "/app/sales/reports", key: "salesReport", fallback: "Sales Report" },
+  { to: "/app/sales/valuation-report", key: "valuationReport", fallback: "Valuation Report" },
 ];
 
 const PURCHASE_ITEMS = [
