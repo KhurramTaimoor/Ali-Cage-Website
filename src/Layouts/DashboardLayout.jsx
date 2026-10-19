@@ -79,8 +79,7 @@ const REPORT_ITEMS = [
 const HR_ITEMS = [
   { to: "/app/hr/employee", key: "employee", fallback: "Employee" },
   { to: "/app/hr/employee-settings", key: "employeeSettings", fallback: "Employee Settings" },
-  { to: "/app/hr/rate", key: "employeeRate", fallback: "Employee Salary" },
-  { to: "/app/hr/contractor", key: "contractorManagement", fallback: "Contractor Management" },
+  { to: "/app/hr/rate", key: "employeeRate", fallback: "Payroll" },
   { divider: true },
   { to: "/app/hr/reports", key: "employeeloan", fallback: "Employee Loan" },
 ];
