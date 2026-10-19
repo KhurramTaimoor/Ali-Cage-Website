@@ -524,7 +524,7 @@ const installPurchaseInvoiceApiAdapter = () => {
     // SalesInvoicePage uses /api/rates for automatic pricing. On the purchase
     // screen that same hook must resolve the selected supplier's purchase list.
     if (/\/api\/rates(?:\?|$)/.test(originalUrl)) {
-      config.url = `${API_ROOT}/api/scoped-rate-lists?scope=supplier`;
+      config.url = `${API_ROOT}/api/purchase-rates/flat`;
       config.__supplierScopedRates = true;
       return config;
     }
@@ -605,7 +605,7 @@ const installPurchaseInvoiceApiAdapter = () => {
   });
 
   const responseId = axios.interceptors.response.use(
-    (response) => {
+    async (response) => {
       const originalUrl = String(
         response?.config?.__purchaseInvoiceOriginalUrl ||
           response?.config?.url ||
@@ -619,8 +619,16 @@ const installPurchaseInvoiceApiAdapter = () => {
         cache.suppliers = getList(response.data);
       }
       if (response?.config?.__supplierScopedRates) {
-        const lists = getList(response.data);
-        response.data = lists.flatMap((list) => (list.items || []).map(item => ({
+        const legacyPurchaseRates = getList(response.data);
+        let lists = [];
+        try {
+          const scopedResponse = await axios.get(`${API_ROOT}/api/scoped-rate-lists?scope=supplier`);
+          lists = getList(scopedResponse.data);
+        } catch (error) {
+          // Older installations continue using the existing Purchase Rate module.
+          console.warn("Supplier rate lists unavailable, using saved purchase rates.", error?.message);
+        }
+        const scopedRates = lists.flatMap((list) => (list.items || []).map(item => ({
           product_id: item.product_id,
           list_name: list.list_name,
           customer_id: (list.assigned_ids || []).length ? null : -1,
@@ -636,6 +644,9 @@ const installPurchaseInvoiceApiAdapter = () => {
             wholesale_rate: item.wholesale_rate || 0
           }]
         })));
+        // Named, assigned supplier lists win ties; legacy purchase rates remain
+        // available for suppliers not yet migrated to named lists.
+        response.data = [...scopedRates, ...legacyPurchaseRates];
       }
 
       if (originalUrl.includes("/api/sales-invoices")) {
