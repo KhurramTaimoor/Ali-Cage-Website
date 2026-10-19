@@ -362,7 +362,7 @@ function App() {
 
             <Route
               path="hr/contractor"
-              element={<ContractorPage />}
+              element={<Navigate to="/app/hr/employee" replace />}
             />
 
             <Route
