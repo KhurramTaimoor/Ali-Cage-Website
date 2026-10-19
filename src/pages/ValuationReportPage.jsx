@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { Printer, RefreshCw, Search, FileText } from "lucide-react";
+import { Printer, RefreshCw, FileText } from "lucide-react";
 
 const ROOT=(import.meta.env.VITE_API_BASE_URL||"http://localhost:5000").replace(/\/$/,"");
 const n=(v)=>Number(v)||0;
@@ -93,7 +93,9 @@ export default function ValuationReportPage(){
               </>:<>
                 <td className={td}>{i+1}</td><td className={`${td} font-bold`}>{r.name}</td><td className={td}>{r.invoice_count}</td><td className={td}>{r.qty}</td><td className={`${td} text-right`}>Rs {money(r.sales_amount)}</td><td className={`${td} text-right`}>Rs {money(r.valuation_amount)}</td><td className={`${td} text-right font-bold`}>Rs {money(r.difference)}</td><td className={td}>{r.missing_items||"—"}</td>
               </>}</tr>)}</tbody>
-            {searched&&<tfoot className="bg-slate-50 text-xs font-extrabold"><tr><td className="px-3 py-3" colSpan={mode==="invoice"?7:4}>Total (differences exclude missing rate rows)</td><td className="px-3 py-3 text-right">Rs {money(summary.sales_amount)}</td><td colSpan={mode==="invoice"?1:0}></td><td className="px-3 py-3 text-right">Rs {money(summary.valuation_amount)}</td><td className="px-3 py-3 text-right">Rs {money(summary.difference)}</td></tr></tfoot>}
+            {searched&&<tfoot className="bg-slate-50 text-xs font-extrabold">{mode==="invoice"?
+              <tr><td className="px-3 py-3" colSpan={7}>Total (difference excludes missing rates)</td><td className="px-3 py-3 text-right">Rs {money(summary.sales_amount)}</td><td></td><td className="px-3 py-3 text-right">Rs {money(summary.valuation_amount)}</td><td className="px-3 py-3 text-right">Rs {money(summary.difference)}</td></tr>
+              :<tr><td className="px-3 py-3" colSpan={4}>Total (difference excludes missing rates)</td><td className="px-3 py-3 text-right">Rs {money(summary.sales_amount)}</td><td className="px-3 py-3 text-right">Rs {money(summary.valuation_amount)}</td><td className="px-3 py-3 text-right">Rs {money(summary.difference)}</td><td className="px-3 py-3">{summary.missing_items||0}</td></tr>}</tfoot>}
           </table>
         </div>
       </div>
