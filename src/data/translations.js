@@ -41,6 +41,8 @@ export const translations = {
     productLedger: "Product Ledger",
 
     // ACCOUNTS KEYS
+    accountGroups: "General Accounts",
+    chartOfAccounts: "Chart of Accounts",
     accountProfiles: "Profiles",
     transactionHistory: "Transaction History",
     changePassword: "Change Password",
@@ -56,6 +58,7 @@ export const translations = {
     // HR KEYS
     departments: "Departments",
     employee: "Employee",
+    employeeSettings: "Employee Settings",
     employeeRate: "Employee Rate",
     hrReports: "HR Reports",
     employeeLedger: "Employee Ledger",
@@ -124,6 +127,8 @@ export const translations = {
     productLedger: "پروڈکٹ لیجر",
 
     // ACCOUNTS KEYS
+    accountGroups: "جنرل اکاؤنٹس",
+    chartOfAccounts: "چارٹ آف اکاؤنٹس",
     accountProfiles: "پروفائلز",
     transactionHistory: "ٹرانزیکشن ہسٹری",
     changePassword: "ایڈمن پاس ورڈ تبدیل کریں",
@@ -139,6 +144,7 @@ export const translations = {
     // HR KEYS
     departments: "محکمے",
     employee: "ملازم",
+    employeeSettings: "ملازم سیٹنگز",
     employeeRate: "ملازم ریٹ",
     hrReports: "ایچ آر رپورٹ",
     employeeLedger: "ملازم کھاتہ",
