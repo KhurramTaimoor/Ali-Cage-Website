@@ -36,6 +36,18 @@ const LANG = {
     paidCleared: "Cleared Amount",
     remaining: "Remaining",
     all: "All",
+    directionAll: "All Cheques",
+    received: "Received",
+    paid: "Paid / Issued",
+    directionFilter: "Cheque Type",
+    nearestDate: "Nearest Date",
+    newestFirst: "Newest First",
+    sortBy: "Sort",
+    todayFilter: "Today",
+    fromDate: "From",
+    toDate: "To",
+    clearDates: "Clear Dates",
+    accountColumn: "Account Name",
     cleared: "Cleared",
     partial: "Partially Paid",
     search: "Search voucher, payee or account...",
@@ -121,6 +133,18 @@ const LANG = {
     paidCleared: "کلیئر رقم",
     remaining: "باقی رقم",
     all: "سب",
+    directionAll: "تمام چیک",
+    received: "وصول شدہ",
+    paid: "ادا / جاری شدہ",
+    directionFilter: "چیک کی قسم",
+    nearestDate: "قریب ترین تاریخ",
+    newestFirst: "تازہ ترین پہلے",
+    sortBy: "ترتیب",
+    todayFilter: "آج",
+    fromDate: "شروع کی تاریخ",
+    toDate: "آخری تاریخ",
+    clearDates: "تاریخ صاف کریں",
+    accountColumn: "اکاؤنٹ کا نام",
     cleared: "کلیئر",
     partial: "جزوی ادائیگی",
     search: "واؤچر، پارٹی یا اکاؤنٹ تلاش کریں...",
@@ -312,6 +336,10 @@ export default function ChequeVoucherPage() {
   const [records, setRecords] = useState([]);
   const [accounts, setAccounts] = useState({ customer: [], supplier: [], employee: [], general_ledger: [] });
   const [filter, setFilter] = useState("all");
+  const [directionFilter, setDirectionFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("nearest");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -329,6 +357,10 @@ export default function ChequeVoucherPage() {
     try {
       const params = {};
       if (filter !== "all") params.status = filter;
+      if (directionFilter !== "all") params.direction = directionFilter;
+      params.sort = sortBy;
+      if (dateFrom) params.from_date = dateFrom;
+      if (dateTo) params.to_date = dateTo;
       if (search.trim()) params.search = search.trim();
 
       const response = await axios.get(`${API_BASE}/cheque-vouchers`, { params });
@@ -342,7 +374,7 @@ export default function ChequeVoucherPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter, search, t.loadError]);
+  }, [filter, directionFilter, sortBy, dateFrom, dateTo, search, t.loadError]);
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -679,7 +711,46 @@ export default function ChequeVoucherPage() {
               ))}
             </div>
 
-            <label className="relative block w-full md:w-80">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex w-fit rounded-lg border border-slate-200 bg-white p-1" aria-label={t.directionFilter}>
+                {[
+                  ["all", t.directionAll],
+                  ["receive", t.received],
+                  ["issue", t.paid],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={directionFilter === value}
+                    onClick={() => setDirectionFilter(value)}
+                    className={`h-8 rounded-md px-2.5 text-[11px] font-bold transition ${
+                      directionFilter === value
+                        ? value === "receive"
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : value === "issue"
+                            ? "bg-amber-600 text-white shadow-sm"
+                            : "bg-sky-700 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-1.5 whitespace-nowrap text-[10px] font-bold text-slate-500">
+                {t.sortBy}
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                  className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700 outline-none focus:border-sky-400"
+                >
+                  <option value="nearest">{t.nearestDate}</option>
+                  <option value="newest">{t.newestFirst}</option>
+                </select>
+              </label>
+            </div>
+
+            <label className="relative block w-full md:w-72">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                 size={15}
@@ -693,11 +764,54 @@ export default function ChequeVoucherPage() {
             </label>
           </div>
 
+          <div className="flex flex-wrap items-end gap-2 border-b border-slate-100 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => {
+                const value = today();
+                if (dateFrom === value && dateTo === value) {
+                  setDateFrom("");
+                  setDateTo("");
+                } else {
+                  setDateFrom(value);
+                  setDateTo(value);
+                }
+              }}
+              className={`h-8 rounded-lg border px-3 text-[11px] font-bold transition ${
+                dateFrom === today() && dateTo === today()
+                  ? "border-sky-700 bg-sky-700 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-sky-50"
+              }`}
+            >
+              {t.todayFilter}
+            </button>
+            <label className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-500">
+              {t.fromDate}
+              <input type="date" value={dateFrom} max={dateTo || undefined}
+                onChange={(event) => setDateFrom(event.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-700 outline-none focus:border-sky-400" />
+            </label>
+            <label className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-500">
+              {t.toDate}
+              <input type="date" value={dateTo} min={dateFrom || undefined}
+                onChange={(event) => setDateTo(event.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-700 outline-none focus:border-sky-400" />
+            </label>
+            {(dateFrom || dateTo) && (
+              <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="h-8 rounded-lg px-2 text-[11px] font-bold text-sky-700 hover:bg-sky-50">
+                {t.clearDates}
+              </button>
+            )}
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-[11px]">
+            <table className="w-full min-w-[1130px] text-left text-[11px]">
               <thead className="bg-slate-50 text-[9px] font-extrabold uppercase tracking-[0.08em] text-slate-500">
                 <tr>
                   <th className="px-3 py-2">{t.voucherPayee}</th>
+                  <th className="px-3 py-2">{t.accountColumn}</th>
+                  <th className="px-3 py-2">{t.directionFilter}</th>
                   <th className="px-3 py-2">{t.issueDate}</th>
                   <th className="px-3 py-2">{t.clearanceDate}</th>
                   <th className="px-3 py-2 text-right">{t.chequeAmount}</th>
@@ -710,14 +824,14 @@ export default function ChequeVoucherPage() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan="9" className="px-3 py-8 text-center text-slate-400">
                       <Loader2 className="mx-auto mb-2 animate-spin" size={22} />
                       {t.loading}
                     </td>
                   </tr>
                 ) : records.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan="9" className="px-3 py-8 text-center text-slate-400">
                       <WalletCards className="mx-auto mb-2 text-slate-300" size={26} />
                       <div className="font-semibold text-slate-500">{t.noVouchers}</div>
                       <div className="mt-0.5 text-[10px]">
@@ -729,6 +843,10 @@ export default function ChequeVoucherPage() {
                   records.map((record) => {
                     const status = statusMeta(record.status, t);
                     const due = dueMeta(record.clearance_date, record.status, t, isUrdu);
+                    const accountName = record.account_title ||
+                      (accounts[record.account_type] || []).find(
+                        (account) => String(account.id) === String(record.account_id)
+                      )?.name || record.payee_name || "—";
 
                     return (
                       <tr key={record.id} className="transition hover:bg-sky-50/50">
@@ -736,12 +854,28 @@ export default function ChequeVoucherPage() {
                           <div className="font-extrabold text-slate-900">
                             {record.voucher_no}
                           </div>
-                          <span className={`text-[10px] font-bold ${record.cheque_direction === "receive" ? "text-emerald-700" : "text-amber-700"}`}>
-                            {record.cheque_direction === "receive" ? t.receiveCheque : t.issueCheque} · {t[record.account_type] || record.account_type}
-                          </span>
-                          <div className="max-w-[210px] truncate text-[10px] text-slate-500">
+                          <div className="max-w-[170px] truncate text-[10px] text-slate-500">
                             {record.payee_name || "—"}
                           </div>
+                        </td>
+
+                        <td className="px-3 py-2">
+                          <div className="max-w-[200px] break-words font-extrabold text-slate-800">
+                            {accountName}
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            {t[record.account_type] || record.account_type}
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold ${
+                            record.cheque_direction === "receive"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-amber-200 bg-amber-50 text-amber-800"
+                          }`}>
+                            {record.cheque_direction === "receive" ? t.received : t.paid}
+                          </span>
                         </td>
 
                         <td className="whitespace-nowrap px-3 py-2 font-mono text-[10px] text-slate-600">
