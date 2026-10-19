@@ -1357,21 +1357,24 @@ function PurchaseReturnPage() {
     let cancelled = false;
     let scheduled = false;
 
+    let pendingFrame = null;
+    let rootObserver = null;
+    const observerOptions = { childList: true, subtree: true, characterData: true };
     const runTransforms = () => {
       if (cancelled || scheduled) return;
-
       scheduled = true;
-
-      window.requestAnimationFrame(() => {
+      pendingFrame = window.requestAnimationFrame(() => {
         scheduled = false;
-
-        if (cancelled) return;
-
-        transformPurchaseDom(root);
-
-        // SalesReturnPage form/modal may be mounted outside root through a
-        // portal. Only supplier controls are touched on document.body.
-        syncSupplierControls(document.body);
+        pendingFrame = null;
+        if (cancelled || !root.isConnected) return;
+        // Stop watching while re-labeling and restyling React's DOM.
+        rootObserver?.disconnect();
+        try {
+          transformPurchaseDom(root);
+          syncSupplierControls(document.body);
+        } finally {
+          if (!cancelled) rootObserver?.observe(root, observerOptions);
+        }
       });
     };
 
@@ -1398,13 +1401,9 @@ function PurchaseReturnPage() {
     loadSuppliers();
     runTransforms();
 
-    const rootObserver = new MutationObserver(runTransforms);
+    rootObserver = new MutationObserver(runTransforms);
 
-    rootObserver.observe(root, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
+    rootObserver.observe(root, observerOptions);
 
     const bodyObserver = new MutationObserver((mutations) => {
       const modalRelatedChange = mutations.some((mutation) =>
@@ -1432,6 +1431,7 @@ function PurchaseReturnPage() {
       cancelled = true;
       rootObserver.disconnect();
       bodyObserver.disconnect();
+      if (pendingFrame !== null) window.cancelAnimationFrame(pendingFrame);
     };
   }, [ready]);
 
