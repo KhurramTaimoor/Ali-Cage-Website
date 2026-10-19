@@ -955,7 +955,7 @@ const transformPurchaseDom = (root) => {
     }
   });
 
-  fixNewPurchaseInvoiceNumber(root);
+  // Backend /api/purchase-invoices allocates the final unique invoice number on save.
 };
 
 const installPrintTransformer = () => {
@@ -1007,19 +1007,28 @@ function PurchaseInvoicePage() {
     if (!ready || !rootRef.current) return undefined;
 
     const root = rootRef.current;
-    transformPurchaseDom(root);
-
+    let stopped = false;
+    let frame = null;
+    const options = { childList:true, subtree:true, characterData:true };
     const observer = new MutationObserver(() => {
-      transformPurchaseDom(root);
+      if (stopped || frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        if (stopped || !root.isConnected) return;
+        // Do not observe our own style/class/text edits: opening the form
+        // previously triggered an endless MutationObserver re-render cycle.
+        observer.disconnect();
+        try { transformPurchaseDom(root); }
+        finally { if (!stopped) observer.observe(root, options); }
+      });
     });
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
-
-    return () => observer.disconnect();
+    transformPurchaseDom(root);
+    observer.observe(root, options);
+    return () => {
+      stopped = true;
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, [ready]);
 
   if (!ready) return null;
