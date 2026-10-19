@@ -28,6 +28,8 @@ const LANG = {
     printBtn: "Print Ledger",
     pdfBtn: "Download PDF",
     reportHeader: "Employee Ledger Report",
+    cheques: "Cheque Transactions",
+    debit: "Debit", credit: "Credit", reference: "Voucher", chequeDate: "Date",
     printedOn: "Printed On",
   },
   ur: {
@@ -53,6 +55,7 @@ const LANG = {
     printBtn: "لیجر پرنٹ کریں",
     pdfBtn: "پی ڈی ایف ڈاؤنلوڈ",
     reportHeader: "ملازم کے لیجر کی رپورٹ",
+    cheques: "چیک ٹرانزیکشنز", debit: "ڈیبٹ", credit: "کریڈٹ", reference: "واؤچر", chequeDate: "تاریخ",
     printedOn: "پرنٹ کی تاریخ",
   },
 };
@@ -109,7 +112,7 @@ const EmployeeLedgerPage = () => {
     if (!ledgerData) return;
     const font = isUrdu ? "'Noto Nastaliq Urdu', serif" : "'Georgia', serif";
     
-    const rowsHtml = ledgerData.records.map((r, i) => `
+    const rowsHtml = (ledgerData.records || []).map((r, i) => `
       <tr>
         <td style="text-align: center;">${i + 1}</td>
         <td><strong>${r.month}</strong></td>
@@ -197,6 +200,9 @@ const EmployeeLedgerPage = () => {
               ${ledgerData.records?.length > 0 ? rowsHtml : `<tr><td colspan="8" style="text-align:center; padding: 20px;">${t.emptyLedger}</td></tr>`}
             </tbody>
           </table>
+          <h3 style="margin:24px 0 10px">${t.cheques}</h3>
+          <table><thead><tr><th>${t.chequeDate}</th><th>${t.reference}</th><th>${t.cheques}</th><th>${t.debit}</th><th>${t.credit}</th></tr></thead>
+          <tbody>${(ledgerData.cheque_transactions || []).map(ch => `<tr><td>${ch.date}</td><td>${ch.reference_no}</td><td>${ch.description}</td><td>${fmt(ch.debit)}</td><td>${fmt(ch.credit)}</td></tr>`).join('')}</tbody></table>
         </div>
         <script>
           window.onload = () => { setTimeout(() => { window.print(); ${!isPdf ? "window.onafterprint = () => window.close();" : ""} }, 300); }
@@ -245,10 +251,10 @@ const EmployeeLedgerPage = () => {
           </div>
           
           <div className={`flex gap-2 mt-4 md:mt-0 w-full md:w-auto ${isUrdu ? "flex-row-reverse" : ""}`}>
-            <button onClick={() => generatePrintDocument(false)} disabled={!ledgerData || ledgerData.records.length === 0} className="flex-1 md:flex-none flex justify-center items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-lg font-semibold text-sm transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={() => generatePrintDocument(false)} disabled={!ledgerData || ((ledgerData.records || []).length === 0 && (ledgerData.cheque_transactions || []).length === 0)} className="flex-1 md:flex-none flex justify-center items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-lg font-semibold text-sm transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
               <i className="bi bi-printer text-sky-600"></i> {t.printBtn}
             </button>
-            <button onClick={() => generatePrintDocument(true)} disabled={!ledgerData || ledgerData.records.length === 0} className="flex-1 md:flex-none flex justify-center items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-lg font-semibold text-sm transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={() => generatePrintDocument(true)} disabled={!ledgerData || ((ledgerData.records || []).length === 0 && (ledgerData.cheque_transactions || []).length === 0)} className="flex-1 md:flex-none flex justify-center items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-5 py-2.5 rounded-lg font-semibold text-sm transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
               <i className="bi bi-file-earmark-pdf text-red-600"></i> {t.pdfBtn}
             </button>
           </div>
@@ -338,6 +344,31 @@ const EmployeeLedgerPage = () => {
                   </table>
                 </div>
               )}
+              <div className="border-t border-slate-200 p-4">
+                <h3 className="font-bold text-slate-800 mb-3">{t.cheques}</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-[650px] w-full text-sm">
+                    <thead className="bg-sky-50 text-slate-600 text-xs"><tr>
+                      <th className="p-3 text-left">{t.chequeDate}</th>
+                      <th className="p-3 text-left">{t.reference}</th>
+                      <th className="p-3 text-left">{t.cheques}</th>
+                      <th className="p-3 text-right">{t.debit}</th>
+                      <th className="p-3 text-right">{t.credit}</th>
+                    </tr></thead>
+                    <tbody>
+                      {(ledgerData?.cheque_transactions || []).map(tx => (
+                        <tr key={tx.id} className="border-t border-slate-100">
+                          <td className="p-3">{tx.date}</td>
+                          <td className="p-3 font-mono">{tx.reference_no}</td>
+                          <td className="p-3">{tx.description}</td>
+                          <td className="p-3 text-right font-mono">{tx.debit ? `₨ ${fmt(tx.debit)}` : "—"}</td>
+                          <td className="p-3 text-right font-mono">{tx.credit ? `₨ ${fmt(tx.credit)}` : "—"}</td>
+                        </tr>))}
+                      {!(ledgerData?.cheque_transactions || []).length && <tr><td colSpan={5} className="p-5 text-center text-slate-400">—</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </>
           )}
         </div>
