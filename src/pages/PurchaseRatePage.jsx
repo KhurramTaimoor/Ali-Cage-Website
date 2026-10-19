@@ -519,6 +519,7 @@ const PurchaseRatePage = () => {
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
+      <div className="mx-auto mb-3 flex max-w-7xl justify-end"><a href="/app/sales/rate-list?scope=supplier" className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100">Manage Supplier Rate Lists / Assign Suppliers</a></div>
       {message.text && (
         <div
           className={`fixed bottom-6 ${isUrdu ? "left-6" : "right-6"} z-[70] px-5 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold flex items-center gap-2 ${message.type === "error" ? "bg-rose-600" : "bg-emerald-600"}`}
