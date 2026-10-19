@@ -112,22 +112,22 @@ export const cashBookSlipCss = `
   @page { size: A4 portrait; margin: 10mm; }
   .cb-print-root, .cb-print-root * { box-sizing: border-box; }
   .cb-print-root { width: 100%; max-width: 794px; margin: 0 auto; padding: 12px; background: white; color: #17233a;
-    font-family: "Segoe UI", Arial, "Noto Nastaliq Urdu", sans-serif; direction: ltr; }
+    font-family: "Segoe UI", Arial, "Noto Nastaliq Urdu", sans-serif; direction: rtl; text-align: right; }
   .cb-paper { border: 2px solid #1e293b; border-radius: 3px; min-height: 650px; padding: 20px 22px 25px; position: relative; overflow: hidden; background: white; }
   .cb-ribbon { position: absolute; right: -47px; top: 29px; width: 190px; background: #2888ec; color: white;
     transform: rotate(42deg); text-align: center; padding: 6px 0; font-weight: 850; letter-spacing: 1px; font-size: 11px; }
-  .cb-brand { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-right: 45px; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; }
+  .cb-brand { display: flex; direction: rtl; gap: 20px; align-items: center; justify-content: space-between; padding-left: 45px; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; }
   .cb-brand img { width: 125px; height: 70px; object-fit: contain; flex-shrink: 0; }
   .cb-brand h1 { flex: 1; text-align: center; font-family: Arial,sans-serif; font-size: 31px; letter-spacing: .5px; font-weight: 900; margin: 0; }
   .cb-brand h1 span { color: #2888ec; }
   .cb-brand-sub { text-align: center; margin: 10px 0 20px; font-weight: 900; font-size: 19px; }
   .cb-brand-sub .cb-sub-tag { margin-left: 10px; padding: 4px 9px; background: #eaf3ff; color: #1e62ad; border-radius: 4px; font-size: 11px; }
-  .cb-meta { display:grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 17px; }
+  .cb-meta { display:grid; direction: rtl; text-align: right; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 17px; }
   .cb-cell { padding: 9px 10px; min-height: 59px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; min-width: 0; }
   .cb-cell span { display:block; font-size: 10px; color: #52627c; font-weight: 750; margin-bottom: 5px; }
   .cb-cell strong { display:block; font-size: 13px; overflow-wrap: anywhere; line-height: 1.5; }
   .cb-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  .cb-table th { background: #eff6ff; text-align: left; font-size: 11px; color: #182f51; padding: 10px 8px; border: 1px solid #71819a; }
+  .cb-table th { background: #eff6ff; text-align: right; font-size: 11px; color: #182f51; padding: 10px 8px; border: 1px solid #71819a; }
   .cb-table td { font-size: 12px; padding: 9px 8px; vertical-align: top; border: 1px solid #94a3b8; overflow-wrap: anywhere; }
   .cb-table th:first-child, .cb-table td:first-child { width: 40px; text-align: center; }
   .cb-table .cb-money { width: 110px; text-align: right; direction: ltr; white-space: nowrap; }
@@ -140,7 +140,7 @@ export const cashBookSlipCss = `
   .cb-total.paid strong { color: #b42332; }
   .cb-total.net { background: #eaf3ff; border-color: #80b4e5; }
   .cb-total.net strong { color: #1c4e86; }
-  .cb-signatures { display: flex; justify-content: space-between; align-items: end; gap: 35px; padding-top: 66px; }
+  .cb-signatures { display: flex; direction: rtl; justify-content: space-between; align-items: end; gap: 35px; padding-top: 66px; }
   .cb-signatures div { width: 42%; border-top: 1px solid #475569; padding-top: 9px; text-align: center; font-size: 11px; font-weight: 750; }
   .cb-urdu { direction: rtl; text-align: right; }
   @media print { body {margin: 0 !important; background: white !important;} .cb-print-root {padding: 0;max-width: none;}
