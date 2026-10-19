@@ -171,7 +171,7 @@ function Modal({ title, children, onClose, wide = false }) {
 
 export default function RateListPage() {
   const [lang, setLang] = useState("en");
-  const [scope, setScope] = useState("customer");
+  const [scope, setScope] = useState(() => { const requested = new URLSearchParams(window.location.search).get("scope"); return ["customer","supplier","production"].includes(requested) ? requested : "customer"; });
   const [categoryFilter, setCategoryFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [printCustomerId, setPrintCustomerId] = useState("");
