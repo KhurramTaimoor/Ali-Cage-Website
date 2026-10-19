@@ -280,19 +280,28 @@ export default function PurchaseReportPage() {
 
     const root = rootRef.current;
 
-    transformPurchaseReportDom(root);
-
+    let disposed = false;
+    let scheduled = null;
+    const options = { childList: true, subtree: true, characterData: true };
     const observer = new MutationObserver(() => {
-      transformPurchaseReportDom(root);
+      if (disposed || scheduled !== null) return;
+      scheduled = window.requestAnimationFrame(() => {
+        scheduled = null;
+        if (disposed || !root.isConnected) return;
+        // Applying purchase-specific labels changes the DOM; do not watch those
+        // changes or continuously re-run the sales-layout transformation.
+        observer.disconnect();
+        try { transformPurchaseReportDom(root); }
+        finally { if (!disposed) observer.observe(root, options); }
+      });
     });
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
-
-    return () => observer.disconnect();
+    transformPurchaseReportDom(root);
+    observer.observe(root, options);
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      if (scheduled !== null) window.cancelAnimationFrame(scheduled);
+    };
   }, [ready]);
 
   if (!ready) return null;
