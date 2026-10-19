@@ -5,6 +5,7 @@ import React, {
   useState,
 } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
@@ -28,6 +29,13 @@ const LANG = {
     subtitle:
       "Manage salaried and contractor employees, departments and designations",
     newEmployee: "New Employee",
+    employeeSettings: "Employee Settings",
+    picture: "Employee Picture",
+    choosePicture: "Choose Picture",
+    removePicture: "Remove Picture",
+    pictureHint: "JPG, PNG or WebP · up to 5 MB. Image is optimized automatically.",
+    pictureError: "Choose a valid JPG, PNG or WebP picture smaller than 5 MB.",
+    pictureHelp: "Create departments and designations from Employee Settings, then select them here.",
     viewSummary: "View Summary",
     hideSummary: "Hide Summary",
     printList: "Print List",
@@ -115,6 +123,13 @@ const LANG = {
     subtitle:
       "تنخواہ دار اور کنٹریکٹر ملازمین، محکموں اور عہدوں کا انتظام کریں",
     newEmployee: "نیا ملازم",
+    employeeSettings: "ملازم سیٹنگز",
+    picture: "ملازم کی تصویر",
+    choosePicture: "تصویر منتخب کریں",
+    removePicture: "تصویر ہٹائیں",
+    pictureHint: "JPG، PNG یا WebP · زیادہ سے زیادہ 5 MB",
+    pictureError: "5 MB سے کم سائز کی درست تصویر منتخب کریں۔",
+    pictureHelp: "محکمہ اور عہدہ الگ ملازم سیٹنگز میں بنا کر یہاں منتخب کریں۔",
     viewSummary: "سمری دیکھیں",
     hideSummary: "سمری بند کریں",
     printList: "فہرست پرنٹ کریں",
@@ -208,6 +223,7 @@ const emptyForm = () => ({
   department_id: "",
   designation_id: "",
   joining_date: "",
+  photo_data: null,
 });
 
 const getList = (value) => {
@@ -248,6 +264,7 @@ const normalizeType = (value) =>
     : "Salaried";
 
 export default function EmployeePage() {
+  const navigate = useNavigate();
   const [lang, setLang] = useState("en");
   const t = LANG[lang];
   const isUrdu = lang === "ur";
@@ -265,6 +282,7 @@ export default function EmployeePage() {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pictureProcessing, setPictureProcessing] = useState(false);
 
   const [detailRecord, setDetailRecord] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -397,6 +415,7 @@ export default function EmployeePage() {
       joining_date: normalizeDate(
         record?.joining_date
       ),
+      photo_data: record?.photo_data || null,
     });
 
     setShowDetails(false);
@@ -419,9 +438,52 @@ export default function EmployeePage() {
     department_id: Number(form.department_id),
     designation_id: Number(form.designation_id),
     joining_date: form.joining_date || null,
+    photo_data: form.photo_data || null,
   });
 
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      showToast("error", t.pictureError);
+      return;
+    }
+    setPictureProcessing(true);
+    let objectUrl;
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = objectUrl;
+      });
+      const maxSide = 520;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas not available");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const photo = canvas.toDataURL("image/jpeg", 0.78);
+      if (photo.length > 750000) throw new Error("Image too large");
+      setForm((previous) => ({ ...previous, photo_data: photo }));
+    } catch (error) {
+      console.error("Employee image processing error:", error);
+      showToast("error", t.pictureError);
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setPictureProcessing(false);
+    }
+  };
+
   const handleSave = async () => {
+    if (pictureProcessing) return;
     if (
       !form.full_name.trim() ||
       !form.phone.trim() ||
@@ -1037,6 +1099,10 @@ export default function EmployeePage() {
           min-width:0;
         }
 
+        .employee-photo-panel{display:flex;align-items:center;gap:16px;padding:13px;margin-bottom:14px;border:1px solid #d6e0ee;border-radius:14px;background:#f8fbff}
+        .employee-photo-preview{width:96px;height:96px;flex-shrink:0;border:1px dashed #93b4de;border-radius:16px;background:#eaf2ff;display:flex;align-items:center;justify-content:center;color:#417ab7;overflow:hidden}
+        .employee-photo-preview img{width:100%;height:100%;object-fit:cover}
+        .employee-picker-hint{margin-bottom:13px;color:#64748b;font-size:11px}
         .avatar{
           width:32px;
           height:32px;
@@ -1449,6 +1515,14 @@ export default function EmployeePage() {
 
             <button
               type="button"
+              className="btn btn-white"
+              onClick={() => navigate("/app/hr/employee-settings")}
+            >
+              <i className="bi bi-gear" /> {t.employeeSettings}
+            </button>
+
+            <button
+              type="button"
               className="btn btn-primary"
               onClick={openAdd}
             >
@@ -1586,10 +1660,12 @@ export default function EmployeePage() {
 
                       <td>
                         <div className="employee-cell">
-                          <div className="avatar">
-                            {(record.full_name || "?")
-                              .charAt(0)
-                              .toUpperCase()}
+                          <div className="avatar" style={{ overflow: "hidden" }}>
+                            {record.photo_data ? (
+                              <img src={record.photo_data} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              (record.full_name || "?").charAt(0).toUpperCase()
+                            )}
                           </div>
 
                           <div className="employee-copy">
@@ -1719,6 +1795,31 @@ export default function EmployeePage() {
             </div>
 
             <div className="modal-body">
+              <div className="employee-photo-panel">
+                <div className="employee-photo-preview">
+                  {form.photo_data ? (
+                    <img src={form.photo_data} alt={t.picture} />
+                  ) : (
+                    <i className="bi bi-person-bounding-box" style={{fontSize: "32px"}} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="field-label">{t.picture}</div>
+                  <div style={{display: "flex", flexWrap: "wrap", gap: 8}}>
+                    <label className="btn btn-white" style={{ cursor: "pointer" }}>
+                      <i className="bi bi-image" /> {pictureProcessing ? "..." : t.choosePicture}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} disabled={pictureProcessing} style={{display: "none"}} />
+                    </label>
+                    {form.photo_data && (
+                      <button type="button" className="btn btn-white" onClick={() => updateField("photo_data", null)}>
+                        <i className="bi bi-x-circle" /> {t.removePicture}
+                      </button>
+                    )}
+                  </div>
+                  <p className="page-subtitle" style={{marginTop: 8}}>{t.pictureHint}</p>
+                </div>
+              </div>
+              <div className="employee-picker-hint">{t.pictureHelp}</div>
               <div className="form-grid">
                 <div>
                   <label className="field-label">
@@ -1838,18 +1939,7 @@ export default function EmployeePage() {
                       )}
                     </select>
 
-                    <button
-                      type="button"
-                      className="btn btn-add"
-                      title={t.addDepartment}
-                      onClick={() =>
-                        openMasterModal(
-                          "department"
-                        )
-                      }
-                    >
-                      <i className="bi bi-plus-lg" />
-                    </button>
+
                   </div>
 
                   {!loading &&
@@ -1904,18 +1994,7 @@ export default function EmployeePage() {
                       )}
                     </select>
 
-                    <button
-                      type="button"
-                      className="btn btn-add"
-                      title={t.addDesignation}
-                      onClick={() =>
-                        openMasterModal(
-                          "designation"
-                        )
-                      }
-                    >
-                      <i className="bi bi-plus-lg" />
-                    </button>
+
                   </div>
 
                   {!loading &&
@@ -1965,7 +2044,7 @@ export default function EmployeePage() {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={submitting}
+                disabled={submitting || pictureProcessing}
                 onClick={handleSave}
               >
                 <i
@@ -2024,6 +2103,11 @@ export default function EmployeePage() {
             </div>
 
             <div className="modal-body">
+              {detailRecord.photo_data && (
+                <div style={{display: "flex", justifyContent: "center", marginBottom: 16}}>
+                  <img src={detailRecord.photo_data} alt={detailRecord.full_name || t.employee} style={{width: 116, height: 116, borderRadius: 18, objectFit: "cover", border: "1px solid #d6e0ee"}} />
+                </div>
+              )}
               <div className="details-grid">
                 {detailItems.map(([label, value]) => (
                   <div
