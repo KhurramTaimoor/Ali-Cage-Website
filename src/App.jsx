@@ -60,6 +60,7 @@ import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 
 import DepartmentPage from "./pages/DepartmentPage";
 import EmployeePage from "./pages/EmployeePage";
+import EmployeeSettingsPage from "./pages/EmployeeSettingsPage";
 import EmployeeRatePage from "./pages/Employeeratepage";
 import HRReportPage from "./pages/HRReportPage";
 import EmployeeLedgerPage from "./pages/EmployeeLedgerPage";
@@ -348,6 +349,10 @@ function App() {
             <Route
               path="hr/employee"
               element={<EmployeePage />}
+            />
+            <Route
+              path="hr/employee-settings"
+              element={<EmployeeSettingsPage />}
             />
 
             <Route
