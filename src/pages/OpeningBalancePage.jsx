@@ -373,7 +373,8 @@ export default function OpeningBalancePage() {
 
         {/* ── Modal Form ── */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="erp-entry-page fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Opening Balance" : "New Opening Balance"}</strong><small>Sales Invoice-style full-page input • existing fields preserved</small></div><button type="button" onClick={() => setShowForm(false)} className="erp-back-to-list">← Back to List</button></div>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" dir={dir}>
               
               <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
