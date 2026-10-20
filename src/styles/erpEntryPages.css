@@ -1,0 +1,63 @@
+/* ERP-wide create/edit workspace. Only pages explicitly marked with
+   .erp-entry-page switch; detail/confirm/lookup dialogs stay unchanged. */
+:where(#root) :has(> .erp-entry-page) > :not(.erp-entry-page):not(style):not(link):not(script){
+  display:none!important;
+}
+.erp-entry-page{
+  position:relative!important;inset:auto!important;top:auto!important;left:auto!important;
+  right:auto!important;bottom:auto!important;transform:none!important;display:flex!important;
+  flex-direction:column!important;justify-content:flex-start!important;align-items:stretch!important;
+  z-index:auto!important;min-height:calc(100vh - 140px)!important;max-height:none!important;
+  width:100%!important;max-width:1540px!important;margin:0 auto!important;padding:0!important;
+  overflow:visible!important;background:transparent!important;box-shadow:none!important;
+  backdrop-filter:none!important;animation:erpWorkspaceEnter .2s ease-out;
+}
+.erp-entry-page > :not(.erp-entry-toolbar){
+  position:relative!important;inset:auto!important;width:100%!important;
+  max-width:100%!important;height:auto!important;max-height:none!important;
+  min-height:calc(100vh - 230px)!important;margin:0!important;overflow:visible!important;
+  border:1px solid #d8e4f3!important;border-radius:18px!important;
+  background:#fff!important;box-shadow:0 14px 35px rgba(20,45,82,.075)!important;
+}
+.erp-entry-page :is(.inputModalBox,.modal-box,.modal-content,.form-container,.modalContent,
+  .modalBody,.inputModalBody,.modal-body,.scroll-area,.modal-scroll,.form-scroll){
+  max-height:none!important;overflow:visible!important;
+}
+.erp-entry-page :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,textarea){
+  border-radius:9px;transition:border-color .15s,box-shadow .15s;
+}
+.erp-entry-page :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,textarea):focus{
+  outline:0;border-color:#477fe2!important;box-shadow:0 0 0 3px rgba(59,130,246,.11)!important;
+}
+.erp-entry-page :is(button,[role="button"]){transition:background-color .15s,transform .15s,box-shadow .15s}
+.erp-entry-page :is(button,[role="button"]):not(:disabled):active{transform:translateY(1px)}
+.erp-entry-toolbar{
+  position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+  justify-content:space-between;min-height:72px;margin:0 0 13px!important;padding:13px 18px;
+  border:1px solid #d9e4f4;border-radius:16px;background:linear-gradient(130deg,#17263f,#294d79);
+  color:white;box-shadow:0 12px 25px rgba(23,49,90,.14);flex:none!important;
+}
+.erp-entry-toolbar-title{min-width:0;display:flex;flex-direction:column;gap:4px}
+.erp-entry-toolbar-title strong{font-size:17px;font-weight:850;letter-spacing:.01em}
+.erp-entry-toolbar-title small{font-size:11px;color:#c9def8;font-weight:600}
+.erp-back-to-list{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #aac5e6;
+  background:#f4f9ff;color:#164576;font-size:12px;font-weight:850;
+  min-height:38px;padding:7px 14px;border-radius:10px;cursor:pointer;
+  box-shadow:0 2px 7px rgba(0,0,0,.055);white-space:nowrap;
+}
+.erp-back-to-list:hover{background:#dcecff;color:#14395e}
+.erp-back-to-list:disabled{opacity:.45;cursor:default}
+@keyframes erpWorkspaceEnter{from{opacity:.8;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){
+  .erp-entry-page{min-height:auto!important}
+  .erp-entry-toolbar{padding:12px;min-height:64px;gap:8px}
+  .erp-entry-toolbar-title strong{font-size:14px}
+  .erp-entry-page > :not(.erp-entry-toolbar){border-radius:12px!important;min-height:0!important}
+}
+@media print{
+ .erp-entry-toolbar{display:none!important}
+ .erp-entry-page{min-height:0!important;padding:0!important;box-shadow:none!important}
+}
