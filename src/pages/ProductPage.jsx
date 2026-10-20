@@ -55,6 +55,11 @@ const LANG = {
     allTypes: "All Types",
     allCategories: "All Categories",
     allUnits: "All Units",
+    sortProducts: "Sort Products",
+    sortNewest: "Date: Newest First",
+    sortOldest: "Date: Oldest First",
+    sortNameAZ: "Name: A to Z",
+    sortNameZA: "Name: Z to A",
     selectType: "Select type",
     selectCategory: "Select category",
     selectUnit: "Select unit",
@@ -121,6 +126,11 @@ const LANG = {
     allTypes: "تمام ٹائپس",
     allCategories: "تمام کیٹیگریز",
     allUnits: "تمام یونٹس",
+    sortProducts: "پروڈکٹس کی ترتیب",
+    sortNewest: "تاریخ: نئے پہلے",
+    sortOldest: "تاریخ: پرانے پہلے",
+    sortNameAZ: "نام: الف سے ے",
+    sortNameZA: "نام: ے سے الف",
     selectType: "ٹائپ منتخب کریں",
     selectCategory: "کیٹیگری منتخب کریں",
     selectUnit: "یونٹ منتخب کریں",
@@ -221,6 +231,7 @@ const ProductPage = () => {
   const [typeFilter, setTypeFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("");
+  const [sortBy, setSortBy] = useState("date_newest");
 
   const [showForm, setShowForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -508,7 +519,7 @@ const ProductPage = () => {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
 
-    return records.filter((r) => {
+    const visible = records.filter((r) => {
       const typeName = getRecordTypeName(r);
       const categoryName = getRecordCategoryName(r);
       const unitName = getRecordUnitName(r);
@@ -538,12 +549,31 @@ const ProductPage = () => {
 
       return matchesType && matchesCategory && matchesUnit && matchesSearch;
     });
+
+    // Sort only the visible records, without mutating backend/API data.
+    // Backend exposes created_at where supported; ID provides a stable
+    // fallback for legacy products whose creation dates are absent.
+    const timeOf = (r) => {
+      const raw = r.created_at ?? r.createdAt ?? r.creation_date ?? r.date_created;
+      const ms = raw ? Date.parse(String(raw)) : NaN;
+      return Number.isFinite(ms) ? ms : Number(r.id) || 0;
+    };
+    const nameOf = (r) => String(r.product_name || "").trim();
+    return visible.sort((a, b) => {
+      if (sortBy === "name_asc" || sortBy === "name_desc") {
+        const diff = nameOf(a).localeCompare(nameOf(b), undefined, { numeric:true, sensitivity:"base" });
+        return (sortBy === "name_asc" ? diff : -diff) || Number(a.id) - Number(b.id);
+      }
+      const diff = timeOf(a) - timeOf(b);
+      return (sortBy === "date_oldest" ? diff : -diff) || Number(b.id) - Number(a.id);
+    });
   }, [
     records,
     search,
     typeFilter,
     categoryFilter,
     unitFilter,
+    sortBy,
     urduCache,
     getRecordTypeName,
     getRecordCategoryName,
@@ -890,7 +920,7 @@ const ProductPage = () => {
 
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-[18px] border border-slate-200 shadow-sm p-3 mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="relative">
               <i
                 className={`bi bi-search absolute top-1/2 -translate-y-1/2 text-slate-400 ${
@@ -945,6 +975,18 @@ const ProductPage = () => {
                   {getUnitName(unit)}
                 </option>
               ))}
+            </select>
+            <select
+              aria-label={t.sortProducts}
+              title={t.sortProducts}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={`same-field ${isUrdu ? "text-right" : ""}`}
+            >
+              <option value="date_newest">{t.sortNewest}</option>
+              <option value="date_oldest">{t.sortOldest}</option>
+              <option value="name_asc">{t.sortNameAZ}</option>
+              <option value="name_desc">{t.sortNameZA}</option>
             </select>
           </div>
         </div>
