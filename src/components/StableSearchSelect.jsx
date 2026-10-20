@@ -11,6 +11,7 @@ export default function StableSearchSelect({
   options = [], value = "", onChange, disabled = false,
   placeholder = "Select account", searchPlaceholder = "Search by name...",
   className = "", label = "Select account", dir = "ltr",
+  moreLabel = "Show more accounts", emptyLabel = "No matching accounts",
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -192,7 +193,7 @@ export default function StableSearchSelect({
                 );
               }) : (
                 <p style={{ textAlign: "center", padding: 20, fontSize: 13, color: "#64748b" }}>
-                  No matching accounts
+                  {emptyLabel}
                 </p>
               )}
               {options.length > limit && visible.length === limit && (
@@ -202,7 +203,7 @@ export default function StableSearchSelect({
                     background: "#eff6ff", border: "1px solid #bfdbfe",
                     color: "#1d4ed8", fontWeight: 700, fontSize: 13,
                   }}>
-                  Show more accounts
+                  {moreLabel}
                 </button>
               )}
             </div>
