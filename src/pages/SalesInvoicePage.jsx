@@ -1996,7 +1996,7 @@ export default function SalesInvoicePage() {
                                   ];
                                 });
                               })()}
-                            />                   </select>
+                            />
                             {configuredSingleRate > 0 && (
                               <div
                                 className="invoice-single-rate-caption"
