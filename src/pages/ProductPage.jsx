@@ -1071,7 +1071,11 @@ const ProductPage = () => {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="erp-entry-page fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="erp-entry-toolbar">
+              <div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Product" : "New Product"}</strong><small>Complete the details below, then save to return to the list.</small></div>
+              <button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button>
+            </div>
             <div
               className="bg-white rounded-[22px] shadow-2xl w-full max-w-3xl p-4 flex flex-col"
               dir={dir}
