@@ -2427,7 +2427,7 @@ export default function CashBookPage() {
       )}
 
       {showForm && (
-        <div className="page-wrap form-page-wrap">
+        <div className="erp-entry-page page-wrap form-page-wrap">
           <div className="fullPageInputBox">
             <div className="inputModalTitle">
               <span>
