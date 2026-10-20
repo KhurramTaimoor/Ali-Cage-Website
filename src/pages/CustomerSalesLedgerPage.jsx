@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { oneMonthRange } from "../utils/dateDefaults";
+import StableSearchSelect from "../components/StableSearchSelect";
 
 const API_ROOT = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
@@ -361,8 +362,8 @@ export default function CustomerSalesLedgerPage() {
     loadCustomers();
   }, []);
 
-  function handleCustomerChange(event) {
-    const customerId = event.target.value;
+  function handleCustomerChange(valueOrEvent) {
+    const customerId = typeof valueOrEvent === "string" ? valueOrEvent : valueOrEvent?.target?.value || "";
     setSelectedCustomerId(customerId);
     setTypeFilter("all");
     setLedgerData(null);
@@ -448,23 +449,20 @@ export default function CustomerSalesLedgerPage() {
 
         <div className="ledger-field ledger-customer-select">
           <label>{t.selectCustomer}</label>
-          <select
-            data-no-search="true"
-            aria-label={t.selectCustomer}
+          <StableSearchSelect
+            className="ledger-stable-select"
             value={selectedCustomerId}
+            options={filteredCustomers.map(item => ({
+              id: item.id,
+              name: item.customer_name || String(item.id),
+            }))}
             onChange={handleCustomerChange}
             disabled={loadingCustomers}
-          >
-            <option value="">
-              {loadingCustomers ? t.loadingCustomers : t.chooseCustomer}
-            </option>
-            {filteredCustomers.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.customer_name}
-                {item.phone ? ` — ${item.phone}` : ""}
-              </option>
-            ))}
-          </select>
+            placeholder={loadingCustomers ? t.loadingCustomers : t.chooseCustomer}
+            searchPlaceholder={t.customerSearch}
+            label={t.selectCustomer}
+            dir={isUrdu ? "rtl" : "ltr"}
+          />
         </div>
 
         <div className="ledger-field">
