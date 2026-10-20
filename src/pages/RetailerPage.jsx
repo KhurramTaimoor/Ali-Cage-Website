@@ -317,7 +317,11 @@ const RetailerPage = () => {
 
         {/* ── Modal Form ── */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="erp-entry-page fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="erp-entry-toolbar">
+              <div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Retailer" : "New Retailer"}</strong><small>Input details • Save to update the list</small></div>
+              <button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button>
+            </div>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" dir={dir}>
               <div className="flex items-center gap-3 mb-5 border-b border-slate-100 pb-4">
                 <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
