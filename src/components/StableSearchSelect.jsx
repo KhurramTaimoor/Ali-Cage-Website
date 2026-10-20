@@ -100,7 +100,10 @@ export default function StableSearchSelect({
           onMouseDown={(event) => event.stopPropagation()}
           onTouchStart={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setOpen(false);
+            event.stopPropagation();
+          }}
           style={{
             position: "fixed", inset: 0, zIndex: 120000,
             background: "rgba(15,23,42,.52)",
