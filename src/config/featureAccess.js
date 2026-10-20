@@ -272,7 +272,7 @@ export const FEATURE_PATHS = [
   }
 ];
 export const featureForPath = pathname => {
-  const path=String(pathname||"").replace(/\\/+$/,"");
+  const path=String(pathname||"").replace(/[/]+$/,"");
   const found=FEATURE_PATHS.filter(entry=>path===entry.path||path.startsWith(entry.path+"/"));
   found.sort((a,b)=>b.path.length-a.path.length);
   return found[0]?.feature||null;
