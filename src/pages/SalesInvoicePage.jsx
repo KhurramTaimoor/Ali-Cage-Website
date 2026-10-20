@@ -1124,7 +1124,7 @@ export default function SalesInvoicePage() {
     }
 
     if (customerQ) {
-      list = list.filter((inv) => getInvoicePartyName(inv).toLowerCase().includes(customerQ));
+      list = list.filter((inv) => String(getInvoicePartyName(inv) || "").toLowerCase().includes(customerQ));
     }
 
     const q = search.toLowerCase().trim();
@@ -1720,8 +1720,8 @@ export default function SalesInvoicePage() {
         )}
 
         <div className="toolbar">
-          <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
-          <input className="search" style={{ width: "min(360px,100%)" }} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder={t.customerInvoicePlaceholder} />
+          <input className="search" type="search" inputMode="search" autoComplete="off" data-no-autocomplete="true" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.searchPlaceholder} />
+          <input className="search" type="search" inputMode="search" autoComplete="off" data-no-autocomplete="true" style={{ width: "min(360px,100%)" }} value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} placeholder={t.customerInvoicePlaceholder} />
           <button className="btn btn-yellow" disabled={bulkPrinting || loadingInv || filtered.length === 0} onClick={handleBulkPrint}>{bulkPrinting ? t.bulkPrinting : `${t.bulkPrint} (${filtered.length})`}</button>
           {customerFilter.trim() && <span style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 12, background: "#dcfce7", color: "#166534", fontWeight: 900, border: "1px solid #bbf7d0", fontSize: 12 }}>{t.allCustomerInvoices}</span>}
           <button className={`filter ${!dateFrom && !dateTo ? "active" : ""}`} onClick={() => { setDateFrom(""); setDateTo(""); }}>{t.all}</button>
