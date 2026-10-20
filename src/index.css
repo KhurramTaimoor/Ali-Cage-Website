@@ -373,7 +373,18 @@ input, select, textarea, button {
   .camz-app main input:not([type='checkbox']):not([type='radio']),
   .camz-app main select,
   .camz-app main textarea { font-size: 16px !important; }
-  .camz-app main .productInput { font-size: 12px !important; }
+  /* iOS zooms small focused inputs and can dismiss the custom search picker.
+     Maintain readable 16px controls across all mobile entry/table forms. */
+  .camz-app main .productInput,
+  .camz-app main .basicInput,
+  .camz-app main .search,
+  .camz-app main input[type='search'],
+  .camz-app main input[type='text'],
+  .camz-app main select,
+  .camz-app main textarea { font-size: 16px !important; }
+  .camz-app main input,
+  .camz-app main select,
+  .camz-app main textarea { -webkit-user-select: text; user-select: text; }
   .camz-app main .fixed.inset-0 { padding: 8px !important; }
 }
 
