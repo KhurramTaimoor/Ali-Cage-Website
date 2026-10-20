@@ -351,7 +351,10 @@ export default function GlobalUxEnhancer() {
         event.stopPropagation();
         return;
       }
-      if (pickerStateRef.current) closePicker();
+      // Mobile virtual-keyboard activation can synthesize an extra pointer
+      // event outside the portal. Do not dismiss the picker on that event.
+      // On phones it closes only through Close, Escape, or selecting an option.
+      if (pickerStateRef.current && !isMobileTouch()) closePicker();
     };
 
     const onKeyDown = (event) => {
