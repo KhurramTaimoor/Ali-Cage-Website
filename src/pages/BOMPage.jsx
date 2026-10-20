@@ -23,7 +23,7 @@ const LANG = {
     deleteError: "Failed to delete BOM.", confirmDelete: "Are you sure you want to delete this BOM?",
     needHead: "Select a product head.", needQty: "Assembly quantity must be greater than zero.",
     needMaterial: "Complete at least one material row with category, product and quantity.", duplicate: "Same material cannot be added twice.",
-    self: "Product head cannot be used as its own material.", categoryHelp: "Select category first; material list will only show products from that category.",
+    self: "Product head cannot be used as its own material.", categoryHelp: "Select material product first; Type, Category and Unit fill automatically. Category can also filter products.",
   },
   ur: {
     title: "بل آف مٹیریلز (BOM)",
@@ -41,7 +41,7 @@ const LANG = {
     deleteError: "BOM حذف نہیں ہو سکا۔", confirmDelete: "کیا آپ واقعی یہ BOM حذف کرنا چاہتے ہیں؟",
     needHead: "پروڈکٹ ہیڈ منتخب کریں۔", needQty: "اسمبلی مقدار صفر سے زیادہ ہونی چاہیے۔",
     needMaterial: "کم از کم ایک مکمل میٹریل رو شامل کریں۔", duplicate: "ایک ہی میٹریل دو بار شامل نہیں ہو سکتا۔",
-    self: "پروڈکٹ ہیڈ کو میٹریل کے طور پر استعمال نہیں کیا جا سکتا۔", categoryHelp: "پہلے کیٹیگری منتخب کریں؛ صرف اسی کیٹیگری کے پروڈکٹس نظر آئیں گے۔",
+    self: "پروڈکٹ ہیڈ کو میٹریل کے طور پر استعمال نہیں کیا جا سکتا۔", categoryHelp: "پہلے میٹریل پروڈکٹ منتخب کریں؛ قسم، کیٹیگری اور یونٹ خود بھر جائیں گے۔ کیٹیگری فلٹر اختیاری ہے۔",
   },
 };
 
@@ -186,12 +186,12 @@ export default function BOMPage() {
   const changeRow=(key,field,value)=>setForm(f=>({...f,items:f.items.map(x=>{
     if(x.key!==key)return x;
     if(field==="category_id")return {...x,category_id:value,product_id:"",rate:""};
-    if(field==="product_id")return {...x,product_id:value,rate:assignedRate(f.rate_list_id,value,"")};
+    if(field==="product_id"){const p=productMap.get(String(value));return {...x,product_id:value,category_id:p?String(productCategoryId(p)||""):"",rate:assignedRate(f.rate_list_id,value,"")};}
     return {...x,[field]:value};
   })}));
   const addRow = () => setForm(f => ({ ...f, items: [...f.items, newRow()] }));
   const removeRow = (key) => setForm(f => f.items.length === 1 ? f : ({ ...f, items: f.items.filter(x => x.key !== key) }));
-  const optionsFor = (row) => !row.category_id ? [] : usableProducts.filter(p => String(productCategoryId(p)) === String(row.category_id) && String(p.id) !== String(form.product_id));
+  const optionsFor = (row) => usableProducts.filter(p => (!row.category_id || String(productCategoryId(p)) === String(row.category_id)) && String(p.id) !== String(form.product_id));
 
   const openNewMaterial = (row) => {
     setMaterialTargetKey(row.key);
@@ -559,180 +559,74 @@ export default function BOMPage() {
                 <div className="overflow-x-auto">
                   <table className="bom-basicProductTable">
                     <colgroup>
-                      <col style={{ width: "3%" }} />
-                      <col style={{ width: "14%" }} />
-                      <col style={{ width: "24%" }} />
-                      <col style={{ width: "7%" }} />
-                      <col style={{ width: "9%" }} />
-                      <col style={{ width: "7%" }} />
-                      <col style={{ width: "9%" }} />
-                      <col style={{ width: "8%" }} />
-                      <col style={{ width: "14%" }} />
-                      <col style={{ width: "5%" }} />
+                      <col style={{width:"40px"}}/><col style={{width:"22%"}}/>
+                      <col style={{width:"12%"}}/><col style={{width:"14%"}}/>
+                      <col style={{width:"9%"}}/><col style={{width:"12%"}}/>
+                      <col style={{width:"9%"}}/><col style={{width:"11%"}}/>
+                      <col style={{width:"11%"}}/><col style={{width:"12%"}}/>
+                      <col style={{width:"40px"}}/>
                     </colgroup>
-
                     <thead>
                       <tr>
-                        <th>#</th>
-                        <th>{t.matCategory}</th>
-                        <th>{t.material}</th>
-                        <th>Type</th>
-                        <th>{t.unit}</th>
-                        <th>{t.qty}</th>
-                        <th>{t.wastage}</th>
-                        <th>{t.effective}</th>
-<th>{t.rate}</th>
-                        <th>Amount</th><th>Extra Charges</th><th>Total</th>
-                        <th />
+                        <th>#</th><th>{t.material}</th><th>Type</th>
+                        <th>{t.matCategory}</th><th>{t.unit}</th><th>{t.qty}</th>
+                        <th>{t.rate}</th><th>Amount</th><th>Extra Charges</th>
+                        <th>Grand Amount</th><th/>
                       </tr>
                     </thead>
-
                     <tbody>
-                      {rows.map((x, i) => (
+                      {rows.map((x,i)=>(
                         <tr key={x.key}>
-                          <td className="text-center font-black text-slate-400">
-                            {i + 1}
-                          </td>
-
-                          <td>
-                            <select
-                              className="bom-productInput"
-                              value={x.category_id}
-                              onChange={(e) =>
-                                changeRow(
-                                  x.key,
-                                  "category_id",
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">{t.selectCategory}</option>
-
-                              {categories.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {categoryName(c)}
-                                </option>
-                              ))}
+                          <td className="text-center font-black text-slate-400">{i+1}</td>
+                          <td><div className="bom-materialSelectWrap">
+                            <select className="bom-productInput" value={x.product_id}
+                              onChange={e=>changeRow(x.key,"product_id",e.target.value)}
+                              aria-label={t.material}>
+                              <option value="">{t.selectMaterial}</option>
+                              {optionsFor(x).map(p=><option key={p.id} value={p.id}>{productName(p)}</option>)}
                             </select>
-                          </td>
-
-                          <td>
-                            <div className="bom-materialSelectWrap">
-                              <select
-                                className="bom-productInput"
-                                disabled={!x.category_id}
-                                value={x.product_id}
-                                onChange={(e) =>
-                                  changeRow(
-                                    x.key,
-                                    "product_id",
-                                    e.target.value
-                                  )
-                                }
-                              >
-                                <option value="">{t.selectMaterial}</option>
-
-                                {optionsFor(x).map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {productName(p)}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <button
-                                type="button"
-                                className="bom-newMaterialBtn"
-                                onClick={() => openNewMaterial(x)}
-                                title={t.newMaterial}
-                              >
-                                <i className="bi bi-plus-lg" />
-                              </button>
-                            </div>
-                          </td>
-
-                          <td><input className="bom-productInput bom-readonlyInput" value={x.type_name||"-"} readOnly/></td>
-                          <td>
-                            <input
-                              className="bom-productInput bom-readonlyInput"
-                              value={x.unit_name || "-"}
-                              readOnly
-                            />
-                          </td>
-
-                          <td>
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              className="bom-productInput"
-                              value={x.qty}
-                              onChange={(e) =>
-                                changeRow(x.key, "qty", e.target.value)
-                              }
-                            />
-                          </td>
-
-                          <td>
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              className="bom-productInput"
-                              value={x.wastage_percent}
-                              onChange={(e) =>
-                                changeRow(
-                                  x.key,
-                                  "wastage_percent",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-
-                          <td>
-                            <input
-                              className="bom-productInput bom-readonlyInput font-mono"
-                              value={x.effective.toLocaleString("en-PK", {
-                                maximumFractionDigits: 4,
-                              })}
-                              readOnly
-                            />
-                          </td>
-
-                          <td>
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              className="bom-productInput"
-                              value={x.rate}
-                              onChange={(e) =>
-                                changeRow(x.key, "rate", e.target.value)
-                              }
-                            />
-                          </td>
-
-                          <td><input className="bom-productInput bom-readonlyInput font-mono" value={money(x.amount)} readOnly/></td>
-                          <td><input type="number" min="0" step="0.01" className="bom-productInput" value={x.extra_charges||""} onChange={e=>changeRow(x.key,"extra_charges",e.target.value)}/></td>
-                          <td>
-                            <input
-                              className="bom-productInput bom-readonlyInput font-mono"
-                              value={money(x.cost)}
-                              readOnly
-                            />
-                          </td>
-
-                          <td className="text-center">
-                            <button
-                              type="button"
-                              disabled={form.items.length === 1}
-                              onClick={() => removeRow(x.key)}
-                              className="bom-rowDeleteBtn"
-                              title={t.delete}
-                            >
-                              <i className="bi bi-trash3" />
+                            <button type="button" className="bom-newMaterialBtn"
+                              onClick={()=>openNewMaterial(x)} title={t.newMaterial}>
+                              <i className="bi bi-plus-lg"/>
                             </button>
-                          </td>
+                          </div></td>
+                          <td><input className="bom-productInput bom-readonlyInput"
+                            value={x.type_name||"-"} readOnly aria-label="Product Type"/></td>
+                          <td><select className="bom-productInput" value={x.category_id}
+                            onChange={e=>changeRow(x.key,"category_id",e.target.value)}
+                            title="Optional category filter" aria-label={t.matCategory}>
+                            <option value="">{t.selectCategory}</option>
+                            {categories.map(c=><option key={c.id} value={c.id}>{categoryName(c)}</option>)}
+                          </select></td>
+                          <td><input className="bom-productInput bom-readonlyInput"
+                            value={x.unit_name||"-"} readOnly aria-label={t.unit}/></td>
+                          <td><div className="bom-qtyWithWastage">
+                            <input type="number" min="0" step="any" className="bom-productInput"
+                              value={x.qty} onChange={e=>changeRow(x.key,"qty",e.target.value)}
+                              aria-label={t.qty}/>
+                            <label className="bom-qtyMeta"><span>{t.wastage}</span>
+                              <input type="number" min="0" step="any"
+                                value={x.wastage_percent}
+                                onChange={e=>changeRow(x.key,"wastage_percent",e.target.value)}
+                                aria-label={t.wastage}/>
+                            </label>
+                            <span className="bom-effectiveHint">{t.effective}: {x.effective.toLocaleString("en-PK",{maximumFractionDigits:4})}</span>
+                          </div></td>
+                          <td><input type="number" min="0" step="any" className="bom-productInput"
+                            value={x.rate} onChange={e=>changeRow(x.key,"rate",e.target.value)}
+                            aria-label={t.rate}/></td>
+                          <td><input className="bom-productInput bom-readonlyInput font-mono"
+                            value={money(x.amount)} readOnly aria-label="Amount"/></td>
+                          <td><input type="number" min="0" step="0.01" className="bom-productInput"
+                            value={x.extra_charges??""}
+                            onChange={e=>changeRow(x.key,"extra_charges",e.target.value)}
+                            aria-label="Extra Charges"/></td>
+                          <td><input className="bom-productInput bom-readonlyInput font-mono"
+                            value={money(x.cost)} readOnly aria-label="Grand Amount"/></td>
+                          <td className="text-center"><button type="button"
+                            disabled={form.items.length===1}
+                            onClick={()=>removeRow(x.key)} className="bom-rowDeleteBtn"
+                            title={t.delete}><i className="bi bi-trash3"/></button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -744,7 +638,13 @@ export default function BOMPage() {
               <div className="bom-finalTotalBar">
                 <TotalBox label="Total Cost" value={money(materialTotal)}/>
                 <TotalBox label="Labor Charges" value={money(form.labor_cost)}/>
-                <TotalBox label="Expense" value={money(form.expense_cost)}/>
+                <div className="bom-totalBox bom-manualExpenseBox">
+                   <label htmlFor="bom-expense-input">Expense (Manual)</label>
+                   <input id="bom-expense-input" type="number" min="0" step="0.01"
+                     className="bom-manualExpenseInput" value={form.expense_cost}
+                     onChange={e=>setForm(f=>({...f,expense_cost:e.target.value}))}
+                     placeholder="0.00" aria-label="Manual BOM Expense"/>
+                 </div>
                 <TotalBox label="Grand Total Cost" value={money(totalCost)} grand/>
               </div>
 
@@ -1133,7 +1033,7 @@ export default function BOMPage() {
 
         .bom-basicProductTable {
           width: 100%;
-          min-width: 0;
+          min-width: 1250px;
           border-collapse: collapse;
           background: white;
           table-layout: fixed;
@@ -1175,7 +1075,7 @@ export default function BOMPage() {
         .bom-finalTotalBar {
           margin-top: 7px;
           display: grid;
-          grid-template-columns: repeat(6,1fr);
+          grid-template-columns: repeat(4,minmax(0,1fr));
           gap: 6px;
         }
 
@@ -1206,6 +1106,12 @@ export default function BOMPage() {
           color: #0f172a;
         }
 
+        .bom-qtyWithWastage {display:flex;flex-direction:column;gap:3px}
+        .bom-qtyMeta {display:flex;align-items:center;gap:3px;justify-content:space-between;color:#64748b;font-size:8px;font-weight:700}
+        .bom-qtyMeta input {width:48%;min-width:0;border:1px solid #cbd5e1;border-radius:4px;padding:2px 3px;font-size:9px;text-align:right}
+        .bom-effectiveHint {font-size:8px;color:#475569;font-weight:700;white-space:nowrap}
+        .bom-manualExpenseInput {width:100%;min-height:28px;background:#fff;color:#0f172a;border:1px solid #93b4de;border-radius:6px;padding:4px 7px;outline:none;font-size:12px;font-family:monospace;font-weight:800}
+        .bom-manualExpenseInput:focus {border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.1)}
         .bom-grandBox {
           background: #EFF6FF;
           border-color: #DBEAFE;
@@ -1374,7 +1280,7 @@ export default function BOMPage() {
           }
 
           .bom-basicProductTable {
-            min-width: 980px;
+            min-width: 1250px;
           }
 
           .bom-modalFooterBasic {
