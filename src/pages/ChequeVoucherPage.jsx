@@ -1353,16 +1353,16 @@ const Modal = ({
   <div
     className={
       inline
-        ? "mx-auto w-full max-w-[1060px]"
+        ? "mx-auto w-full max-w-[1500px]"
         : "fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-950/50 p-2.5 backdrop-blur-sm sm:p-3"
     }
   >
     <div
       className={`${inline ? "" : "my-auto"} w-full overflow-hidden rounded-[18px] border border-slate-300 bg-slate-50 shadow-[0_30px_90px_rgba(15,23,42,0.28)] ${
-        wide ? "max-w-[1060px]" : "max-w-2xl"
+        wide ? (inline ? "max-w-[1500px]" : "max-w-[1060px]") : "max-w-2xl"
       }`}
     >
-      <div className="flex h-[54px] items-center justify-between bg-gradient-to-br from-slate-900 to-slate-800 px-4 text-white sm:px-[18px]">
+      <div className="flex min-h-[64px] items-center justify-between bg-gradient-to-br from-[#152a48] to-[#2d5682] px-5 py-3 text-white sm:px-6">
         <div className="min-w-0">
           <div className="mb-0.5 inline-flex rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide">
             {eyebrow}
@@ -1388,7 +1388,7 @@ const Modal = ({
         </button>
       </div>
 
-      <div className="max-h-[calc(100vh-82px)] overflow-y-auto bg-slate-100 p-3 sm:p-3.5">
+      <div className={inline ? "overflow-visible bg-[#F4F7FB] p-4 sm:p-6" : "max-h-[calc(100vh-82px)] overflow-y-auto bg-slate-100 p-3 sm:p-3.5"}>
         {children}
       </div>
     </div>
