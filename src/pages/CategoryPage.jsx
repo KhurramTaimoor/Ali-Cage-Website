@@ -701,7 +701,11 @@ window.onload=()=>{setTimeout(()=>{window.print();${!isPdf ? "window.onafterprin
 
         {/* Modal Form */}
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm same-scroll overflow-y-auto">
+          <div className="erp-entry-page fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm same-scroll overflow-y-auto">
+            <div className="erp-entry-toolbar">
+              <div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Category" : "New Category"}</strong><small>Complete the details below, then save to return to the list.</small></div>
+              <button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button>
+            </div>
             <div
               className="same-modal-in bg-white rounded-[22px] shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden"
               dir={dir}
