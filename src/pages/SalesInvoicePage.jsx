@@ -251,7 +251,7 @@ const emptyItem = () => ({
   product_description: "",
   product_type_id: "",
   unit_id: "",
-  sale_type: "multiple",
+  sale_type: "single",
   rate_manual: false,
   carton_qty: "",
   pieces_qty: "",
@@ -543,15 +543,17 @@ const getAvailableSingleRate = (rates, row, product, customerId, listName) => {
   return 0;
 };
 
-// Keep Single/Multiple inside the PRODUCT dropdown, not as a separate column.
-// The combined value exists only in the UI: invoice APIs still get a numeric
-// product_id and an independent sale_type (so existing records remain valid).
-const makeInvoiceProductChoice = (id, mode) => id ? `${id}::${mode === "single" ? "single" : "multiple"}` : "";
-const parseInvoiceProductChoice = (choice) => {
-  const match = String(choice || "").match(/^(\d+)::(single|multiple)$/);
-  return match
-    ? { product_id: match[1], sale_type: match[2] }
-    : { product_id: String(choice || ""), sale_type: "multiple" };
+// Each backend product ID is one selectable option. Single Rate comes from
+// the assigned customer rate list, then the product master piece_rate.
+// The original sale_type field is kept for older saved invoice items.
+const uniqueProductsById = (rows) => {
+  const seen = new Set();
+  return (Array.isArray(rows) ? rows : []).filter((product) => {
+    const id = String(getProductId(product) || "");
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 };
 
 const roundPreviousBalance = (value) => String(Math.round(toNum(value)));
@@ -980,7 +982,8 @@ export default function SalesInvoicePage() {
   const { data: suppliers, loading: suLoading } = useLookup(SUPPLIERS_API);
   const { data: generalLedgers, loading: glLoading } = useLookup(GENERAL_LEDGERS_API);
   const { data: categories, loading: catLoading } = useLookup(CATEGORIES_API);
-  const { data: products, loading: prodLoading } = useLookup(PRODUCTS_API);
+  const { data: productRecords, loading: prodLoading } = useLookup(PRODUCTS_API);
+  const products = useMemo(() => uniqueProductsById(productRecords), [productRecords]);
   const { data: units, loading: unLoading } = useLookup(UNITS_API);
   const [productTypes, setProductTypes] = useState([]);
   const [salesRates, setSalesRates] = useState([]);
@@ -1281,10 +1284,11 @@ export default function SalesInvoicePage() {
   const handleItemChange = (index, field, value) => {
     setItems((prev) => prev.map((row, i) => {
       if (i !== index) return row;
-      const selection = field === "product_choice" ? parseInvoiceProductChoice(value) : null;
-      const next = selection ? { ...row, ...selection } : { ...row, [field]: value };
+      const next = field === "product_id"
+        ? { ...row, product_id: String(value || ""), sale_type: "single" }
+        : { ...row, [field]: value };
 
-      if (field === "product_id" || field === "product_choice") {
+      if (field === "product_id") {
         const prod = products.find((p) => sameId(getProductId(p), next.product_id));
         if (prod) {
           next.category_id = String(getProductCatId(prod) || next.category_id || "");
@@ -1974,10 +1978,10 @@ export default function SalesInvoicePage() {
                               className="productInput"
                               label={t.product}
                               dir={dir}
-                              value={makeInvoiceProductChoice(row.product_id, row.sale_type)}
-                              onChange={(choice) => handleItemChange(idx, "product_choice", choice)}
+                              value={String(row.product_id || "")}
+                              onChange={(productId) => handleItemChange(idx, "product_id", productId)}
                               placeholder={prodLoading ? t.loading : t.select}
-                              searchPlaceholder={isUrdu ? "پروڈکٹ کا نام لکھیں..." : "Search product name, single or multiple..."}
+                              searchPlaceholder={isUrdu ? "پروڈکٹ کا نام لکھیں..." : "Search product name or rate..."}
                               options={(() => {
                                 const selectedCategory = String(row.category_id || "");
                                 const matchedProducts = products.filter((p) => {
@@ -1985,15 +1989,25 @@ export default function SalesInvoicePage() {
                                   return !selectedCategory || !productCatId || sameId(productCatId, selectedCategory);
                                 });
                                 const list = selectedCategory && !matchedProducts.length ? products : matchedProducts;
-                                return list.flatMap((p) => {
-                                  const id = getProductId(p);
-                                  if (!id) return [];
-                                  const typeName = getProductTypeLabel(p, typeMap);
-                                  const label = getProductName(p) + (typeName ? " — " + typeName : "");
-                                  return [
-                                    { id: makeInvoiceProductChoice(id, "multiple"), name: label + " — " + t.multiple },
-                                    { id: makeInvoiceProductChoice(id, "single"), name: label + " — " + t.single },
-                                  ];
+                                return uniqueProductsById(list).map((p) => {
+                                  const id = String(getProductId(p));
+                                  const productRow = {
+                                    product_id: id,
+                                    category_id: String(getProductCatId(p) || ""),
+                                    product_type_id: String(getProductTypeId(p) || ""),
+                                    unit_id: String(getProductUnitId(p) || ""),
+                                    sale_type: "single"
+                                  };
+                                  const singleRate = getAvailableSingleRate(
+                                    salesRates, productRow, p,
+                                    form.party_type === "customer" ? form.party_id : null,
+                                    form.rate_list_name || ""
+                                  );
+                                  return {
+                                    id,
+                                    name: getProductName(p) + " — " +
+                                      (singleRate > 0 ? "Rate Rs " + moneyWhole(singleRate) : "Rate not set"),
+                                  };
                                 });
                               })()}
                             />
