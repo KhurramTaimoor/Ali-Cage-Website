@@ -22,6 +22,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { translations } from "../data/translations";
+import { canAccessFeature } from "../config/featureAccess";
+import axios from "axios";
 
 const SALES_ITEMS = [
   { to: "/app/sales/customer", key: "customer", fallback: "Customer" },
@@ -108,13 +110,29 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const user = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null") || {};
-    } catch {
-      return {};
-    }
-  })();
+  const [user,setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("user") || "null") || {}; }
+    catch { return {}; }
+  });
+  useEffect(() => {
+    let live=true;
+    const root=(import.meta.env.VITE_API_BASE_URL||"http://localhost:5000").replace(/\/$/,"").replace(/\/api$/i,"");
+    axios.get(root+"/api/auth/me").then(response => {
+      const next=response.data?.user;
+      if(live&&next){
+        const merged={...user,...next,isLoggedIn:true};
+        localStorage.setItem("user",JSON.stringify(merged));
+        setUser(merged);
+      }
+    }).catch(error=>{
+      if(live&&error.response?.status===401){
+        localStorage.removeItem("user");
+        localStorage.removeItem("auth_token");
+        navigate("/login",{replace:true});
+      }
+    });
+    return ()=>{live=false};
+  }, []);
 
   const userRole = String(user.role || "employee").toLowerCase();
   const isAdmin = userRole === "admin";
@@ -163,8 +181,10 @@ const DashboardLayout = () => {
   };
 
   const renderGroup = (groupKey, label, icon, items) => {
+    const visible = isAdmin ? items : items.filter(item => item.divider || canAccessFeature(user, groupKey + "." + item.key));
+    if (!visible.some(item => item.to)) return null;
     const open = Boolean(openGroups[groupKey]);
-    const activeGroup = groupIsActive(items);
+    const activeGroup = groupIsActive(visible);
 
     return (
       <div className="mb-2">
@@ -190,7 +210,7 @@ const DashboardLayout = () => {
 
         {open && (
           <nav className={`mt-1.5 space-y-1 ${isRTL ? "pr-2" : "pl-2"}`}>
-            {items.map((item, index) => {
+            {visible.map((item, index) => {
               if (item.divider) {
                 return (
                   <div
