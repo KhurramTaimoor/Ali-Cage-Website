@@ -437,6 +437,9 @@ export default function CustomerSalesLedgerPage() {
           <label>{t.customerSearch}</label>
           <input
             type="search"
+            inputMode="search"
+            autoComplete="off"
+            data-no-autocomplete="true"
             value={customerSearch}
             onChange={(event) => setCustomerSearch(event.target.value)}
             placeholder={t.customerSearch}
@@ -446,6 +449,8 @@ export default function CustomerSalesLedgerPage() {
         <div className="ledger-field ledger-customer-select">
           <label>{t.selectCustomer}</label>
           <select
+            data-searchable="true"
+            aria-label={t.selectCustomer}
             value={selectedCustomerId}
             onChange={handleCustomerChange}
             disabled={loadingCustomers}
