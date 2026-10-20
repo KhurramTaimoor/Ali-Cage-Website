@@ -13,7 +13,7 @@ import {
   Mail,
 } from 'lucide-react';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '').replace(/\/api$/i, '');
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -58,6 +58,7 @@ const AuthPage = () => {
             email: data.user.email,
             role: data.user.role,
             username: data.user.username,
+            permissions: Array.isArray(data.user.permissions) ? data.user.permissions : [],
             isLoggedIn: true,
           })
         );
