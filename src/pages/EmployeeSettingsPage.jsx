@@ -138,7 +138,7 @@ export default function EmployeeSettingsPage() {
           ))}
         </div>
       </div>
-      {form && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) setForm(null); }}>
+      {form && <div className="erp-entry-page fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={(e) =><div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{form.id ? "Edit Employee Setting" : "New Employee Setting"}</strong><small>Full-page form • All original fields preserved</small></div><button type="button" disabled={busy} className="erp-back-to-list" onClick={() => setForm(null)}>← Back to List</button></div> { if (e.target === e.currentTarget && !busy) setForm(null); }}>
         <div className="w-full max-w-md rounded-2xl bg-white shadow-xl p-5 space-y-4">
           <h2 className="text-lg font-bold">{form.id ? t.edit : t.add} {t[configs[form.kind].singular]}</h2>
           <label className="block text-sm font-semibold text-slate-600">{t.name} *
