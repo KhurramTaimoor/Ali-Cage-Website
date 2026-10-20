@@ -1400,7 +1400,7 @@ export default function SalesInvoicePage() {
       setItems((prev) => prev.map((row) => {
         if (!row.product_id || row.rate_manual) return row;
         const prod = products.find((p) => sameId(getProductId(p), row.product_id));
-        const nextRate = rateForRow(row, prod, value);
+        const nextRate = rateForRow(row, prod, value, "");
         return { ...row, rate: String(nextRate), amount: String((toNum(row.qty) * nextRate).toFixed(2)) };
       }));
     }
