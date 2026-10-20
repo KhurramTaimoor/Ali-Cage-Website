@@ -2841,7 +2841,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
       </div>
 
       {showForm && (
-        <div className="page-wrap">
+        <div className="erp-entry-page page-wrap">
           <div className="inputModalBox">
             <div className="inputModalTitle">
               <span>{editingId ? t.update : t.newOrder}</span>
