@@ -2442,7 +2442,7 @@ export default function CashBookPage() {
                 onClick={closeForm}
                 disabled={saving}
               >
-                ← {t.cancel}
+                ← {isUrdu ? "فہرست پر واپس" : "Back to List"}
               </button>
             </div>
 
