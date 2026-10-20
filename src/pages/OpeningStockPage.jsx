@@ -571,7 +571,11 @@ export default function OpeningStockPage() {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="erp-entry-page fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="erp-entry-toolbar">
+              <div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Opening Stock" : "New Opening Stock"}</strong><small>Input details • Save to update the list</small></div>
+              <button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button>
+            </div>
             <div className="bg-white rounded-[22px] shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col" dir={dir}>
               <div className={`px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 bg-white ${isUrdu ? "flex-row-reverse text-right" : ""}`}>
                 <div className={`flex items-center gap-3 min-w-0 ${isUrdu ? "flex-row-reverse" : ""}`}>
