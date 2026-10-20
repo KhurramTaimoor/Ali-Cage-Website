@@ -1143,7 +1143,7 @@ export default function SalesReturnPage() {
                 </span>
                 <div>{editingId ? t.edit : t.newReturn}</div>
               </div>
-              <button className="closeBtn" onClick={() => setShowForm(false)}>×</button>
+              <button className="closeBtn" onClick={() => setShowForm(false)}>← {isUrdu ? "فہرست پر واپس" : "Back to List"}</button>
             </div>
 
             <div className="inputModalBody">
