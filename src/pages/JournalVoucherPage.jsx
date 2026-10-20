@@ -269,7 +269,7 @@ export default function JournalVoucherPage() {
       </div>
     </div>
 
-    {showForm && <div className="fixed inset-0 z-50 bg-slate-900/60 p-2 sm:p-4 flex items-center justify-center">
+    {showForm && <div className="erp-entry-page fixed inset-0 z-50 bg-slate-900/60 p-2 sm:p-4 flex items-center justify-center"><div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Journal Voucher" : "New Journal Voucher"}</strong><small>Full-page form • All original fields preserved</small></div><button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button></div>
       <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto shadow-2xl">
         <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-4 flex justify-between items-center z-10">
           <h2 className="text-xl font-black">{editingId ? t.edit : t.new}</h2>
