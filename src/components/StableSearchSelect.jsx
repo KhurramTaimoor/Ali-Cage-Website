@@ -38,6 +38,11 @@ export default function StableSearchSelect({
 
   useEffect(() => {
     if (!open) return undefined;
+    // iOS/Android virtual keyboards may change viewport/focus during portal mount.
+    // Do not open the keyboard programmatically on touch devices: let the user
+    // tap the always-visible search field, without dismissing the picker.
+    const isTouch = navigator.maxTouchPoints > 0 || window.matchMedia?.("(pointer: coarse)")?.matches;
+    if (isTouch) return undefined;
     const frame = window.requestAnimationFrame(() => {
       try { inputRef.current?.focus({ preventScroll: true }); }
       catch { inputRef.current?.focus(); }
@@ -91,6 +96,11 @@ export default function StableSearchSelect({
         <div
           data-stable-search-dialog="true"
           role="presentation"
+          onPointerDown={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
           style={{
             position: "fixed", inset: 0, zIndex: 120000,
             background: "rgba(15,23,42,.52)",
@@ -122,6 +132,7 @@ export default function StableSearchSelect({
               </div>
               <input
                 ref={inputRef}
+                data-stable-search-input="true"
                 data-no-autocomplete="true"
                 type="search"
                 autoComplete="off"
@@ -134,6 +145,7 @@ export default function StableSearchSelect({
                 placeholder={searchPlaceholder}
                 value={search}
                 onChange={(event) => { setSearch(event.target.value); setLimit(70); }}
+                onFocus={(event) => event.stopPropagation()}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && visible.length === 1) {
                     event.preventDefault();
