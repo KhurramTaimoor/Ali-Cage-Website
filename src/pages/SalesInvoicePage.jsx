@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import axios from "axios";
 import { Eye, Pencil, Printer, Trash2 } from "lucide-react";
 import { resolveSalesRate } from "../utils/salesRateResolver";
+import StableSearchSelect from "../components/StableSearchSelect";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 const API_BASE = `${API_ROOT}/api/sales-invoices`;
@@ -1893,10 +1894,17 @@ export default function SalesInvoicePage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.name} *</label>
-                    <select data-searchable="true" className="basicSelect" value={form.party_id} disabled={!form.party_type || mastersLoading} onChange={(e) => handlePartyChange(e.target.value)}>
-                      <option value="">{mastersLoading ? t.loading : t.selectName}</option>
-                      {partyOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <StableSearchSelect
+                      className="basicSelect"
+                      value={form.party_id}
+                      options={partyOptions}
+                      disabled={!form.party_type || mastersLoading}
+                      placeholder={mastersLoading ? t.loading : t.selectName}
+                      searchPlaceholder={isUrdu ? "نام لکھ کر تلاش کریں..." : "Type customer / account name..."}
+                      label={t.name}
+                      dir={dir}
+                      onChange={handlePartyChange}
+                    />
                   </div>
                   <div>
                     <label className="basicLabel">{t.rateList}</label>
