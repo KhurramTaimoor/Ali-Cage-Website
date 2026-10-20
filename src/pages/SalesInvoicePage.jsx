@@ -1236,7 +1236,13 @@ export default function SalesInvoicePage() {
   };
 
   const rateForRow = useCallback((row, prod, customerId = form.party_type === "customer" ? form.party_id : null, listName = form.rate_list_name || "") => {
-    const mode = row.sale_type === "single" ? "single" : "retail";
+    // New product selections use Single Rate only; never replace a missing
+    // Single Rate with the retail/Multiple price and silently misprice invoices.
+    // Previously saved rows retain their manual historical rate in openEdit.
+    if (row.sale_type === "single") {
+      return getAvailableSingleRate(salesRates, row, prod, customerId, listName);
+    }
+    const mode = "retail";
     const listed = resolveSalesRate(salesRates, {
       customerId,
       productId: row.product_id || getProductId(prod || {}),
