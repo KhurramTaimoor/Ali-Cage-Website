@@ -516,6 +516,43 @@ export default function ChequeVoucherPage() {
     }
   };
 
+  const toggleSelected = (id) => setSelectedIds(previous =>
+    previous.includes(id) ? previous.filter(x => x !== id) : [...previous, id]
+  );
+
+  const printSingleVoucher = async (record) => {
+    const popup = window.open("", "_blank", "width=1050,height=850");
+    if (!popup) return setError("Please allow pop-ups for printing.");
+    popup.document.write('<p style="font-family:Arial;padding:20px">Preparing cheque voucher...</p>');
+    try {
+      const voucher = await getVoucher(record.id);
+      openChequeVoucherPrintWindow([voucher], {lang,single:true}, popup);
+    } catch (e) {
+      popup.close();
+      setError(e.response?.data?.message || e.message || t.detailsError);
+    }
+  };
+
+  const printFilteredReport = async () => {
+    if (!records.length || printing) return;
+    const popup = window.open("", "_blank", "width=1150,height=900");
+    if (!popup) return setError("Please allow pop-ups for printing.");
+    popup.document.write('<p style="font-family:Arial;padding:20px">Preparing filtered cheque report...</p>');
+    setPrinting(true);
+    try {
+      const response = await axios.get(API_BASE + "/cheque-vouchers/print-report", {params:reportParams});
+      const rows = normalizeArray(response.data);
+      const selected = new Set(selectedIds.map(Number));
+      const toPrint = selected.size ? rows.filter(v => selected.has(Number(v.id))) : rows;
+      if (!toPrint.length) throw new Error("No matching vouchers to print.");
+      const accountName = (accounts[accountTypeFilter] || []).find(a => String(a.id) === String(accountIdFilter))?.name || "";
+      openChequeVoucherPrintWindow(toPrint, {lang,filters:{...reportParams,account_name:accountName}}, popup);
+    } catch (e) {
+      popup.close();
+      setError(e.response?.data?.message || e.message || "Unable to print cheque report.");
+    } finally { setPrinting(false); }
+  };
+
   const updateForm = (key, value) =>
     setForm((previous) => ({ ...previous, [key]: value,
       ...(key === "account_type" ? { account_id: "", payee_name: "" } : {}),
