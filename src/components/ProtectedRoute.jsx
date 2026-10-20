@@ -2,7 +2,9 @@ import React from "react";
 import {
   Navigate,
   Outlet,
+  useLocation,
 } from "react-router-dom";
+import { canAccessFeature, featureForPath } from "../config/featureAccess";
 
 const getUser = () => {
   try {
@@ -26,6 +28,7 @@ const getUser = () => {
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const user = getUser();
+  const location=useLocation();
   const token = localStorage.getItem("auth_token");
 
   // Valid session requires both user details and the signed auth token.
@@ -65,6 +68,13 @@ const ProtectedRoute = ({ allowedRoles }) => {
     );
   }
 
+  const activePath=location.pathname.replace(/[/]+$/,"");
+  if (userRole !== "admin" && activePath !== "/app" && activePath !== "/app/dashboard") {
+    const requiredFeature=featureForPath(activePath);
+    if (!requiredFeature || !canAccessFeature(user,requiredFeature)) {
+      return <Navigate to="/app/dashboard" replace />;
+    }
+  }
   return <Outlet />;
 };
 
