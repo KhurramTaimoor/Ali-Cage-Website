@@ -1764,13 +1764,6 @@ export default function EmployeePage() {
       {showForm && (
         <div
           className="erp-entry-page modal-backdrop"
-          onMouseDown={(event) => {
-            if (
-              event.target === event.currentTarget
-            ) {
-              closeForm();
-            }
-          }}
         >
           <div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Employee" : "New Employee"}</strong><small>Sales Invoice-style full-page input • existing fields preserved</small></div><button type="button" onClick={() => closeForm()} className="erp-back-to-list">← Back to List</button></div>
           <div className="modal" dir={dir}>
