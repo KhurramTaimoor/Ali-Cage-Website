@@ -88,16 +88,22 @@ export default function GlobalUxEnhancer() {
     };
     pickerStateRef.current = nextPicker;
     setPicker(nextPicker);
-    // Schedule focus once the portal is mounted; mobile keyboards must not
-    // trigger a resize/scroll close while the user begins typing.
-    window.requestAnimationFrame(() => {
-      if (pickerStateRef.current === nextPicker && searchRef.current?.isConnected) {
-        try { searchRef.current.focus({ preventScroll: true }); }
-        catch { searchRef.current.focus(); }
-      }
-    });
+    // Focus is handled after the portal has committed to the DOM (below).
+    // Focusing here raced React mounting and was unreliable on mobile Safari.
     return true;
   };
+
+  useEffect(() => {
+    if (!picker) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (pickerStateRef.current !== picker) return;
+      const input = searchRef.current;
+      if (!input?.isConnected || document.activeElement === input) return;
+      try { input.focus({ preventScroll: true }); }
+      catch { input.focus(); }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [picker]);
 
   useEffect(() => {
     const lists = new Map();
@@ -335,6 +341,8 @@ export default function GlobalUxEnhancer() {
     };
 
     const onPointerDown = (event) => {
+      // Picker input/options live in a body-level portal; do not treat taps
+      // inside it as outside-clicks even as the mobile keyboard appears.
       if (pickerRef.current?.contains(event.target) ||
           event.target?.closest?.("[data-global-select-picker]")) return;
       const select = event.target?.closest?.("select");
@@ -364,13 +372,19 @@ export default function GlobalUxEnhancer() {
     // A document-wide scan on every dropdown keystroke also stalls mobiles.
     let scanFrame = null;
     const scheduleScan = (mutations) => {
-      if (pickerRef.current &&
-          mutations.length &&
-          mutations.every(m => pickerRef.current.contains(m.target))) return;
+      // Never rebuild table actions or search hints while a picker is open.
+      // Doing so after each search keystroke used to steal keyboard focus and
+      // make customer dropdowns immediately dismiss on mobile browsers.
+      if (pickerStateRef.current) return;
+      const active = document.activeElement;
+      if (active?.matches?.("input, textarea, [contenteditable='true']")) return;
       if (scanFrame !== null) return;
       scanFrame = window.requestAnimationFrame(() => {
         scanFrame = null;
-        scan();
+        if (!pickerStateRef.current &&
+            !document.activeElement?.matches?.("input, textarea, [contenteditable='true']")) {
+          scan();
+        }
       });
     };
 
@@ -417,6 +431,7 @@ export default function GlobalUxEnhancer() {
       aria-label="Search and select an option"
       translate="no"
       dir={picker.dir}
+      onPointerDown={(event) => event.stopPropagation()}
       style={{
         position: "fixed",
         zIndex: 100000,
