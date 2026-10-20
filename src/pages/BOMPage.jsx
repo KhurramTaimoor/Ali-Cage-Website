@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { printBOMs } from "../utils/bomPrint";
 
 const RAW_API = import.meta.env.VITE_API_BASE_URL || "https://apii.alibirdcageofficial.store";
 const CLEAN_API = RAW_API.replace(/\/$/, "");
@@ -54,8 +55,8 @@ const productCategoryId = (p) => p?.category_id ?? p?.product_category_id ?? "";
 const productUnitId = (p) => p?.unit_id ?? "";
 const active = (p) => !["0", "false", "inactive", "disabled"].includes(String(p?.is_active ?? p?.active ?? "1").toLowerCase());
 
-const newRow = () => ({ key: `${Date.now()}-${Math.random()}`, category_id: "", product_id: "", qty: "", wastage_percent: "0", rate: "" });
-const blankForm = () => ({ bom_code: `BOM-${Date.now().toString().slice(-6)}`, product_id: "", output_qty: "1", labor_cost: "", notes: "", items: [newRow()] });
+const newRow = () => ({ key: `${Date.now()}-${Math.random()}`, category_id: "", product_id: "", qty: "", wastage_percent: "0", rate: "", extra_charges: "" });
+const blankForm = () => ({ bom_code: "AUTO", product_id: "", rate_list_id: "", output_qty: "1", labor_cost: "", expense_cost:"", notes: "", items: [newRow()] });
 
 function normalizeBom(r) {
   const items = list(r?.items).length ? list(r.items) : list(r?.materials).length ? list(r.materials) : r?.raw_material ? [{ raw_material: r.raw_material, qty: r.qty, rate: r.rate }] : [];
@@ -65,6 +66,7 @@ function normalizeBom(r) {
     product_name: r?.product_name ?? r?.head_product_name ?? r?.finished_product_name ?? "",
     category_name: r?.category_name ?? r?.product_category_name ?? "",
     output_qty: r?.output_qty ?? r?.batch_size ?? 1,
+    rate_list_id:r?.rate_list_id || "",expense_cost:r?.expense_cost??0,type_name:r?.type_name||"",
     items: items.map((x, i) => ({
       ...x, key: x?.id || `saved-${r?.id}-${i}`,
       category_id: x?.category_id ?? x?.material_category_id ?? "",
@@ -73,6 +75,7 @@ function normalizeBom(r) {
       qty: x?.qty ?? x?.quantity ?? x?.required_qty ?? "",
       wastage_percent: x?.wastage_percent ?? x?.wastage ?? 0,
       rate: x?.rate ?? x?.unit_rate ?? 0,
+      extra_charges:x?.extra_charges??0, product_type_id:x?.product_type_id??"",type_name:x?.type_name||"",
     })),
   };
 }
@@ -85,6 +88,7 @@ export default function BOMPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [units, setUnits] = useState([]);
+  const [rateLists,setRateLists]=useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -111,16 +115,18 @@ export default function BOMPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [b, p, c, u] = await Promise.all([
+      const [b, p, c, u, rates] = await Promise.all([
         axios.get(`${API_BASE}/bom`).catch(() => ({ data: [] })),
         axios.get(`${API_BASE}/products`),
         axios.get(`${API_BASE}/categories`),
         axios.get(`${API_BASE}/units`),
+        axios.get(`${API_BASE}/bom-rate-lists`).catch(()=>({data:{data:[]}})),
       ]);
       setRecords(list(b.data).map(normalizeBom));
       setProducts(list(p.data));
       setCategories(list(c.data));
       setUnits(list(u.data));
+      setRateLists(list(rates.data));
     } catch (e) {
       toast("error", e?.response?.data?.error || e?.response?.data?.message || t.loadError);
     } finally { setLoading(false); }
@@ -134,19 +140,30 @@ export default function BOMPage() {
   const usableProducts = useMemo(() => products.filter(active), [products]);
   const head = productMap.get(String(form.product_id));
   const headCategory = head?.category_name || categoryMap.get(String(productCategoryId(head))) || "-";
+  const headType=head?.type_name||head?.product_type_en||head?.product_type_name||"-";
   const headUnit = head?.unit_name || unitMap.get(String(productUnitId(head))) || "-";
 
   const rows = useMemo(() => form.items.map(x => {
     const p = productMap.get(String(x.product_id));
-    const qty = n(x.qty), waste = n(x.wastage_percent), effective = qty + qty * waste / 100, rate = n(x.rate);
-    return { ...x, product: p, product_name: productName(p) || x.product_name || "-", unit_name: p?.unit_name || unitMap.get(String(productUnitId(p))) || "-", category_name: p?.category_name || categoryMap.get(String(x.category_id)) || "-", effective, cost: effective * rate };
+    const qty = n(x.qty), waste = n(x.wastage_percent), effective = qty + qty * waste / 100, rate = n(x.rate),extra=n(x.extra_charges);
+    return { ...x, product: p, product_name: productName(p) || x.product_name || "-", unit_name: p?.unit_name || unitMap.get(String(productUnitId(p))) || "-", category_name: p?.category_name || categoryMap.get(String(x.category_id)) || "-", type_name:p?.type_name||p?.product_type_en||p?.product_type_name||x.type_name||"-",effective,amount:effective*rate,cost: effective * rate+extra };
   }), [form.items, productMap, unitMap, categoryMap]);
 
   const materialTotal = rows.reduce((s, x) => s + x.cost, 0);
-  const totalCost = materialTotal + n(form.labor_cost);
+  const totalCost = materialTotal + n(form.labor_cost) + n(form.expense_cost);
   const perUnit = n(form.output_qty) > 0 ? totalCost / n(form.output_qty) : 0;
 
-  const openAdd = () => { setEditingId(null); setForm(blankForm()); setShowForm(true); };
+  const openAdd = async () => {
+    setEditingId(null);setForm(blankForm());setShowForm(true);
+    try{const r=await axios.get(`${API_BASE}/bom/next-code`);const preview=r.data?.bom_code;
+      if(preview)setForm(f=>({...f,bom_code:preview}));
+    }catch(_){/* Final serial comes from backend insert ID. */}
+  };
+  const assignedRate=(listId,productId,otherwise="")=>{
+    const rateList=rateLists.find(l=>String(l.id)===String(listId));
+    const hit=(rateList?.items||[]).find(it=>String(it.product_id)===String(productId));
+    return hit?String(hit.rate):otherwise;
+  };
   const closeForm = () => { if (!saving) { setShowForm(false); setEditingId(null); } };
 
   const openEdit = (r) => {
@@ -159,13 +176,19 @@ export default function BOMPage() {
       product_id: headId || "",
       output_qty: String(b.output_qty || 1),
       labor_cost: String(b.labor_cost || ""),
+      expense_cost:String(b.expense_cost||""),rate_list_id:String(b.rate_list_id||""),
       notes: b.notes || "",
-      items: b.items.length ? b.items.map(x => ({ key: x.key || `${Date.now()}-${Math.random()}`, category_id: String(x.category_id || ""), product_id: String(x.product_id || ""), qty: String(x.qty ?? ""), wastage_percent: String(x.wastage_percent ?? 0), rate: String(x.rate ?? "") })) : [newRow()],
+      items: b.items.length ? b.items.map(x => ({ key: x.key || `${Date.now()}-${Math.random()}`, category_id: String(x.category_id || ""), product_id: String(x.product_id || ""), qty: String(x.qty ?? ""), wastage_percent: String(x.wastage_percent ?? 0), rate: String(x.rate ?? ""),extra_charges:String(x.extra_charges??""),type_name:x.type_name||"",product_type_id:x.product_type_id||"" })) : [newRow()],
     });
     setShowForm(true);
   };
 
-  const changeRow = (key, field, value) => setForm(f => ({ ...f, items: f.items.map(x => x.key !== key ? x : field === "category_id" ? { ...x, category_id: value, product_id: "" } : { ...x, [field]: value }) }));
+  const changeRow=(key,field,value)=>setForm(f=>({...f,items:f.items.map(x=>{
+    if(x.key!==key)return x;
+    if(field==="category_id")return {...x,category_id:value,product_id:"",rate:""};
+    if(field==="product_id")return {...x,product_id:value,rate:assignedRate(f.rate_list_id,value,"")};
+    return {...x,[field]:value};
+  })}));
   const addRow = () => setForm(f => ({ ...f, items: [...f.items, newRow()] }));
   const removeRow = (key) => setForm(f => f.items.length === 1 ? f : ({ ...f, items: f.items.filter(x => x.key !== key) }));
   const optionsFor = (row) => !row.category_id ? [] : usableProducts.filter(p => String(productCategoryId(p)) === String(row.category_id) && String(p.id) !== String(form.product_id));
@@ -322,13 +345,16 @@ export default function BOMPage() {
     bom_code: form.bom_code,
     product_id: Number(form.product_id),
     product_name: productName(head),
+    product_type_id:head?.product_type_id?Number(head.product_type_id):null,
+    rate_list_id:form.rate_list_id?Number(form.rate_list_id):null,
+    expense_cost:n(form.expense_cost),
     product_category_id: productCategoryId(head) ? Number(productCategoryId(head)) : null,
     category_name: headCategory,
     output_qty: n(form.output_qty), batch_size: n(form.output_qty), bom_type: "Assembly",
     output_unit_id: productUnitId(head) ? Number(productUnitId(head)) : null,
     output_unit_name: headUnit,
     labor_cost: n(form.labor_cost), notes: form.notes.trim(), material_total: Number(materialTotal.toFixed(2)), total_cost: Number(totalCost.toFixed(2)), per_unit_cost: Number(perUnit.toFixed(4)),
-    items: rows.map(x => ({ category_id: Number(x.category_id), category_name: x.category_name, product_id: Number(x.product_id), product_name: x.product_name, unit_id: productUnitId(x.product) ? Number(productUnitId(x.product)) : null, unit_name: x.unit_name, qty: n(x.qty), required_qty: n(x.qty), wastage_percent: n(x.wastage_percent), effective_qty: Number(x.effective.toFixed(4)), rate: n(x.rate), material_cost: Number(x.cost.toFixed(2)), total: Number(x.cost.toFixed(2)) })),
+    items: rows.map(x => ({ category_id: Number(x.category_id), category_name: x.category_name, product_id: Number(x.product_id), product_name: x.product_name, unit_id: productUnitId(x.product) ? Number(productUnitId(x.product)) : null, unit_name: x.unit_name,product_type_id:x.product?.product_type_id?Number(x.product.product_type_id):null,type_name:x.type_name,extra_charges:n(x.extra_charges),qty: n(x.qty), required_qty: n(x.qty), wastage_percent: n(x.wastage_percent), effective_qty: Number(x.effective.toFixed(4)), rate: n(x.rate), material_cost: Number(x.cost.toFixed(2)), total: Number(x.cost.toFixed(2)) })),
   });
 
   const saveBom = async () => {
@@ -366,7 +392,7 @@ export default function BOMPage() {
         <section className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><h1 className="text-xl font-black text-slate-950 sm:text-2xl">{t.title}</h1><p className="mt-0.5 text-[11px] text-slate-500">{t.subtitle}</p></div>
-            <div className="flex gap-2"><TopButton onClick={() => setLang(x => x === "en" ? "ur" : "en")} soft icon="bi-translate">{t.toggle}</TopButton><TopButton onClick={loadData} soft icon="bi-arrow-clockwise">{t.refresh}</TopButton><TopButton onClick={openAdd} icon="bi-plus-lg">{t.add}</TopButton></div>
+            <div className="flex gap-2"><TopButton onClick={() => setLang(x => x === "en" ? "ur" : "en")} soft icon="bi-translate">{t.toggle}</TopButton><TopButton onClick={loadData} soft icon="bi-arrow-clockwise">{t.refresh}</TopButton><TopButton onClick={()=>{try{printBOMs(filtered)}catch(e){toast("error",e.message)}}} soft icon="bi-printer">Print All BOMs</TopButton><a href="/app/production/bom-rate-lists" className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700">BOM Rate Lists</a><TopButton onClick={openAdd} icon="bi-plus-lg">{t.add}</TopButton></div>
           </div>
         </section>
 
@@ -376,12 +402,12 @@ export default function BOMPage() {
           <table className="w-full table-fixed text-xs"><colgroup><col style={{width:"5%"}}/><col style={{width:"14%"}}/><col style={{width:"25%"}}/><col style={{width:"18%"}}/><col style={{width:"10%"}}/><col style={{width:"9%"}}/><col style={{width:"10%"}}/><col style={{width:"9%"}}/></colgroup>
             <thead className="bg-slate-900 text-white"><tr><Th c>#</Th><Th>{t.code}</Th><Th>{t.head}</Th><Th>{t.headCategory}</Th><Th c>{t.outputQty}</Th><Th c>{t.totalMaterials}</Th><Th r>{t.totalCost}</Th><Th c>{t.actions}</Th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {loading ? <tr><td colSpan={8} className="py-10 text-center text-slate-400">{t.loading}</td></tr> : filtered.length === 0 ? <tr><td colSpan={8} className="py-10 text-center text-slate-400">{t.noRecords}</td></tr> : filtered.map((b,i) => <tr key={b.id} className="hover:bg-indigo-50/40"><Td c muted>{i+1}</Td><Td><span className="rounded-md bg-indigo-50 px-2 py-1 font-mono text-[9px] font-black text-indigo-700">{b.bom_code || `BOM-${b.id}`}</span></Td><Td><b className="text-slate-950">{b.product_name || "-"}</b></Td><Td>{b.category_name || "-"}</Td><Td c>{b.output_qty || 1}</Td><Td c><button onClick={() => setSelected(b)} className="rounded-lg bg-indigo-600 px-2 py-1.5 text-[9px] font-black text-white"><i className="bi bi-list-check mr-1"/>{b.items?.length || 0}</button></Td><Td r><b className="font-mono text-indigo-700">{money(b.total_cost ?? b.total ?? 0)}</b></Td><Td c><div className="flex justify-center gap-1"><IconButton green icon="bi-pencil-square" onClick={() => openEdit(b)}/><IconButton red icon="bi-trash3" onClick={() => deleteBom(b.id)}/></div></Td></tr>)}
+              {loading ? <tr><td colSpan={8} className="py-10 text-center text-slate-400">{t.loading}</td></tr> : filtered.length === 0 ? <tr><td colSpan={8} className="py-10 text-center text-slate-400">{t.noRecords}</td></tr> : filtered.map((b,i) => <tr key={b.id} className="hover:bg-indigo-50/40"><Td c muted>{i+1}</Td><Td><span className="rounded-md bg-indigo-50 px-2 py-1 font-mono text-[9px] font-black text-indigo-700">{b.bom_code || `BOM-${b.id}`}</span></Td><Td><b className="text-slate-950">{b.product_name || "-"}</b></Td><Td>{b.category_name || "-"}</Td><Td c>{b.output_qty || 1}</Td><Td c><button onClick={() => setSelected(b)} className="rounded-lg bg-indigo-600 px-2 py-1.5 text-[9px] font-black text-white"><i className="bi bi-list-check mr-1"/>{b.items?.length || 0}</button></Td><Td r><b className="font-mono text-indigo-700">{money(b.total_cost ?? b.total ?? 0)}</b></Td><Td c><div className="flex justify-center gap-1"><IconButton green icon="bi-pencil-square" onClick={() => openEdit(b)}/><button className="rounded-lg bg-blue-50 p-1.5 text-blue-700" title="Single BOM Print" onClick={()=>printBOMs(b)}><i className="bi bi-printer"/></button><IconButton red icon="bi-trash3" onClick={() => deleteBom(b.id)}/></div></Td></tr>)}
             </tbody>
           </table>
         </section>
 
-        <section className="grid gap-2 sm:grid-cols-2 lg:hidden">{filtered.map((b,i) => <article key={b.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><div className="flex justify-between gap-2"><div><div className="text-[9px] font-black text-indigo-700">{b.bom_code || `BOM-${b.id}`}</div><h3 className="mt-1 text-sm font-black text-slate-950">{b.product_name}</h3><p className="text-[10px] text-slate-500">{b.category_name || "-"}</p></div><button onClick={() => setSelected(b)} className="h-8 rounded-lg bg-indigo-600 px-2 text-[9px] font-black text-white">{b.items?.length || 0} {t.totalMaterials}</button></div><div className="mt-2 grid grid-cols-2 gap-1.5"><Info label={t.outputQty} value={b.output_qty || 1}/><Info label={t.totalCost} value={money(b.total_cost ?? 0)}/></div><div className="mt-2 grid grid-cols-2 gap-1.5"><button onClick={() => openEdit(b)} className="h-8 rounded-lg bg-emerald-50 text-[10px] font-black text-emerald-700">{t.edit}</button><button onClick={() => deleteBom(b.id)} className="h-8 rounded-lg bg-rose-50 text-[10px] font-black text-rose-600">{t.delete}</button></div></article>)}</section>
+        <section className="grid gap-2 sm:grid-cols-2 lg:hidden">{filtered.map((b,i) => <article key={b.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><div className="flex justify-between gap-2"><div><div className="text-[9px] font-black text-indigo-700">{b.bom_code || `BOM-${b.id}`}</div><h3 className="mt-1 text-sm font-black text-slate-950">{b.product_name}</h3><p className="text-[10px] text-slate-500">{b.category_name || "-"}</p></div><button onClick={() => setSelected(b)} className="h-8 rounded-lg bg-indigo-600 px-2 text-[9px] font-black text-white">{b.items?.length || 0} {t.totalMaterials}</button></div><div className="mt-2 grid grid-cols-2 gap-1.5"><Info label={t.outputQty} value={b.output_qty || 1}/><Info label={t.totalCost} value={money(b.total_cost ?? 0)}/></div><div className="mt-2 grid grid-cols-2 gap-1.5"><button onClick={() => printBOMs(b)} className="h-8 rounded-lg bg-blue-50 text-[10px] font-black text-blue-700">Print</button><button onClick={() => openEdit(b)} className="h-8 rounded-lg bg-emerald-50 text-[10px] font-black text-emerald-700">{t.edit}</button><button onClick={() => deleteBom(b.id)} className="h-8 rounded-lg bg-rose-50 text-[10px] font-black text-rose-600">{t.delete}</button></div></article>)}</section>
       </main>}
 
       {showForm && (
@@ -422,12 +448,8 @@ export default function BOMPage() {
                     <input
                       className="bom-basicInput font-mono"
                       value={form.bom_code}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          bom_code: e.target.value,
-                        }))
-                      }
+                      readOnly
+                      title="Auto-generated serial on save"
                     />
                   </Field>
 
@@ -457,6 +479,7 @@ export default function BOMPage() {
                     </select>
                   </Field>
 
+                  <Field label="Product Type"><input className="bom-basicInput" value={headType} readOnly/></Field>
                   <Field label={t.headCategory}>
                     <input
                       className="bom-basicInput"
@@ -465,6 +488,11 @@ export default function BOMPage() {
                     />
                   </Field>
 
+                  <Field label="BOM Rate List"><select className="bom-basicSelect" value={form.rate_list_id||""}
+                    onChange={e=>{const chosen=e.target.value;setForm(f=>({...f,rate_list_id:chosen,items:f.items.map(x=>({...x,rate:assignedRate(chosen,x.product_id,x.rate)}))}));}}>
+                    <option value="">Manual Material Rates</option>
+                    {rateLists.map(l=><option key={l.id} value={l.id}>{l.list_name} (v{l.active_version_no||1})</option>)}
+                  </select></Field>
                   <Field label={t.outputQty}>
                     <input
                       type="number"
@@ -507,6 +535,7 @@ export default function BOMPage() {
                 </div>
               </div>
 
+              <div className="bom-form-box"><Field label="Remarks"><textarea rows={2} className="bom-basicTextarea" value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></Field></div>
               {/* MATERIAL SECTION — SAME SALES-INVOICE SECTION HEAD/TABLE */}
               <div className="bom-sectionHead">
                 <div className="min-w-0">
@@ -547,12 +576,13 @@ export default function BOMPage() {
                         <th>#</th>
                         <th>{t.matCategory}</th>
                         <th>{t.material}</th>
+                        <th>Type</th>
                         <th>{t.unit}</th>
                         <th>{t.qty}</th>
                         <th>{t.wastage}</th>
                         <th>{t.effective}</th>
-                        <th>{t.rate}</th>
-                        <th>{t.cost}</th>
+<th>{t.rate}</th>
+                        <th>Amount</th><th>Extra Charges</th><th>Total</th>
                         <th />
                       </tr>
                     </thead>
@@ -620,6 +650,7 @@ export default function BOMPage() {
                             </div>
                           </td>
 
+                          <td><input className="bom-productInput bom-readonlyInput" value={x.type_name||"-"} readOnly/></td>
                           <td>
                             <input
                               className="bom-productInput bom-readonlyInput"
@@ -681,6 +712,8 @@ export default function BOMPage() {
                             />
                           </td>
 
+                          <td><input className="bom-productInput bom-readonlyInput font-mono" value={money(x.amount)} readOnly/></td>
+                          <td><input type="number" min="0" step="0.01" className="bom-productInput" value={x.extra_charges||""} onChange={e=>changeRow(x.key,"extra_charges",e.target.value)}/></td>
                           <td>
                             <input
                               className="bom-productInput bom-readonlyInput font-mono"
@@ -707,57 +740,12 @@ export default function BOMPage() {
                 </div>
               </div>
 
-              {/* NOTES */}
-              <div className="bom-sectionHead">
-                <span>{t.notes}</span>
-              </div>
-
-              <div className="bom-paymentPanel">
-                <textarea
-                  rows={3}
-                  className="bom-basicTextarea"
-                  value={form.notes}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      notes: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              {/* SALES-INVOICE STYLE TOTAL BOXES */}
+              {/* Four BOM cost boxes */}
               <div className="bom-finalTotalBar">
-                <TotalBox
-                  label={t.totalMaterials}
-                  value={rows.length}
-                />
-
-                <TotalBox
-                  label={t.materialTotal}
-                  value={money(materialTotal)}
-                />
-
-                <TotalBox
-                  label={t.labor}
-                  value={money(form.labor_cost)}
-                />
-
-                <TotalBox
-                  label={t.totalCost}
-                  value={money(totalCost)}
-                />
-
-                <TotalBox
-                  label={t.outputQty}
-                  value={`${form.output_qty || 0} ${headUnit || ""}`}
-                />
-
-                <TotalBox
-                  label={t.unitCost}
-                  value={money(perUnit)}
-                  grand
-                />
+                <TotalBox label="Total Cost" value={money(materialTotal)}/>
+                <TotalBox label="Labor Charges" value={money(form.labor_cost)}/>
+                <TotalBox label="Expense" value={money(form.expense_cost)}/>
+                <TotalBox label="Grand Total Cost" value={money(totalCost)} grand/>
               </div>
 
               {/* SALES-INVOICE STYLE FOOTER */}
@@ -790,7 +778,7 @@ export default function BOMPage() {
         </div>
       )}
 
-      {selected && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-3" onMouseDown={e => e.target===e.currentTarget && setSelected(null)}><div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex justify-between border-b border-slate-200 bg-slate-50 px-4 py-3"><div><h2 className="font-black text-slate-950">{t.details}</h2><p className="text-[10px] text-slate-500">{selected.bom_code} · {selected.product_name}</p></div><button onClick={() => setSelected(null)} className="h-8 w-8 rounded-lg bg-indigo-600 text-white"><i className="bi bi-x-lg"/></button></div><div className="max-h-[75vh] overflow-auto p-3"><div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Info label={t.head} value={selected.product_name}/><Info label={t.headCategory} value={selected.category_name || "-"}/><Info label={t.outputQty} value={selected.output_qty || 1}/><Info accent label={t.totalMaterials} value={selected.items?.length || 0}/></div><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[760px] text-[10px]"><thead className="bg-slate-900 text-white"><tr><Th c>#</Th><Th>{t.matCategory}</Th><Th>{t.material}</Th><Th>{t.unit}</Th><Th r>{t.qty}</Th><Th r>{t.wastage}</Th><Th r>{t.rate}</Th><Th r>{t.cost}</Th></tr></thead><tbody>{(selected.items||[]).map((x,i) => <tr key={x.id||x.key||i} className="border-b border-slate-100"><Td c>{i+1}</Td><Td>{x.category_name || categoryMap.get(String(x.category_id)) || "-"}</Td><Td><b>{x.product_name || x.raw_material || "-"}</b></Td><Td>{x.unit_name || "-"}</Td><Td r>{x.qty || x.required_qty || 0}</Td><Td r>{x.wastage_percent || 0}%</Td><Td r>{money(x.rate)}</Td><Td r>{money(x.material_cost ?? x.total ?? n(x.qty)*n(x.rate))}</Td></tr>)}</tbody></table></div></div></div></div>}
+      {selected && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-3" onMouseDown={e => e.target===e.currentTarget && setSelected(null)}><div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex justify-between border-b border-slate-200 bg-slate-50 px-4 py-3"><div><h2 className="font-black text-slate-950">{t.details}</h2><p className="text-[10px] text-slate-500">{selected.bom_code} · {selected.product_name}</p></div><div className="flex gap-2"><button className="rounded-lg bg-blue-600 px-3 text-xs font-bold text-white" onClick={()=>printBOMs(selected)}><i className="bi bi-printer mr-1"/>Print BOM</button><button onClick={() => setSelected(null)} className="h-8 w-8 rounded-lg bg-indigo-600 text-white"><i className="bi bi-x-lg"/></button></div></div><div className="max-h-[75vh] overflow-auto p-3"><div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Info label={t.head} value={selected.product_name}/><Info label={t.headCategory} value={selected.category_name || "-"}/><Info label="Product Type" value={selected.type_name||"-"}/><Info label="Rate List" value={rateLists.find(l=>Number(l.id)===Number(selected.rate_list_id))?.list_name||"Manual"}/><Info label={t.outputQty} value={selected.output_qty || 1}/><Info accent label={t.totalMaterials} value={selected.items?.length || 0}/></div><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[760px] text-[10px]"><thead className="bg-slate-900 text-white"><tr><Th c>#</Th><Th>{t.matCategory}</Th><Th>{t.material}</Th><Th>{t.unit}</Th><Th r>{t.qty}</Th><Th r>{t.wastage}</Th><Th r>{t.rate}</Th><Th r>Amount</Th><Th r>Extra Charges</Th><Th r>Total</Th></tr></thead><tbody>{(selected.items||[]).map((x,i) => <tr key={x.id||x.key||i} className="border-b border-slate-100"><Td c>{i+1}</Td><Td>{x.category_name || categoryMap.get(String(x.category_id)) || "-"}</Td><Td><b>{x.product_name || x.raw_material || "-"}</b></Td><Td>{x.unit_name || "-"}</Td><Td r>{x.qty || x.required_qty || 0}</Td><Td r>{x.wastage_percent || 0}%</Td><Td r>{money(x.rate)}</Td><Td r>{money(n(x.effective_qty||x.qty)*n(x.rate))}</Td><Td r>{money(x.extra_charges)}</Td><Td r>{money(x.material_cost??x.total)}</Td></tr>)}</tbody></table></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><Info label="Total Cost" value={money(selected.material_total)}/><Info label="Labor Charges" value={money(selected.labor_cost)}/><Info label="Expense" value={money(selected.expense_cost)}/><Info accent label="Grand Total Cost" value={money(selected.total_cost)}/></div><div className="mt-3 rounded-lg border p-3 text-xs"><b>Remarks:</b> {selected.notes||"—"}</div></div></div></div>}
 
       {showMaterialForm && (
         <div
