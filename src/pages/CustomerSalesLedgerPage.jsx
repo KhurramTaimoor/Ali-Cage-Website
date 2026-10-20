@@ -449,7 +449,7 @@ export default function CustomerSalesLedgerPage() {
         <div className="ledger-field ledger-customer-select">
           <label>{t.selectCustomer}</label>
           <select
-            data-searchable="true"
+            data-no-search="true"
             aria-label={t.selectCustomer}
             value={selectedCustomerId}
             onChange={handleCustomerChange}
