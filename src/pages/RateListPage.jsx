@@ -153,9 +153,10 @@ const emptyRates = (p) => ({
 
 const firstOption = (record) => (Array.isArray(record?.price_options) && record.price_options.length ? record.price_options[0] : {});
 
-function Modal({ title, children, onClose, wide = false }) {
+function Modal({ title, children, onClose, wide = false, fullPage = false }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/45 p-2 sm:p-5 backdrop-blur-sm">
+    <div className={fullPage ? "erp-entry-page" : "fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/45 p-2 sm:p-5 backdrop-blur-sm"}>
+      {fullPage && <div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{title}</strong><small>Customer Rate List • Select products, rates and assignments</small></div><button type="button" className="erp-back-to-list" onClick={onClose}>← Back to List</button></div>}
       <div className={`my-2 w-full ${wide ? "max-w-[1450px]" : "max-w-2xl"} overflow-hidden rounded-2xl border border-slate-200 bg-[#F4F7FB] shadow-2xl sm:my-6`}>
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
           <h2 className="text-base font-extrabold text-[#13263A] sm:text-lg">{title}</h2>
@@ -548,7 +549,7 @@ export default function RateListPage() {
       </div>
 
       {formOpen && (
-        <Modal wide title={originalName ? `${t.edit}: ${originalName}` : t.newList} onClose={() => setFormOpen(false)}>
+        <Modal wide fullPage title={originalName ? `${t.edit}: ${originalName}` : t.newList} onClose={() => setFormOpen(false)}>
           <div className="p-3 sm:p-5">
             <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(240px,360px)_1fr]">
               <div><label className="mb-1.5 block text-[11px] font-extrabold uppercase text-slate-500">{t.listName}</label><input value={listName} onChange={(e) => setListName(e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-[#4A86F7]" placeholder="e.g. Dealer A / Retail 2026" /></div>
