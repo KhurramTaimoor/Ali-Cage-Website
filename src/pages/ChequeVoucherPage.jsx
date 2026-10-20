@@ -1021,7 +1021,7 @@ export default function ChequeVoucherPage() {
         <Modal
           title={editingId ? t.editVoucher : t.createVoucher}
           eyebrow={`${t.accounts} • ${t.title}`}
-          closeLabel={t.cancel}
+          closeLabel={lang === "ur" ? "فہرست پر واپس" : "Back to List"}
           onClose={() => !saving && setShowForm(false)}
           wide
           inline
