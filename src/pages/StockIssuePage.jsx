@@ -600,7 +600,11 @@ export default function StockIssuePage() {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="erp-entry-page fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="erp-entry-toolbar">
+              <div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Stock Issue" : "New Stock Issue"}</strong><small>Input details • Save to update the list</small></div>
+              <button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button>
+            </div>
             <div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] flex flex-col"
               dir={dir}
