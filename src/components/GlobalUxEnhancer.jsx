@@ -49,11 +49,15 @@ export default function GlobalUxEnhancer() {
   const openPicker = (select) => {
     if (!(select instanceof HTMLSelectElement)) return false;
     if (select.disabled || select.multiple || select.dataset.noSearch === "true") return false;
+    // Mobile has native touch selection. Hijacking pointerdown on mobile
+    // interferes with keyboard focus and can close customer/product searches.
+    if (isMobileTouch()) return false;
     if (pickerStateRef.current?.select === select) return true;
 
     const options = selectOptions(select);
-    const forced = select.dataset.searchable === "true";
-    if (!forced && options.length < LONG_SELECT_MIN_OPTIONS) return false;
+    // Intercept only explicitly opted-in desktop dropdowns. All remaining
+    // account/product selectors stay native unless they use StableSearchSelect.
+    if (select.dataset.searchable !== "true") return false;
 
     const rect = select.getBoundingClientRect();
     const margin = 10;
@@ -113,6 +117,9 @@ export default function GlobalUxEnhancer() {
       // Native datalists can prevent keyboard entry in mobile webviews.
       if (isMobileTouch()) return;
       if (input.dataset.noAutocomplete === "true") return;
+      // Implicit datalists make mobile keyboards lose focus and repeatedly
+      // mutate document.body. Only enhance explicitly opted-in inputs.
+      if (input.dataset.globalAutocomplete !== "true") return;
       if (!["", "text", "search"].includes(input.type)) return;
 
       const hint = `${input.placeholder || ""} ${input.getAttribute("aria-label") || ""} ${input.name || ""}`;
@@ -328,7 +335,7 @@ export default function GlobalUxEnhancer() {
           select instanceof HTMLSelectElement &&
           !select.multiple &&
           select.dataset.noSearch !== "true" &&
-          (select.dataset.searchable === "true" || select.options.length >= LONG_SELECT_MIN_OPTIONS)
+          select.dataset.searchable === "true" && !isMobileTouch()
         ) {
           select.dataset.searchEnhanced = "true";
           if (select.dataset.noHint !== "true") {
