@@ -2847,7 +2847,7 @@ th{background:#111827;color:white;text-align:${isUrdu ? "right" : "left"}}
               <span>{editingId ? t.update : t.newOrder}</span>
 
               <button className="closeBtn" onClick={() => setShowForm(false)}>
-                × Back
+                ← {isUrdu ? "فہرست پر واپس" : "Back to List"}
               </button>
             </div>
 
