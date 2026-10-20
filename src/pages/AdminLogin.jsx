@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ShieldAlert, Lock, Loader2, AlertTriangle, UserRound } from 'lucide-react';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '').replace(/\/api$/i, '');
 
 const AdminLogin = () => {
   const navigate = useNavigate();
