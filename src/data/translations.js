@@ -66,6 +66,7 @@ export const translations = {
 
     // PRODUCTION KEYS
     bom: "BOM",
+    bomRateLists: "BOM Rate Lists",
     assembly: "Assembly",
     prodInvoice: "Production Invoice",
     prodReturnInvoice: "Production Return Invoice",
@@ -153,6 +154,7 @@ export const translations = {
 
     // PRODUCTION KEYS ✅ FIXED - assembly add ki
     bom: "بی او ایم",
+    bomRateLists: "بی او ایم ریٹ لسٹ",
     assembly: "اسمبلی",
     prodInvoice: "پیداوار انوائس",
     prodReturnInvoice: "پیداوار واپسی انوائس",
