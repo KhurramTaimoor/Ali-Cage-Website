@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { openChequeVoucherPrintWindow } from "../utils/chequeVoucherPrint";
 import { useOutletContext } from "react-router-dom";
 import {
   CalendarClock,
@@ -10,6 +11,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  Printer,
   RefreshCw,
   Save,
   Search,
@@ -48,6 +50,18 @@ const LANG = {
     toDate: "To",
     clearDates: "Clear Dates",
     accountColumn: "Account Name",
+    filterAccountType: "Filter Account Type",
+    filterAccountName: "Filter Account Name",
+    allTypes: "All Account Types",
+    allNames: "All Accounts",
+    printFiltered: "Print Filtered",
+    printSelected: "Print Selected",
+    printSingle: "Print Voucher",
+    receivedTotal: "Received Cheques",
+    receivedCleared: "Received Cleared",
+    issuedTotal: "Issued Cheques",
+    issuedCleared: "Issued Cleared",
+    chequeDateFilterNote: "Date range filters cheque dates; clearance details show actual dates.",
     cleared: "Cleared",
     partial: "Partially Paid",
     search: "Search voucher, payee or account...",
@@ -145,6 +159,18 @@ const LANG = {
     toDate: "آخری تاریخ",
     clearDates: "تاریخ صاف کریں",
     accountColumn: "اکاؤنٹ کا نام",
+    filterAccountType: "اکاؤنٹ کی قسم",
+    filterAccountName: "اکاؤنٹ کا نام",
+    allTypes: "تمام اکاؤنٹس کی اقسام",
+    allNames: "تمام اکاؤنٹس",
+    printFiltered: "فلٹر شدہ پرنٹ",
+    printSelected: "منتخب پرنٹ",
+    printSingle: "واؤچر پرنٹ",
+    receivedTotal: "وصول شدہ چیک",
+    receivedCleared: "وصول شدہ کلیئر",
+    issuedTotal: "جاری شدہ چیک",
+    issuedCleared: "جاری شدہ کلیئر",
+    chequeDateFilterNote: "تاریخ کا فلٹر چیک کی تاریخ پر ہے، کلیئرنس کی تاریخیں الگ دکھائی گئی ہیں۔",
     cleared: "کلیئر",
     partial: "جزوی ادائیگی",
     search: "واؤچر، پارٹی یا اکاؤنٹ تلاش کریں...",
@@ -340,6 +366,10 @@ export default function ChequeVoucherPage() {
   const [sortBy, setSortBy] = useState("nearest");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [accountTypeFilter, setAccountTypeFilter] = useState("all");
+  const [accountIdFilter, setAccountIdFilter] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [printing, setPrinting] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -350,31 +380,32 @@ export default function ChequeVoucherPage() {
   const [viewVoucher, setViewVoucher] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
+  const reportParams = useMemo(() => {
+    const params = {};
+    if (filter !== "all") params.status = filter;
+    if (directionFilter !== "all") params.direction = directionFilter;
+    params.sort = sortBy;
+    if (dateFrom) params.from_date = dateFrom;
+    if (dateTo) params.to_date = dateTo;
+    if (accountTypeFilter !== "all") params.account_type = accountTypeFilter;
+    if (accountIdFilter) params.account_id = accountIdFilter;
+    if (search.trim()) params.search = search.trim();
+    return params;
+  }, [filter, directionFilter, sortBy, dateFrom, dateTo, accountTypeFilter, accountIdFilter, search]);
+
   const loadRecords = useCallback(async () => {
     setLoading(true);
     setError("");
-
     try {
-      const params = {};
-      if (filter !== "all") params.status = filter;
-      if (directionFilter !== "all") params.direction = directionFilter;
-      params.sort = sortBy;
-      if (dateFrom) params.from_date = dateFrom;
-      if (dateTo) params.to_date = dateTo;
-      if (search.trim()) params.search = search.trim();
-
-      const response = await axios.get(`${API_BASE}/cheque-vouchers`, { params });
+      const response = await axios.get(API_BASE + "/cheque-vouchers", {params:reportParams});
       setRecords(normalizeArray(response.data));
+      setSelectedIds([]);
     } catch (requestError) {
       setRecords([]);
-      setError(
-        requestError.response?.data?.message ||
-          t.loadError
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [filter, directionFilter, sortBy, dateFrom, dateTo, search, t.loadError]);
+      setSelectedIds([]);
+      setError(requestError.response?.data?.message || t.loadError);
+    } finally { setLoading(false); }
+  }, [reportParams, t.loadError]);
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -409,18 +440,18 @@ export default function ChequeVoucherPage() {
   const formTotal = Number(form.total_amount) || 0;
   const remainingInForm = Math.max(formTotal - paidInForm, 0);
 
-  const summary = useMemo(
-    () => ({
-      count: records.length,
-      total: records.reduce((sum, row) => sum + Number(row.total_amount || 0), 0),
-      paid: records.reduce((sum, row) => sum + Number(row.paid_amount || 0), 0),
-      remaining: records.reduce(
-        (sum, row) => sum + Number(row.remaining_amount || 0),
-        0
-      ),
-    }),
-    [records]
-  );
+  const summary = useMemo(() => records.reduce((acc, row) => {
+    const amount = Number(row.total_amount) || 0;
+    const cleared = Number(row.paid_amount) || 0;
+    if (row.cheque_direction === "receive") {
+      acc.receivedTotal += amount;
+      acc.receivedCleared += cleared;
+    } else {
+      acc.issuedTotal += amount;
+      acc.issuedCleared += cleared;
+    }
+    return acc;
+  }, {receivedTotal:0,receivedCleared:0,issuedTotal:0,issuedCleared:0}), [records]);
 
   const flash = (message) => {
     setNotice(message);
@@ -663,29 +694,11 @@ export default function ChequeVoucherPage() {
           </div>
         )}
 
-        <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <SummaryCard
-            icon={<FileText />}
-            label={t.vouchers}
-            value={summary.count}
-          />
-          <SummaryCard
-            icon={<CircleDollarSign />}
-            label={t.issuedTotal}
-            value={money(summary.total)}
-          />
-          <SummaryCard
-            icon={<CheckCircle2 />}
-            label={t.paidCleared}
-            value={money(summary.paid)}
-            tone="emerald"
-          />
-          <SummaryCard
-            icon={<CalendarClock />}
-            label={t.remaining}
-            value={money(summary.remaining)}
-            tone="rose"
-          />
+        <section className="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="Cheque receiving and paying summary">
+          <SummaryCard icon={<WalletCards />} label={t.receivedTotal} value={money(summary.receivedTotal)} tone="emerald" />
+          <SummaryCard icon={<CheckCircle2 />} label={t.receivedCleared} value={money(summary.receivedCleared)} tone="emerald" />
+          <SummaryCard icon={<CircleDollarSign />} label={t.issuedTotal} value={money(summary.issuedTotal)} tone="amber" />
+          <SummaryCard icon={<CalendarClock />} label={t.issuedCleared} value={money(summary.issuedCleared)} tone="sky" />
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1192,6 +1205,7 @@ const SummaryCard = ({ icon, label, value, tone = "sky" }) => {
   const colors = {
     sky: "bg-sky-50 text-sky-700",
     emerald: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
     rose: "bg-rose-50 text-rose-700",
   };
 
