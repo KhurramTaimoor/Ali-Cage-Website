@@ -457,11 +457,24 @@ const getCatalogModeRate = (option, saleType) => {
   return 0;
 };
 
+// Find the assigned rate list across all products, not just this product.
+// A missing price must not silently fall back to another customer's list.
+const getCustomerAssignedListName = (rates, customerId) => {
+  const key = String(customerId ?? "");
+  if (!key) return "";
+  const found = (Array.isArray(rates) ? rates : []).find((r) =>
+    (r.customer_id != null && String(r.customer_id) === key) ||
+    (Array.isArray(r.assigned_customer_ids) && r.assigned_customer_ids.some(id => String(id) === key)) ||
+    (Array.isArray(r.assigned_customers) && r.assigned_customers.some(c => String(c.customer_id ?? c.id) === key))
+  );
+  return found ? String(found.list_name || "Default Rate List").trim() : "";
+};
+
 const getCatalogRate = (rates, row, prod, customerId, listName) => {
   const productId = row.product_id || getProductId(prod || {});
   if (!productId) return 0;
   const customerKey = String(customerId ?? "");
-  const desiredList = String(listName || "").trim();
+  const desiredList = String(listName || getCustomerAssignedListName(rates, customerId) || "").trim();
   const sameList = (rate, name) => String(rate.list_name || "Default Rate List").trim() === name;
   const customerAssigned = (rate) =>
     (customerKey && String(rate.customer_id || "") === customerKey) ||
@@ -536,6 +549,8 @@ const getAvailableSingleRate = (rates, row, product, customerId, listName) => {
     listName
   );
   if (rateFromList > 0) return rateFromList;
+  // When a customer list is assigned, do not borrow unrelated master rates.
+  if (String(listName || getCustomerAssignedListName(rates, customerId) || "").trim()) return 0;
   for (const key of ["single_rate", "singleRate", "piece_rate", "pieceRate"]) {
     const price = Number(product[key]);
     if (Number.isFinite(price) && price > 0) return price;
@@ -1331,7 +1346,7 @@ export default function SalesInvoicePage() {
   const handlePartyTypeChange = (value) => {
     partyBalanceRequestId.current += 1;
     setBalanceLoading(false);
-    setForm((prev) => ({ ...prev, party_type: value, party_id: "", customer_id: "", previous_balance: "0" }));
+    setForm((prev) => ({ ...prev, party_type: value, party_id: "", customer_id: "", rate_list_name: "", previous_balance: "0" }));
   };
 
   const handlePartyChange = async (value) => {
@@ -1344,6 +1359,7 @@ export default function SalesInvoicePage() {
       ...prev,
       party_id: value,
       customer_id: prev.party_type === "customer" ? value : "",
+      rate_list_name: "",
       previous_balance: value ? roundPreviousBalance(selected?.previous_balance) : "0",
     }));
 
@@ -1988,6 +2004,8 @@ export default function SalesInvoicePage() {
                               onChange={(productId) => handleItemChange(idx, "product_id", productId)}
                               placeholder={prodLoading ? t.loading : t.select}
                               searchPlaceholder={isUrdu ? "پروڈکٹ کا نام لکھیں..." : "Search product name or rate..."}
+                              moreLabel={isUrdu ? "مزید پروڈکٹس دکھائیں" : "Show more products"}
+                              emptyLabel={isUrdu ? "کوئی پروڈکٹ نہیں ملا" : "No matching products"}
                               options={(() => {
                                 const selectedCategory = String(row.category_id || "");
                                 const matchedProducts = products.filter((p) => {
@@ -2012,18 +2030,18 @@ export default function SalesInvoicePage() {
                                   return {
                                     id,
                                     name: getProductName(p) + " — " +
-                                      (singleRate > 0 ? "Rate Rs " + moneyWhole(singleRate) : "Rate not set"),
+                                      "Single Rate" + (singleRate > 0 ? " — Rs " + moneyWhole(singleRate) : ""),
                                   };
                                 });
                               })()}
                             />
-                            {configuredSingleRate > 0 && (
+                            {selectedProduct && (
                               <div
                                 className="invoice-single-rate-caption"
                                 style={{ fontSize: 11, fontWeight: 800, color: "#475569", marginTop: 6, lineHeight: 1.4, whiteSpace: "nowrap" }}
                                 dir="ltr"
                               >
-                                (Single Rate Pcs/Kgs @{moneyWhole(configuredSingleRate)})
+                                {configuredSingleRate > 0 ? `(Single Rate Pcs/Kgs @${moneyWhole(configuredSingleRate)})` : "(Single Rate)"}
                               </div>
                             )}
                           </td>
