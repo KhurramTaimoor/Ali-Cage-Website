@@ -1908,7 +1908,7 @@ export default function SalesInvoicePage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.rateList}</label>
-                    <select data-searchable="true" data-no-hint="true" className="basicSelect" value={form.rate_list_name || ""} onChange={(e) => handleRateListChange(e.target.value)}>
+                    <select data-no-search="true" className="basicSelect" value={form.rate_list_name || ""} onChange={(e) => handleRateListChange(e.target.value)}>
                       <option value="">{t.rateListAuto}</option>
                       {rateListNames.map((name) => <option key={name} value={name}>{name}</option>)}
                     </select>
@@ -1970,14 +1970,15 @@ export default function SalesInvoicePage() {
                         <tr key={idx}>
                           <td style={{ textAlign: "center", fontWeight: 900 }}>{idx + 1}</td>
                           <td>
-                            <select
-                              data-searchable="true"
+                            <StableSearchSelect
                               className="productInput"
+                              label={t.product}
+                              dir={dir}
                               value={makeInvoiceProductChoice(row.product_id, row.sale_type)}
-                              onChange={(e) => handleItemChange(idx, "product_choice", e.target.value)}
-                            >
-                              <option value="">{t.select}</option>
-                              {(() => {
+                              onChange={(choice) => handleItemChange(idx, "product_choice", choice)}
+                              placeholder={prodLoading ? t.loading : t.select}
+                              searchPlaceholder={isUrdu ? "پروڈکٹ کا نام لکھیں..." : "Search product name, single or multiple..."}
+                              options={(() => {
                                 const selectedCategory = String(row.category_id || "");
                                 const matchedProducts = products.filter((p) => {
                                   const productCatId = getProductCatId(p);
@@ -1988,14 +1989,14 @@ export default function SalesInvoicePage() {
                                   const id = getProductId(p);
                                   if (!id) return [];
                                   const typeName = getProductTypeLabel(p, typeMap);
-                                  const label = `${getProductName(p)}${typeName ? ` — ${typeName}` : ""}`;
+                                  const label = getProductName(p) + (typeName ? " — " + typeName : "");
                                   return [
-                                    <option key={`${id}-multiple`} value={makeInvoiceProductChoice(id, "multiple")}>{label} — {t.multiple}</option>,
-                                    <option key={`${id}-single`} value={makeInvoiceProductChoice(id, "single")}>{label} — {t.single}</option>,
+                                    { id: makeInvoiceProductChoice(id, "multiple"), name: label + " — " + t.multiple },
+                                    { id: makeInvoiceProductChoice(id, "single"), name: label + " — " + t.single },
                                   ];
                                 });
                               })()}
-                            </select>
+                            />                   </select>
                             {configuredSingleRate > 0 && (
                               <div
                                 className="invoice-single-rate-caption"
@@ -2010,20 +2011,20 @@ export default function SalesInvoicePage() {
                             <input className="productInput" value={row.product_description} onChange={(e) => handleItemChange(idx, "product_description", e.target.value)} />
                           </td>
                           <td>
-                            <select data-searchable="true" className="productInput" value={row.product_type_id || defaultFmsTypeId || "FMS"} onChange={(e) => handleItemChange(idx, "product_type_id", e.target.value)}>
+                            <select data-no-search="true" className="productInput" value={row.product_type_id || defaultFmsTypeId || "FMS"} onChange={(e) => handleItemChange(idx, "product_type_id", e.target.value)}>
                               <option value="">{t.select}</option>
                               {productTypes.map((tp) => <option key={getRecordId(tp)} value={getRecordId(tp)}>{getTypeName(tp)}</option>)}
                               {!productTypes.length && <option value="FMS">FMS</option>}
                             </select>
                           </td>
                           <td>
-                            <select data-searchable="true" className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
+                            <select data-no-search="true" className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
                               <option value="">{t.select}</option>
                               {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
                             </select>
                           </td>
                           <td>
-                            <select data-searchable="true" className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
+                            <select data-no-search="true" className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
                               <option value="">{t.select}</option>
                               {units.map((u) => <option key={getUnitId(u)} value={getUnitId(u)}>{getUnitName(u)}</option>)}
                             </select>
