@@ -68,6 +68,7 @@ import EmployeeLedgerPage from "./pages/EmployeeLedgerPage";
 import ContractorPage from "./pages/ContractorPage";
 
 import BOMPage from "./pages/BOMPage";
+import BOMRateListsPage from "./pages/BOMRateListsPage";
 import AssemblyPage from "./pages/AssemblyPage";
 import ProductionInvoicePage from "./pages/ProductionInvoicePage";
 import ProductionReturnInvoicePage from "./pages/ProductionReturnInvoicePage";
@@ -382,6 +383,7 @@ function App() {
               path="production/bom"
               element={<BOMPage />}
             />
+            <Route path="production/bom-rate-lists" element={<BOMRateListsPage />} />
 
             <Route
               path="production/assembly"
