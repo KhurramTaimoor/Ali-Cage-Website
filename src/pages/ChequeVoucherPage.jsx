@@ -706,6 +706,10 @@ export default function ChequeVoucherPage() {
                 <RefreshCw size={14} /> {t.refresh}
               </button>
 
+              <button type="button" onClick={printFilteredReport} disabled={loading || printing || !records.length}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3.5 text-xs font-bold text-sky-800 transition hover:bg-sky-100 disabled:opacity-50">
+                <Printer size={14} /> {printing ? t.loading : selectedIds.length ? t.printSelected + " (" + selectedIds.length + ")" : t.printFiltered}
+              </button>
               <button
                 type="button"
                 onClick={openAdd}
@@ -855,10 +859,32 @@ export default function ChequeVoucherPage() {
             )}
           </div>
 
+          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 px-3 py-2.5">
+            <label className="block min-w-[160px] text-[10px] font-bold text-slate-600">
+              {t.filterAccountType}
+              <select value={accountTypeFilter} onChange={e => {setAccountTypeFilter(e.target.value);setAccountIdFilter("");}}
+                className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs">
+                <option value="all">{t.allTypes}</option>
+                {["customer","supplier","employee","general_ledger"].map(type => <option key={type} value={type}>{t[type]}</option>)}
+              </select>
+            </label>
+            <label className="block min-w-[210px] text-[10px] font-bold text-slate-600">
+              {t.filterAccountName}
+              <select value={accountIdFilter} disabled={accountTypeFilter === "all"} onChange={e=>setAccountIdFilter(e.target.value)}
+                className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs disabled:bg-slate-50">
+                <option value="">{t.allNames}</option>
+                {(accounts[accountTypeFilter] || []).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </label>
+            <p className="self-end pb-2 text-[10px] text-slate-500">{t.chequeDateFilterNote}</p>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1130px] text-left text-[11px]">
+            <table className="w-full min-w-[1230px] text-left text-[11px]">
               <thead className="bg-slate-50 text-[9px] font-extrabold uppercase tracking-[0.08em] text-slate-500">
                 <tr>
+                  <th className="w-8 px-2 py-2 text-center"><input type="checkbox" aria-label="Select all filtered vouchers"
+                    checked={records.length>0 && records.every(row=>selectedIds.includes(row.id))}
+                    onChange={e=>setSelectedIds(e.target.checked?records.map(row=>row.id):[])} /></th>
                   <th className="px-3 py-2">{t.voucherPayee}</th>
                   <th className="px-3 py-2">{t.accountColumn}</th>
                   <th className="px-3 py-2">{t.directionFilter}</th>
@@ -874,14 +900,14 @@ export default function ChequeVoucherPage() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan="10" className="px-3 py-8 text-center text-slate-400">
                       <Loader2 className="mx-auto mb-2 animate-spin" size={22} />
                       {t.loading}
                     </td>
                   </tr>
                 ) : records.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan="10" className="px-3 py-8 text-center text-slate-400">
                       <WalletCards className="mx-auto mb-2 text-slate-300" size={26} />
                       <div className="font-semibold text-slate-500">{t.noVouchers}</div>
                       <div className="mt-0.5 text-[10px]">
@@ -900,6 +926,7 @@ export default function ChequeVoucherPage() {
 
                     return (
                       <tr key={record.id} className="transition hover:bg-sky-50/50">
+                        <td className="px-2 py-2 text-center"><input type="checkbox" checked={selectedIds.includes(record.id)} onChange={()=>toggleSelected(record.id)} aria-label={"Select voucher " + record.voucher_no} /></td>
                         <td className="px-3 py-2">
                           <div className="font-extrabold text-slate-900">
                             {record.voucher_no}
@@ -967,6 +994,9 @@ export default function ChequeVoucherPage() {
                             <ActionButton title={t.viewDetails} primary onClick={() => openView(record)}>
                               <Eye size={12} />
                               <span>{t.details}</span>
+                            </ActionButton>
+                            <ActionButton title={t.printSingle} onClick={() => printSingleVoucher(record)}>
+                              <Printer size={13} />
                             </ActionButton>
                             <ActionButton title={t.editPayment} onClick={() => openEdit(record)}>
                               <Edit3 size={13} />
@@ -1211,6 +1241,7 @@ export default function ChequeVoucherPage() {
           wide
         >
           <VoucherDetails voucher={viewVoucher} t={t} />
+          <div className="mt-2 flex justify-end"><button type="button" onClick={()=>printSingleVoucher(viewVoucher)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-bold text-sky-800"><Printer size={14}/>{t.printSingle}</button></div>
 
           <div className="mt-4 flex justify-end gap-2">
             <button
