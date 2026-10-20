@@ -78,6 +78,8 @@ export default function StableSearchSelect({
           display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: 10, overflow: "hidden", cursor: disabled ? "not-allowed" : "pointer",
           backgroundColor: disabled ? "#f1f5f9" : "#fff",
+          minHeight: 42, borderRadius: 9, border: "1px solid #cbd5e1",
+          padding: "8px 12px", fontSize: 14,
         }}
       >
         <span style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
@@ -120,6 +122,7 @@ export default function StableSearchSelect({
               </div>
               <input
                 ref={inputRef}
+                data-no-autocomplete="true"
                 type="search"
                 autoComplete="off"
                 spellCheck={false}
