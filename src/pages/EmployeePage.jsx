@@ -1763,7 +1763,7 @@ export default function EmployeePage() {
 
       {showForm && (
         <div
-          className="modal-backdrop"
+          className="erp-entry-page modal-backdrop"
           onMouseDown={(event) => {
             if (
               event.target === event.currentTarget
@@ -1772,6 +1772,7 @@ export default function EmployeePage() {
             }
           }}
         >
+          <div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Employee" : "New Employee"}</strong><small>Sales Invoice-style full-page input • existing fields preserved</small></div><button type="button" onClick={() => closeForm()} className="erp-back-to-list">← Back to List</button></div>
           <div className="modal" dir={dir}>
             <div className="modal-header">
               <div>
