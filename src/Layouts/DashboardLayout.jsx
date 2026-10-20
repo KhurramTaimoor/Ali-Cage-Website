@@ -93,6 +93,7 @@ const ADMIN_ITEMS = [
 
 const PRODUCTION_ITEMS = [
   { to: "/app/production/bom", key: "bom", fallback: "BOM" },
+  { to: "/app/production/bom-rate-lists", key: "bomRateLists", fallback: "BOM Rate Lists" },
   { to: "/app/production/assembly", key: "assembly", fallback: "Assembly" },
   { to: "/app/production/invoice", key: "prodInvoice", fallback: "Production Invoice" },
   { to: "/app/production/return-invoice", key: "prodReturnInvoice", fallback: "Production Return Invoice" },
