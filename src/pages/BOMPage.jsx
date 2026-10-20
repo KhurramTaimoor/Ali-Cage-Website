@@ -436,7 +436,7 @@ export default function BOMPage() {
                 onClick={closeForm}
                 disabled={saving}
               >
-                ← {t.cancel}
+                ← {rtl ? "فہرست پر واپس" : "Back to List"}
               </button>
             </div>
 
@@ -824,7 +824,7 @@ export default function BOMPage() {
         }
 
         .bom-form-page-wrap {
-          max-width: 1220px;
+          max-width: 1500px;
           width: 100%;
           margin: 0 auto;
           animation: bomFadeSlide .22s ease-out both;
@@ -834,7 +834,7 @@ export default function BOMPage() {
           width: 100% !important;
           max-width: 100% !important;
           min-height: calc(100vh - 24px);
-          box-shadow: 0 14px 38px rgba(15,23,42,.07) !important;
+          box-shadow: 0 18px 45px rgba(19,41,80,.095) !important;
         }
 
         .bom-inputModalBox {
@@ -845,15 +845,15 @@ export default function BOMPage() {
         }
 
         .bom-inputModalTitle {
-          min-height: 46px;
-          background: linear-gradient(135deg,#0f172a,#1e293b);
+          min-height: 60px;
+          background: linear-gradient(135deg,#11223b,#2b4772);
           color: white;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          padding: 7px 14px;
-          font-size: 15px;
+          padding: 12px 18px;
+          font-size: 17px;
           font-weight: 900;
         }
 
@@ -923,9 +923,9 @@ export default function BOMPage() {
         .bom-basicInput,
         .bom-basicSelect,
         .bom-productInput {
-          height: 30px;
-          padding: 3px 7px;
-          font-size: 9.5px;
+          height: 37px;
+          padding: 5px 9px;
+          font-size: 11.5px;
         }
 
         .bom-basicTextarea {
@@ -1052,7 +1052,7 @@ export default function BOMPage() {
           background: #e2e8f0;
           text-align: center;
           color: #334155;
-          font-size: 8px;
+          font-size: 9.5px;
           font-weight: 900;
           text-transform: uppercase;
         }
