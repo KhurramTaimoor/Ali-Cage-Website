@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const SEARCH_HINT = /search|find|type .*name|name.*search|تلاش|نام لکھ/i;
 const LONG_SELECT_MIN_OPTIONS = 7;
 
 const normalize = (value) => String(value || "").trim();
+// Mobile keyboards resize/scroll the viewport when a search field is focused.
+const isMobileTouch = () => window.innerWidth <= 767 || !!window.matchMedia?.("(pointer: coarse)")?.matches;
 
 function setNativeSelectValue(select, value) {
   const descriptor = Object.getOwnPropertyDescriptor(
@@ -32,8 +35,10 @@ export default function GlobalUxEnhancer() {
   const [term, setTerm] = useState("");
   const pickerRef = useRef(null);
   const searchRef = useRef(null);
+  const pickerStateRef = useRef(null);
 
   const closePicker = () => {
+    pickerStateRef.current = null;
     setPicker(null);
     setTerm("");
   };
@@ -67,7 +72,7 @@ export default function GlobalUxEnhancer() {
 
     const dir = select.closest("[dir]")?.getAttribute("dir") || document.documentElement.dir || "ltr";
     setTerm("");
-    setPicker({
+    const nextPicker = {
       select,
       options,
       selectedValue: String(select.value ?? ""),
@@ -76,8 +81,12 @@ export default function GlobalUxEnhancer() {
       width,
       maxHeight,
       dir,
-    });
-    window.setTimeout(() => searchRef.current?.focus(), 0);
+    };
+    pickerStateRef.current = nextPicker;
+    setPicker(nextPicker);
+    window.setTimeout(() => {
+      if (pickerStateRef.current === nextPicker) searchRef.current?.focus({ preventScroll: true });
+    }, 50);
     return true;
   };
 
@@ -86,6 +95,8 @@ export default function GlobalUxEnhancer() {
 
     const enhanceInput = (input, index) => {
       if (!(input instanceof HTMLInputElement)) return;
+      // Native datalists can prevent keyboard entry in mobile webviews.
+      if (isMobileTouch()) return;
       if (input.dataset.noAutocomplete === "true") return;
       if (!["", "text", "search"].includes(input.type)) return;
 
@@ -322,11 +333,11 @@ export default function GlobalUxEnhancer() {
         event.stopPropagation();
         return;
       }
-      if (picker) closePicker();
+      if (pickerStateRef.current) closePicker();
     };
 
     const onKeyDown = (event) => {
-      if (event.key === "Escape" && picker) {
+      if (event.key === "Escape" && pickerStateRef.current) {
         event.preventDefault();
         closePicker();
         return;
@@ -338,9 +349,12 @@ export default function GlobalUxEnhancer() {
       }
     };
 
-    const closeOnResize = () => closePicker();
+    const closeOnResize = () => {
+      if (!isMobileTouch()) closePicker(); // Mobile keyboard viewport resize is normal.
+    };
     const closeOnScroll = (event) => {
       if (pickerRef.current?.contains(event.target)) return;
+      if (isMobileTouch() && pickerStateRef.current) return;
       closePicker();
     };
 
@@ -360,7 +374,7 @@ export default function GlobalUxEnhancer() {
       window.removeEventListener("scroll", closeOnScroll, true);
       lists.forEach((list) => list.remove());
     };
-  }, [picker]);
+  }, []); // Stable listeners while the search popup is open.
 
   const filteredOptions = useMemo(() => {
     if (!picker) return [];
@@ -374,23 +388,25 @@ export default function GlobalUxEnhancer() {
     const target = picker.select;
     setNativeSelectValue(target, option.value);
     closePicker();
-    window.setTimeout(() => target?.focus?.(), 0);
+    if (!isMobileTouch()) window.setTimeout(() => target?.focus?.(), 0);
   };
 
   if (!picker) return null;
 
-  return (
+  return createPortal(
     <div
       ref={pickerRef}
       data-global-select-picker="true"
+      role="dialog"
+      aria-label="Search and select an option"
       translate="no"
       dir={picker.dir}
       style={{
         position: "fixed",
         zIndex: 100000,
-        left: picker.left,
-        top: picker.top,
-        width: picker.width,
+        left: isMobileTouch() ? 10 : picker.left,
+        top: isMobileTouch() ? 12 : picker.top,
+        width: isMobileTouch() ? "calc(100vw - 20px)" : picker.width,
         maxWidth: "calc(100vw - 20px)",
         background: "#fff",
         border: "1px solid #E2E8F0",
@@ -452,13 +468,13 @@ export default function GlobalUxEnhancer() {
               paddingInlineStart: 34,
               paddingInlineEnd: 12,
               outline: "none",
-              fontSize: 12,
+              fontSize: isMobileTouch() ? 16 : 12,
               fontWeight: 600,
             }}
           />
         </div>
       </div>
-      <div style={{ maxHeight: Math.max(160, picker.maxHeight - 62), overflowY: "auto", padding: 6 }}>
+      <div style={{ maxHeight: isMobileTouch() ? "min(48vh, 360px)" : Math.max(160, picker.maxHeight - 62), overflowY: "auto", padding: 6, WebkitOverflowScrolling: "touch" }}>
         {filteredOptions.length ? (
           filteredOptions.map((option) => {
             const selected = String(option.value) === String(picker.selectedValue);
@@ -517,6 +533,6 @@ export default function GlobalUxEnhancer() {
       >
         {filteredOptions.length} option{filteredOptions.length === 1 ? "" : "s"}
       </div>
-    </div>
+    </div>, document.body
   );
 }
