@@ -3,6 +3,15 @@
 :where(#root) :has(> .erp-entry-page) > :not(.erp-entry-page):not(style):not(link):not(script){
   display:none!important;
 }
+/* Keep validation feedback visible when a create/edit view is open. */
+:where(#root) :has(> .erp-entry-page) > :is(
+  [role="alert"],[role="status"],[aria-live],
+  .toast,.toast-container,.Toastify__toast-container,.notification,
+  [data-sonner-toaster]
+){display:block!important}
+.erp-entry-page :is(button,input,select,textarea):focus-visible{
+  outline:2px solid #4f8df1;outline-offset:2px;
+}
 .erp-entry-page{
   position:relative!important;inset:auto!important;top:auto!important;left:auto!important;
   right:auto!important;bottom:auto!important;transform:none!important;display:flex!important;
