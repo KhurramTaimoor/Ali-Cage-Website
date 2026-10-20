@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import StableSearchSelect from "../components/StableSearchSelect";
 
 const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 const RETURNS_API = `${API_ROOT}/api/sales-returns`;
@@ -1173,10 +1174,11 @@ export default function SalesReturnPage() {
                   </div>
                   <div>
                     <label className="basicLabel">{t.name}</label>
-                    <select data-searchable="true" className="basicSelect" value={form.party_id} onChange={(e) => handlePartyChange(e.target.value)} disabled={returnMode === "auto" && !!selectedInvoice}>
-                      <option value="">{returnMode === "auto" && selectedInvoice ? form.party_name || "-" : t.selectName}</option>
-                      {partyOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <StableSearchSelect className="basicSelect" value={form.party_id} options={partyOptions}
+                      label={t.name} placeholder={returnMode === "auto" && selectedInvoice ? form.party_name || "-" : t.selectName}
+                      searchPlaceholder={isUrdu ? "نام لکھ کر تلاش کریں..." : "Search customer / account name..."}
+                      dir={dir} onChange={handlePartyChange}
+                      disabled={returnMode === "auto" && !!selectedInvoice}/>
                   </div>
                   <div>
                     <label className="basicLabel">{t.returnDate}</label>
@@ -1280,14 +1282,15 @@ export default function SalesReturnPage() {
                             {returnMode === "auto" ? (
                               <input className="productInput" value={row.product_name || productMap[String(row.product_id)] || ""} readOnly />
                             ) : (
-                              <select data-searchable="true" className="productInput" value={row.product_id} onChange={(e) => handleProductChange(idx, e.target.value)}>
-                                <option value="">{t.selectProduct}</option>
-                                {(productOptions.length ? productOptions : products).map((p) => (
-                                  <option key={getProductId(p)} value={getProductId(p)}>
-                                    {getProductName(p)}{getProductTypeLabel(p, typeMap) ? ` — ${getProductTypeLabel(p, typeMap)}` : ""}
-                                  </option>
-                                ))}
-                              </select>
+                              <StableSearchSelect className="productInput" value={row.product_id}
+                                label={t.selectProduct} placeholder={t.selectProduct}
+                                searchPlaceholder={isUrdu ? "پروڈکٹ کا نام لکھیں..." : "Search product name..."}
+                                dir={dir}
+                                onChange={(selectedId) => handleProductChange(idx, selectedId)}
+                                options={(productOptions.length ? productOptions : products).map((p) => ({
+                                  id: getProductId(p),
+                                  name: getProductName(p) + " — " + (getProductTypeName(p) || "Product")
+                                }))}/>
                             )}
                           </td>
                           <td>
@@ -1303,7 +1306,7 @@ export default function SalesReturnPage() {
                               <input className="productInput" value={row.product_type || getTypeName(row) || "FMS"} readOnly />
                             ) : productTypes.length ? (
                               <select
-                                data-searchable="true"
+                                data-no-search="true"
                                 className="productInput"
                                 value={String(row.product_type_id || productTypes.find((tp) => getTypeName(tp).toLowerCase() === String(row.product_type || "").toLowerCase())?.id || "")}
                                 onChange={(e) => handleItemChange(idx, "product_type_id", e.target.value)}
@@ -1319,7 +1322,7 @@ export default function SalesReturnPage() {
                             {returnMode === "auto" ? (
                               <input className="productInput" value={row.category_name || categoryMap[String(row.category_id)] || ""} readOnly />
                             ) : (
-                              <select data-searchable="true" className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
+                              <select data-no-search="true" className="productInput" value={row.category_id} onChange={(e) => handleItemChange(idx, "category_id", e.target.value)}>
                                 <option value="">{t.select}</option>
                                 {categories.map((c) => <option key={getCategoryId(c)} value={getCategoryId(c)}>{getCategoryName(c)}</option>)}
                               </select>
@@ -1329,7 +1332,7 @@ export default function SalesReturnPage() {
                             {returnMode === "auto" ? (
                               <input className="productInput" value={row.unit_name || unitMap[String(row.unit_id)] || ""} readOnly />
                             ) : (
-                              <select data-searchable="true" className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
+                              <select data-no-search="true" className="productInput" value={row.unit_id} onChange={(e) => handleItemChange(idx, "unit_id", e.target.value)}>
                                 <option value="">{t.select}</option>
                                 {units.map((u) => <option key={getUnitId(u)} value={getUnitId(u)}>{getUnitName(u)}</option>)}
                               </select>
