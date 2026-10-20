@@ -329,6 +329,9 @@ export default function GlobalUxEnhancer() {
     };
 
     const scan = () => {
+      // Searchable portal dialogs manage their own focus and list filtering.
+      // Never mutate page DOM while one is opening or the mobile keyboard is up.
+      if (document.querySelector("[data-stable-search-dialog]")) return;
       document.querySelectorAll("input").forEach(enhanceInput);
       document.querySelectorAll("select").forEach((select) => {
         if (
@@ -351,7 +354,8 @@ export default function GlobalUxEnhancer() {
       // Picker input/options live in a body-level portal; do not treat taps
       // inside it as outside-clicks even as the mobile keyboard appears.
       if (pickerRef.current?.contains(event.target) ||
-          event.target?.closest?.("[data-global-select-picker]")) return;
+          event.target?.closest?.("[data-global-select-picker]") ||
+          event.target?.closest?.("[data-stable-search-dialog]")) return;
       const select = event.target?.closest?.("select");
       if (select && openPicker(select)) {
         event.preventDefault();
@@ -385,13 +389,14 @@ export default function GlobalUxEnhancer() {
       // Never rebuild table actions or search hints while a picker is open.
       // Doing so after each search keystroke used to steal keyboard focus and
       // make customer dropdowns immediately dismiss on mobile browsers.
-      if (pickerStateRef.current) return;
+      if (pickerStateRef.current || document.querySelector("[data-stable-search-dialog]")) return;
       const active = document.activeElement;
       if (active?.matches?.("input, textarea, [contenteditable='true']")) return;
       if (scanFrame !== null) return;
       scanFrame = window.requestAnimationFrame(() => {
         scanFrame = null;
         if (!pickerStateRef.current &&
+            !document.querySelector("[data-stable-search-dialog]") &&
             !document.activeElement?.matches?.("input, textarea, [contenteditable='true']")) {
           scan();
         }
