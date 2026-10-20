@@ -1134,7 +1134,7 @@ export default function SalesReturnPage() {
       )}
 
       {showForm && (
-        <div className="form-page-wrap">
+        <div className="erp-entry-page form-page-wrap">
           <div className="inputModalBox fullPageInputBox">
             <div className="inputModalTitle">
               <div>
