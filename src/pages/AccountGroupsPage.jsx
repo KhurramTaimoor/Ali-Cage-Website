@@ -1076,11 +1076,6 @@ export default function AccountGroupsPage() {
       {showForm && (
         <div
           className="erp-entry-page fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closeForm();
-            }
-          }}
         >
           <div className="erp-entry-toolbar"><div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit General Account" : "New General Account"}</strong><small>Sales Invoice-style full-page input • existing fields preserved</small></div><button type="button" onClick={() => closeForm()} className="erp-back-to-list">← Back to List</button></div>
           <div
