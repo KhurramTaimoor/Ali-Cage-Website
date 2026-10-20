@@ -2276,7 +2276,11 @@ const SupplierPage = () => {
       )}
 
       {showForm && (
-        <div className="modal-bg">
+        <div className="erp-entry-page modal-bg">
+            <div className="erp-entry-toolbar">
+              <div className="erp-entry-toolbar-title"><strong>{editingId ? "Edit Supplier" : "New Supplier"}</strong><small>Complete the details below, then save to return to the list.</small></div>
+              <button type="button" className="erp-back-to-list" onClick={() => setShowForm(false)}>← Back to List</button>
+            </div>
           <div className="inputModalBox" dir={dir}>
             <div className="inputModalTitle">
               <div
