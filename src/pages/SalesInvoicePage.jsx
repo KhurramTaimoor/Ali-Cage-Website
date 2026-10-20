@@ -462,11 +462,13 @@ const getCatalogModeRate = (option, saleType) => {
 const getCustomerAssignedListName = (rates, customerId) => {
   const key = String(customerId ?? "");
   if (!key) return "";
-  const found = (Array.isArray(rates) ? rates : []).find((r) =>
-    (r.customer_id != null && String(r.customer_id) === key) ||
+  const entries = Array.isArray(rates) ? rates : [];
+  // Explicit Customer Rate List assignments take precedence over legacy
+  // per-customer sales_rates rows when both exist.
+  const found = entries.find((r) =>
     (Array.isArray(r.assigned_customer_ids) && r.assigned_customer_ids.some(id => String(id) === key)) ||
     (Array.isArray(r.assigned_customers) && r.assigned_customers.some(c => String(c.customer_id ?? c.id) === key))
-  );
+  ) || entries.find((r) => r.customer_id != null && String(r.customer_id) === key);
   return found ? String(found.list_name || "Default Rate List").trim() : "";
 };
 
